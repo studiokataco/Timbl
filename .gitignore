@@ -1,0 +1,57 @@
+# Installed AI tools / skills / plugins
+.claude/skills/
+.claude/plugins/
+.claude/cache/
+.claude/local/
+.ruflo/
+.claude-mem/
+.skills/
+.claude/*
+
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Next.js
+/.next/
+/out/
+/build
+/coverage
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# pnpm / yarn extras
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+.pnpm-debug.log*
+*.pem
+
+# Firebase
+.firebase/
+*.log
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Migration source CSVs (manual exports, not source of truth)
+migration/source/
