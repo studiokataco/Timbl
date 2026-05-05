@@ -26,6 +26,7 @@ type Props = {
   ctas: WithId<Cta>[]
   users: WithId<User>[]
   campaigns: WithId<Campaign>[]
+  hashtagSuggestions: string[]
   range: { start: string; end: string }
 }
 
@@ -46,6 +47,7 @@ export function CalendarView({
   ctas,
   users,
   campaigns,
+  hashtagSuggestions,
   range,
 }: Props) {
   const queryClient = useQueryClient()
@@ -208,6 +210,7 @@ export function CalendarView({
         campaigns={campaigns}
         ctas={ctas}
         users={users}
+        hashtagSuggestions={hashtagSuggestions}
         onChanged={refresh}
       />
     </>

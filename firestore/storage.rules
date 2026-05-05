@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Cloud Storage rules for BecksUp Planner.
+// Cloud Storage rules for Social Media Planner.
 // Uploads are namespaced by organization. Only signed-in members of the
 // owning org can read or write.
 

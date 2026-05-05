@@ -6,6 +6,7 @@ import { addDays, format, startOfMonth, subDays } from "date-fns"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { CalendarView } from "@/components/calendar/calendar-view"
 import { fetchCampaigns } from "@/lib/queries/campaigns.server"
+import { fetchRecentHashtags } from "@/lib/queries/hashtags.server"
 import {
   fetchCategories,
   fetchCtas,
@@ -22,14 +23,16 @@ export default async function CalendarPage() {
   const start = format(subDays(startOfMonth(today), 7), "yyyy-MM-dd")
   const end = format(addDays(today, 60), "yyyy-MM-dd")
 
-  const [orgId, posts, categories, ctas, users, campaigns] = await Promise.all([
-    getCurrentOrgId(),
-    fetchPostsInRange(start, end),
-    fetchCategories(),
-    fetchCtas(),
-    fetchUsers(),
-    fetchCampaigns(),
-  ])
+  const [orgId, posts, categories, ctas, users, campaigns, hashtagSuggestions] =
+    await Promise.all([
+      getCurrentOrgId(),
+      fetchPostsInRange(start, end),
+      fetchCategories(),
+      fetchCtas(),
+      fetchUsers(),
+      fetchCampaigns(),
+      fetchRecentHashtags(),
+    ])
 
   return (
     <CalendarView
@@ -39,6 +42,7 @@ export default async function CalendarPage() {
       ctas={ctas}
       users={users}
       campaigns={campaigns}
+      hashtagSuggestions={hashtagSuggestions}
       range={{ start, end }}
     />
   )

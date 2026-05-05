@@ -1,14 +1,18 @@
 import { QueryProvider } from "@/components/shared/query-provider"
+import { Sidebar } from "@/components/shared/sidebar"
 
 /*
- * (app) tree shares one QueryClient + a sticky TopBar. The TopBar lives
- * inside each page's CalendarShell instead of here so it can wire into the
- * page's quick-add state — see app/(app)/calendar/page.tsx.
+ * (app) tree shares one QueryClient + sidebar nav. The TopBar is rendered
+ * inside each page so it can wire into page-level state (quick-add open,
+ * scoped filters, etc.).
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
-      <div className="flex flex-col flex-1">{children}</div>
+      <div className="flex flex-1 min-h-0">
+        <Sidebar />
+        <div className="flex flex-col flex-1 min-w-0">{children}</div>
+      </div>
     </QueryProvider>
   )
 }

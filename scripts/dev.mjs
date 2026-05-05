@@ -98,7 +98,7 @@ async function main() {
       "--only",
       "firestore,auth,storage",
       "--project",
-      "becksup-planner-dev",
+      "social-media-planner-dev",
     ],
   )
 

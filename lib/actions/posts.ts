@@ -3,9 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
-import { orgCategoriesPath, orgPostsPath } from "@/lib/firebase/paths"
+import {
+  orgCategoriesPath,
+  orgPostsPath,
+  orgPostStatusHistoryPath,
+} from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
-import { postSchema, quickAddPostSchema, type Post } from "@/lib/schemas"
+import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post } from "@/lib/schemas"
 
 /*
  * Post mutations. Every action:
@@ -87,16 +91,39 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
   }
 
   const orgId = await getCurrentOrgId()
+  const user = await getCurrentUser()
+  const db = getDb()
   const { id, ...patch } = parsed.data
-  const ref = getDb().doc(`${orgPostsPath(orgId)}/${id}`)
+  const ref = db.doc(`${orgPostsPath(orgId)}/${id}`)
   const existing = await ref.get()
   if (!existing.exists) return { ok: false, error: "Post not found" }
 
-  await ref.set(
+  // Capture status transitions in a per-post statusHistory subcollection.
+  const prevStatus = existing.data()?.status as Post["status"] | undefined
+  const nextStatus = parsed.data.status
+  const statusChanged =
+    nextStatus && postStatusSchema.safeParse(nextStatus).success && nextStatus !== prevStatus
+
+  const batch = db.batch()
+  batch.set(
+    ref,
     { ...patch, updatedAt: new Date().toISOString() },
     { merge: true },
   )
+  if (statusChanged) {
+    batch.set(
+      db.collection(orgPostStatusHistoryPath(orgId, id)).doc(),
+      {
+        from: prevStatus ?? null,
+        to: nextStatus,
+        userId: user.id,
+        at: new Date().toISOString(),
+      },
+    )
+  }
+  await batch.commit()
   revalidatePath("/calendar")
+  revalidatePath("/posts")
   return { ok: true, id }
 }
 

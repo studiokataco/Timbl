@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { format, parseISO } from "date-fns"
-import { Calendar as CalendarIcon, ChevronsUpDown, Trash2 } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronsUpDown, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   Sheet,
@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -46,18 +45,9 @@ import type {
   User,
 } from "@/lib/schemas"
 import { deletePost, updatePost } from "@/lib/actions/posts"
-
-const STATUS_OPTIONS: PostStatus[] = [
-  "idea",
-  "brief",
-  "researching",
-  "designing",
-  "review",
-  "scheduled",
-  "posted",
-  "missed",
-  "archived",
-]
+import { fetchOgImage } from "@/lib/actions/assets"
+import { getNextStatuses } from "@/lib/post-status"
+import { HashtagInput } from "./hashtag-input"
 
 const POST_TYPE_OPTIONS: PostType[] = [
   "grid",
@@ -90,8 +80,11 @@ type Props = {
   campaigns: WithId<Campaign>[]
   ctas: WithId<Cta>[]
   users: WithId<User>[]
+  hashtagSuggestions?: string[]
   onChanged?: () => void
 }
+
+type SaveState = "idle" | "saving" | "saved" | "error"
 
 /*
  * Side-sheet composer (full-screen drawer on mobile via Sheet's responsive
@@ -109,6 +102,7 @@ export function PostComposerSheet({
   campaigns,
   ctas,
   users,
+  hashtagSuggestions = [],
   onChanged,
 }: Props) {
   const [draft, setDraft] = useState<Partial<Post>>({})
@@ -116,14 +110,19 @@ export function PostComposerSheet({
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false)
   const [campaignPickerOpen, setCampaignPickerOpen] = useState(false)
-  const [hashtagInput, setHashtagInput] = useState("")
+  const [saveState, setSaveState] = useState<SaveState>("idle")
+  const [thumbnail, setThumbnail] = useState<string | null>(null)
+  const [thumbnailLoading, setThumbnailLoading] = useState(false)
+  const lastSavedRef = useRef<string>("")
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Sync local draft when the parent swaps in a different post. Acceptable
-  // prop→state sync; ESLint's blanket rule is overcautious here.
+  // Sync local draft when the parent swaps in a different post.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft(post ?? {})
-    setHashtagInput("")
+    lastSavedRef.current = JSON.stringify(post ?? {})
+    setSaveState("idle")
+    setThumbnail(null)
   }, [post])
 
   const setField = <K extends keyof Post>(key: K, value: Post[K] | undefined) =>
@@ -143,18 +142,61 @@ export function PostComposerSheet({
     [draft.scheduledDate],
   )
 
-  const save = () => {
+  const persist = async (closeOnSuccess: boolean) => {
     if (!post?.id) return
+    const snapshot = JSON.stringify(draft)
+    if (snapshot === lastSavedRef.current) {
+      if (closeOnSuccess) onOpenChange(false)
+      return
+    }
+    setSaveState("saving")
+    const res = await updatePost({ id: post.id, ...draft })
+    if (!res.ok) {
+      setSaveState("error")
+      toast.error(res.error ?? "Could not save")
+      return
+    }
+    lastSavedRef.current = snapshot
+    setSaveState("saved")
+    onChanged?.()
+    if (closeOnSuccess) onOpenChange(false)
+  }
+
+  // Keep a ref to the latest persist closure so the autosave timer always
+  // captures up-to-date draft state without re-creating itself on every
+  // keystroke.
+  const persistRef = useRef(persist)
+  useEffect(() => {
+    persistRef.current = persist
+  })
+
+  // Autosave: 1.5s after the last edit, persist silently. Explicit Save
+  // button still works as a fallback.
+  useEffect(() => {
+    if (!post?.id || !open) return
+    const snapshot = JSON.stringify(draft)
+    if (snapshot === lastSavedRef.current) return
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current)
+    autosaveTimerRef.current = setTimeout(() => {
+      void persistRef.current(false)
+    }, 1500)
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current)
+    }
+  }, [draft, post?.id, open])
+
+  const save = () => {
     startTransition(async () => {
-      const res = await updatePost({ id: post.id, ...draft })
-      if (!res.ok) {
-        toast.error(res.error ?? "Could not save")
-        return
-      }
-      toast.success("Saved")
-      onChanged?.()
-      onOpenChange(false)
+      await persist(true)
     })
+  }
+
+  const fetchThumb = async (url: string) => {
+    if (!url) return
+    setThumbnailLoading(true)
+    const res = await fetchOgImage(url)
+    setThumbnailLoading(false)
+    setThumbnail(res.ok ? res.image : null)
   }
 
   const remove = () => {
@@ -171,27 +213,40 @@ export function PostComposerSheet({
     })
   }
 
-  const addHashtag = () => {
-    const raw = hashtagInput.trim().replace(/^#?/, "#")
-    if (raw.length <= 1) return
-    const next = Array.from(new Set([...(draft.hashtags ?? []), raw]))
-    setField("hashtags", next)
-    setHashtagInput("")
-  }
+  const currentStatus = (draft.status ?? "idea") as PostStatus
+  const validStatuses = useMemo(() => getNextStatuses(currentStatus), [currentStatus])
+  const allHashtagSuggestions = useMemo(() => {
+    const cat = categories.find((c) => c.id === draft.categoryId)
+    return Array.from(new Set([...(cat?.defaultHashtags ?? []), ...hashtagSuggestions]))
+  }, [draft.categoryId, categories, hashtagSuggestions])
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
         <div className="flex flex-col h-full">
           <SheetHeader className="px-6 py-5 border-b border-border">
-            <SheetTitle className="text-base font-medium">
-              {post
-                ? `Edit post — ${format(date, "EEE d MMM")}`
-                : "Edit post"}
-            </SheetTitle>
+            <div className="flex items-center justify-between gap-3">
+              <SheetTitle className="text-base font-medium">
+                {post
+                  ? `Edit post — ${format(date, "EEE d MMM")}`
+                  : "Edit post"}
+              </SheetTitle>
+              <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                {saveState === "saving" ? (
+                  <>
+                    <Loader2 aria-hidden className="size-3 animate-spin" />
+                    Saving…
+                  </>
+                ) : saveState === "saved" ? (
+                  <span className="text-[var(--color-signature-forest)]">Saved</span>
+                ) : saveState === "error" ? (
+                  <span className="text-destructive">Save failed</span>
+                ) : null}
+              </span>
+            </div>
             <SheetDescription className="text-xs">
-              Updates save when you press Save. Auto-save lands in the next
-              polish pass.
+              Edits autosave 1.5s after your last change. Save button forces
+              an immediate write and closes.
             </SheetDescription>
           </SheetHeader>
 
@@ -395,20 +450,23 @@ export function PostComposerSheet({
               <div className="flex flex-col gap-1.5">
                 <Label>Status</Label>
                 <Select
-                  value={draft.status ?? "idea"}
+                  value={currentStatus}
                   onValueChange={(v) => setField("status", v as PostStatus)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map((s) => (
+                    {validStatuses.map((s) => (
                       <SelectItem key={s} value={s}>
                         {s}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Showing valid next states only.
+                </p>
               </div>
             </TabsContent>
 
@@ -426,53 +484,12 @@ export function PostComposerSheet({
 
               <div className="flex flex-col gap-1.5">
                 <Label>Hashtags</Label>
-                <div className="flex flex-wrap gap-1.5 rounded-md border border-input bg-background p-2 min-h-10">
-                  {(draft.hashtags ?? []).map((h) => (
-                    <Badge
-                      key={h}
-                      variant="secondary"
-                      className="rounded-full pl-2 pr-1.5 gap-1 font-normal"
-                    >
-                      {h}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setField(
-                            "hashtags",
-                            (draft.hashtags ?? []).filter((x) => x !== h),
-                          )
-                        }
-                        className="opacity-60 hover:opacity-100"
-                        aria-label={`Remove ${h}`}
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                  <input
-                    value={hashtagInput}
-                    onChange={(e) => setHashtagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === ",") {
-                        e.preventDefault()
-                        addHashtag()
-                      } else if (
-                        e.key === "Backspace" &&
-                        !hashtagInput &&
-                        (draft.hashtags ?? []).length > 0
-                      ) {
-                        const next = (draft.hashtags ?? []).slice(0, -1)
-                        setField("hashtags", next)
-                      }
-                    }}
-                    placeholder={
-                      (draft.hashtags ?? []).length === 0
-                        ? "#charity, #event"
-                        : ""
-                    }
-                    className="flex-1 min-w-[120px] bg-transparent outline-none text-sm"
-                  />
-                </div>
+                <HashtagInput
+                  value={draft.hashtags ?? []}
+                  onChange={(v) => setField("hashtags", v)}
+                  suggestions={allHashtagSuggestions}
+                  placeholder="#charity, #event"
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -536,8 +553,27 @@ export function PostComposerSheet({
                 <Input
                   value={draft.canvaUrl ?? ""}
                   onChange={(e) => setField("canvaUrl", e.target.value || undefined)}
+                  onBlur={(e) => {
+                    if (e.target.value) void fetchThumb(e.target.value)
+                  }}
                   placeholder="https://www.canva.com/..."
                 />
+                {thumbnailLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading preview…</p>
+                ) : thumbnail ? (
+                  <div className="rounded-md border border-border overflow-hidden bg-secondary aspect-video relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={thumbnail}
+                      alt="Asset preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : draft.canvaUrl ? (
+                  <p className="text-xs text-muted-foreground">
+                    No preview available — open in Canva to view.
+                  </p>
+                ) : null}
               </div>
             </TabsContent>
 

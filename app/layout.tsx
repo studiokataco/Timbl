@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "BecksUp Planner",
+  title: "Social Media Planner",
   description: "Calendar-first social media planning for the SAFE Foundation team.",
 }
 

@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// BecksUp Planner — Firestore Security Rules.
+// Social Media Planner — Firestore Security Rules.
 //
 // Multi-tenant model: every domain doc lives under
 //   /organizations/{orgId}/...

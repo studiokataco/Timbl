@@ -29,7 +29,7 @@ export function TopBar({ onQuickAdd }: { onQuickAdd?: () => void }) {
             className="size-2 rounded-full bg-[var(--color-signature-coral)]"
           />
           <span className="text-base font-medium tracking-tight">
-            BecksUp Planner
+            Social Media Planner
           </span>
         </div>
 

@@ -1,8 +1,8 @@
-# BecksUp Planner — conventions for Claude Code
+# Social Media Planner — conventions for Claude Code
 
 ## Read first
 - For ANY UI work, read `/DESIGN.md` before making styling decisions. The Airtable design system (canvas-white background, near-black `ink` primary CTA, signature coral / forest / peach / mint / yellow palette for category pills) is the source of truth — `components/ui/` shadcn primitives are owned and skinned through tokens in `app/globals.css` that map back to `DESIGN.md`.
-- For data model and product questions, read `docs/PRD-BecksUp-Social-Planner.md`. (Will be copied into the repo during a future commit; until then it lives at `~/Downloads/files/PRD-BecksUp-Social-Planner.md`.)
+- For data model and product questions, read `docs/PRD-Social-Media-Planner.md`. (Will be copied into the repo during a future commit; until then the source PRD lives at `~/Downloads/files/PRD-BecksUp-Social-Planner.md` — note the upstream filename, the in-repo copy gets the neutral name.)
 - The phased build plan lives at `~/.claude/plans/users-kataco-downloads-files-prd-becksu-snug-adleman.md`. We are mid-build — check git log to see which phase last shipped.
 
 ## Stack rules
