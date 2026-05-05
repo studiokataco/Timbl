@@ -33,11 +33,20 @@
 - Seed scripts in `firestore/seeds/` target the emulator. The CSV migration runs locally first.
 
 ### Local dev workflow
-1. `pnpm emulators` (terminal A) — starts firestore (8080), auth (9099), storage (9199), UI (4000).
-2. `pnpm seed` (one-off, after first emulator boot) — creates SAFE org, admin user, CTAs, categories.
-3. `pnpm dev` (terminal B) — boots Next dev with `FIRESTORE_EMULATOR_HOST` / `FIREBASE_AUTH_EMULATOR_HOST` / `NEXT_PUBLIC_USE_EMULATORS=1` already injected via the package.json script. The Admin SDK and the browser SDK both auto-connect to the emulator.
 
-`pnpm dev:cloud` exists as the no-emulator escape hatch for Phase 7+ (real Firebase project). Don't use it before then.
+**One-liner:** `pnpm dev` — orchestrated by `scripts/dev.mjs`. It:
+1. Spawns `firebase emulators:start --only firestore,auth,storage`.
+2. Waits for port 8080 to accept connections.
+3. Runs `firestore/seeds/run.ts` (idempotent — safe on every boot).
+4. Spawns `next dev` with `FIRESTORE_EMULATOR_HOST` / `FIREBASE_AUTH_EMULATOR_HOST` / `FIREBASE_STORAGE_EMULATOR_HOST` / `NEXT_PUBLIC_USE_EMULATORS=1` set.
+
+All four streams interleave in one terminal, prefixed by `[emulators]`, `[seed]`, `[next]`. Ctrl-C tears everything down cleanly.
+
+Other scripts:
+- `pnpm emulators` — bare emulator boot, no seed, no Next. Useful for ad-hoc data inspection at http://127.0.0.1:4000.
+- `pnpm seed` — re-seed against an already-running emulator.
+- `pnpm dev:next` — Next dev only, assumes the emulator is already up.
+- `pnpm dev:cloud` — no-emulator escape hatch for Phase 7+ (real Firebase project). Don't use it before then.
 
 ## What NOT to do
 - Don't add a state-management library (Zustand etc.). TanStack Query + URL params + small `useState` cover everything here.
