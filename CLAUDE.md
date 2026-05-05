@@ -32,6 +32,13 @@
 - Phases 0–6 + 8 run entirely against the Firebase Emulator Suite. Do not deploy. Do not create a production Firebase project. Do not point the app at any cloud Firebase backend until the user explicitly approves Phase 7.
 - Seed scripts in `firestore/seeds/` target the emulator. The CSV migration runs locally first.
 
+### Local dev workflow
+1. `pnpm emulators` (terminal A) — starts firestore (8080), auth (9099), storage (9199), UI (4000).
+2. `pnpm seed` (one-off, after first emulator boot) — creates SAFE org, admin user, CTAs, categories.
+3. `pnpm dev` (terminal B) — boots Next dev with `FIRESTORE_EMULATOR_HOST` / `FIREBASE_AUTH_EMULATOR_HOST` / `NEXT_PUBLIC_USE_EMULATORS=1` already injected via the package.json script. The Admin SDK and the browser SDK both auto-connect to the emulator.
+
+`pnpm dev:cloud` exists as the no-emulator escape hatch for Phase 7+ (real Firebase project). Don't use it before then.
+
 ## What NOT to do
 - Don't add a state-management library (Zustand etc.). TanStack Query + URL params + small `useState` cover everything here.
 - Don't add tRPC, GraphQL, or a custom API layer.

@@ -1,16 +1,25 @@
 import { type FirebaseApp, getApps, initializeApp } from "firebase/app"
-import { type Auth, getAuth } from "firebase/auth"
-import { type Firestore, getFirestore } from "firebase/firestore"
-import { type FirebaseStorage, getStorage } from "firebase/storage"
+import { type Auth, connectAuthEmulator, getAuth } from "firebase/auth"
+import {
+  type Firestore,
+  connectFirestoreEmulator,
+  getFirestore,
+} from "firebase/firestore"
+import {
+  type FirebaseStorage,
+  connectStorageEmulator,
+  getStorage,
+} from "firebase/storage"
 
 /*
  * Browser-side Firebase client. Lazy-initialised, double-init safe.
  *
- * Until real auth lands in Phase 7 the app is auto-signed in via
- * lib/auth/dev-session.ts and reads/writes hit the Firebase Emulator Suite,
- * not a production project. The values in NEXT_PUBLIC_FIREBASE_* during dev
- * are placeholders — pointing the SDK at emulator hosts is what makes calls
- * succeed.
+ * Auto-connects to the Firebase Emulator Suite when NEXT_PUBLIC_USE_EMULATORS=1
+ * (set by `pnpm dev`). The placeholders in .env.local are enough for the SDK
+ * to initialise — the connect* calls then redirect every request to localhost.
+ *
+ * Phase 7 swaps the placeholders for real Firebase project credentials and
+ * NEXT_PUBLIC_USE_EMULATORS is left unset.
  */
 
 const firebaseConfig = {
@@ -21,6 +30,8 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
+
+const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
 
 let app: FirebaseApp | undefined
 let firestore: Firestore | undefined
@@ -35,16 +46,43 @@ export function getClientApp(): FirebaseApp {
 }
 
 export function getClientDb(): Firestore {
-  if (!firestore) firestore = getFirestore(getClientApp())
+  if (!firestore) {
+    firestore = getFirestore(getClientApp())
+    if (useEmulators) {
+      try {
+        connectFirestoreEmulator(firestore, "127.0.0.1", 8080)
+      } catch {
+        /* Already connected — safe to ignore. */
+      }
+    }
+  }
   return firestore
 }
 
 export function getClientAuth(): Auth {
-  if (!auth) auth = getAuth(getClientApp())
+  if (!auth) {
+    auth = getAuth(getClientApp())
+    if (useEmulators) {
+      try {
+        connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true })
+      } catch {
+        /* Already connected. */
+      }
+    }
+  }
   return auth
 }
 
 export function getClientStorage(): FirebaseStorage {
-  if (!storage) storage = getStorage(getClientApp())
+  if (!storage) {
+    storage = getStorage(getClientApp())
+    if (useEmulators) {
+      try {
+        connectStorageEmulator(storage, "127.0.0.1", 9199)
+      } catch {
+        /* Already connected. */
+      }
+    }
+  }
   return storage
 }

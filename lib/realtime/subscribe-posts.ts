@@ -33,8 +33,11 @@ export function usePostsRealtime(opts: {
   const { orgId, start, end, queryClient, enabled = true } = opts
   useEffect(() => {
     if (!enabled) return
+    const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
+    if (!useEmulators && process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "demo-api-key") {
+      return
+    }
     if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) return
-    if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "demo-api-key") return
 
     let unsub: (() => void) | undefined
     try {
