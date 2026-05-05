@@ -8,6 +8,8 @@ import { type Auth, getAuth } from "firebase-admin/auth"
 import { type Firestore, getFirestore } from "firebase-admin/firestore"
 import { getStorage } from "firebase-admin/storage"
 
+let firestoreSettingsApplied = false
+
 /*
  * Server-side Firebase Admin SDK. Used by:
  *   - Next.js server actions (lib/actions/*) during the dev-shim phase
@@ -70,7 +72,14 @@ export function getAdminApp(): App {
 }
 
 export function getAdminDb(): Firestore {
-  return getFirestore(getAdminApp())
+  const db = getFirestore(getAdminApp())
+  if (!firestoreSettingsApplied) {
+    // Treat undefined fields as "do not write" instead of throwing. Lets
+    // optional schema fields (e.g. defaultCtaId, color) round-trip cleanly.
+    db.settings({ ignoreUndefinedProperties: true })
+    firestoreSettingsApplied = true
+  }
+  return db
 }
 
 export function getAdminAuth(): Auth {

@@ -24,7 +24,7 @@
 - When auth is added in Phase 7, the user-scoped client engages Security Rules as a second defense layer. Defense in depth — keep the explicit `organizationId` filtering even after rules go live.
 
 ## Auth state (until Phase 7)
-- `lib/auth/dev-session.ts` is the source of "who is logged in" — Becks @ SAFE Foundation, role admin.
+- `lib/auth/dev-session.ts` is the source of "who is logged in" — a neutral SAFE admin user. Do not hardcode personal names anywhere; the dev-shim user is "SAFE Admin" with email `admin@safefoundation.dev`.
 - The dev banner at the top of the app reminds us auth isn't real yet. It auto-hides in production.
 - Don't add `/login` or `/auth/callback` routes until Phase 7.
 

@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Cloud Storage rules for BecksUp Planner.
+// Uploads are namespaced by organization. Only signed-in members of the
+// owning org can read or write.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function inOrg(orgId) {
+      return isSignedIn() && request.auth.token.organizationId == orgId;
+    }
+    function role() {
+      return request.auth.token.role;
+    }
+    function isAdminOrEditor() {
+      return role() == 'admin' || role() == 'editor';
+    }
+
+    match /organizations/{orgId}/{allPaths=**} {
+      allow read: if inOrg(orgId);
+      allow write: if inOrg(orgId) && isAdminOrEditor()
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|video/.*|application/pdf');
+    }
+  }
+}

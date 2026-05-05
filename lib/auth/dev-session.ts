@@ -1,5 +1,5 @@
 /*
- * Development auth shim. Returns Becks @ SAFE Foundation for every request.
+ * Development auth shim. Returns a SAFE Foundation admin for every request.
  *
  * This is the ONLY source of "who is logged in" until Phase 7. Server actions,
  * page loaders, and queries all read identity through getCurrentUser() and
@@ -7,8 +7,8 @@
  * change with no callsite churn.
  *
  * The IDs are deterministic — Phase 1's seed script writes a SAFE org doc
- * at /organizations/safe-foundation and a Becks user at
- * /organizations/safe-foundation/users/becks.
+ * at /organizations/safe-foundation and an admin user at
+ * /organizations/safe-foundation/users/admin.
  */
 
 export type DevUser = {
@@ -26,9 +26,9 @@ export type DevOrganisation = {
 
 export const DEV_SESSION: { user: DevUser; organisation: DevOrganisation } = {
   user: {
-    id: "becks",
-    email: "becks@safefoundation.dev",
-    name: "Becks",
+    id: "admin",
+    email: "admin@safefoundation.dev",
+    name: "SAFE Admin",
     role: "admin",
   },
   organisation: {

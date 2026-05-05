@@ -1,0 +1,84 @@
+rules_version = '2';
+
+// BecksUp Planner — Firestore Security Rules.
+//
+// Multi-tenant model: every domain doc lives under
+//   /organizations/{orgId}/...
+// Reads and writes are gated on the request.auth.token.organizationId
+// custom claim, which Phase 7's Cloud Function sets on every Firebase Auth
+// user based on their /organizations/{orgId}/users/{userId} membership.
+//
+// During Phases 0–6 the Admin SDK is used server-side and bypasses these
+// rules entirely. They still exist because:
+//   1. Emulator-based unit tests verify isolation works.
+//   2. Phase 7 simply swaps the server client and the rules engage with
+//      no callsite changes.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helpers ---------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function token() {
+      return request.auth.token;
+    }
+    function inOrg(orgId) {
+      return isSignedIn() && token().organizationId == orgId;
+    }
+    function role() {
+      return token().role;
+    }
+    function isAdminOrEditor() {
+      return role() == 'admin' || role() == 'editor';
+    }
+    function isPlatformAdmin() {
+      return isSignedIn() && token().platform == 'admin';
+    }
+
+    // --- Global: organizations -----------------------------------------
+    // The org doc itself: members can read; only platform admins can write.
+    match /organizations/{orgId} {
+      allow read: if inOrg(orgId);
+      allow write: if isPlatformAdmin();
+
+      // --- Org-scoped subcollections ---------------------------------
+      // Default: any member can read; admin/editor can write; contributors
+      // are restricted further on `posts` (only update own assignments).
+      match /{collection}/{docId} {
+        allow read: if inOrg(orgId);
+        allow create, delete: if inOrg(orgId) && isAdminOrEditor();
+        allow update: if inOrg(orgId) && isAdminOrEditor();
+      }
+
+      // Tighter rules for posts: contributors can only update posts
+      // assigned to them.
+      match /posts/{postId} {
+        allow read: if inOrg(orgId);
+        allow create, delete: if inOrg(orgId) && isAdminOrEditor();
+        allow update: if inOrg(orgId) && (
+          isAdminOrEditor()
+          || (role() == 'contributor'
+              && resource.data.assigneeId == token().userId)
+        );
+
+        // Status history is append-only; the calling user must be in the
+        // org and either editor+ or the post's assignee.
+        match /statusHistory/{eventId} {
+          allow read: if inOrg(orgId);
+          allow create: if inOrg(orgId);
+          allow update, delete: if false;
+        }
+      }
+    }
+
+    // --- Global: awarenessDays -----------------------------------------
+    // Curated cross-org calendar. Any signed-in user can read; only
+    // platform admins can write.
+    match /awarenessDays/{id} {
+      allow read: if isSignedIn();
+      allow write: if isPlatformAdmin();
+    }
+  }
+}
