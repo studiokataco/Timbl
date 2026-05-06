@@ -25,6 +25,7 @@ type Props = {
   categoryById: Map<string, WithId<Category>>
   userById: Map<string, WithId<User>>
   onCardClick: (post: WithId<Post>) => void
+  onCardStatusChange?: (post: WithId<Post>, next: PostStatus) => void
 }
 
 export function KanbanColumn({
@@ -33,6 +34,7 @@ export function KanbanColumn({
   categoryById,
   userById,
   onCardClick,
+  onCardStatusChange,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   const subdued = status === "posted" || status === "missed" || status === "archived"
@@ -72,6 +74,11 @@ export function KanbanColumn({
               category={categoryById.get(post.categoryId ?? "")}
               assignee={userById.get(post.assigneeId ?? "")}
               onClick={() => onCardClick(post)}
+              onStatusChange={
+                onCardStatusChange
+                  ? (next) => onCardStatusChange(post, next)
+                  : undefined
+              }
             />
           ))}
           {posts.length === 0 && (

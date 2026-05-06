@@ -2,10 +2,11 @@ export const dynamic = "force-dynamic"
 
 import Link from "next/link"
 import { format, parseISO } from "date-fns"
-import { Plus } from "lucide-react"
+import { Megaphone, Plus } from "lucide-react"
 import { TopBar } from "@/components/shared/top-bar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/shared/empty-state"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
 
@@ -31,12 +32,17 @@ export default async function CampaignsPage() {
         </div>
 
         {campaigns.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-12 text-center">
-            <p className="text-sm text-muted-foreground mb-3">No campaigns yet.</p>
-            <Button size="sm" variant="outline" render={<Link href="/settings/campaigns" />}>
-              Create your first campaign
-            </Button>
-          </div>
+          <EmptyState
+            icon={Megaphone}
+            title="No campaigns yet"
+            body="Group related posts into a series with a shared timeline, theme, and progress bar — useful for fundraising drives, anniversaries, or awareness weeks."
+            action={
+              <Button size="sm" render={<Link href="/settings/campaigns" />}>
+                Create your first campaign
+              </Button>
+            }
+            size="lg"
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {campaigns.map((c) => {
@@ -53,7 +59,7 @@ export default async function CampaignsPage() {
                   <div className="flex items-start gap-2 mb-2">
                     <span
                       className="mt-0.5 size-3 rounded-full shrink-0"
-                      style={{ backgroundColor: c.color ?? "#999" }}
+                      style={{ backgroundColor: c.color ?? "var(--color-muted-foreground)" }}
                       aria-hidden
                     />
                     <h2 className="font-medium leading-snug">{c.name}</h2>

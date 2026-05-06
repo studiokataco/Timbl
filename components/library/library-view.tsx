@@ -4,13 +4,15 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import {
+  BookOpen,
   Calendar as CalendarIcon,
   Image as ImageIcon,
-  Sparkles,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/shared/empty-state"
+import { Stagger, StaggerItem } from "@/components/shared/motion"
 import {
   Dialog,
   DialogContent,
@@ -73,28 +75,23 @@ export function LibraryView({ templates, categories, ctas }: Props) {
 
   if (templates.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border p-12 text-center">
-        <Sparkles
-          aria-hidden
-          className="size-8 mx-auto mb-3 text-muted-foreground"
-        />
-        <h2 className="font-medium mb-1">No templates yet</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Save a finished post as a template from the composer to start your
-          library.
-        </p>
-      </div>
+      <EmptyState
+        icon={BookOpen}
+        title="No templates yet"
+        body="Save a finished post as a template from the composer kebab — handy for recurring series like Pick of the Week or Meet the Team."
+        size="lg"
+      />
     )
   }
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {templates.map((t) => {
           const cat = t.categoryId ? categoryById.get(t.categoryId) : null
           const cta = t.defaultCtaId ? ctaById.get(t.defaultCtaId) : null
           return (
-            <div
+            <StaggerItem
               key={t.id}
               className="rounded-lg border border-border bg-background overflow-hidden flex flex-col hover:shadow-sm transition-shadow"
             >
@@ -154,10 +151,10 @@ export function LibraryView({ templates, categories, ctas }: Props) {
                   </Button>
                 </div>
               </div>
-            </div>
+            </StaggerItem>
           )
         })}
-      </div>
+      </Stagger>
 
       <Dialog
         open={!!pickerFor}

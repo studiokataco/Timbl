@@ -22,8 +22,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Social Media Planner",
-  description: "Calendar-first social media planning for the SAFE Foundation team.",
+  title: {
+    default: "Social planner — SAFE",
+    template: "%s · Social planner",
+  },
+  description:
+    "Calendar-first social media planning for the SAFE Foundation team.",
+  applicationName: "Social planner",
 }
 
 export default function RootLayout({

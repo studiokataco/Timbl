@@ -4,18 +4,38 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { Category, Post, User } from "@/lib/schemas"
+import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
+
+const STATUSES: PostStatus[] = [
+  "idea",
+  "brief",
+  "researching",
+  "designing",
+  "review",
+  "scheduled",
+  "posted",
+  "missed",
+  "archived",
+]
 
 type Props = {
   post: WithId<Post>
   category: WithId<Category> | undefined
   assignee: WithId<User> | undefined
   onClick: () => void
+  onStatusChange?: (status: PostStatus) => void
   isDragging?: boolean
 }
 
-export function KanbanCard({ post, category, assignee, onClick, isDragging }: Props) {
+export function KanbanCard({
+  post,
+  category,
+  assignee,
+  onClick,
+  onStatusChange,
+  isDragging,
+}: Props) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: post.id })
 
@@ -31,7 +51,7 @@ export function KanbanCard({ post, category, assignee, onClick, isDragging }: Pr
       {...attributes}
       {...listeners}
       className={cn(
-        "bg-background border border-border rounded-md p-2.5 cursor-grab active:cursor-grabbing",
+        "bg-background border border-border rounded-md p-2.5 md:cursor-grab md:active:cursor-grabbing",
         "hover:shadow-sm transition-shadow select-none",
         isDragging && "opacity-40",
       )}
@@ -65,6 +85,31 @@ export function KanbanCard({ post, category, assignee, onClick, isDragging }: Pr
           </span>
         )}
       </div>
+      {/*
+       * Mobile-only status changer. Drag-and-drop is fiddly on touch so we
+       * surface a native <select> that updates status in one tap. Hidden at
+       * md+ where DnD works well.
+       */}
+      {onStatusChange && (
+        <div className="md:hidden mt-2 pt-2 border-t border-border">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">
+            Move to
+          </label>
+          <select
+            value={post.status}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => onStatusChange(e.target.value as PostStatus)}
+            className="w-full text-xs rounded border border-border bg-background px-2 py-1 capitalize"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   )
 }

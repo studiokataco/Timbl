@@ -69,6 +69,7 @@ import { deletePost, updatePost } from "@/lib/actions/posts"
 import { fetchOgImage } from "@/lib/actions/assets"
 import { saveAsTemplate } from "@/lib/actions/templates"
 import { getNextStatuses } from "@/lib/post-status"
+import { recordRecentPost } from "@/components/shared/command-palette"
 import { HashtagInput } from "./hashtag-input"
 
 const POST_TYPE_OPTIONS: PostType[] = [
@@ -149,6 +150,7 @@ export function PostComposerSheet({
     lastSavedRef.current = JSON.stringify(post ?? {})
     setSaveState("idle")
     setThumbnail(null)
+    if (post?.id) recordRecentPost(post.id)
   }, [post])
 
   const setField = <K extends keyof Post>(key: K, value: Post[K] | undefined) =>

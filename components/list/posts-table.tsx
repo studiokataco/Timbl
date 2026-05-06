@@ -3,12 +3,13 @@
 import { useMemo, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { Download, ListChecks } from "lucide-react"
+import { Download, FilterX, ListChecks } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { EmptyState } from "@/components/shared/empty-state"
 import {
   Select,
   SelectContent,
@@ -270,8 +271,14 @@ export function PostsTable({ posts, categories, users }: Props) {
           <tbody>
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-8 text-center text-muted-foreground">
-                  No posts match these filters.
+                <td colSpan={9} className="p-6">
+                  <EmptyState
+                    icon={FilterX}
+                    title="No posts match these filters"
+                    body="Try clearing a filter, widening the date range, or adjusting your search term."
+                    size="sm"
+                    className="border-0 bg-transparent"
+                  />
                 </td>
               </tr>
             ) : (

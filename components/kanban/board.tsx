@@ -125,6 +125,18 @@ export function KanbanBoard({ posts, categories, users, campaigns }: Props) {
     }
   }
 
+  const onStatusChange = (post: WithId<Post>, next: PostStatus) => {
+    if (post.status === next) return
+    startTransition(async () => {
+      const res = await updatePost({ id: post.id, status: next })
+      if (!res.ok) toast.error(res.error ?? "Could not update status")
+      else {
+        toast.success(`Moved to ${next}`)
+        router.refresh()
+      }
+    })
+  }
+
   return (
     <>
       <div className="flex flex-wrap gap-2 mb-4">
@@ -169,6 +181,7 @@ export function KanbanBoard({ posts, categories, users, campaigns }: Props) {
                 categoryById={categoryById}
                 userById={userById}
                 onCardClick={openComposer}
+                onCardStatusChange={onStatusChange}
               />
             ))}
           </div>

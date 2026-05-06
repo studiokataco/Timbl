@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO, startOfISOWeek, getISOWeek } from "date-fns"
+import { CalendarRange } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/shared/empty-state"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Campaign, Category, Post, User } from "@/lib/schemas"
 import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
@@ -59,14 +61,12 @@ export function CampaignTimeline({ campaign, posts, categories, users }: Props) 
 
   if (posts.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border p-10 text-center">
-        <p className="text-sm text-muted-foreground">
-          No posts linked to this campaign yet.
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Open a post in the composer and assign it to this campaign.
-        </p>
-      </div>
+      <EmptyState
+        icon={CalendarRange}
+        title="No posts linked to this campaign yet"
+        body="Open any post in the composer's Brief tab and assign it to this campaign — it'll appear here grouped by week."
+        size="lg"
+      />
     )
   }
 

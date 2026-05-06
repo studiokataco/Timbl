@@ -3,10 +3,11 @@
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { CheckCircle2, Sparkles } from "lucide-react"
+import { CheckCircle2, Globe } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/shared/empty-state"
 import { promoteAwarenessDay } from "@/lib/actions/awareness"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category } from "@/lib/schemas"
@@ -33,12 +34,12 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
 
   if (days.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border p-12 text-center">
-        <Sparkles aria-hidden className="size-8 mx-auto mb-3 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          No awareness days in the next 90 days.
-        </p>
-      </div>
+      <EmptyState
+        icon={Globe}
+        title="No awareness days in the next 90 days"
+        body="Curated dates rotate annually. Check back closer to international observance weeks, or add your own to the calendar with quick add."
+        size="lg"
+      />
     )
   }
 

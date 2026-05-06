@@ -6,6 +6,7 @@ import interactionPlugin from "@fullcalendar/interaction"
 import listPlugin from "@fullcalendar/list"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { differenceInDays, format, parseISO } from "date-fns"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { renderToStaticMarkup } from "react-dom/server"
@@ -59,6 +60,8 @@ export function CalendarView({
   range,
 }: Props) {
   const queryClient = useQueryClient()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const calendarRef = useRef<FullCalendar | null>(null)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddDate, setQuickAddDate] = useState<Date | null>(null)
@@ -158,6 +161,27 @@ export function CalendarView({
       setComposerOpen(true)
     }
   }, [])
+
+  // Honour palette deep-links: /calendar?quickAdd=1 opens the dialog;
+  // /calendar?postId=... opens the composer for that post. Strip the param
+  // after consumption so refreshes don't re-trigger the action.
+  useEffect(() => {
+    const quickAdd = searchParams.get("quickAdd")
+    const postId = searchParams.get("postId")
+    if (!quickAdd && !postId) return
+    if (quickAdd) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQuickAddDate(null)
+      setQuickAddOpen(true)
+    }
+    if (postId) {
+      void openComposerById(postId)
+    }
+    const next = new URLSearchParams(searchParams.toString())
+    next.delete("quickAdd")
+    next.delete("postId")
+    router.replace(`/calendar${next.toString() ? `?${next}` : ""}`, { scroll: false })
+  }, [searchParams, router, openComposerById])
 
   return (
     <>

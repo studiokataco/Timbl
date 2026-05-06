@@ -3,10 +3,11 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { Pencil, Plus, Trash2 } from "lucide-react"
+import { Megaphone, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/shared/empty-state"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -140,9 +141,11 @@ export function CampaignManager({ campaigns }: Props) {
       </div>
 
       {campaigns.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-10 text-center">
-          <p className="text-sm text-muted-foreground">No campaigns yet.</p>
-        </div>
+        <EmptyState
+          icon={Megaphone}
+          title="No campaigns yet"
+          body="Click New campaign above to bundle posts into a themed series with a shared timeline."
+        />
       ) : (
         <div className="rounded-md border border-border overflow-hidden">
           <table className="w-full text-sm">
