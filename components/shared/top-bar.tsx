@@ -1,18 +1,14 @@
 "use client"
 
 import { Plus, Search } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { DEV_SESSION } from "@/lib/auth/dev-session"
 
-/*
- * Top bar for the (app) tree. Logo + view title left, primary "Quick add"
- * CTA centre-right, ⌘K hint, avatar right.
- *
- * onQuickAdd is wired from a parent so the calendar page can hand over the
- * dialog opener without prop-drilling through context.
- */
-export function TopBar({ onQuickAdd }: { onQuickAdd?: () => void }) {
+export function TopBar() {
+  const router = useRouter()
   const initials = DEV_SESSION.user.name
     .split(" ")
     .map((p) => p[0])
@@ -55,15 +51,17 @@ export function TopBar({ onQuickAdd }: { onQuickAdd?: () => void }) {
           </kbd>
         </button>
 
+        <ThemeToggle />
+
         <Button
-          onClick={onQuickAdd}
+          onClick={() => router.push("/calendar?quickAdd=1")}
           className="hidden sm:inline-flex"
         >
           <Plus aria-hidden className="size-4" />
           Quick add
         </Button>
         <Button
-          onClick={onQuickAdd}
+          onClick={() => router.push("/calendar?quickAdd=1")}
           size="icon"
           className="rounded-full sm:hidden"
           aria-label="Quick add"

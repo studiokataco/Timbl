@@ -40,7 +40,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${interSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="h-screen overflow-hidden flex flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <DevBanner />
           {children}

@@ -1,6 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { Copy } from "lucide-react"
+import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 
 /*
@@ -49,6 +51,12 @@ export function HashtagInput({
       .slice(0, 8)
   }, [suggestions, value, draft])
 
+  const copyHashtags = () => {
+    const text = value.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
+    void navigator.clipboard.writeText(text)
+    toast.success("Hashtags copied")
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap gap-1.5 rounded-md border border-input bg-background p-2 min-h-10">
@@ -84,6 +92,16 @@ export function HashtagInput({
           className="flex-1 min-w-[120px] bg-transparent outline-none text-sm"
         />
       </div>
+      {value.length > 0 && (
+        <button
+          type="button"
+          onClick={copyHashtags}
+          className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Copy aria-hidden className="size-3" />
+          Copy hashtags
+        </button>
+      )}
       {filteredSuggestions.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {filteredSuggestions.map((s) => (

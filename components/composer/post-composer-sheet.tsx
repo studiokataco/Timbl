@@ -278,12 +278,12 @@ export function PostComposerSheet({
         <div className="flex flex-col h-full">
           <SheetHeader className="px-6 py-5 border-b border-border">
             <div className="flex items-center justify-between gap-3">
-              <SheetTitle className="text-base font-medium">
+              <SheetTitle className="min-w-0 flex-1 text-base font-medium">
                 {post
                   ? `Edit post — ${format(date, "EEE d MMM")}`
                   : "Edit post"}
               </SheetTitle>
-              <div className="flex items-center gap-2">
+              <div className="shrink-0 flex items-center gap-3">
                 <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
                   {saveState === "saving" ? (
                     <>
@@ -362,7 +362,7 @@ export function PostComposerSheet({
                     <CalendarIcon aria-hidden className="size-4" />
                     {format(date, "EEE d MMM yyyy")}
                   </PopoverTrigger>
-                  <PopoverContent className="p-0" align="start">
+                  <PopoverContent className="w-80 p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={date}
@@ -483,7 +483,7 @@ export function PostComposerSheet({
                     value={draft.leadUserId ?? ""}
                     onValueChange={(v) => setField("leadUserId", v || undefined)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Pick lead" />
                     </SelectTrigger>
                     <SelectContent>
@@ -501,7 +501,7 @@ export function PostComposerSheet({
                     value={draft.assigneeId ?? ""}
                     onValueChange={(v) => setField("assigneeId", v || undefined)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Pick assignee" />
                     </SelectTrigger>
                     <SelectContent>

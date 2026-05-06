@@ -46,7 +46,7 @@ export function Sidebar() {
   return (
     <nav
       aria-label="Primary"
-      className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1"
+      className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1 overflow-y-auto"
     >
       {GROUPS.map((group, gi) => (
         <div

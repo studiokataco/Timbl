@@ -40,7 +40,7 @@ export function KanbanColumn({
   const subdued = status === "posted" || status === "missed" || status === "archived"
 
   return (
-    <div className="flex flex-col min-w-[220px] w-[220px] shrink-0">
+    <div className="flex flex-col min-w-[220px] w-[220px] shrink-0 min-h-full">
       <div className="flex items-center justify-between mb-2 px-0.5">
         <h3
           className={cn(
@@ -59,7 +59,7 @@ export function KanbanColumn({
         <div
           ref={setNodeRef}
           className={cn(
-            "flex flex-col gap-2 flex-1 rounded-lg p-2 min-h-[120px] transition-colors",
+            "flex flex-col gap-2 flex-1 rounded-lg p-2 transition-colors",
             isOver
               ? "bg-secondary/80 ring-1 ring-border"
               : subdued

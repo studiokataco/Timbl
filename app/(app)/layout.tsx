@@ -13,7 +13,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <QueryProvider>
       <div className="flex flex-1 min-h-0">
         <Sidebar />
-        <div className="flex flex-col flex-1 min-w-0">{children}</div>
+        <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">{children}</div>
       </div>
       <CommandPalette />
       <Onboarding />

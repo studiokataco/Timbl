@@ -5,7 +5,7 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import interactionPlugin from "@fullcalendar/interaction"
 import listPlugin from "@fullcalendar/list"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { differenceInDays, format, parseISO } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -116,27 +116,16 @@ export function CalendarView({
     return m
   }, [posts])
 
-  // For each calendar day, find the closest awareness day within ±3 days.
-  // Used to render a hint chip on empty cells. Key = YYYY-MM-DD; value = the
-  // single closest awareness day (already filtered to importance >= medium so
-  // we don't surface low-importance days as nudges).
+  // Hint chip map keyed by the awareness day's exact date only (not ±3 spread).
+  // When two awareness days share the same date, keep the higher-importance one.
   const awarenessHintByDate = useMemo(() => {
     const m = new Map<string, WithId<AwarenessDay>>()
     const significant = awarenessDays.filter((a) => a.importance !== "low")
+    const rank: Record<string, number> = { high: 2, medium: 1, low: 0 }
     for (const a of significant) {
-      const center = parseISO(a.date)
-      for (let offset = -3; offset <= 3; offset++) {
-        const d = new Date(center)
-        d.setDate(center.getDate() + offset)
-        const key = format(d, "yyyy-MM-dd")
-        const prev = m.get(key)
-        if (
-          !prev ||
-          Math.abs(differenceInDays(parseISO(a.date), d)) <
-            Math.abs(differenceInDays(parseISO(prev.date), d))
-        ) {
-          m.set(key, a)
-        }
+      const existing = m.get(a.date)
+      if (!existing || rank[a.importance] > rank[existing.importance]) {
+        m.set(a.date, a)
       }
     }
     return m
@@ -189,13 +178,10 @@ export function CalendarView({
 
   return (
     <>
-      <TopBar onQuickAdd={() => {
-        setQuickAddDate(null)
-        setQuickAddOpen(true)
-      }} />
+      <TopBar />
 
-      <div className="flex-1 flex min-h-0">
-        <main ref={mainRef} className="flex-1 min-w-0 px-6 sm:px-10 py-10 lg:py-14">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto px-6 sm:px-10 py-10 lg:py-14">
           <PageHeader
             title="This month"
             description={`${posts.length} ${posts.length === 1 ? "post" : "posts"} in view`}

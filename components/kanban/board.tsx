@@ -166,13 +166,13 @@ export function KanbanBoard({ posts, categories, users, campaigns }: Props) {
         />
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-4">
+      <div className="flex-1 overflow-x-auto pb-4 min-h-0">
         <DndContext
           sensors={sensors}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
         >
-          <div className="flex gap-3 min-w-max">
+          <div className="flex gap-3 min-w-max h-full">
             {COLUMNS.map((col) => (
               <KanbanColumn
                 key={col}
