@@ -31,7 +31,7 @@ export function Sidebar() {
   return (
     <nav
       aria-label="Primary"
-      className="hidden md:flex flex-col w-56 shrink-0 border-r border-border bg-secondary/40 px-3 py-4 gap-0.5"
+      className="hidden md:flex flex-col w-56 shrink-0 border-r border-border bg-background px-3 py-4 gap-0.5"
     >
       {ITEMS.map((item) => {
         const Icon = item.icon
@@ -42,10 +42,10 @@ export function Sidebar() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
               active
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                ? "bg-secondary text-foreground"
+                : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
             )}
           >
             <Icon aria-hidden className="size-4" />

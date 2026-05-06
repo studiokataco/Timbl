@@ -50,7 +50,7 @@ const BLANK: FormState = {
   status: "active",
 }
 
-const PRESET_COLORS = ["#E85D4A", "#3D7A5F", "#F4A261", "#8FB5A8", "#F6C244", "#9B8AC4"]
+const PRESET_COLORS = ["#fb923c", "#ec4899", "#8b5cf6", "#34d399", "#f59e0b", "#3b82f6"]
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
@@ -89,7 +89,7 @@ export function CampaignManager({ campaigns }: Props) {
   const validate = (): boolean => {
     const next: typeof errors = {}
     if (!form.name.trim()) next.name = "Name is required"
-    if (form.color && !HEX_RE.test(form.color)) next.color = "Must be a hex color like #E85D4A"
+    if (form.color && !HEX_RE.test(form.color)) next.color = "Must be a hex color like #fb923c"
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -269,7 +269,7 @@ export function CampaignManager({ campaigns }: Props) {
                 <Input
                   value={form.color}
                   onChange={(e) => setField("color", e.target.value)}
-                  placeholder="#E85D4A"
+                  placeholder="#fb923c"
                   className="w-28 font-mono text-xs"
                 />
               </div>

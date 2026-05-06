@@ -8,7 +8,7 @@
   --fc-neutral-bg-color: var(--color-secondary);
   --fc-today-bg-color: color-mix(
     in srgb,
-    var(--color-signature-coral) 6%,
+    var(--color-brand-accent) 5%,
     transparent
   );
   --fc-event-bg-color: transparent;
@@ -62,7 +62,7 @@
   text-decoration: none;
 }
 .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-  color: var(--color-signature-coral);
+  color: var(--color-brand-accent);
 }
 .fc .fc-event {
   padding: 0;
@@ -94,7 +94,7 @@
   color: var(--color-muted-foreground);
   background: color-mix(
     in srgb,
-    var(--color-signature-yellow, #f4d35e) 25%,
+    var(--color-badge-orange) 18%,
     transparent
   );
   border-radius: 0.25rem;

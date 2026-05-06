@@ -18,7 +18,7 @@ export async function seedSafeOrg() {
       id: SAFE_ORG_ID,
       slug: "safe-foundation",
       name: "SAFE Foundation",
-      primaryColor: "#aa2d00",
+      primaryColor: "#111111",
     }),
     { merge: true },
   )

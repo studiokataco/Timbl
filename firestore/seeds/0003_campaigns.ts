@@ -8,7 +8,7 @@ const campaigns = [
     slug: "20th-anniversary-ball",
     description:
       "Celebrating 20 years of SAFE Foundation — gala fundraiser and awareness campaign.",
-    color: "#E85D4A",
+    color: "#fb923c",
     startDate: "2026-06-01",
     endDate: "2026-09-30",
     status: "active",
@@ -18,7 +18,7 @@ const campaigns = [
     name: "Mental Health Awareness Week 2026",
     slug: "mental-health-awareness-week-2026",
     description: "Annual MHAW content series across all channels.",
-    color: "#3D7A5F",
+    color: "#10b981",
     startDate: "2026-05-11",
     endDate: "2026-05-17",
     status: "active",

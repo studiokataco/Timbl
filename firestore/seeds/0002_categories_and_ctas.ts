@@ -34,17 +34,18 @@ type CategorySeed = {
   displayOrder: number
 }
 
-// Colour assignments cycle through the DESIGN.md signature palette so
-// adjacent categories on the calendar are visually distinct.
+// Colour assignments cycle through the DESIGN.md badge-pastel palette
+// (Cal.com voice — orange / pink / violet / emerald + a small extended set
+// for visual distinction on the calendar grid).
 const SIG = {
-  coral: "#aa2d00",
-  forest: "#0a2e0e",
-  cream: "#f5e9d4",
-  peach: "#fcab79",
-  mint: "#a8d8c4",
-  yellow: "#f4d35e",
-  mustard: "#d9a441",
-  navy: "#1d1f25",
+  coral: "#fb923c",   // badge-orange
+  forest: "#10b981",  // success
+  cream: "#fde68a",   // amber-200, an extra warm pastel
+  peach: "#fbcfe8",   // pink-200, an extra soft pastel
+  mint: "#34d399",    // badge-emerald
+  yellow: "#f59e0b",  // warning
+  mustard: "#ec4899", // badge-pink
+  navy: "#8b5cf6",    // badge-violet
 }
 
 const CATEGORIES: CategorySeed[] = [

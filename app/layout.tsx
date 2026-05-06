@@ -1,23 +1,23 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { DevBanner } from "@/components/shared/dev-banner"
 import { ThemeProvider } from "@/components/shared/theme-provider"
 
 /*
- * DESIGN.md specifies Haas Grotesk as the primary typeface. Haas is proprietary,
- * so we substitute Geist Sans as the closest free analogue — both are humanist
- * sans-serifs in the Helvetica/Inter family. Swap in a licensed Haas variant
- * later if the studio acquires a foundry licence.
+ * Cal.com's brand voice splits into Cal Sans (custom display) + Inter (everything
+ * else). Cal Sans is proprietary; per DESIGN.md the recommended substitute is
+ * Inter at weight 600 with -0.04em tracking (applied via Tailwind's `tracking-tight`
+ * on display headings). JetBrains Mono is Cal's stated mono.
  */
-const geistSans = Geist({
+const interSans = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
 })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 })
 
@@ -38,7 +38,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${interSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

@@ -291,7 +291,7 @@ export function PostComposerSheet({
                       Saving…
                     </>
                   ) : saveState === "saved" ? (
-                    <span className="text-[var(--color-signature-forest)]">
+                    <span className="text-[var(--color-success)]">
                       Saved
                     </span>
                   ) : saveState === "error" ? (

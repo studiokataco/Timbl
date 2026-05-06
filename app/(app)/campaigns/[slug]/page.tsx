@@ -95,7 +95,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                   className="h-full rounded-full"
                   style={{
                     width: `${pct}%`,
-                    backgroundColor: campaign.color ?? "var(--color-signature-coral)",
+                    backgroundColor: campaign.color ?? "var(--color-foreground)",
                   }}
                 />
               </div>

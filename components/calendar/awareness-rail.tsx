@@ -93,7 +93,7 @@ export function CalendarAwarenessRail({
                   </div>
                   <div className="font-medium leading-snug">{d.name}</div>
                   {isPlanned ? (
-                    <span className="text-[var(--color-signature-forest)] text-[11px]">
+                    <span className="text-[var(--color-success)] text-[11px]">
                       ✓ planned
                     </span>
                   ) : (

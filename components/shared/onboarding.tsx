@@ -81,7 +81,7 @@ export function Onboarding() {
         <DialogHeader className="space-y-3">
           <div
             aria-hidden
-            className="size-10 rounded-full bg-[var(--color-signature-coral)]/10 flex items-center justify-center text-[var(--color-signature-coral)]"
+            className="size-10 rounded-full bg-secondary flex items-center justify-center text-foreground"
           >
             <Icon className="size-5" />
           </div>

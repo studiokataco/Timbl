@@ -88,7 +88,7 @@ export default async function CampaignsPage() {
                         className="h-full rounded-full transition-all"
                         style={{
                           width: `${pct}%`,
-                          backgroundColor: c.color ?? "var(--color-signature-coral)",
+                          backgroundColor: c.color ?? "var(--color-foreground)",
                         }}
                       />
                     </div>

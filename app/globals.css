@@ -5,19 +5,20 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Theme tokens are sourced from /DESIGN.md (Airtable design system, installed via getdesign).
+ * Theme tokens are sourced from /DESIGN.md (Cal.com design system, installed via getdesign).
  * shadcn/ui primitives are skinned through these CSS variables — do not hardcode colours
  * in components; reference the tokens below.
  *
- * Signature palette (--color-signature-*) is reserved for category pills, campaign chips,
- * and other Airtable-style coloured surfaces. Use Tailwind's arbitrary class syntax:
- *   bg-[var(--color-signature-coral)]
+ * Cal voice: white canvas (#ffffff), near-black ink (#111111) primary CTAs, a sparing blue
+ * brand-accent (#3b82f6), and a small pastel-badge palette (orange / pink / violet / emerald).
+ * The dark mode flips canvas to Cal's surface-dark (#101010) — a near-black close-the-page
+ * tone Cal uses for its footer.
  */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -49,127 +50,149 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
-  /* Airtable signature palette — used for category/campaign pills */
-  --color-signature-coral: var(--signature-coral);
-  --color-signature-forest: var(--signature-forest);
-  --color-signature-cream: var(--signature-cream);
-  --color-signature-peach: var(--signature-peach);
-  --color-signature-mint: var(--signature-mint);
-  --color-signature-yellow: var(--signature-yellow);
-  --color-signature-mustard: var(--signature-mustard);
+  /* Cal palette */
+  --color-brand-accent: var(--brand-accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-badge-orange: var(--badge-orange);
+  --color-badge-pink: var(--badge-pink);
+  --color-badge-violet: var(--badge-violet);
+  --color-badge-emerald: var(--badge-emerald);
+  --color-surface-card: var(--surface-card);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-dark: var(--surface-dark);
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.5);
+  --radius-xl: calc(var(--radius) * 2);
+  --radius-2xl: calc(var(--radius) * 2.5);
+  --radius-3xl: calc(var(--radius) * 3);
+  --radius-4xl: calc(var(--radius) * 3.5);
 }
 
 /*
- * Light mode — DESIGN.md "canvas" foundation.
- *   primary CTA is near-black (#181d26)
- *   surfaces sit on warm-neutral white
- *   accent / "now" state pulls from signature-coral
+ * Light mode — Cal "canvas" foundation.
+ *   primary CTA is near-black (#111111)
+ *   surfaces sit on pure white with light-gray cards (#f5f5f5)
+ *   accent pulls from brand-accent blue (#3b82f6) — used sparingly
  */
 :root {
-  --background: #ffffff;             /* DESIGN.md: canvas */
-  --foreground: #181d26;             /* DESIGN.md: ink */
+  --background: #ffffff;             /* canvas */
+  --foreground: #111111;             /* ink */
   --card: #ffffff;
-  --card-foreground: #181d26;
+  --card-foreground: #111111;
   --popover: #ffffff;
-  --popover-foreground: #181d26;
+  --popover-foreground: #111111;
 
-  --primary: #181d26;                /* DESIGN.md: primary (near-black) */
-  --primary-foreground: #ffffff;     /* DESIGN.md: on-primary */
+  --primary: #111111;                /* primary */
+  --primary-foreground: #ffffff;     /* on-primary */
 
-  --secondary: #f8fafc;              /* DESIGN.md: surface-soft */
-  --secondary-foreground: #181d26;
+  --secondary: #f5f5f5;              /* surface-card */
+  --secondary-foreground: #111111;
 
-  --muted: #f8fafc;
-  --muted-foreground: #41454d;       /* DESIGN.md: muted */
+  --muted: #f8f9fa;                  /* surface-soft */
+  --muted-foreground: #6b7280;       /* muted */
 
-  --accent: #aa2d00;                 /* DESIGN.md: signature-coral */
+  --accent: #3b82f6;                 /* brand-accent */
   --accent-foreground: #ffffff;
 
-  --destructive: #aa2d00;            /* coral as destructive — Airtable convention */
+  --destructive: #ef4444;            /* error */
 
-  --border: #dddddd;                 /* DESIGN.md: hairline */
-  --input: #dddddd;
-  --ring: #aa2d00;                   /* coral focus ring */
+  --border: #e5e7eb;                 /* hairline */
+  --input: #e5e7eb;
+  --ring: #3b82f6;                   /* brand-accent ring */
 
-  --chart-1: #aa2d00;                /* signature-coral */
-  --chart-2: #0a2e0e;                /* signature-forest */
-  --chart-3: #fcab79;                /* signature-peach */
-  --chart-4: #f4d35e;                /* signature-yellow */
-  --chart-5: #a8d8c4;                /* signature-mint */
+  --chart-1: #fb923c;                /* badge-orange */
+  --chart-2: #ec4899;                /* badge-pink */
+  --chart-3: #8b5cf6;                /* badge-violet */
+  --chart-4: #34d399;                /* badge-emerald */
+  --chart-5: #3b82f6;                /* brand-accent */
 
-  --radius: 0.5rem;                  /* shadcn default reduced — Airtable favours subtle corners */
+  --radius: 0.5rem;                  /* 8px — buttons + inputs (Cal {rounded.md}) */
 
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #181d26;
-  --sidebar-primary: #181d26;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #374151;     /* body */
+  --sidebar-primary: #111111;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ffffff;
-  --sidebar-accent-foreground: #181d26;
-  --sidebar-border: #dddddd;
-  --sidebar-ring: #aa2d00;
+  --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #3b82f6;
 
-  /* Signature palette (literals — referenced by both modes) */
-  --signature-coral: #aa2d00;
-  --signature-forest: #0a2e0e;
-  --signature-cream: #f5e9d4;
-  --signature-peach: #fcab79;
-  --signature-mint: #a8d8c4;
-  --signature-yellow: #f4d35e;
-  --signature-mustard: #d9a441;
+  /* Cal palette — referenced by both modes */
+  --brand-accent: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --badge-orange: #fb923c;
+  --badge-pink: #ec4899;
+  --badge-violet: #8b5cf6;
+  --badge-emerald: #34d399;
+  --surface-soft: #f8f9fa;
+  --surface-card: #f5f5f5;
+  --surface-strong: #e5e7eb;
+  --surface-dark: #101010;
 }
 
 /*
- * Dark mode — DESIGN.md "surface-dark" foundation.
- * Signature palette stays the same: pills are luminous against the dark canvas.
+ * Dark mode — Cal "surface-dark" foundation.
+ * Cards lift slightly to surface-dark-elevated (#1a1a1a). Pastels stay the
+ * same — they're luminous on near-black just as on white.
  */
 .dark {
-  --background: #181d26;             /* DESIGN.md: surface-dark */
-  --foreground: #ffffff;             /* DESIGN.md: on-dark */
-  --card: #1d1f25;                   /* DESIGN.md: surface-dark-elevated */
+  --background: #101010;             /* surface-dark */
+  --foreground: #ffffff;             /* on-dark */
+  --card: #1a1a1a;                   /* surface-dark-elevated */
   --card-foreground: #ffffff;
-  --popover: #1d1f25;
+  --popover: #1a1a1a;
   --popover-foreground: #ffffff;
 
   --primary: #ffffff;
-  --primary-foreground: #181d26;
+  --primary-foreground: #111111;
 
-  --secondary: #1d1f25;
+  --secondary: #1a1a1a;
   --secondary-foreground: #ffffff;
 
-  --muted: #1d1f25;
-  --muted-foreground: #9297a0;       /* DESIGN.md: border-strong, used as muted text in dark */
+  --muted: #1a1a1a;
+  --muted-foreground: #a1a1aa;       /* on-dark-soft */
 
-  --accent: #fcab79;                 /* signature-peach reads better than coral on dark */
-  --accent-foreground: #181d26;
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
 
-  --destructive: #aa2d00;
+  --destructive: #ef4444;
 
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: #fcab79;
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: #3b82f6;
 
-  --chart-1: #fcab79;
-  --chart-2: #a8d8c4;
-  --chart-3: #f4d35e;
-  --chart-4: #d9a441;
-  --chart-5: #f5e9d4;
+  --chart-1: #fb923c;
+  --chart-2: #ec4899;
+  --chart-3: #8b5cf6;
+  --chart-4: #34d399;
+  --chart-5: #3b82f6;
 
-  --sidebar: #1d1f25;
-  --sidebar-foreground: #ffffff;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #a1a1aa;
   --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #181d26;
-  --sidebar-accent: #181d26;
+  --sidebar-primary-foreground: #111111;
+  --sidebar-accent: #101010;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: #fcab79;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #3b82f6;
+
+  /* Cal palette stays consistent across modes */
+  --brand-accent: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --badge-orange: #fb923c;
+  --badge-pink: #ec4899;
+  --badge-violet: #8b5cf6;
+  --badge-emerald: #34d399;
+  --surface-soft: #1a1a1a;
+  --surface-card: #1a1a1a;
+  --surface-strong: oklch(1 0 0 / 14%);
+  --surface-dark: #101010;
 }
 
 @layer base {

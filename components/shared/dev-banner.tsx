@@ -14,7 +14,7 @@ export function DevBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="border-b border-border bg-[var(--color-signature-cream)] text-foreground text-xs px-4 py-1.5 flex items-center justify-center gap-2"
+      className="border-b border-border bg-secondary text-muted-foreground text-xs px-4 py-1.5 flex items-center justify-center gap-2"
     >
       <span aria-hidden>🛠</span>
       <span>

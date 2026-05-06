@@ -28,14 +28,14 @@ export function TopBar({ onQuickAdd }: { onQuickAdd?: () => void }) {
           className="flex items-baseline gap-1.5 group"
           aria-label="Social planner home"
         >
-          <span className="text-base font-semibold tracking-tight leading-none">
-            Social planner
+          <span className="text-[15px] font-semibold tracking-tight leading-none text-foreground">
+            social planner
           </span>
           <span
             aria-hidden
-            className="size-1.5 rounded-full bg-[var(--color-signature-coral)] translate-y-[-2px] group-hover:scale-125 transition-transform"
+            className="size-1 rounded-full bg-foreground translate-y-[-3px] group-hover:bg-[var(--color-brand-accent)] transition-colors"
           />
-          <span className="text-xs font-medium text-muted-foreground leading-none">
+          <span className="text-xs font-medium text-muted-foreground leading-none tracking-tight">
             SAFE
           </span>
         </a>

@@ -117,7 +117,7 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
                 </td>
                 <td className="p-2.5 text-right">
                   {planned ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-signature-forest)]">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-success)]">
                       <CheckCircle2 aria-hidden className="size-3.5" />
                       Planned
                     </span>
