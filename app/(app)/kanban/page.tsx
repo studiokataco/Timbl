@@ -10,18 +10,16 @@ import {
   fetchCategories,
   fetchUsers,
 } from "@/lib/queries/posts.server"
-import { fetchCampaigns } from "@/lib/queries/campaigns.server"
 
 export default async function KanbanPage() {
   const today = new Date()
   const start = format(subYears(today, 1), "yyyy-MM-dd")
   const end = format(addDays(today, 90), "yyyy-MM-dd")
 
-  const [posts, categories, users, campaigns] = await Promise.all([
+  const [posts, categories, users] = await Promise.all([
     fetchPostsInRange(start, end),
     fetchCategories(),
     fetchUsers(),
-    fetchCampaigns(),
   ])
 
   return (
@@ -33,12 +31,7 @@ export default async function KanbanPage() {
           description="Drag cards between columns to move posts through the workflow."
           className="mb-8"
         />
-        <KanbanBoard
-          posts={posts}
-          categories={categories}
-          users={users}
-          campaigns={campaigns}
-        />
+        <KanbanBoard posts={posts} categories={categories} users={users} />
       </div>
     </>
   )

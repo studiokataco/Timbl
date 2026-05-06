@@ -20,8 +20,7 @@ import {
 import { bulkSetStatus } from "@/lib/actions/posts-bulk"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
-import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
-import { fetchPostAction } from "@/lib/actions/posts"
+import { useDialogs } from "@/components/shared/dialogs-provider"
 
 const ALL_STATUSES: PostStatus[] = [
   "idea",
@@ -49,10 +48,9 @@ type Props = {
 export function PostsTable({ posts, categories, users }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { openComposer } = useDialogs()
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [composerOpen, setComposerOpen] = useState(false)
-  const [composerPost, setComposerPost] = useState<WithId<Post> | null>(null)
 
   const status = (searchParams.get("status") ?? "").split(",").filter(Boolean) as PostStatus[]
   const category = (searchParams.get("category") ?? "").split(",").filter(Boolean)
@@ -335,13 +333,7 @@ export function PostsTable({ posts, categories, users }: Props) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={async () => {
-                          const fresh = await fetchPostAction(p.id)
-                          if (fresh) {
-                            setComposerPost(fresh)
-                            setComposerOpen(true)
-                          }
-                        }}
+                        onClick={() => openComposer(p.id)}
                       >
                         Open
                       </Button>
@@ -380,16 +372,6 @@ export function PostsTable({ posts, categories, users }: Props) {
         </div>
       ) : null}
 
-      <PostComposerSheet
-        open={composerOpen}
-        onOpenChange={setComposerOpen}
-        post={composerPost}
-        categories={categories}
-        campaigns={[]}
-        ctas={[]}
-        users={users}
-        onChanged={() => router.refresh()}
-      />
     </>
   )
 }

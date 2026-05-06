@@ -59,12 +59,14 @@ import type {
   Category,
   ChannelStatus,
   Cta,
+  KanbanColumn,
   Post,
   PostStatus,
   PostType,
   TemplateCadence,
   User,
 } from "@/lib/schemas"
+import { LEGACY_POST_STATUSES } from "@/lib/schemas"
 import { deletePost, updatePost } from "@/lib/actions/posts"
 import { fetchOgImage } from "@/lib/actions/assets"
 import { saveAsTemplate } from "@/lib/actions/templates"
@@ -103,6 +105,7 @@ type Props = {
   campaigns: WithId<Campaign>[]
   ctas: WithId<Cta>[]
   users: WithId<User>[]
+  kanbanColumns?: WithId<KanbanColumn>[]
   hashtagSuggestions?: string[]
   onChanged?: () => void
 }
@@ -125,6 +128,7 @@ export function PostComposerSheet({
   campaigns,
   ctas,
   users,
+  kanbanColumns,
   hashtagSuggestions = [],
   onChanged,
 }: Props) {
@@ -266,7 +270,21 @@ export function PostComposerSheet({
   }
 
   const currentStatus = (draft.status ?? "idea") as PostStatus
-  const validStatuses = useMemo(() => getNextStatuses(currentStatus), [currentStatus])
+  const columnIds = useMemo(
+    () =>
+      kanbanColumns && kanbanColumns.length > 0
+        ? kanbanColumns.map((c) => c.id)
+        : (LEGACY_POST_STATUSES as readonly string[]),
+    [kanbanColumns],
+  )
+  const statusLabelById = useMemo(
+    () => new Map((kanbanColumns ?? []).map((c) => [c.id, c.label])),
+    [kanbanColumns],
+  )
+  const validStatuses = useMemo(
+    () => getNextStatuses(currentStatus, columnIds),
+    [currentStatus, columnIds],
+  )
   const allHashtagSuggestions = useMemo(() => {
     const cat = categories.find((c) => c.id === draft.categoryId)
     return Array.from(new Set([...(cat?.defaultHashtags ?? []), ...hashtagSuggestions]))
@@ -537,13 +555,15 @@ export function PostComposerSheet({
                   <SelectContent>
                     {validStatuses.map((s) => (
                       <SelectItem key={s} value={s}>
-                        {s}
+                        <span className="capitalize">
+                          {statusLabelById.get(s) ?? s}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Showing valid next states only.
+                  Move the post to any column.
                 </p>
               </div>
             </TabsContent>

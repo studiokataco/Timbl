@@ -1,14 +1,14 @@
 "use client"
 
 import { Plus, Search } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
+import { useDialogs } from "@/components/shared/dialogs-provider"
 import { DEV_SESSION } from "@/lib/auth/dev-session"
 
 export function TopBar() {
-  const router = useRouter()
+  const { openQuickAdd } = useDialogs()
   const initials = DEV_SESSION.user.name
     .split(" ")
     .map((p) => p[0])
@@ -54,14 +54,14 @@ export function TopBar() {
         <ThemeToggle />
 
         <Button
-          onClick={() => router.push("/calendar?quickAdd=1")}
+          onClick={() => openQuickAdd({ source: "topbar" })}
           className="hidden sm:inline-flex"
         >
           <Plus aria-hidden className="size-4" />
           Quick add
         </Button>
         <Button
-          onClick={() => router.push("/calendar?quickAdd=1")}
+          onClick={() => openQuickAdd({ source: "topbar" })}
           size="icon"
           className="rounded-full sm:hidden"
           aria-label="Quick add"

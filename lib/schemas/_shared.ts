@@ -5,7 +5,16 @@ import { z } from "zod"
  * actively check string membership.
  */
 
-export const postStatus = z.enum([
+/*
+ * post.status used to be a closed enum. It's now a free string referring to
+ * a `kanbanColumns` document id, so users can add custom columns. The legacy
+ * 9 values are kept as `LEGACY_POST_STATUSES` for components that need a
+ * fallback before column data has loaded (e.g. status glyphs).
+ */
+export const postStatus = z.string().min(1)
+export type PostStatus = z.infer<typeof postStatus>
+
+export const LEGACY_POST_STATUSES = [
   "idea",
   "brief",
   "researching",
@@ -15,8 +24,8 @@ export const postStatus = z.enum([
   "posted",
   "missed",
   "archived",
-])
-export type PostStatus = z.infer<typeof postStatus>
+] as const
+export type LegacyPostStatus = (typeof LEGACY_POST_STATUSES)[number]
 
 export const postType = z.enum(["grid", "carousel", "reel", "story", "video"])
 export type PostType = z.infer<typeof postType>

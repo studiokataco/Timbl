@@ -2,7 +2,7 @@
 
 import { differenceInCalendarDays } from "date-fns"
 import { cn } from "@/lib/utils"
-import type { Category, Post, PostStatus, User } from "@/lib/schemas"
+import type { Category, Post, User } from "@/lib/schemas"
 
 /*
  * Compact post chip shown inside calendar cells. Status indicator uses
@@ -13,7 +13,7 @@ import type { Category, Post, PostStatus, User } from "@/lib/schemas"
  *   ⨯ missed
  */
 
-const STATUS_GLYPH: Record<PostStatus, string> = {
+const STATUS_GLYPH: Record<string, string> = {
   idea: "○",
   brief: "○",
   researching: "◐",
@@ -60,7 +60,7 @@ export function PostChip({
       style={{ backgroundColor: bg, color: fg }}
     >
       <span aria-hidden className="font-bold">
-        {STATUS_GLYPH[post.status]}
+        {STATUS_GLYPH[post.status] ?? "·"}
       </span>
       <span className="truncate flex-1">{post.brief ?? "Untitled"}</span>
       {initials ? (

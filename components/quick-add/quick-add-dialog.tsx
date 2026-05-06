@@ -37,6 +37,12 @@ type Props = {
   ctas: WithId<Cta>[]
   users: WithId<User>[]
   onCreated?: () => void
+  /**
+   * Fires after a successful Save (NOT Save & add details). The dialogs
+   * provider uses this to optionally navigate to /calendar when Quick add
+   * was launched from the TopBar on a non-calendar route.
+   */
+  onSaved?: (postId: string) => void
   onCreateAndOpenComposer?: (postId: string) => void
 }
 
@@ -58,6 +64,7 @@ export function QuickAddDialog({
   ctas,
   users,
   onCreated,
+  onSaved,
   onCreateAndOpenComposer,
 }: Props) {
   const [date, setDate] = useState<Date>(initialDate ?? new Date())
@@ -110,7 +117,11 @@ export function QuickAddDialog({
           },
         },
       })
-      if (openComposer) onCreateAndOpenComposer?.(newId)
+      if (openComposer) {
+        onCreateAndOpenComposer?.(newId)
+      } else {
+        onSaved?.(newId)
+      }
     })
   }
 

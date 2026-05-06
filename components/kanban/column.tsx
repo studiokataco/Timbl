@@ -40,7 +40,7 @@ export function KanbanColumn({
   const subdued = status === "posted" || status === "missed" || status === "archived"
 
   return (
-    <div className="flex flex-col min-w-[220px] w-[220px] shrink-0 min-h-full">
+    <div className="flex flex-col flex-1 min-w-[200px] min-h-full">
       <div className="flex items-center justify-between mb-2 px-0.5">
         <h3
           className={cn(

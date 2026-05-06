@@ -3,6 +3,7 @@ import { seedCategoriesAndCtas } from "./0002_categories_and_ctas"
 import { seed0003Campaigns } from "./0003_campaigns"
 import { seed0004Templates } from "./0004_templates"
 import { seed0005AwarenessDays } from "./0005_awareness_days"
+import { seed0006KanbanColumns } from "./0006_kanban_columns"
 
 /*
  * Seed runner. Each seed is independently idempotent — safe to re-run.
@@ -17,6 +18,7 @@ async function main() {
   await seed0003Campaigns()
   await seed0004Templates()
   await seed0005AwarenessDays()
+  await seed0006KanbanColumns()
   console.log("\nseed complete.")
 }
 

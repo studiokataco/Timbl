@@ -44,7 +44,7 @@ export default async function CampaignsPage() {
             size="lg"
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
             {campaigns.map((c) => {
               const pct =
                 c.postCount > 0
@@ -54,7 +54,7 @@ export default async function CampaignsPage() {
                 <Link
                   key={c.id}
                   href={`/campaigns/${c.slug ?? c.id}`}
-                  className="rounded-lg border border-border bg-background p-6 hover:shadow-sm transition-shadow block"
+                  className="rounded-lg border border-border bg-background p-6 hover:shadow-sm transition-shadow flex flex-col h-full"
                 >
                   <div className="flex items-start gap-2 mb-2">
                     <span
@@ -64,36 +64,34 @@ export default async function CampaignsPage() {
                     />
                     <h2 className="font-medium leading-snug">{c.name}</h2>
                   </div>
-                  {c.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                      {c.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-                    {c.startDate && (
-                      <span>{format(parseISO(c.startDate), "d MMM yyyy")}</span>
-                    )}
-                    {c.startDate && c.endDate && <span>→</span>}
-                    {c.endDate && (
-                      <span>{format(parseISO(c.endDate), "d MMM yyyy")}</span>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{c.postCount} posts</span>
-                      <span className="text-muted-foreground">{pct}% ready</span>
+                  <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2.5em] mb-3">
+                    {c.description ?? ""}
+                  </p>
+                  <div className="mt-auto space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {c.startDate && (
+                        <span>{format(parseISO(c.startDate), "d MMM yyyy")}</span>
+                      )}
+                      {c.startDate && c.endDate && <span>→</span>}
+                      {c.endDate && (
+                        <span>{format(parseISO(c.endDate), "d MMM yyyy")}</span>
+                      )}
                     </div>
-                    <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: c.color ?? "var(--color-foreground)",
-                        }}
-                      />
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{c.postCount} posts</span>
+                        <span className="text-muted-foreground">{pct}% ready</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: c.color ?? "var(--color-foreground)",
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-3">
                     <Badge
                       variant="secondary"
                       className="text-xs font-normal capitalize"

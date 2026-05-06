@@ -21,10 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { updatePost } from "@/lib/actions/posts"
-import { fetchPostAction } from "@/lib/actions/posts"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { Campaign, Category, Post, PostStatus, User } from "@/lib/schemas"
-import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
+import type { Category, Post, PostStatus, User } from "@/lib/schemas"
+import { useDialogs } from "@/components/shared/dialogs-provider"
 import { KanbanCard } from "./card"
 import { KanbanColumn } from "./column"
 
@@ -42,15 +41,14 @@ type Props = {
   posts: WithId<Post>[]
   categories: WithId<Category>[]
   users: WithId<User>[]
-  campaigns: WithId<Campaign>[]
 }
 
-export function KanbanBoard({ posts, categories, users, campaigns }: Props) {
+export function KanbanBoard({ posts, categories, users }: Props) {
   const router = useRouter()
+  const { openComposerWithPost, data } = useDialogs()
+  const campaigns = data.campaigns
   const [, startTransition] = useTransition()
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [composerOpen, setComposerOpen] = useState(false)
-  const [composerPost, setComposerPost] = useState<WithId<Post> | null>(null)
   const [filterCategory, setFilterCategory] = useState("")
   const [filterAssignee, setFilterAssignee] = useState("")
   const [filterCampaign, setFilterCampaign] = useState("")
@@ -117,12 +115,8 @@ export function KanbanBoard({ posts, categories, users, campaigns }: Props) {
     })
   }
 
-  const openComposer = async (p: WithId<Post>) => {
-    const fresh = await fetchPostAction(p.id)
-    if (fresh) {
-      setComposerPost(fresh)
-      setComposerOpen(true)
-    }
+  const openComposer = (p: WithId<Post>) => {
+    openComposerWithPost(p)
   }
 
   const onStatusChange = (post: WithId<Post>, next: PostStatus) => {
@@ -172,7 +166,7 @@ export function KanbanBoard({ posts, categories, users, campaigns }: Props) {
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
         >
-          <div className="flex gap-3 min-w-max h-full">
+          <div className="flex gap-3 h-full w-full">
             {COLUMNS.map((col) => (
               <KanbanColumn
                 key={col}
@@ -200,16 +194,6 @@ export function KanbanBoard({ posts, categories, users, campaigns }: Props) {
         </DndContext>
       </div>
 
-      <PostComposerSheet
-        open={composerOpen}
-        onOpenChange={setComposerOpen}
-        post={composerPost}
-        categories={categories}
-        campaigns={campaigns}
-        ctas={[]}
-        users={users}
-        onChanged={() => router.refresh()}
-      />
     </>
   )
 }

@@ -6,32 +6,27 @@ import interactionPlugin from "@fullcalendar/interaction"
 import listPlugin from "@fullcalendar/list"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { format, parseISO } from "date-fns"
-import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { renderToStaticMarkup } from "react-dom/server"
-import { fetchPostAction, updatePost } from "@/lib/actions/posts"
+import { updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { AwarenessDay, Campaign, Category, Cta, Post, User } from "@/lib/schemas"
+import type { AwarenessDay, Category, Post, User } from "@/lib/schemas"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
 import { PostChip } from "./post-chip"
 import { CalendarAwarenessRail } from "./awareness-rail"
 import { TopBar } from "@/components/shared/top-bar"
 import { PageHeader } from "@/components/shared/page-header"
 import { useGridReveal } from "@/components/shared/motion-cal"
-import { QuickAddDialog } from "@/components/quick-add/quick-add-dialog"
-import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
+import { useDialogs } from "@/components/shared/dialogs-provider"
 import "./calendar-styles.css"
 
 type Props = {
   orgId: string
   initialPosts: WithId<Post>[]
   categories: WithId<Category>[]
-  ctas: WithId<Cta>[]
   users: WithId<User>[]
-  campaigns: WithId<Campaign>[]
-  hashtagSuggestions: string[]
   awarenessDays: WithId<AwarenessDay>[]
   plannedAwarenessIds: string[]
   suggestions: Suggestion[]
@@ -52,25 +47,17 @@ export function CalendarView({
   orgId,
   initialPosts,
   categories,
-  ctas,
   users,
-  campaigns,
-  hashtagSuggestions,
   awarenessDays,
   plannedAwarenessIds,
   suggestions,
   range,
 }: Props) {
   const queryClient = useQueryClient()
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const { openQuickAdd, openComposerWithPost } = useDialogs()
   const calendarRef = useRef<FullCalendar | null>(null)
   const mainRef = useRef<HTMLElement | null>(null)
   useGridReveal(mainRef)
-  const [quickAddOpen, setQuickAddOpen] = useState(false)
-  const [quickAddDate, setQuickAddDate] = useState<Date | null>(null)
-  const [composerOpen, setComposerOpen] = useState(false)
-  const [composerPost, setComposerPost] = useState<WithId<Post> | null>(null)
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -147,35 +134,6 @@ export function CalendarView({
     return () => window.removeEventListener("posts:changed", handler)
   }, [])
 
-  const openComposerById = useCallback(async (id: string) => {
-    const post = await fetchPostAction(id)
-    if (post) {
-      setComposerPost(post)
-      setComposerOpen(true)
-    }
-  }, [])
-
-  // Honour palette deep-links: /calendar?quickAdd=1 opens the dialog;
-  // /calendar?postId=... opens the composer for that post. Strip the param
-  // after consumption so refreshes don't re-trigger the action.
-  useEffect(() => {
-    const quickAdd = searchParams.get("quickAdd")
-    const postId = searchParams.get("postId")
-    if (!quickAdd && !postId) return
-    if (quickAdd) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setQuickAddDate(null)
-      setQuickAddOpen(true)
-    }
-    if (postId) {
-      void openComposerById(postId)
-    }
-    const next = new URLSearchParams(searchParams.toString())
-    next.delete("quickAdd")
-    next.delete("postId")
-    router.replace(`/calendar${next.toString() ? `?${next}` : ""}`, { scroll: false })
-  }, [searchParams, router, openComposerById])
-
   return (
     <>
       <TopBar />
@@ -243,12 +201,10 @@ export function CalendarView({
             }}
             eventClick={(arg) => {
               const post = arg.event.extendedProps.post as WithId<Post>
-              setComposerPost(post)
-              setComposerOpen(true)
+              openComposerWithPost(post)
             }}
             dateClick={(arg) => {
-              setQuickAddDate(arg.date)
-              setQuickAddOpen(true)
+              openQuickAdd({ initialDate: arg.date, source: "calendar-cell" })
             }}
             eventDrop={async (arg) => {
               const post = arg.event.extendedProps.post as WithId<Post>
@@ -274,31 +230,6 @@ export function CalendarView({
           suggestions={suggestions}
         />
       </div>
-
-      <QuickAddDialog
-        open={quickAddOpen}
-        onOpenChange={setQuickAddOpen}
-        initialDate={quickAddDate}
-        categories={categories}
-        ctas={ctas}
-        users={users}
-        onCreated={refresh}
-        onCreateAndOpenComposer={(id) => {
-          void openComposerById(id)
-        }}
-      />
-
-      <PostComposerSheet
-        open={composerOpen}
-        onOpenChange={setComposerOpen}
-        post={composerPost}
-        categories={categories}
-        campaigns={campaigns}
-        ctas={ctas}
-        users={users}
-        hashtagSuggestions={hashtagSuggestions}
-        onChanged={refresh}
-      />
     </>
   )
 }

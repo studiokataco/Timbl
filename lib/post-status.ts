@@ -1,21 +1,14 @@
 import type { PostStatus } from "@/lib/schemas"
 
 /*
- * Status transition map. Composer renders only valid next states (current +
- * up to 3 forward) to keep the dropdown short and meaningful.
+ * With custom kanban columns, status is a free string. The composer's status
+ * select shows every column id (including the current one) so users can move
+ * a post anywhere — the rigid enum-era state machine is gone.
  */
-const TRANSITIONS: Record<PostStatus, PostStatus[]> = {
-  idea: ["brief", "researching", "archived"],
-  brief: ["researching", "designing", "archived"],
-  researching: ["designing", "review", "archived"],
-  designing: ["review", "scheduled", "archived"],
-  review: ["scheduled", "designing", "archived"],
-  scheduled: ["posted", "missed", "designing"],
-  posted: ["archived"],
-  missed: ["scheduled", "archived"],
-  archived: ["idea"],
-}
-
-export function getNextStatuses(current: PostStatus): PostStatus[] {
-  return [current, ...TRANSITIONS[current]]
+export function getNextStatuses(
+  current: PostStatus,
+  columnIds: readonly string[],
+): PostStatus[] {
+  const set = new Set<PostStatus>([current, ...columnIds])
+  return Array.from(set)
 }

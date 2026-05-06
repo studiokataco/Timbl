@@ -14,5 +14,6 @@ export const orgTemplatesPath = (orgId: string) => `${orgPath(orgId)}/templates`
 export const orgEventsPath = (orgId: string) => `${orgPath(orgId)}/events`
 export const orgPostStatusHistoryPath = (orgId: string, postId: string) =>
   `${orgPostsPath(orgId)}/${postId}/statusHistory`
+export const orgKanbanColumnsPath = (orgId: string) => `${orgPath(orgId)}/kanbanColumns`
 
 export const awarenessDaysPath = "awarenessDays"
