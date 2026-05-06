@@ -1,12 +1,13 @@
 "use client"
 
-import { useTransition } from "react"
+import { useRef, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import { Lightbulb, Sparkles, TrendingDown } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { useGridReveal } from "@/components/shared/motion-cal"
 import { promoteAwarenessDay } from "@/lib/actions/awareness"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay } from "@/lib/schemas"
@@ -42,6 +43,8 @@ export function CalendarAwarenessRail({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const planned = new Set(plannedAwarenessIds)
+  const railRef = useRef<HTMLElement | null>(null)
+  useGridReveal(railRef)
 
   const promote = (day: WithId<AwarenessDay>) => {
     startTransition(async () => {
@@ -57,10 +60,11 @@ export function CalendarAwarenessRail({
 
   return (
     <aside
+      ref={railRef}
       aria-label="Calendar suggestions"
-      className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border bg-secondary/20 p-4 gap-4 overflow-y-auto"
+      className="hidden lg:flex flex-col w-80 shrink-0 border-l border-border bg-secondary/20 p-6 gap-6 overflow-y-auto"
     >
-      <section className="flex flex-col gap-2">
+      <section data-cal-reveal className="flex flex-col gap-3">
         <div className="flex items-center gap-1.5">
           <Sparkles aria-hidden className="size-3.5 text-muted-foreground" />
           <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -78,7 +82,7 @@ export function CalendarAwarenessRail({
               return (
                 <li
                   key={d.id}
-                  className="rounded-md border border-border bg-background p-2.5 text-xs flex flex-col gap-1.5"
+                  className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -114,7 +118,7 @@ export function CalendarAwarenessRail({
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
+      <section data-cal-reveal className="flex flex-col gap-3">
         <div className="flex items-center gap-1.5">
           <Lightbulb aria-hidden className="size-3.5 text-muted-foreground" />
           <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -130,7 +134,7 @@ export function CalendarAwarenessRail({
             {suggestions.map((s, i) => (
               <li
                 key={`${s.kind}-${i}`}
-                className="rounded-md border border-border bg-background p-2.5 text-xs flex flex-col gap-0.5"
+                className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-1"
               >
                 {s.kind === "silent-category" && (
                   <>

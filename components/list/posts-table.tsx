@@ -247,7 +247,7 @@ export function PostsTable({ posts, categories, users }: Props) {
         </div>
       </div>
 
-      <div className="rounded-md border border-border overflow-x-auto">
+      <div className="rounded-lg border border-border overflow-x-auto bg-background">
         <table className="w-full text-sm">
           <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>

@@ -78,7 +78,7 @@ export function CampaignTimeline({ campaign, posts, categories, users }: Props) 
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               {week.weekLabel}
             </h3>
-            <div className="rounded-md border border-border overflow-hidden">
+            <div className="rounded-lg border border-border overflow-hidden bg-background">
               <table className="w-full text-sm">
                 <tbody>
                   {week.posts.map((p, i) => {

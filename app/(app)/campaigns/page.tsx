@@ -4,6 +4,7 @@ import Link from "next/link"
 import { format, parseISO } from "date-fns"
 import { Megaphone, Plus } from "lucide-react"
 import { TopBar } from "@/components/shared/top-bar"
+import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -17,19 +18,18 @@ export default async function CampaignsPage() {
   return (
     <>
       <TopBar />
-      <div className="px-4 sm:px-6 py-4 flex-1">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-lg font-medium">Campaigns</h1>
-            <p className="text-xs text-muted-foreground">
-              Content series with a shared theme, timeline, and goal.
-            </p>
-          </div>
-          <Button size="sm" render={<Link href="/settings/campaigns" />}>
-            <Plus aria-hidden className="size-4" />
-            Manage
-          </Button>
-        </div>
+      <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
+        <div className="mx-auto w-full max-w-6xl space-y-8">
+        <PageHeader
+          title="Campaigns"
+          description="Content series with a shared theme, timeline, and goal."
+          action={
+            <Button render={<Link href="/settings/campaigns" />}>
+              <Plus aria-hidden className="size-4" />
+              Manage
+            </Button>
+          }
+        />
 
         {campaigns.length === 0 ? (
           <EmptyState
@@ -54,7 +54,7 @@ export default async function CampaignsPage() {
                 <Link
                   key={c.id}
                   href={`/campaigns/${c.slug ?? c.id}`}
-                  className="rounded-lg border border-border bg-background p-4 hover:shadow-sm transition-shadow block"
+                  className="rounded-lg border border-border bg-background p-6 hover:shadow-sm transition-shadow block"
                 >
                   <div className="flex items-start gap-2 mb-2">
                     <span
@@ -106,6 +106,7 @@ export default async function CampaignsPage() {
             })}
           </div>
         )}
+        </div>
       </div>
     </>
   )

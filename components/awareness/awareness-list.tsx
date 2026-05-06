@@ -56,7 +56,7 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
   }
 
   return (
-    <div className="rounded-md border border-border overflow-hidden">
+    <div className="rounded-lg border border-border overflow-hidden bg-background">
       <table className="w-full text-sm">
         <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
           <tr>

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"
 import { TopBar } from "@/components/shared/top-bar"
+import { PageHeader } from "@/components/shared/page-header"
 import { KanbanBoard } from "@/components/kanban/board"
 import {
   fetchPostsInRange,
@@ -26,13 +27,12 @@ export default async function KanbanPage() {
   return (
     <>
       <TopBar />
-      <div className="px-4 sm:px-6 py-4 flex-1 flex flex-col min-h-0">
-        <div className="mb-3">
-          <h1 className="text-lg font-medium">Kanban</h1>
-          <p className="text-xs text-muted-foreground">
-            Drag cards between columns to move posts through the workflow.
-          </p>
-        </div>
+      <div className="flex-1 flex flex-col min-h-0 px-6 sm:px-10 py-10 lg:py-14">
+        <PageHeader
+          title="Kanban"
+          description="Drag cards between columns to move posts through the workflow."
+          className="mb-8"
+        />
         <KanbanBoard
           posts={posts}
           categories={categories}

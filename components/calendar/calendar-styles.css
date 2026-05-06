@@ -18,28 +18,58 @@
 }
 
 .fc .fc-toolbar-title {
-  font-weight: 500;
-  font-size: 1rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  letter-spacing: -0.3px;
+}
+
+/* Cal-voice pill-group treatment for the view switcher (Month/Week/List).
+   The button group reads as one rounded-full container with the active
+   segment as a white pill inside surface-soft — Cal's signature nav-pill-group. */
+.fc .fc-toolbar-chunk:last-child .fc-button-group {
+  background: var(--color-surface-soft);
+  border-radius: 9999px;
+  padding: 4px;
+  gap: 0;
+  border: 1px solid var(--color-border);
 }
 .fc .fc-button {
-  background: var(--color-secondary);
-  border: 1px solid var(--color-border);
-  color: var(--color-foreground);
+  background: transparent;
+  border: 0;
+  color: var(--color-muted-foreground);
   text-transform: capitalize;
   font-weight: 500;
   font-size: 0.8125rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-md);
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
   box-shadow: none;
 }
 .fc .fc-button:hover {
-  background: color-mix(in srgb, var(--color-secondary) 70%, var(--color-foreground) 5%);
+  background: transparent;
+  color: var(--color-foreground);
+}
+.fc .fc-toolbar-chunk:last-child .fc-button:hover {
+  background: color-mix(in srgb, var(--color-background) 60%, transparent);
 }
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-  background: var(--color-foreground);
-  color: var(--color-background);
-  border-color: var(--color-foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  border: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Prev/next/today are NOT in the pill group — they sit free as small
+   icon-style buttons. */
+.fc .fc-toolbar-chunk:first-child .fc-button {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.375rem 0.75rem;
+}
+.fc .fc-toolbar-chunk:first-child .fc-button:hover {
+  background: var(--color-secondary);
+  color: var(--color-foreground);
 }
 .fc .fc-col-header-cell {
   background: transparent;

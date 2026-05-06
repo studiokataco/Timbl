@@ -147,7 +147,7 @@ export function CampaignManager({ campaigns }: Props) {
           body="Click New campaign above to bundle posts into a themed series with a shared timeline."
         />
       ) : (
-        <div className="rounded-md border border-border overflow-hidden">
+        <div className="rounded-lg border border-border overflow-hidden bg-background">
           <table className="w-full text-sm">
             <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>

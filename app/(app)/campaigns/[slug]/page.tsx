@@ -48,74 +48,78 @@ export default async function CampaignDetailPage({ params }: Props) {
   return (
     <>
       <TopBar />
-      <div className="px-4 sm:px-6 py-4 flex-1">
-        <div className="mb-4">
-          <Button variant="ghost" size="sm" className="mb-2 -ml-2" render={<Link href="/campaigns" />}>
-            <ArrowLeft aria-hidden className="size-4" />
-            All campaigns
-          </Button>
-          <div className="flex items-start gap-3">
-            {campaign.color && (
-              <span
-                className="mt-1.5 size-3 rounded-full shrink-0"
-                style={{ backgroundColor: campaign.color }}
-                aria-hidden
-              />
-            )}
-            <div>
-              <h1 className="text-lg font-medium">{campaign.name}</h1>
-              {campaign.description && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {campaign.description}
-                </p>
-              )}
-              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                {campaign.startDate && (
-                  <span>{format(parseISO(campaign.startDate), "d MMM yyyy")}</span>
-                )}
-                {campaign.startDate && campaign.endDate && <span>→</span>}
-                {campaign.endDate && (
-                  <span>{format(parseISO(campaign.endDate), "d MMM yyyy")}</span>
-                )}
-                <Badge variant="secondary" className="capitalize font-normal text-xs">
-                  {campaign.status}
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex-1 max-w-xs">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{posts.length} posts</span>
-                <span>{pct}% ready</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${pct}%`,
-                    backgroundColor: campaign.color ?? "var(--color-foreground)",
-                  }}
+      <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
+        <div className="mx-auto w-full max-w-6xl space-y-8">
+          <div className="space-y-6">
+            <Button variant="ghost" size="sm" className="-ml-2" render={<Link href="/campaigns" />}>
+              <ArrowLeft aria-hidden className="size-4" />
+              All campaigns
+            </Button>
+            <header className="flex items-start gap-4">
+              {campaign.color && (
+                <span
+                  className="mt-3 size-3 rounded-full shrink-0"
+                  style={{ backgroundColor: campaign.color }}
+                  aria-hidden
                 />
+              )}
+              <div className="space-y-3 min-w-0">
+                <h1 className="text-display-sm md:text-display-md text-foreground">
+                  {campaign.name}
+                </h1>
+                {campaign.description && (
+                  <p className="text-body-md text-muted-foreground max-w-2xl">
+                    {campaign.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-3 text-caption text-muted-foreground">
+                  {campaign.startDate && (
+                    <span>{format(parseISO(campaign.startDate), "d MMM yyyy")}</span>
+                  )}
+                  {campaign.startDate && campaign.endDate && <span>→</span>}
+                  {campaign.endDate && (
+                    <span>{format(parseISO(campaign.endDate), "d MMM yyyy")}</span>
+                  )}
+                  <Badge variant="secondary" className="capitalize font-normal">
+                    {campaign.status}
+                  </Badge>
+                </div>
+              </div>
+            </header>
+
+            <div className="flex items-center gap-6">
+              <div className="flex-1 max-w-sm space-y-2">
+                <div className="flex justify-between text-caption text-muted-foreground">
+                  <span>{posts.length} posts</span>
+                  <span>{pct}% ready</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${pct}%`,
+                      backgroundColor: campaign.color ?? "var(--color-foreground)",
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 flex-wrap text-caption text-muted-foreground">
+                {Object.entries(statusCounts).map(([s, n]) => (
+                  <span key={s}>
+                    <span className="font-medium text-foreground">{n}</span> {s}
+                  </span>
+                ))}
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap text-xs text-muted-foreground">
-              {Object.entries(statusCounts).map(([s, n]) => (
-                <span key={s}>
-                  <span className="font-medium text-foreground">{n}</span> {s}
-                </span>
-              ))}
-            </div>
           </div>
-        </div>
 
-        <CampaignTimeline
-          campaign={campaign}
-          posts={posts}
-          categories={categories}
-          users={users}
-        />
+          <CampaignTimeline
+            campaign={campaign}
+            posts={posts}
+            categories={categories}
+            users={users}
+          />
+        </div>
       </div>
     </>
   )

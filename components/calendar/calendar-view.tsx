@@ -18,6 +18,8 @@ import type { Suggestion } from "@/lib/queries/suggestions.server"
 import { PostChip } from "./post-chip"
 import { CalendarAwarenessRail } from "./awareness-rail"
 import { TopBar } from "@/components/shared/top-bar"
+import { PageHeader } from "@/components/shared/page-header"
+import { useGridReveal } from "@/components/shared/motion-cal"
 import { QuickAddDialog } from "@/components/quick-add/quick-add-dialog"
 import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
 import "./calendar-styles.css"
@@ -63,6 +65,8 @@ export function CalendarView({
   const router = useRouter()
   const searchParams = useSearchParams()
   const calendarRef = useRef<FullCalendar | null>(null)
+  const mainRef = useRef<HTMLElement | null>(null)
+  useGridReveal(mainRef)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddDate, setQuickAddDate] = useState<Date | null>(null)
   const [composerOpen, setComposerOpen] = useState(false)
@@ -191,14 +195,14 @@ export function CalendarView({
       }} />
 
       <div className="flex-1 flex min-h-0">
-        <main className="flex-1 min-w-0 px-4 sm:px-6 py-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h1 className="text-lg font-medium">This month</h1>
-            <p className="text-xs text-muted-foreground">
-              {posts.length} {posts.length === 1 ? "post" : "posts"} in view
-            </p>
-          </div>
+        <main ref={mainRef} className="flex-1 min-w-0 px-6 sm:px-10 py-10 lg:py-14">
+          <PageHeader
+            title="This month"
+            description={`${posts.length} ${posts.length === 1 ? "post" : "posts"} in view`}
+            className="mb-8"
+          />
 
+          <div data-cal-reveal>
           <FullCalendar
             ref={(el) => {
               calendarRef.current = el
@@ -275,6 +279,7 @@ export function CalendarView({
               }
             }}
           />
+          </div>
         </main>
 
         <CalendarAwarenessRail

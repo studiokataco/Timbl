@@ -51,7 +51,7 @@ export function KanbanCard({
       {...attributes}
       {...listeners}
       className={cn(
-        "bg-background border border-border rounded-md p-2.5 md:cursor-grab md:active:cursor-grabbing",
+        "bg-background border border-border rounded-lg p-3 md:cursor-grab md:active:cursor-grabbing",
         "hover:shadow-sm transition-shadow select-none",
         isDragging && "opacity-40",
       )}

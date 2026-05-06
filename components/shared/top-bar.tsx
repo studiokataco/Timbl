@@ -22,29 +22,42 @@ export function TopBar({ onQuickAdd }: { onQuickAdd?: () => void }) {
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-30">
-      <div className="flex items-center gap-4 px-4 sm:px-6 h-14">
+      <div className="flex items-center gap-4 px-6 sm:px-10 h-16">
         <a
           href="/calendar"
-          className="flex items-baseline gap-1.5 group"
+          className="flex items-baseline gap-2 group"
           aria-label="Social planner home"
         >
-          <span className="text-[15px] font-semibold tracking-tight leading-none text-foreground">
+          <span className="text-base font-semibold tracking-tight leading-none text-foreground">
             social planner
           </span>
           <span
             aria-hidden
             className="size-1 rounded-full bg-foreground translate-y-[-3px] group-hover:bg-[var(--color-brand-accent)] transition-colors"
           />
-          <span className="text-xs font-medium text-muted-foreground leading-none tracking-tight">
+          <span className="text-caption text-muted-foreground leading-none tracking-tight">
             SAFE
           </span>
         </a>
 
         <div className="flex-1" />
 
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event("palette:open"))}
+          className="hidden md:flex items-center gap-2 text-body-sm text-muted-foreground border border-border rounded-md px-3 h-9 w-64 hover:text-foreground hover:bg-secondary/40 transition-colors"
+          aria-label="Open command palette"
+        >
+          <Search aria-hidden className="size-4 opacity-60" />
+          <span className="flex-1 text-left">Search</span>
+          <kbd className="font-mono text-[11px] tracking-widest opacity-60 border border-border rounded px-1 py-0.5">
+            ⌘K
+          </kbd>
+        </button>
+
         <Button
           onClick={onQuickAdd}
-          className="rounded-full px-4 hidden sm:inline-flex"
+          className="hidden sm:inline-flex"
         >
           <Plus aria-hidden className="size-4" />
           Quick add
@@ -58,20 +71,7 @@ export function TopBar({ onQuickAdd }: { onQuickAdd?: () => void }) {
           <Plus aria-hidden className="size-4" />
         </Button>
 
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new Event("palette:open"))}
-          className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-md px-2 py-1 hover:text-foreground hover:bg-secondary/40 transition-colors"
-          aria-label="Open command palette"
-        >
-          <Search aria-hidden className="size-3" />
-          <span>Search</span>
-          <kbd className="font-mono text-[10px] tracking-widest opacity-70">
-            ⌘K
-          </kbd>
-        </button>
-
-        <Avatar className="size-8">
+        <Avatar className="size-9">
           <AvatarFallback className="text-xs">{initials}</AvatarFallback>
         </Avatar>
       </div>

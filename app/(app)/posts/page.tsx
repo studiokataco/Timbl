@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"
 import { TopBar } from "@/components/shared/top-bar"
+import { PageHeader } from "@/components/shared/page-header"
 import { PostsTable } from "@/components/list/posts-table"
 import {
   fetchCategories,
@@ -29,15 +30,14 @@ export default async function PostsPage() {
   return (
     <>
       <TopBar />
-      <div className="px-4 sm:px-6 py-4 flex-1">
-        <div className="mb-3">
-          <h1 className="text-lg font-medium">All posts</h1>
-          <p className="text-xs text-muted-foreground">
-            Filter, sort, bulk-update. Filters live in the URL — paste a link
-            to share a saved view.
-          </p>
+      <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
+        <div className="mx-auto w-full max-w-6xl space-y-8">
+          <PageHeader
+            title="All posts"
+            description="Filter, sort, bulk-update. Filters live in the URL — paste a link to share a saved view."
+          />
+          <PostsTable posts={posts} categories={categories} users={users} />
         </div>
-        <PostsTable posts={posts} categories={categories} users={users} />
       </div>
     </>
   )
