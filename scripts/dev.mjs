@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process"
+import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
+import path from "node:path"
 import net from "node:net"
 
 /*
@@ -14,7 +17,34 @@ import net from "node:net"
  *
  * All four streams interleave in a single terminal. Ctrl-C tears everything
  * down cleanly.
+ *
+ * Project-id resolution: `.firebaserc` is the single source of truth. Its
+ * `default` is propagated to every subprocess via NEXT_PUBLIC_FIREBASE_PROJECT_ID
+ * — which Next prefers over `.env.local` because process.env wins. This avoids
+ * the trap where the seed and Next read different per-project Firestore stores
+ * inside the same emulator (any drift in .env.local would silently route reads
+ * to an empty project).
  */
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+
+function resolveDevProjectId() {
+  const rcPath = path.join(REPO_ROOT, ".firebaserc")
+  try {
+    const rc = JSON.parse(readFileSync(rcPath, "utf8"))
+    const id = rc?.projects?.default
+    if (!id || typeof id !== "string") {
+      throw new Error(".firebaserc has no projects.default")
+    }
+    return id
+  } catch (err) {
+    throw new Error(
+      `Could not read project id from .firebaserc: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    )
+  }
+}
 
 const procs = []
 let shuttingDown = false
@@ -81,26 +111,28 @@ function waitForPort(host, port, timeoutMs = 60_000) {
   })
 }
 
+const PROJECT_ID = resolveDevProjectId()
+
 const EMULATOR_ENV = {
   FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080",
   FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
   FIREBASE_STORAGE_EMULATOR_HOST: "127.0.0.1:9199",
   NEXT_PUBLIC_USE_EMULATORS: "1",
+  // Force every subprocess (seed, next) to agree on the project id —
+  // process.env wins over .env.local in Next, so any stale value there is
+  // overridden cleanly.
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: PROJECT_ID,
 }
 
 async function main() {
-  console.log("→ starting Firebase emulators")
-  spawnLogged(
-    "emulators",
-    "firebase",
-    [
-      "emulators:start",
-      "--only",
-      "firestore,auth,storage",
-      "--project",
-      "social-media-planner-dev",
-    ],
-  )
+  console.log(`→ starting Firebase emulators (project=${PROJECT_ID})`)
+  spawnLogged("emulators", "firebase", [
+    "emulators:start",
+    "--only",
+    "firestore,auth,storage",
+    "--project",
+    PROJECT_ID,
+  ])
 
   try {
     await waitForPort("127.0.0.1", 8080)
