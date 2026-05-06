@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { format, parseISO } from "date-fns"
-import { Calendar as CalendarIcon, ChevronsUpDown, Loader2, Trash2 } from "lucide-react"
+import {
+  Calendar as CalendarIcon,
+  ChevronsUpDown,
+  Loader2,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react"
 import { toast } from "sonner"
 import {
   Sheet,
@@ -33,6 +39,20 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import type { WithId } from "@/lib/firebase/serialize"
 import type {
   Campaign,
@@ -42,10 +62,12 @@ import type {
   Post,
   PostStatus,
   PostType,
+  TemplateCadence,
   User,
 } from "@/lib/schemas"
 import { deletePost, updatePost } from "@/lib/actions/posts"
 import { fetchOgImage } from "@/lib/actions/assets"
+import { saveAsTemplate } from "@/lib/actions/templates"
 import { getNextStatuses } from "@/lib/post-status"
 import { HashtagInput } from "./hashtag-input"
 
@@ -113,6 +135,10 @@ export function PostComposerSheet({
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const [thumbnail, setThumbnail] = useState<string | null>(null)
   const [thumbnailLoading, setThumbnailLoading] = useState(false)
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
+  const [templateName, setTemplateName] = useState("")
+  const [templateCadence, setTemplateCadence] =
+    useState<TemplateCadence>("ad-hoc")
   const lastSavedRef = useRef<string>("")
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -213,6 +239,30 @@ export function PostComposerSheet({
     })
   }
 
+  const openSaveAsTemplate = () => {
+    if (!post?.id) return
+    setTemplateName(draft.brief ?? post.brief ?? "")
+    setTemplateCadence("ad-hoc")
+    setTemplateDialogOpen(true)
+  }
+
+  const confirmSaveAsTemplate = () => {
+    if (!post?.id || !templateName.trim()) return
+    startTransition(async () => {
+      const res = await saveAsTemplate({
+        postId: post.id,
+        name: templateName.trim(),
+        cadence: templateCadence,
+      })
+      if (!res.ok) {
+        toast.error(res.error ?? "Could not save as template")
+        return
+      }
+      toast.success("Template saved to library")
+      setTemplateDialogOpen(false)
+    })
+  }
+
   const currentStatus = (draft.status ?? "idea") as PostStatus
   const validStatuses = useMemo(() => getNextStatuses(currentStatus), [currentStatus])
   const allHashtagSuggestions = useMemo(() => {
@@ -231,18 +281,44 @@ export function PostComposerSheet({
                   ? `Edit post — ${format(date, "EEE d MMM")}`
                   : "Edit post"}
               </SheetTitle>
-              <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
-                {saveState === "saving" ? (
-                  <>
-                    <Loader2 aria-hidden className="size-3 animate-spin" />
-                    Saving…
-                  </>
-                ) : saveState === "saved" ? (
-                  <span className="text-[var(--color-signature-forest)]">Saved</span>
-                ) : saveState === "error" ? (
-                  <span className="text-destructive">Save failed</span>
-                ) : null}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                  {saveState === "saving" ? (
+                    <>
+                      <Loader2 aria-hidden className="size-3 animate-spin" />
+                      Saving…
+                    </>
+                  ) : saveState === "saved" ? (
+                    <span className="text-[var(--color-signature-forest)]">
+                      Saved
+                    </span>
+                  ) : saveState === "error" ? (
+                    <span className="text-destructive">Save failed</span>
+                  ) : null}
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        aria-label="More post actions"
+                      />
+                    }
+                  >
+                    <MoreHorizontal aria-hidden className="size-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onSelect={openSaveAsTemplate}
+                      disabled={!post?.id}
+                    >
+                      Save as template
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             <SheetDescription className="text-xs">
               Edits autosave 1.5s after your last change. Save button forces
@@ -655,6 +731,62 @@ export function PostComposerSheet({
           </div>
         </div>
       </SheetContent>
+
+      <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Save as template</DialogTitle>
+            <DialogDescription>
+              Lifts the category, post type, hashtags, CTA, and caption into a
+              reusable template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="tpl-name">Template name</Label>
+              <Input
+                id="tpl-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Pick of the Week"
+                autoFocus
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Cadence</Label>
+              <Select
+                value={templateCadence}
+                onValueChange={(v) => setTemplateCadence(v as TemplateCadence)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="biweekly">Biweekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="ad-hoc">Ad-hoc</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setTemplateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmSaveAsTemplate}
+              disabled={!templateName.trim() || pending}
+            >
+              Save template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   )
 }

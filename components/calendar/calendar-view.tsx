@@ -5,15 +5,17 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import interactionPlugin from "@fullcalendar/interaction"
 import listPlugin from "@fullcalendar/list"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { format } from "date-fns"
+import { differenceInDays, format, parseISO } from "date-fns"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { renderToStaticMarkup } from "react-dom/server"
 import { fetchPostAction, updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { Campaign, Category, Cta, Post, User } from "@/lib/schemas"
+import type { AwarenessDay, Campaign, Category, Cta, Post, User } from "@/lib/schemas"
+import type { Suggestion } from "@/lib/queries/suggestions.server"
 import { PostChip } from "./post-chip"
+import { CalendarAwarenessRail } from "./awareness-rail"
 import { TopBar } from "@/components/shared/top-bar"
 import { QuickAddDialog } from "@/components/quick-add/quick-add-dialog"
 import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
@@ -27,6 +29,9 @@ type Props = {
   users: WithId<User>[]
   campaigns: WithId<Campaign>[]
   hashtagSuggestions: string[]
+  awarenessDays: WithId<AwarenessDay>[]
+  plannedAwarenessIds: string[]
+  suggestions: Suggestion[]
   range: { start: string; end: string }
 }
 
@@ -48,6 +53,9 @@ export function CalendarView({
   users,
   campaigns,
   hashtagSuggestions,
+  awarenessDays,
+  plannedAwarenessIds,
+  suggestions,
   range,
 }: Props) {
   const queryClient = useQueryClient()
@@ -93,6 +101,40 @@ export function CalendarView({
     [posts],
   )
 
+  const postsByDate = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const p of posts) {
+      m.set(p.scheduledDate, (m.get(p.scheduledDate) ?? 0) + 1)
+    }
+    return m
+  }, [posts])
+
+  // For each calendar day, find the closest awareness day within ±3 days.
+  // Used to render a hint chip on empty cells. Key = YYYY-MM-DD; value = the
+  // single closest awareness day (already filtered to importance >= medium so
+  // we don't surface low-importance days as nudges).
+  const awarenessHintByDate = useMemo(() => {
+    const m = new Map<string, WithId<AwarenessDay>>()
+    const significant = awarenessDays.filter((a) => a.importance !== "low")
+    for (const a of significant) {
+      const center = parseISO(a.date)
+      for (let offset = -3; offset <= 3; offset++) {
+        const d = new Date(center)
+        d.setDate(center.getDate() + offset)
+        const key = format(d, "yyyy-MM-dd")
+        const prev = m.get(key)
+        if (
+          !prev ||
+          Math.abs(differenceInDays(parseISO(a.date), d)) <
+            Math.abs(differenceInDays(parseISO(prev.date), d))
+        ) {
+          m.set(key, a)
+        }
+      }
+    }
+    return m
+  }, [awarenessDays])
+
   const refresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["posts"] })
     // Server data invalidation — page-level revalidatePath('/calendar') does
@@ -124,68 +166,97 @@ export function CalendarView({
         setQuickAddOpen(true)
       }} />
 
-      <div className="px-4 sm:px-6 py-4 flex-1">
-        <div className="mb-3 flex items-center justify-between">
-          <h1 className="text-lg font-medium">This month</h1>
-          <p className="text-xs text-muted-foreground">
-            {posts.length} {posts.length === 1 ? "post" : "posts"} in view
-          </p>
-        </div>
+      <div className="flex-1 flex min-h-0">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h1 className="text-lg font-medium">This month</h1>
+            <p className="text-xs text-muted-foreground">
+              {posts.length} {posts.length === 1 ? "post" : "posts"} in view
+            </p>
+          </div>
 
-        <FullCalendar
-          ref={(el) => {
-            calendarRef.current = el
-          }}
-          plugins={[dayGridPlugin, interactionPlugin, listPlugin]}
-          initialView={isMobile ? "listWeek" : "dayGridMonth"}
-          headerToolbar={{
-            left: "prev,next today",
-            center: "title",
-            right: isMobile ? "" : "dayGridMonth,dayGridWeek,listWeek",
-          }}
-          firstDay={1}
-          height="auto"
-          events={events}
-          editable
-          dayMaxEvents={4}
-          eventContent={(arg) => {
-            const post = arg.event.extendedProps.post as WithId<Post>
-            const html = renderToStaticMarkup(
-              <PostChip
-                post={post}
-                category={categoryById.get(post.categoryId ?? "") ?? null}
-                assignee={
-                  post.assigneeId
-                    ? userById.get(post.assigneeId) ?? null
-                    : null
-                }
-              />,
-            )
-            return { html }
-          }}
-          eventClick={(arg) => {
-            const post = arg.event.extendedProps.post as WithId<Post>
-            setComposerPost(post)
-            setComposerOpen(true)
-          }}
-          dateClick={(arg) => {
-            setQuickAddDate(arg.date)
-            setQuickAddOpen(true)
-          }}
-          eventDrop={async (arg) => {
-            const post = arg.event.extendedProps.post as WithId<Post>
-            const newDate = arg.event.start
-            if (!newDate) return
-            const formatted = format(newDate, "yyyy-MM-dd")
-            const res = await updatePost({ id: post.id, scheduledDate: formatted })
-            if (!res.ok) {
-              arg.revert()
-              toast.error(res.error ?? "Could not move post")
-            } else {
-              toast.success(`Moved to ${format(newDate, "EEE d MMM")}`)
-              refresh()
-            }
-          }}
+          <FullCalendar
+            ref={(el) => {
+              calendarRef.current = el
+            }}
+            plugins={[dayGridPlugin, interactionPlugin, listPlugin]}
+            initialView={isMobile ? "listWeek" : "dayGridMonth"}
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: isMobile ? "" : "dayGridMonth,dayGridWeek,listWeek",
+            }}
+            firstDay={1}
+            height="auto"
+            events={events}
+            editable
+            dayMaxEvents={4}
+            eventContent={(arg) => {
+              const post = arg.event.extendedProps.post as WithId<Post>
+              const html = renderToStaticMarkup(
+                <PostChip
+                  post={post}
+                  category={categoryById.get(post.categoryId ?? "") ?? null}
+                  assignee={
+                    post.assigneeId
+                      ? userById.get(post.assigneeId) ?? null
+                      : null
+                  }
+                />,
+              )
+              return { html }
+            }}
+            dayCellContent={(arg) => {
+              const key = format(arg.date, "yyyy-MM-dd")
+              const hasPost = postsByDate.has(key)
+              const hint = awarenessHintByDate.get(key)
+              const dayNumber = arg.dayNumberText
+              if (hasPost || !hint) {
+                return { html: `<span class="fc-daygrid-day-number">${dayNumber}</span>` }
+              }
+              const html = renderToStaticMarkup(
+                <>
+                  <span className="fc-daygrid-day-number">{dayNumber}</span>
+                  <span
+                    className="awareness-hint"
+                    title={`${hint.name} — ${format(parseISO(hint.date), "d MMM")}`}
+                  >
+                    💡 {hint.name}
+                  </span>
+                </>,
+              )
+              return { html }
+            }}
+            eventClick={(arg) => {
+              const post = arg.event.extendedProps.post as WithId<Post>
+              setComposerPost(post)
+              setComposerOpen(true)
+            }}
+            dateClick={(arg) => {
+              setQuickAddDate(arg.date)
+              setQuickAddOpen(true)
+            }}
+            eventDrop={async (arg) => {
+              const post = arg.event.extendedProps.post as WithId<Post>
+              const newDate = arg.event.start
+              if (!newDate) return
+              const formatted = format(newDate, "yyyy-MM-dd")
+              const res = await updatePost({ id: post.id, scheduledDate: formatted })
+              if (!res.ok) {
+                arg.revert()
+                toast.error(res.error ?? "Could not move post")
+              } else {
+                toast.success(`Moved to ${format(newDate, "EEE d MMM")}`)
+                refresh()
+              }
+            }}
+          />
+        </main>
+
+        <CalendarAwarenessRail
+          awarenessDays={awarenessDays}
+          plannedAwarenessIds={plannedAwarenessIds}
+          suggestions={suggestions}
         />
       </div>
 

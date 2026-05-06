@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic"
 import { addDays, format, startOfMonth, subDays } from "date-fns"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { CalendarView } from "@/components/calendar/calendar-view"
+import { fetchAwarenessWithPlannedStatus } from "@/lib/queries/awareness.server"
 import { fetchCampaigns } from "@/lib/queries/campaigns.server"
 import { fetchRecentHashtags } from "@/lib/queries/hashtags.server"
 import {
@@ -13,6 +14,7 @@ import {
   fetchPostsInRange,
   fetchUsers,
 } from "@/lib/queries/posts.server"
+import { fetchSuggestions } from "@/lib/queries/suggestions.server"
 
 /*
  * Default app surface. Server-renders a 6-week window so prev/next view
@@ -23,16 +25,27 @@ export default async function CalendarPage() {
   const start = format(subDays(startOfMonth(today), 7), "yyyy-MM-dd")
   const end = format(addDays(today, 60), "yyyy-MM-dd")
 
-  const [orgId, posts, categories, ctas, users, campaigns, hashtagSuggestions] =
-    await Promise.all([
-      getCurrentOrgId(),
-      fetchPostsInRange(start, end),
-      fetchCategories(),
-      fetchCtas(),
-      fetchUsers(),
-      fetchCampaigns(),
-      fetchRecentHashtags(),
-    ])
+  const [
+    orgId,
+    posts,
+    categories,
+    ctas,
+    users,
+    campaigns,
+    hashtagSuggestions,
+    { days: awarenessDays, plannedIds },
+    suggestions,
+  ] = await Promise.all([
+    getCurrentOrgId(),
+    fetchPostsInRange(start, end),
+    fetchCategories(),
+    fetchCtas(),
+    fetchUsers(),
+    fetchCampaigns(),
+    fetchRecentHashtags(),
+    fetchAwarenessWithPlannedStatus(start, end),
+    fetchSuggestions(),
+  ])
 
   return (
     <CalendarView
@@ -43,6 +56,9 @@ export default async function CalendarPage() {
       users={users}
       campaigns={campaigns}
       hashtagSuggestions={hashtagSuggestions}
+      awarenessDays={awarenessDays}
+      plannedAwarenessIds={Array.from(plannedIds)}
+      suggestions={suggestions}
       range={{ start, end }}
     />
   )
