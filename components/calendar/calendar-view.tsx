@@ -1,26 +1,29 @@
 "use client"
 
-import FullCalendar from "@fullcalendar/react"
-import dayGridPlugin from "@fullcalendar/daygrid"
-import interactionPlugin from "@fullcalendar/interaction"
-import listPlugin from "@fullcalendar/list"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { format, parseISO } from "date-fns"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import { addMonths, format, parseISO, startOfMonth, subMonths } from "date-fns"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-import { renderToStaticMarkup } from "react-dom/server"
 import { updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post, User } from "@/lib/schemas"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
-import { PostChip } from "./post-chip"
-import { CalendarAwarenessRail } from "./awareness-rail"
 import { TopBar } from "@/components/shared/top-bar"
-import { PageHeader } from "@/components/shared/page-header"
 import { useGridReveal } from "@/components/shared/motion-cal"
 import { useDialogs } from "@/components/shared/dialogs-provider"
-import "./calendar-styles.css"
+import { CalendarToolbar, type CalendarView as ViewT } from "./calendar-toolbar"
+import { CalendarGrid } from "./calendar-grid"
+import { MiniCalendar } from "./mini-calendar"
+import { CategoryFilter } from "./category-filter"
+import { CalendarAwarenessRail } from "./awareness-rail"
 
 type Props = {
   orgId: string
@@ -34,20 +37,18 @@ type Props = {
 }
 
 /*
- * Default landing surface.
- *  - dayGridWeek (4 weeks visible) on desktop; listWeek on <640px.
- *  - eventClick → composer side-sheet.
- *  - dateClick on an empty cell → quick-add seeded with that date.
- *  - eventDrop → optimistic updatePost server action.
+ * Custom calendar surface (replaces the previous FullCalendar setup).
+ * Visual language follows the 21st.dev event-manager + shadcnuikit calendar
+ * references — clean grid, pastel pills, today as a dark filled circle.
  *
- * Server hands us initialPosts hydrated from Firestore Admin; TanStack Query
- * + Firestore onSnapshot keep the view fresh after that.
+ * Multi-day awareness events render as continuous bars per week row via
+ * lib/calendar/awareness-grouping.ts; single-day posts render as event
+ * pills inside their cell. Drag a pill to another cell → updatePost.
  */
 export function CalendarView({
   orgId,
   initialPosts,
   categories,
-  users,
   awarenessDays,
   plannedAwarenessIds,
   suggestions,
@@ -55,181 +56,234 @@ export function CalendarView({
 }: Props) {
   const queryClient = useQueryClient()
   const { openQuickAdd, openComposerWithPost } = useDialogs()
-  const calendarRef = useRef<FullCalendar | null>(null)
   const mainRef = useRef<HTMLElement | null>(null)
   useGridReveal(mainRef)
-  const [isMobile, setIsMobile] = useState(false)
 
-  useEffect(() => {
-    const match = window.matchMedia("(max-width: 640px)")
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsMobile(match.matches)
-    const onChange = () => setIsMobile(match.matches)
-    match.addEventListener("change", onChange)
-    return () => match.removeEventListener("change", onChange)
-  }, [])
+  const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()))
+  const [view, setView] = useState<ViewT>("month")
+  const [visibleCategoryIds, setVisibleCategoryIds] = useState<Set<string>>(
+    () => new Set(categories.map((c) => c.id)),
+  )
+  const allCategoriesVisible = visibleCategoryIds.size === categories.length
 
   const { data: posts = initialPosts } = useQuery({
     queryKey: ["posts", orgId, range.start, range.end],
-    queryFn: async () => initialPosts, // refresh path: invalidation triggers router refresh
+    queryFn: async () => initialPosts,
     initialData: initialPosts,
     staleTime: 30_000,
   })
-
   usePostsRealtime({ orgId, ...range, queryClient })
 
-  const categoryById = useMemo(
-    () => new Map(categories.map((c) => [c.id, c])),
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  )
+
+  const onPrev = useCallback(() => setVisibleMonth((d) => subMonths(d, 1)), [])
+  const onNext = useCallback(() => setVisibleMonth((d) => addMonths(d, 1)), [])
+  const onToday = useCallback(() => setVisibleMonth(startOfMonth(new Date())), [])
+
+  const onCellClick = useCallback(
+    (date: Date) => {
+      openQuickAdd({ initialDate: date, source: "calendar-cell" })
+    },
+    [openQuickAdd],
+  )
+
+  const onPostClick = useCallback(
+    (post: WithId<Post>) => {
+      openComposerWithPost(post)
+    },
+    [openComposerWithPost],
+  )
+
+  const onDragEnd = useCallback(
+    async ({ active, over }: DragEndEvent) => {
+      if (!over) return
+      const activeData = active.data.current as
+        | { type: string; post: WithId<Post> }
+        | undefined
+      const overData = over.data.current as
+        | { type: string; iso: string; date: Date }
+        | undefined
+      if (!activeData || activeData.type !== "post") return
+      if (!overData || overData.type !== "cell") return
+      const post = activeData.post
+      if (post.scheduledDate === overData.iso) return
+
+      const res = await updatePost({
+        id: post.id,
+        scheduledDate: overData.iso,
+      })
+      if (!res.ok) {
+        toast.error(res.error ?? "Could not move post")
+      } else {
+        toast.success(`Moved to ${format(overData.date, "EEE d MMM")}`)
+        queryClient.invalidateQueries({ queryKey: ["posts"] })
+      }
+    },
+    [queryClient],
+  )
+
+  const toggleCategory = useCallback((id: string) => {
+    setVisibleCategoryIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const allCategoryIds = useMemo(
+    () => new Set(categories.map((c) => c.id)),
     [categories],
   )
-  const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users])
-
-  const events = useMemo(
-    () =>
-      posts.map((p) => ({
-        id: p.id,
-        start: p.scheduledDate,
-        allDay: true,
-        extendedProps: { post: p },
-      })),
-    [posts],
-  )
-
-  const postsByDate = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const p of posts) {
-      m.set(p.scheduledDate, (m.get(p.scheduledDate) ?? 0) + 1)
-    }
-    return m
-  }, [posts])
-
-  // Hint chip map keyed by the awareness day's exact date only (not ±3 spread).
-  // When two awareness days share the same date, keep the higher-importance one.
-  const awarenessHintByDate = useMemo(() => {
-    const m = new Map<string, WithId<AwarenessDay>>()
-    const significant = awarenessDays.filter((a) => a.importance !== "low")
-    const rank: Record<string, number> = { high: 2, medium: 1, low: 0 }
-    for (const a of significant) {
-      const existing = m.get(a.date)
-      if (!existing || rank[a.importance] > rank[existing.importance]) {
-        m.set(a.date, a)
-      }
-    }
-    return m
-  }, [awarenessDays])
-
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["posts"] })
-    // Server data invalidation — page-level revalidatePath('/calendar') does
-    // most of the work; this ensures any client-only caches stay fresh too.
-    if (typeof window !== "undefined") window.dispatchEvent(new Event("posts:changed"))
-  }, [queryClient])
-
-  useEffect(() => {
-    const handler = () => {
-      // Trigger a router refresh by reloading the current route's data.
-      // Next handles this automatically when revalidatePath() runs server-side.
-    }
-    window.addEventListener("posts:changed", handler)
-    return () => window.removeEventListener("posts:changed", handler)
-  }, [])
 
   return (
     <>
       <TopBar />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto px-6 sm:px-10 py-10 lg:py-14">
-          <PageHeader
-            title="This month"
-            description={`${posts.length} ${posts.length === 1 ? "post" : "posts"} in view`}
-            className="mb-8"
-          />
-
-          <div data-cal-reveal>
-          <FullCalendar
-            ref={(el) => {
-              calendarRef.current = el
-            }}
-            plugins={[dayGridPlugin, interactionPlugin, listPlugin]}
-            initialView={isMobile ? "listWeek" : "dayGridMonth"}
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: isMobile ? "" : "dayGridMonth,dayGridWeek,listWeek",
-            }}
-            firstDay={1}
-            height="auto"
-            events={events}
-            editable
-            dayMaxEvents={4}
-            eventContent={(arg) => {
-              const post = arg.event.extendedProps.post as WithId<Post>
-              const html = renderToStaticMarkup(
-                <PostChip
-                  post={post}
-                  category={categoryById.get(post.categoryId ?? "") ?? null}
-                  assignee={
-                    post.assigneeId
-                      ? userById.get(post.assigneeId) ?? null
-                      : null
+        <main
+          ref={mainRef}
+          className="flex-1 min-w-0 overflow-y-auto px-6 sm:px-10 py-8"
+        >
+          <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+            <CalendarToolbar
+              visibleMonth={visibleMonth}
+              view={view}
+              onPrev={onPrev}
+              onNext={onNext}
+              onToday={onToday}
+              onViewChange={setView}
+            />
+            <div data-cal-reveal>
+              {view === "month" ? (
+                <CalendarGrid
+                  visibleMonth={visibleMonth}
+                  posts={posts}
+                  categories={categories}
+                  users={[]}
+                  awarenessDays={awarenessDays}
+                  visibleCategoryIds={
+                    allCategoriesVisible ? null : visibleCategoryIds
                   }
-                />,
-              )
-              return { html }
-            }}
-            dayCellContent={(arg) => {
-              const key = format(arg.date, "yyyy-MM-dd")
-              const hasPost = postsByDate.has(key)
-              const hint = awarenessHintByDate.get(key)
-              const dayNumber = arg.dayNumberText
-              if (hasPost || !hint) {
-                return { html: `<span class="fc-daygrid-day-number">${dayNumber}</span>` }
-              }
-              const html = renderToStaticMarkup(
-                <>
-                  <span className="fc-daygrid-day-number">{dayNumber}</span>
-                  <span
-                    className="awareness-hint"
-                    title={`${hint.name} — ${format(parseISO(hint.date), "d MMM")}`}
-                  >
-                    💡 {hint.name}
-                  </span>
-                </>,
-              )
-              return { html }
-            }}
-            eventClick={(arg) => {
-              const post = arg.event.extendedProps.post as WithId<Post>
-              openComposerWithPost(post)
-            }}
-            dateClick={(arg) => {
-              openQuickAdd({ initialDate: arg.date, source: "calendar-cell" })
-            }}
-            eventDrop={async (arg) => {
-              const post = arg.event.extendedProps.post as WithId<Post>
-              const newDate = arg.event.start
-              if (!newDate) return
-              const formatted = format(newDate, "yyyy-MM-dd")
-              const res = await updatePost({ id: post.id, scheduledDate: formatted })
-              if (!res.ok) {
-                arg.revert()
-                toast.error(res.error ?? "Could not move post")
-              } else {
-                toast.success(`Moved to ${format(newDate, "EEE d MMM")}`)
-                refresh()
-              }
-            }}
-          />
-          </div>
+                  onCellClick={onCellClick}
+                  onPostClick={onPostClick}
+                />
+              ) : (
+                <ListView
+                  posts={posts}
+                  categories={categories}
+                  visibleCategoryIds={
+                    allCategoriesVisible ? null : visibleCategoryIds
+                  }
+                  onPostClick={onPostClick}
+                />
+              )}
+            </div>
+          </DndContext>
         </main>
 
-        <CalendarAwarenessRail
-          awarenessDays={awarenessDays}
-          plannedAwarenessIds={plannedAwarenessIds}
-          suggestions={suggestions}
-        />
+        <aside className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border bg-secondary/15 p-6 gap-6 overflow-y-auto">
+          <MiniCalendar
+            visibleMonth={visibleMonth}
+            selectedDate={null}
+            onSelectDate={(d) => setVisibleMonth(startOfMonth(d))}
+            onPrev={onPrev}
+            onNext={onNext}
+          />
+          <CategoryFilter
+            categories={categories}
+            visibleIds={visibleCategoryIds}
+            onToggle={toggleCategory}
+            onAll={() => setVisibleCategoryIds(allCategoryIds)}
+            onNone={() => setVisibleCategoryIds(new Set())}
+          />
+          <CalendarAwarenessRail
+            awarenessDays={awarenessDays}
+            plannedAwarenessIds={plannedAwarenessIds}
+            suggestions={suggestions}
+          />
+        </aside>
       </div>
     </>
+  )
+}
+
+function ListView({
+  posts,
+  categories,
+  visibleCategoryIds,
+  onPostClick,
+}: {
+  posts: WithId<Post>[]
+  categories: WithId<Category>[]
+  visibleCategoryIds: Set<string> | null
+  onPostClick: (p: WithId<Post>) => void
+}) {
+  const categoryById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c])),
+    [categories],
+  )
+  const filtered = useMemo(() => {
+    const list = visibleCategoryIds
+      ? posts.filter((p) => !p.categoryId || visibleCategoryIds.has(p.categoryId))
+      : posts
+    return [...list].sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))
+  }, [posts, visibleCategoryIds])
+
+  if (filtered.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-background p-12 text-center text-sm text-muted-foreground">
+        No posts in this view.
+      </div>
+    )
+  }
+
+  // Group by date
+  const byDate = new Map<string, WithId<Post>[]>()
+  for (const p of filtered) {
+    const arr = byDate.get(p.scheduledDate) ?? []
+    arr.push(p)
+    byDate.set(p.scheduledDate, arr)
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-background divide-y divide-border">
+      {Array.from(byDate.entries()).map(([date, group]) => (
+        <div key={date} className="flex gap-6 px-4 py-3">
+          <div className="w-20 shrink-0 text-xs text-muted-foreground tabular-nums">
+            {format(parseISO(date), "EEE d MMM")}
+          </div>
+          <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+            {group.map((p) => {
+              const cat = categoryById.get(p.categoryId ?? "")
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onPostClick(p)}
+                  className="flex items-center gap-2 text-left text-sm hover:text-foreground/80"
+                >
+                  {cat && (
+                    <span
+                      aria-hidden
+                      className="size-2 rounded-full shrink-0"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                  )}
+                  <span className="truncate">{p.brief ?? "Untitled"}</span>
+                  {cat && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {cat.name}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
