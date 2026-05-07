@@ -5,24 +5,14 @@ import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
+import { LEGACY_POST_STATUSES } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
-
-const STATUSES: PostStatus[] = [
-  "idea",
-  "brief",
-  "researching",
-  "designing",
-  "review",
-  "scheduled",
-  "posted",
-  "missed",
-  "archived",
-]
 
 type Props = {
   post: WithId<Post>
   category: WithId<Category> | undefined
   assignee: WithId<User> | undefined
+  columnIds?: readonly string[]
   onClick: () => void
   onStatusChange?: (status: PostStatus) => void
   isDragging?: boolean
@@ -32,10 +22,13 @@ export function KanbanCard({
   post,
   category,
   assignee,
+  columnIds,
   onClick,
   onStatusChange,
   isDragging,
 }: Props) {
+  const statuses =
+    columnIds && columnIds.length > 0 ? columnIds : LEGACY_POST_STATUSES
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: post.id })
 
@@ -102,7 +95,7 @@ export function KanbanCard({
             onChange={(e) => onStatusChange(e.target.value as PostStatus)}
             className="w-full text-xs rounded border border-border bg-background px-2 py-1 capitalize"
           >
-            {STATUSES.map((s) => (
+            {statuses.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>

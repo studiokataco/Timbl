@@ -26,16 +26,8 @@ import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { KanbanCard } from "./card"
 import { KanbanColumn } from "./column"
-
-const COLUMNS: PostStatus[] = [
-  "idea",
-  "brief",
-  "researching",
-  "designing",
-  "review",
-  "scheduled",
-  "posted",
-]
+import { KanbanColumnAddButton } from "./column-add-button"
+import { ColumnEditDialog } from "./column-edit-dialog"
 
 type Props = {
   posts: WithId<Post>[]
@@ -47,12 +39,14 @@ export function KanbanBoard({ posts, categories, users }: Props) {
   const router = useRouter()
   const { openComposerWithPost, data } = useDialogs()
   const campaigns = data.campaigns
+  const columns = data.kanbanColumns
   const [, startTransition] = useTransition()
   const [activeId, setActiveId] = useState<string | null>(null)
   const [filterCategory, setFilterCategory] = useState("")
   const [filterAssignee, setFilterAssignee] = useState("")
   const [filterCampaign, setFilterCampaign] = useState("")
   const [filterQ, setFilterQ] = useState("")
+  const [createOpen, setCreateOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -66,6 +60,7 @@ export function KanbanBoard({ posts, categories, users }: Props) {
     () => new Map(users.map((u) => [u.id, u])),
     [users],
   )
+  const columnIdSet = useMemo(() => new Set(columns.map((c) => c.id)), [columns])
 
   const filtered = useMemo(() => {
     let rows = posts
@@ -82,14 +77,14 @@ export function KanbanBoard({ posts, categories, users }: Props) {
   }, [posts, filterCategory, filterAssignee, filterCampaign, filterQ])
 
   const byStatus = useMemo(() => {
-    const map = new Map<PostStatus, WithId<Post>[]>()
-    for (const col of COLUMNS) map.set(col, [])
+    const map = new Map<string, WithId<Post>[]>()
+    for (const col of columns) map.set(col.id, [])
     for (const p of filtered) {
-      if (!COLUMNS.includes(p.status as PostStatus)) continue
-      map.get(p.status as PostStatus)!.push(p)
+      if (!columnIdSet.has(p.status)) continue
+      map.get(p.status)!.push(p)
     }
     return map
-  }, [filtered])
+  }, [filtered, columns, columnIdSet])
 
   const activePost = useMemo(
     () => posts.find((p) => p.id === activeId) ?? null,
@@ -104,7 +99,7 @@ export function KanbanBoard({ posts, categories, users }: Props) {
     setActiveId(null)
     if (!over || active.id === over.id) return
     const newStatus = over.id as PostStatus
-    if (!COLUMNS.includes(newStatus)) return
+    if (!columnIdSet.has(newStatus)) return
     const post = posts.find((p) => p.id === active.id)
     if (!post || post.status === newStatus) return
 
@@ -167,17 +162,19 @@ export function KanbanBoard({ posts, categories, users }: Props) {
           onDragEnd={onDragEnd}
         >
           <div className="flex gap-3 h-full w-full">
-            {COLUMNS.map((col) => (
+            {columns.map((col) => (
               <KanbanColumn
-                key={col}
-                status={col}
-                posts={byStatus.get(col) ?? []}
+                key={col.id}
+                column={col}
+                allColumns={columns}
+                posts={byStatus.get(col.id) ?? []}
                 categoryById={categoryById}
                 userById={userById}
                 onCardClick={openComposer}
                 onCardStatusChange={onStatusChange}
               />
             ))}
+            <KanbanColumnAddButton onClick={() => setCreateOpen(true)} />
           </div>
 
           <DragOverlay>
@@ -194,6 +191,11 @@ export function KanbanBoard({ posts, categories, users }: Props) {
         </DndContext>
       </div>
 
+      <ColumnEditDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        mode="create"
+      />
     </>
   )
 }
