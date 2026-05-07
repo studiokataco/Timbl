@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { updatePost } from "@/lib/actions/posts"
+import { cn } from "@/lib/utils"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
@@ -211,10 +212,16 @@ function FilterSelect({
   onChange: (v: string) => void
   options: { value: string; label: string }[]
 }) {
+  const isAll = !value
   return (
-    <Select value={value} onValueChange={(v) => onChange(!v || v === "_all" ? "" : v)}>
-      <SelectTrigger className="w-36">
-        <SelectValue placeholder={placeholder} />
+    <Select
+      value={value || "_all"}
+      onValueChange={(v) => onChange(!v || v === "_all" ? "" : v)}
+    >
+      <SelectTrigger
+        className={cn("w-36", isAll && "text-muted-foreground")}
+      >
+        <SelectValue placeholder={`Any ${placeholder.toLowerCase()}`} />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="_all">Any {placeholder.toLowerCase()}</SelectItem>
