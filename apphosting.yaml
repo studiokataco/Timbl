@@ -74,7 +74,6 @@ env:
     availability:
       - RUNTIME
 
-  - variable: SENTRY_DSN
-    secret: SENTRY_DSN
-    availability:
-      - RUNTIME
+  # SENTRY_DSN intentionally unbound — Sentry isn't set up. Cloud Logging
+  # in App Hosting + Functions provides primary error visibility. Re-wire
+  # when @sentry/nextjs lands.
