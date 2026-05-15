@@ -32,6 +32,26 @@ export const migratedFromSchema = z.object({
 })
 export type MigratedFrom = z.infer<typeof migratedFromSchema>
 
+/*
+ * Attached when an agent created or modified this post. Lets the UI surface
+ * "AI-assisted" affordances (sparkle, review pill) and lets the runtime
+ * resume a paused human-gate when the user approves or rejects.
+ *
+ * `toolCallId` is the adk-js function-call id of the LongRunningFunctionTool
+ * that paused the run; it's the key the resume endpoint hands back to the
+ * runner to deliver the human's decision as a tool result.
+ */
+export const agentMetaSchema = z.object({
+  sourceRunId: z.string(),
+  sourceAgent: z.string(),
+  confidence: z.number().min(0).max(1).optional(),
+  rationale: z.string().max(4_000).optional(),
+  ideationItemId: z.string().optional(),
+  reviewState: z.enum(["pending", "approved", "rejected"]).optional(),
+  toolCallId: z.string().optional(),
+})
+export type AgentMeta = z.infer<typeof agentMetaSchema>
+
 export const postSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
@@ -67,6 +87,7 @@ export const postSchema = audit.extend({
   notes: z.string().optional(),
   postedAt: isoTimestamp.optional(),
   migratedFrom: migratedFromSchema.optional(),
+  agentMeta: agentMetaSchema.optional(),
 })
 export type Post = z.infer<typeof postSchema>
 

@@ -62,7 +62,6 @@ export function CalendarGrid({
       arr.push(p)
       m.set(p.scheduledDate, arr)
     }
-    // stable sort by time, then brief
     for (const arr of m.values()) {
       arr.sort((a, b) =>
         (a.scheduledTime ?? "").localeCompare(b.scheduledTime ?? "") ||
@@ -75,7 +74,7 @@ export function CalendarGrid({
   const ranges = useMemo(() => groupAwarenessRanges(awarenessDays), [awarenessDays])
 
   return (
-    <div className="rounded-lg border border-border bg-background overflow-hidden">
+    <div className="rounded-lg border border-border bg-background">
       {/* Day name header */}
       <div className="grid grid-cols-7 border-b border-border bg-secondary/30">
         {DAY_NAMES.map((n) => (
@@ -123,7 +122,6 @@ function WeekRow({
   const weekStart = week.cells[0].date
   const weekEnd = week.cells[6].date
 
-  // Compute multi-day bars that fall in this week row.
   const barsInWeek = useMemo(() => {
     const intersecting = ranges.filter(
       (r) => r.end >= weekStart && r.start <= weekEnd,
@@ -143,19 +141,9 @@ function WeekRow({
 
   return (
     <div className="border-b border-border last:border-b-0">
-      {/* Cells with day numbers and droppable surfaces */}
-      <div className="grid grid-cols-7">
-        {week.cells.map((cell) => (
-          <CalendarCell
-            key={cell.iso}
-            cell={cell}
-            onCellClick={onCellClick}
-          />
-        ))}
-      </div>
-      {/* Multi-day bars layer */}
+      {/* Awareness bars above the cells */}
       {barsInWeek.length > 0 && (
-        <div className="grid grid-cols-7 gap-y-0.5 px-1 pt-0.5">
+        <div className="grid grid-cols-7 gap-y-0.5 px-1 pt-0.5 pb-0">
           {barsInWeek.map((b) => (
             <EventBar
               key={`${b.range.id}-${week.index}`}
@@ -168,14 +156,15 @@ function WeekRow({
           ))}
         </div>
       )}
-      {/* Single-day events layer (per cell) */}
+      {/* Unified cells: day number + event pills in one droppable div */}
       <div className="grid grid-cols-7">
         {week.cells.map((cell) => (
-          <CellEvents
-            key={`${cell.iso}-events`}
+          <UnifiedCell
+            key={cell.iso}
             cell={cell}
             posts={postsByDate.get(cell.iso) ?? []}
             categoryById={categoryById}
+            onCellClick={onCellClick}
             onPostClick={onPostClick}
           />
         ))}
@@ -184,31 +173,42 @@ function WeekRow({
   )
 }
 
-function CalendarCell({
+function UnifiedCell({
   cell,
+  posts,
+  categoryById,
   onCellClick,
+  onPostClick,
 }: {
   cell: CalendarCellT
+  posts: WithId<Post>[]
+  categoryById: Map<string, WithId<Category>>
   onCellClick: (date: Date) => void
+  onPostClick: (post: WithId<Post>) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `cell:${cell.iso}`,
     data: { type: "cell", iso: cell.iso, date: cell.date },
   })
 
+  const visible = posts.slice(0, MAX_VISIBLE_PILLS)
+  const overflow = posts.length - visible.length
+
   return (
     <div
       ref={setNodeRef}
       onClick={() => onCellClick(cell.date)}
       className={cn(
-        "relative min-h-[110px] border-r border-border last:border-r-0 px-1.5 pt-1.5 pb-1 cursor-pointer transition-colors",
+        "relative min-h-[110px] border-r border-border last:border-r-0",
+        "px-1.5 pt-1.5 pb-1 flex flex-col gap-0.5 cursor-pointer transition-colors",
         cell.isCurrentMonth ? "bg-background" : "bg-secondary/20",
+        !cell.isCurrentMonth && "opacity-70",
         isOver && "bg-secondary/60 ring-1 ring-inset ring-foreground/20",
       )}
     >
       <span
         className={cn(
-          "inline-flex items-center justify-center size-6 text-xs tabular-nums",
+          "inline-flex items-center justify-center size-6 text-xs tabular-nums self-start mb-0.5",
           cell.isToday && "rounded-full bg-foreground text-background font-semibold",
           !cell.isCurrentMonth && "text-muted-foreground/60",
           cell.isCurrentMonth && !cell.isToday && "text-foreground",
@@ -216,41 +216,20 @@ function CalendarCell({
       >
         {format(cell.date, "d")}
       </span>
-    </div>
-  )
-}
-
-function CellEvents({
-  cell,
-  posts,
-  categoryById,
-  onPostClick,
-}: {
-  cell: CalendarCellT
-  posts: WithId<Post>[]
-  categoryById: Map<string, WithId<Category>>
-  onPostClick: (post: WithId<Post>) => void
-}) {
-  const visible = posts.slice(0, MAX_VISIBLE_PILLS)
-  const overflow = posts.length - visible.length
-  return (
-    <div
-      className={cn(
-        "border-r border-border last:border-r-0 px-1 pb-1 flex flex-col gap-0.5 min-h-0",
-        !cell.isCurrentMonth && "opacity-60",
-      )}
-    >
       {visible.map((p) => (
         <EventPill
           key={p.id}
           post={p}
           category={categoryById.get(p.categoryId ?? "") ?? null}
-          onClick={() => onPostClick(p)}
+          onClick={(e) => {
+            e.stopPropagation()
+            onPostClick(p)
+          }}
         />
       ))}
       {overflow > 0 && (
-        <span className="text-[11px] text-muted-foreground pl-1.5 leading-tight">
-          + {overflow} more
+        <span className="text-[11px] text-muted-foreground pl-0.5 leading-tight">
+          +{overflow} more
         </span>
       )}
     </div>

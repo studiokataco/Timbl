@@ -3,10 +3,9 @@ export const dynamic = "force-dynamic"
 import Link from "next/link"
 import { format, parseISO } from "date-fns"
 import { Megaphone, Plus } from "lucide-react"
-import { TopBar } from "@/components/shared/top-bar"
 import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { LinkButton } from "@/components/shared/link-button"
 import { EmptyState } from "@/components/shared/empty-state"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
@@ -17,17 +16,16 @@ export default async function CampaignsPage() {
 
   return (
     <>
-      <TopBar />
       <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
         <div className="mx-auto w-full max-w-6xl space-y-8">
         <PageHeader
           title="Campaigns"
           description="Content series with a shared theme, timeline, and goal."
           action={
-            <Button render={<Link href="/settings/campaigns" />}>
+            <LinkButton href="/settings/campaigns">
               <Plus aria-hidden className="size-4" />
               Manage
-            </Button>
+            </LinkButton>
           }
         />
 
@@ -37,9 +35,9 @@ export default async function CampaignsPage() {
             title="No campaigns yet"
             body="Group related posts into a series with a shared timeline, theme, and progress bar — useful for fundraising drives, anniversaries, or awareness weeks."
             action={
-              <Button size="sm" render={<Link href="/settings/campaigns" />}>
+              <LinkButton size="sm" href="/settings/campaigns">
                 Create your first campaign
-              </Button>
+              </LinkButton>
             }
             size="lg"
           />

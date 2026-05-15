@@ -2,7 +2,6 @@
 export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"
-import { TopBar } from "@/components/shared/top-bar"
 import { PageHeader } from "@/components/shared/page-header"
 import { PostsTable } from "@/components/list/posts-table"
 import {
@@ -29,7 +28,6 @@ export default async function PostsPage() {
 
   return (
     <>
-      <TopBar />
       <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
         <div className="mx-auto w-full max-w-6xl space-y-8">
           <PageHeader

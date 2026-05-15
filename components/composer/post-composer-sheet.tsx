@@ -8,10 +8,12 @@ import {
   Loader2,
   MoreHorizontal,
   Trash2,
+  X,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -292,7 +294,10 @@ export function PostComposerSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
+      <SheetContent
+        showCloseButton={false}
+        className="w-full sm:max-w-xl overflow-y-auto p-0"
+      >
         <div className="flex flex-col h-full">
           <SheetHeader className="px-6 py-5 border-b border-border">
             <div className="flex items-center justify-between gap-3">
@@ -322,7 +327,7 @@ export function PostComposerSheet({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-7"
+                        className="size-8"
                         aria-label="More post actions"
                       />
                     }
@@ -338,6 +343,18 @@ export function PostComposerSheet({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <SheetClose
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label="Close"
+                    />
+                  }
+                >
+                  <X aria-hidden className="size-4" />
+                </SheetClose>
               </div>
             </div>
             <SheetDescription className="text-xs">

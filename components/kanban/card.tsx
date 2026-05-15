@@ -3,10 +3,12 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
+import { Sparkles } from "lucide-react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { LEGACY_POST_STATUSES } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
+import { ApprovalActions } from "@/components/agents/approval-actions"
 
 type Props = {
   post: WithId<Post>
@@ -51,8 +53,14 @@ export function KanbanCard({
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-1 mb-1.5">
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
           {format(parseISO(post.scheduledDate), "d MMM")}
+          {post.agentMeta && (
+            <Sparkles
+              aria-label="AI-assisted"
+              className="size-3 text-muted-foreground/70"
+            />
+          )}
         </span>
         {category && (
           <span
@@ -78,6 +86,16 @@ export function KanbanCard({
           </span>
         )}
       </div>
+      {post.agentMeta?.reviewState === "pending" && (
+        <div className="mt-2 pt-2 border-t border-border">
+          <p
+            className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1.5"
+          >
+            Needs review
+          </p>
+          <ApprovalActions postId={post.id} className="flex gap-1.5" />
+        </div>
+      )}
       {/*
        * Mobile-only status changer. Drag-and-drop is fiddly on touch so we
        * surface a native <select> that updates status in one tap. Hidden at

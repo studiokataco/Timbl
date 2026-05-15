@@ -4,6 +4,7 @@ import {
   type Firestore,
   connectFirestoreEmulator,
   getFirestore,
+  initializeFirestore,
 } from "firebase/firestore"
 import {
   type FirebaseStorage,
@@ -47,7 +48,14 @@ export function getClientApp(): FirebaseApp {
 
 export function getClientDb(): Firestore {
   if (!firestore) {
-    firestore = getFirestore(getClientApp())
+    const app = getClientApp()
+    try {
+      firestore = initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+      })
+    } catch {
+      firestore = getFirestore(app)
+    }
     if (useEmulators) {
       try {
         connectFirestoreEmulator(firestore, "127.0.0.1", 8080)

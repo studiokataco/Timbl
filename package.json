@@ -11,14 +11,21 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "emulators": "firebase emulators:start --only firestore,auth,storage",
-    "seed": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} FIREBASE_AUTH_EMULATOR_HOST=${FIREBASE_AUTH_EMULATOR_HOST:-127.0.0.1:9099} tsx firestore/seeds/run.ts"
+    "seed": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} FIREBASE_AUTH_EMULATOR_HOST=${FIREBASE_AUTH_EMULATOR_HOST:-127.0.0.1:9099} tsx firestore/seeds/run.ts",
+    "test:rules": "firebase emulators:exec --only firestore --project social-media-planner-rules-test \"vitest run\"",
+    "test:smoke": "playwright test",
+    "functions:build": "pnpm --dir functions build",
+    "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.2",
     "@base-ui/react": "^1.4.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fullcalendar/timegrid": "^6.1.20",
+    "@google/adk": "1.1.0",
+    "@google/genai": "^2.1.0",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.100.9",
@@ -34,7 +41,7 @@
     "gsap": "^3.15.0",
     "lucide-react": "^1.14.0",
     "next": "16.2.4",
-    "next-themes": "^0.4.6",
+    "node-cron": "^4.2.1",
     "react": "19.2.4",
     "react-day-picker": "^9.14.0",
     "react-dom": "19.2.4",
@@ -47,15 +54,20 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/string-similarity": "^4.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "firebase-tools": "^14.0.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.8"
   }
 }

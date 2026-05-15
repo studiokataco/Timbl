@@ -57,3 +57,19 @@ ui-debug.log*
 migration/source/
 # Migration audit output (regenerated on every run)
 migration/report.csv
+
+# Local-only walkthroughs / docs (not source of truth — those live in PRD/plan files)
+docs/AGENTS_WALKTHROUGH.md
+
+# Cloud Functions build output
+functions/lib/
+functions/node_modules/
+
+# Playwright artifacts
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# App Hosting local overrides
+apphosting.local.yaml

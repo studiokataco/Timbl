@@ -8,7 +8,7 @@ import { type Auth, getAuth } from "firebase-admin/auth"
 import { type Firestore, getFirestore } from "firebase-admin/firestore"
 import { getStorage } from "firebase-admin/storage"
 
-let firestoreSettingsApplied = false
+const firestoreSettingsApplied = new WeakSet<Firestore>()
 
 /*
  * Server-side Firebase Admin SDK. Used by:
@@ -73,11 +73,14 @@ export function getAdminApp(): App {
 
 export function getAdminDb(): Firestore {
   const db = getFirestore(getAdminApp())
-  if (!firestoreSettingsApplied) {
-    // Treat undefined fields as "do not write" instead of throwing. Lets
-    // optional schema fields (e.g. defaultCtaId, color) round-trip cleanly.
-    db.settings({ ignoreUndefinedProperties: true })
-    firestoreSettingsApplied = true
+  if (!firestoreSettingsApplied.has(db)) {
+    try {
+      db.settings({ ignoreUndefinedProperties: true })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (!msg.includes("already been initialized")) throw err
+    }
+    firestoreSettingsApplied.add(db)
   }
   return db
 }

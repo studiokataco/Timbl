@@ -155,6 +155,19 @@ async function main() {
 
   console.log("→ starting next dev")
   spawnLogged("next", "pnpm", ["exec", "next", "dev"], EMULATOR_ENV)
+
+  if (process.env.AGENTS_CRON === "1") {
+    /* The agent-cron script needs Next to be up before it can POST to
+     * /api/agents/cron/tick — wait for the listener before spawning. */
+    try {
+      await waitForPort("127.0.0.1", 3000, 90_000)
+      console.log("→ starting agent cron (AGENTS_CRON=1)")
+      spawnLogged("agents", "node", ["scripts/agent-cron.mjs"], EMULATOR_ENV)
+    } catch (err) {
+      console.error("[agents] could not start cron — next dev did not bind to :3000")
+      console.error(err.message)
+    }
+  }
 }
 
 main().catch((err) => {

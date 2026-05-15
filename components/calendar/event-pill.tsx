@@ -11,14 +11,9 @@ import { lightenForBg } from "./color"
 type Props = {
   post: WithId<Post>
   category: Pick<Category, "color" | "name"> | null
-  onClick: () => void
+  onClick: (e: React.MouseEvent) => void
 }
 
-/*
- * Single-day event pill. Pastel category background + bold time + title,
- * matching the shadcnuikit calendar event row. Draggable via @dnd-kit so
- * the orchestrator can move posts to other cells.
- */
 export function EventPill({ post, category, onClick }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -33,31 +28,57 @@ export function EventPill({ post, category, onClick }: Props) {
     : null
 
   const bg = lightenForBg(category?.color)
-  const fg = "var(--color-foreground)"
 
   return (
-    <button
-      type="button"
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-      style={{
-        backgroundColor: bg,
-        color: fg,
-        transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.4 : undefined,
-      }}
-      className={cn(
-        "block w-full text-left rounded-sm px-1.5 py-0.5 text-[11px] leading-tight truncate cursor-pointer hover:brightness-95 transition-[filter]",
-      )}
-      aria-label={`${category?.name ?? "Untitled"} — ${post.brief ?? "Untitled"}`}
-    >
-      {time && <span className="font-semibold mr-1">{time}</span>}
-      <span className="truncate">{post.brief ?? "Untitled"}</span>
-    </button>
+    <div className="relative group/pill">
+      <button
+        type="button"
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        onClick={onClick}
+        style={{
+          backgroundColor: bg,
+          color: "var(--color-foreground)",
+          transform: CSS.Translate.toString(transform),
+          opacity: isDragging ? 0.4 : undefined,
+        }}
+        className={cn(
+          "block w-full text-left rounded-sm px-1.5 py-0.5 text-[11px] leading-tight truncate",
+          "cursor-pointer hover:brightness-95 transition-[filter]",
+        )}
+        aria-label={`${category?.name ?? "Uncategorised"} — ${post.brief ?? "Untitled"}`}
+      >
+        {time && <span className="font-semibold mr-1">{time}</span>}
+        <span className="truncate">{post.brief ?? "Untitled"}</span>
+      </button>
+
+      {/* Hover tooltip */}
+      <div
+        className={cn(
+          "hidden group-hover/pill:block",
+          "absolute left-0 top-full z-50 mt-1 w-52",
+          "rounded-lg border border-border bg-popover shadow-xl p-2.5 text-xs",
+          "pointer-events-none",
+        )}
+      >
+        {category && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span
+              aria-hidden
+              className="size-2 rounded-full shrink-0"
+              style={{ backgroundColor: category.color }}
+            />
+            <span className="text-muted-foreground truncate">{category.name}</span>
+          </div>
+        )}
+        {time && (
+          <div className="font-semibold text-foreground mb-0.5">{time}</div>
+        )}
+        <div className="text-foreground line-clamp-3 leading-snug">
+          {post.brief ?? "Untitled"}
+        </div>
+      </div>
+    </div>
   )
 }

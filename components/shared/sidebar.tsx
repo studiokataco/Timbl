@@ -9,6 +9,7 @@ import {
   Megaphone,
   BookOpen,
   Globe,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -30,6 +31,7 @@ const GROUPS: NavGroup[] = [
       { href: "/posts", label: "All posts", icon: LayoutList },
       { href: "/kanban", label: "Kanban", icon: KanbanSquare },
       { href: "/campaigns", label: "Campaigns", icon: Megaphone },
+      { href: "/studio", label: "Studio", icon: Sparkles },
     ],
   },
   {

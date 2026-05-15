@@ -3,7 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { DevBanner } from "@/components/shared/dev-banner"
-import { ThemeProvider } from "@/components/shared/theme-provider"
+import { ThemeProvider, ThemeNoFlashScript } from "@/components/shared/theme-provider"
 
 /*
  * Cal.com's brand voice splits into Cal Sans (custom display) + Inter (everything
@@ -40,8 +40,11 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${interSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <ThemeNoFlashScript />
+      </head>
       <body className="h-screen overflow-hidden flex flex-col bg-background text-foreground">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider defaultTheme="system">
           <DevBanner />
           {children}
           <Toaster richColors position="bottom-right" />

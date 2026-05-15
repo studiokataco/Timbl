@@ -1,0 +1,83 @@
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  maxInstances: 10
+  minInstances: 0
+  concurrency: 80
+  timeoutSeconds: 60
+
+env:
+  # ---------------------------------------------------------------------------
+  # Public (NEXT_PUBLIC_*) — exposed to the browser bundle.
+  # Available at BUILD time so Next inlines them into the client chunks.
+  # ---------------------------------------------------------------------------
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: sm-dashboard-e7641
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: sm-dashboard-e7641.firebaseapp.com
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: sm-dashboard-e7641.firebasestorage.app
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: NEXT_PUBLIC_FIREBASE_API_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    secret: NEXT_PUBLIC_FIREBASE_APP_ID
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    secret: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # ---------------------------------------------------------------------------
+  # Server-only secrets — runtime only. Resolved from Google Secret Manager.
+  # The App Hosting service account needs roles/secretmanager.secretAccessor
+  # on each secret.
+  # ---------------------------------------------------------------------------
+  - variable: FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON
+    secret: FIREBASE_ADMIN_SA_JSON
+    availability:
+      - RUNTIME
+
+  - variable: AGENT_CRON_SECRET
+    secret: AGENT_CRON_SECRET
+    availability:
+      - RUNTIME
+
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
+    availability:
+      - RUNTIME
+
+  - variable: GOOGLE_API_KEY
+    secret: GEMINI_API_KEY
+    availability:
+      - RUNTIME
+
+  - variable: ANTHROPIC_API_KEY
+    secret: ANTHROPIC_API_KEY
+    availability:
+      - RUNTIME
+
+  - variable: SENTRY_DSN
+    secret: SENTRY_DSN
+    availability:
+      - RUNTIME

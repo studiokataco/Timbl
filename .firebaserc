@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "social-media-planner-dev"
+    "default": "social-media-planner-dev",
+    "prod": "sm-dashboard-e7641"
   }
 }

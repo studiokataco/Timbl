@@ -1,20 +1,20 @@
 "use client"
 
-import { Plus, Search } from "lucide-react"
+import { Plus, Search, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useDialogs } from "@/components/shared/dialogs-provider"
-import { DEV_SESSION } from "@/lib/auth/dev-session"
 
-export function TopBar() {
+export function TopBar({ userName }: { userName: string }) {
   const { openQuickAdd } = useDialogs()
-  const initials = DEV_SESSION.user.name
-    .split(" ")
+  const initials = userName
+    .split(/[\s_-]+/)
     .map((p) => p[0])
+    .filter(Boolean)
     .join("")
     .slice(0, 2)
-    .toUpperCase()
+    .toUpperCase() || "?"
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-30">
@@ -41,14 +41,21 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event("palette:open"))}
-          className="hidden md:flex items-center gap-2 text-body-sm text-muted-foreground border border-border rounded-md px-3 h-9 w-64 hover:text-foreground hover:bg-secondary/40 transition-colors"
-          aria-label="Open command palette"
+          className="hidden md:inline-flex items-center justify-center size-9 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+          aria-label="Search (⌘K)"
+          title="Search · ⌘K"
         >
-          <Search aria-hidden className="size-4 opacity-60" />
-          <span className="flex-1 text-left">Search</span>
-          <kbd className="font-mono text-[11px] tracking-widest opacity-60 border border-border rounded px-1 py-0.5">
-            ⌘K
-          </kbd>
+          <Search aria-hidden className="size-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event("agent-drawer:open"))}
+          className="hidden md:inline-flex items-center justify-center size-9 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+          aria-label="Open agent drawer (⌘J)"
+          title="Agent · ⌘J"
+        >
+          <Sparkles aria-hidden className="size-4" />
         </button>
 
         <ThemeToggle />

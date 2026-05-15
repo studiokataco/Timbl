@@ -6,6 +6,20 @@
   "storage": {
     "rules": "firestore/storage.rules"
   },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "predeploy": ["pnpm --dir \"$RESOURCE_DIR\" build"],
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.local",
+        "src/**/*.test.ts"
+      ]
+    }
+  ],
   "emulators": {
     "auth": {
       "port": 9099
@@ -15,6 +29,9 @@
     },
     "storage": {
       "port": 9199
+    },
+    "functions": {
+      "port": 5001
     },
     "ui": {
       "enabled": true,

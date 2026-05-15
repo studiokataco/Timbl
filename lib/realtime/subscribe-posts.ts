@@ -40,24 +40,37 @@ export function usePostsRealtime(opts: {
     if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) return
 
     let unsub: (() => void) | undefined
-    try {
-      const db = getClientDb()
-      const q = query(
-        collection(db, orgPostsPath(orgId)),
-        where("scheduledDate", ">=", start),
-        where("scheduledDate", "<=", end),
-        orderBy("scheduledDate", "asc"),
-      )
-      unsub = onSnapshot(
-        q,
-        () => queryClient.invalidateQueries({ queryKey: ["posts", orgId, start, end] }),
-        () => undefined,
-      )
-    } catch {
-      /* No-op — realtime is best-effort during dev. */
-    }
+    let cancelled = false
+    // Defer attach by a tick so React StrictMode's double-invoke can't
+    // subscribe and unsubscribe in the same microtask — which trips
+    // Firestore's watch-stream assertion (ID: ca9, ve:-1).
+    const timer = setTimeout(() => {
+      if (cancelled) return
+      try {
+        const db = getClientDb()
+        const q = query(
+          collection(db, orgPostsPath(orgId)),
+          where("scheduledDate", ">=", start),
+          where("scheduledDate", "<=", end),
+          orderBy("scheduledDate", "asc"),
+        )
+        unsub = onSnapshot(
+          q,
+          () => queryClient.invalidateQueries({ queryKey: ["posts", orgId, start, end] }),
+          () => undefined,
+        )
+      } catch {
+        /* No-op — realtime is best-effort during dev. */
+      }
+    }, 0)
     return () => {
-      unsub?.()
+      cancelled = true
+      clearTimeout(timer)
+      try {
+        unsub?.()
+      } catch {
+        /* No-op. */
+      }
     }
   }, [orgId, start, end, queryClient, enabled])
 }

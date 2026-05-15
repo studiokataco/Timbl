@@ -17,3 +17,20 @@ export const orgPostStatusHistoryPath = (orgId: string, postId: string) =>
 export const orgKanbanColumnsPath = (orgId: string) => `${orgPath(orgId)}/kanbanColumns`
 
 export const awarenessDaysPath = "awarenessDays"
+
+/* Agent runtime collections — see lib/agents/** and plan §2. */
+export const orgBrandConfigPath = (orgId: string) => `${orgPath(orgId)}/brandConfig`
+export const orgBrandConfigDocPath = (orgId: string) =>
+  `${orgBrandConfigPath(orgId)}/default`
+export const orgAgentConfigsPath = (orgId: string) =>
+  `${orgPath(orgId)}/agentConfigs`
+export const orgAgentSessionsPath = (orgId: string) =>
+  `${orgPath(orgId)}/agentSessions`
+export const orgAgentSessionEventsPath = (orgId: string, sessionId: string) =>
+  `${orgAgentSessionsPath(orgId)}/${sessionId}/events`
+export const orgAgentRunsPath = (orgId: string) =>
+  `${orgPath(orgId)}/agentRuns`
+export const orgIdeationFeedPath = (orgId: string) =>
+  `${orgPath(orgId)}/ideationFeed`
+export const orgAwarenessProposalsPath = (orgId: string) =>
+  `${orgPath(orgId)}/awarenessDayProposals`

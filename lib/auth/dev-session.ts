@@ -1,15 +1,15 @@
 /*
- * Development auth shim. Returns a SAFE Foundation admin for every request.
+ * Development auth shim. Returns a SAFE Foundation admin for every request
+ * — but ONLY when NEXT_PUBLIC_USE_EMULATORS=1 (set by `pnpm dev`). In any
+ * other environment this module's identity is meaningless; server-helpers
+ * routes through `lib/auth/session.ts` instead.
  *
- * This is the ONLY source of "who is logged in" until Phase 7. Server actions,
- * page loaders, and queries all read identity through getCurrentUser() and
- * getCurrentOrgId() so the Phase 7 swap to real Firebase Auth is a one-file
- * change with no callsite churn.
- *
- * The IDs are deterministic — Phase 1's seed script writes a SAFE org doc
- * at /organizations/safe-foundation and an admin user at
+ * The shim IDs are deterministic — Phase 1's seed script writes a SAFE org
+ * doc at /organizations/safe-foundation and an admin user at
  * /organizations/safe-foundation/users/admin.
  */
+
+export const IS_DEV_SHIM = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
 
 export type DevUser = {
   id: string
@@ -39,9 +39,19 @@ export const DEV_SESSION: { user: DevUser; organisation: DevOrganisation } = {
 }
 
 export function getCurrentUser(): DevUser {
+  if (!IS_DEV_SHIM) {
+    throw new Error(
+      "dev-session.getCurrentUser called outside emulator mode. Use lib/auth/server-helpers#getCurrentUser instead.",
+    )
+  }
   return DEV_SESSION.user
 }
 
 export function getCurrentOrgId(): string {
+  if (!IS_DEV_SHIM) {
+    throw new Error(
+      "dev-session.getCurrentOrgId called outside emulator mode. Use lib/auth/server-helpers#getCurrentOrgId instead.",
+    )
+  }
   return DEV_SESSION.organisation.id
 }

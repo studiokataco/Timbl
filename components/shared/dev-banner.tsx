@@ -1,14 +1,12 @@
 import { DEV_SESSION } from "@/lib/auth/dev-session"
 
 /*
- * Visible only outside production builds. A constant reminder that real auth
- * isn't wired yet and that every Firestore call is going to the emulator (or
- * silently failing if the emulator isn't running).
- *
- * Phase 7 removes this component.
+ * Visible only in emulator mode (NEXT_PUBLIC_USE_EMULATORS=1). Reminds the
+ * developer the dev shim is providing identity instead of real Firebase
+ * Auth. Renders nothing in production.
  */
 export function DevBanner() {
-  if (process.env.NODE_ENV === "production") return null
+  if (process.env.NEXT_PUBLIC_USE_EMULATORS !== "1") return null
 
   return (
     <div
@@ -18,7 +16,7 @@ export function DevBanner() {
     >
       <span aria-hidden>🛠</span>
       <span>
-        Dev mode — auto-signed in as <strong>{DEV_SESSION.user.name}</strong> @{" "}
+        Emulator mode — auto-signed in as <strong>{DEV_SESSION.user.name}</strong> @{" "}
         {DEV_SESSION.organisation.name}
       </span>
     </div>

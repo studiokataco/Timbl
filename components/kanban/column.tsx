@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
-import { MoreHorizontal, Palette, Pencil, Trash2 } from "lucide-react"
+import { MoreHorizontal, Palette, Pencil, Sparkles, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { GenerateDraftsDialog } from "@/components/agents/generate-drafts-dialog"
 import { cn } from "@/lib/utils"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, KanbanColumn, Post, PostStatus, User } from "@/lib/schemas"
@@ -45,6 +46,7 @@ export function KanbanColumn({
   })
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [generateOpen, setGenerateOpen] = useState(false)
 
   const columnIds = useMemo(() => allColumns.map((c) => c.id), [allColumns])
 
@@ -77,6 +79,11 @@ export function KanbanColumn({
             <MoreHorizontal aria-hidden className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setGenerateOpen(true)}>
+              <Sparkles aria-hidden className="size-3.5" />
+              Generate drafts
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>
               <Pencil aria-hidden className="size-3.5" />
               Rename
@@ -95,6 +102,12 @@ export function KanbanColumn({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <GenerateDraftsDialog
+          open={generateOpen}
+          onOpenChange={setGenerateOpen}
+          columnId={column.id}
+          columnLabel={column.label}
+        />
       </div>
       <SortableContext
         items={posts.map((p) => p.id)}

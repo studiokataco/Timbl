@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/components/shared/theme-provider"
 import {
   BookOpen,
   Calendar as CalendarIcon,

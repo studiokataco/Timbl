@@ -5,6 +5,28 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * Registered custom property — required for the Ask-AI button's conic-gradient
+ * ring to interpolate smoothly under GSAP. Without @property, browsers treat
+ * the angle as a generic token and animations jump rather than smear.
+ */
+@property --ai-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/*
+ * Numeric 0..1 driver for the Ask-AI button's outer glow alpha so GSAP
+ * can interpolate the box-shadow strength smoothly. Without @property
+ * the value can't be transitioned and the pulse jumps.
+ */
+@property --ai-glow {
+  syntax: "<number>";
+  initial-value: 0;
+  inherits: false;
+}
+
+/*
  * Theme tokens are sourced from /DESIGN.md (Cal.com design system, installed via getdesign).
  * shadcn/ui primitives are skinned through these CSS variables — do not hardcode colours
  * in components; reference the tokens below.

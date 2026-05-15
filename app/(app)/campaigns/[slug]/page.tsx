@@ -4,7 +4,6 @@ import { notFound } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { TopBar } from "@/components/shared/top-bar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
@@ -47,7 +46,6 @@ export default async function CampaignDetailPage({ params }: Props) {
 
   return (
     <>
-      <TopBar />
       <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
         <div className="mx-auto w-full max-w-6xl space-y-8">
           <div className="space-y-6">

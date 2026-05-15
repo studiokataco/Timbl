@@ -50,18 +50,24 @@ export function CategoryFilter({
       <ul className="flex flex-col gap-1">
         {categories.map((c) => (
           <li key={c.id}>
-            <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-foreground py-0.5">
+            <div className="flex items-center gap-2 text-xs py-0.5">
               <Checkbox
+                id={`cat-filter-${c.id}`}
                 checked={visibleIds.has(c.id)}
                 onCheckedChange={() => onToggle(c.id)}
               />
-              <span
-                aria-hidden
-                className="size-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: c.color }}
-              />
-              <span className="truncate">{c.name}</span>
-            </label>
+              <label
+                htmlFor={`cat-filter-${c.id}`}
+                className="flex items-center gap-2 cursor-pointer hover:text-foreground flex-1 min-w-0"
+              >
+                <span
+                  aria-hidden
+                  className="size-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: c.color }}
+                />
+                <span className="truncate">{c.name}</span>
+              </label>
+            </div>
           </li>
         ))}
       </ul>

@@ -2,7 +2,6 @@
 export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"
-import { TopBar } from "@/components/shared/top-bar"
 import { PageHeader } from "@/components/shared/page-header"
 import { KanbanBoard } from "@/components/kanban/board"
 import {
@@ -24,7 +23,6 @@ export default async function KanbanPage() {
 
   return (
     <>
-      <TopBar />
       <div className="flex-1 flex flex-col min-h-0 px-6 sm:px-10 py-10 lg:py-14">
         <PageHeader
           title="Kanban"

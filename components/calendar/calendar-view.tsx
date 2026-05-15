@@ -8,22 +8,35 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core"
-import { addMonths, format, parseISO, startOfMonth, subMonths } from "date-fns"
+import {
+  addDays,
+  addMonths,
+  addWeeks,
+  format,
+  parseISO,
+  startOfMonth,
+  subDays,
+  subMonths,
+  subWeeks,
+} from "date-fns"
 import { useCallback, useMemo, useRef, useState } from "react"
+import { Sparkles } from "lucide-react"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { PlanCadenceDialog } from "@/components/agents/plan-cadence-dialog"
 import { updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post, User } from "@/lib/schemas"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
-import { TopBar } from "@/components/shared/top-bar"
 import { useGridReveal } from "@/components/shared/motion-cal"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { CalendarToolbar, type CalendarView as ViewT } from "./calendar-toolbar"
 import { CalendarGrid } from "./calendar-grid"
-import { MiniCalendar } from "./mini-calendar"
 import { CategoryFilter } from "./category-filter"
 import { CalendarAwarenessRail } from "./awareness-rail"
+import { WeekView } from "./week-view"
+import { DayView } from "./day-view"
 
 type Props = {
   orgId: string
@@ -36,15 +49,6 @@ type Props = {
   range: { start: string; end: string }
 }
 
-/*
- * Custom calendar surface (replaces the previous FullCalendar setup).
- * Visual language follows the 21st.dev event-manager + shadcnuikit calendar
- * references — clean grid, pastel pills, today as a dark filled circle.
- *
- * Multi-day awareness events render as continuous bars per week row via
- * lib/calendar/awareness-grouping.ts; single-day posts render as event
- * pills inside their cell. Drag a pill to another cell → updatePost.
- */
 export function CalendarView({
   orgId,
   initialPosts,
@@ -59,8 +63,9 @@ export function CalendarView({
   const mainRef = useRef<HTMLElement | null>(null)
   useGridReveal(mainRef)
 
-  const [visibleMonth, setVisibleMonth] = useState<Date>(() => startOfMonth(new Date()))
+  const [visibleDate, setVisibleDate] = useState<Date>(() => startOfMonth(new Date()))
   const [view, setView] = useState<ViewT>("month")
+  const [planOpen, setPlanOpen] = useState(false)
   const [visibleCategoryIds, setVisibleCategoryIds] = useState<Set<string>>(
     () => new Set(categories.map((c) => c.id)),
   )
@@ -78,9 +83,32 @@ export function CalendarView({
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   )
 
-  const onPrev = useCallback(() => setVisibleMonth((d) => subMonths(d, 1)), [])
-  const onNext = useCallback(() => setVisibleMonth((d) => addMonths(d, 1)), [])
-  const onToday = useCallback(() => setVisibleMonth(startOfMonth(new Date())), [])
+  const onPrev = useCallback(() => {
+    setVisibleDate((d) => {
+      if (view === "week") return subWeeks(d, 1)
+      if (view === "day") return subDays(d, 1)
+      return subMonths(d, 1)
+    })
+  }, [view])
+
+  const onNext = useCallback(() => {
+    setVisibleDate((d) => {
+      if (view === "week") return addWeeks(d, 1)
+      if (view === "day") return addDays(d, 1)
+      return addMonths(d, 1)
+    })
+  }, [view])
+
+  const onToday = useCallback(() => {
+    const today = new Date()
+    setVisibleDate(view === "month" ? startOfMonth(today) : today)
+  }, [view])
+
+  // When switching views, snap visibleDate to a sensible anchor
+  const onViewChange = useCallback((v: ViewT) => {
+    setView(v)
+    setVisibleDate((d) => (v === "month" ? startOfMonth(d) : d))
+  }, [])
 
   const onCellClick = useCallback(
     (date: Date) => {
@@ -103,22 +131,51 @@ export function CalendarView({
         | { type: string; post: WithId<Post> }
         | undefined
       const overData = over.data.current as
-        | { type: string; iso: string; date: Date }
+        | { type: string; iso: string; date?: Date; hour?: number }
         | undefined
       if (!activeData || activeData.type !== "post") return
-      if (!overData || overData.type !== "cell") return
-      const post = activeData.post
-      if (post.scheduledDate === overData.iso) return
+      if (!overData) return
 
-      const res = await updatePost({
-        id: post.id,
-        scheduledDate: overData.iso,
-      })
-      if (!res.ok) {
-        toast.error(res.error ?? "Could not move post")
-      } else {
-        toast.success(`Moved to ${format(overData.date, "EEE d MMM")}`)
-        queryClient.invalidateQueries({ queryKey: ["posts"] })
+      const post = activeData.post
+
+      if (overData.type === "cell") {
+        if (post.scheduledDate === overData.iso) return
+        const res = await updatePost({ id: post.id, scheduledDate: overData.iso })
+        if (!res.ok) {
+          toast.error(res.error ?? "Could not move post")
+        } else {
+          toast.success(`Moved to ${format(parseISO(overData.iso), "EEE d MMM")}`)
+          queryClient.invalidateQueries({ queryKey: ["posts"] })
+        }
+      } else if (overData.type === "timeslot") {
+        const newTime = `${String(overData.hour).padStart(2, "0")}:00`
+        if (post.scheduledDate === overData.iso && post.scheduledTime === newTime) return
+        const res = await updatePost({
+          id: post.id,
+          scheduledDate: overData.iso,
+          scheduledTime: newTime,
+        })
+        if (!res.ok) {
+          toast.error(res.error ?? "Could not move post")
+        } else {
+          toast.success(
+            `Moved to ${format(parseISO(overData.iso), "EEE d MMM")} at ${newTime}`,
+          )
+          queryClient.invalidateQueries({ queryKey: ["posts"] })
+        }
+      } else if (overData.type === "allday") {
+        if (post.scheduledDate === overData.iso && !post.scheduledTime) return
+        const res = await updatePost({
+          id: post.id,
+          scheduledDate: overData.iso,
+          scheduledTime: undefined,
+        })
+        if (!res.ok) {
+          toast.error(res.error ?? "Could not move post")
+        } else {
+          toast.success(`Moved to ${format(parseISO(overData.iso), "EEE d MMM")}`)
+          queryClient.invalidateQueries({ queryKey: ["posts"] })
+        }
       }
     },
     [queryClient],
@@ -138,10 +195,10 @@ export function CalendarView({
     [categories],
   )
 
+  const categoryFilter = allCategoriesVisible ? null : visibleCategoryIds
+
   return (
     <>
-      <TopBar />
-
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <main
           ref={mainRef}
@@ -149,56 +206,101 @@ export function CalendarView({
         >
           <DndContext sensors={sensors} onDragEnd={onDragEnd}>
             <CalendarToolbar
-              visibleMonth={visibleMonth}
+              visibleDate={visibleDate}
               view={view}
               onPrev={onPrev}
               onNext={onNext}
               onToday={onToday}
-              onViewChange={setView}
+              onViewChange={onViewChange}
             />
             <div data-cal-reveal>
-              {view === "month" ? (
+              {view === "month" && (
                 <CalendarGrid
-                  visibleMonth={visibleMonth}
+                  visibleMonth={visibleDate}
                   posts={posts}
                   categories={categories}
                   users={[]}
                   awarenessDays={awarenessDays}
-                  visibleCategoryIds={
-                    allCategoriesVisible ? null : visibleCategoryIds
-                  }
+                  visibleCategoryIds={categoryFilter}
                   onCellClick={onCellClick}
                   onPostClick={onPostClick}
                 />
-              ) : (
+              )}
+              {view === "week" && (
+                <WeekView
+                  currentDate={visibleDate}
+                  posts={posts}
+                  categories={categories}
+                  awarenessDays={awarenessDays}
+                  visibleCategoryIds={categoryFilter}
+                  onCellClick={onCellClick}
+                  onPostClick={onPostClick}
+                />
+              )}
+              {view === "day" && (
+                <DayView
+                  currentDate={visibleDate}
+                  posts={posts}
+                  categories={categories}
+                  awarenessDays={awarenessDays}
+                  visibleCategoryIds={categoryFilter}
+                  onCellClick={onCellClick}
+                  onPostClick={onPostClick}
+                />
+              )}
+              {view === "list" && (
                 <ListView
                   posts={posts}
                   categories={categories}
-                  visibleCategoryIds={
-                    allCategoriesVisible ? null : visibleCategoryIds
-                  }
+                  visibleCategoryIds={categoryFilter}
                   onPostClick={onPostClick}
                 />
               )}
             </div>
           </DndContext>
+
+          <section
+            aria-label="Plan cadence with an AI agent"
+            className="mt-8 rounded-lg bg-secondary px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          >
+            <div className="max-w-prose">
+              <h2 className="text-display-sm text-foreground">
+                Let an agent plan your next two weeks
+              </h2>
+              <p className="mt-1.5 text-body-sm text-muted-foreground">
+                The cadence planner reads your brand&apos;s preferred days and times,
+                avoids conflicts, and writes pending drafts to your calendar.
+              </p>
+            </div>
+            <Button
+              onClick={() => setPlanOpen(true)}
+              className="gap-1.5 self-stretch sm:self-auto whitespace-nowrap"
+              size="lg"
+            >
+              <Sparkles className="size-4" aria-hidden />
+              Plan cadence
+            </Button>
+          </section>
+          <PlanCadenceDialog
+            open={planOpen}
+            onOpenChange={setPlanOpen}
+            startDate={visibleDate}
+          />
         </main>
 
-        <aside className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border bg-secondary/15 p-6 gap-6 overflow-y-auto">
-          <MiniCalendar
-            visibleMonth={visibleMonth}
-            selectedDate={null}
-            onSelectDate={(d) => setVisibleMonth(startOfMonth(d))}
-            onPrev={onPrev}
-            onNext={onNext}
-          />
-          <CategoryFilter
-            categories={categories}
-            visibleIds={visibleCategoryIds}
-            onToggle={toggleCategory}
-            onAll={() => setVisibleCategoryIds(allCategoryIds)}
-            onNone={() => setVisibleCategoryIds(new Set())}
-          />
+        <aside
+          aria-label="Calendar sidebar"
+          className="hidden lg:flex flex-col w-80 shrink-0 border-l border-border bg-secondary/15 px-6 overflow-y-auto"
+        >
+          <div className="py-6">
+            <CategoryFilter
+              categories={categories}
+              visibleIds={visibleCategoryIds}
+              onToggle={toggleCategory}
+              onAll={() => setVisibleCategoryIds(allCategoryIds)}
+              onNone={() => setVisibleCategoryIds(new Set())}
+            />
+          </div>
           <CalendarAwarenessRail
             awarenessDays={awarenessDays}
             plannedAwarenessIds={plannedAwarenessIds}
@@ -240,7 +342,6 @@ function ListView({
     )
   }
 
-  // Group by date
   const byDate = new Map<string, WithId<Post>[]>()
   for (const p of filtered) {
     const arr = byDate.get(p.scheduledDate) ?? []
