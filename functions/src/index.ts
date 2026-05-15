@@ -3,7 +3,7 @@ import { initializeApp, getApps } from "firebase-admin/app"
 
 if (getApps().length === 0) initializeApp()
 
-setGlobalOptions({ region: "us-central1", maxInstances: 5 })
+setGlobalOptions({ region: "asia-south1", maxInstances: 5 })
 
 export { beforeUserSignedIn } from "./setUserClaims"
 export { agentSweep } from "./agentSweep"

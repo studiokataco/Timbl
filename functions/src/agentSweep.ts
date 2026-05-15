@@ -26,7 +26,7 @@ export const agentSweep = onSchedule(
     schedule: "* * * * *",
     timeZone: "UTC",
     secrets: [CRON_SECRET],
-    region: "us-central1",
+    region: "asia-south1",
     timeoutSeconds: 60,
     retryCount: 0,
   },

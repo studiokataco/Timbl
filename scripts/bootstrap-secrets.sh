@@ -11,7 +11,6 @@ PROJECT="${GCP_PROJECT:-sm-dashboard-e7641}"
 APPHOSTING_SA="firebase-app-hosting-compute@${PROJECT}.iam.gserviceaccount.com"
 
 SECRETS=(
-  "FIREBASE_ADMIN_SA_JSON"
   "AGENT_CRON_SECRET"
   "GEMINI_API_KEY"
   "ANTHROPIC_API_KEY"

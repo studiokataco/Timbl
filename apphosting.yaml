@@ -50,13 +50,10 @@ env:
   # ---------------------------------------------------------------------------
   # Server-only secrets — runtime only. Resolved from Google Secret Manager.
   # The App Hosting service account needs roles/secretmanager.secretAccessor
-  # on each secret.
+  # on each secret. Admin SDK credentials are inherited from the App Hosting
+  # compute SA via ADC — no FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON binding
+  # required.
   # ---------------------------------------------------------------------------
-  - variable: FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON
-    secret: FIREBASE_ADMIN_SA_JSON
-    availability:
-      - RUNTIME
-
   - variable: AGENT_CRON_SECRET
     secret: AGENT_CRON_SECRET
     availability:
