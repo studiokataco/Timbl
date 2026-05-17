@@ -9,6 +9,7 @@ import {
 } from "@firebase/rules-unit-testing"
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -159,7 +160,7 @@ describe("posts mutations", () => {
   it("contributor cannot delete a post", async () => {
     const ctx = authed("alice-uid", ORG_A, "contributor", "alice")
     await assertFails(
-      setDoc(doc(ctx.firestore(), `organizations/${ORG_A}/posts/post-1`), {}, { merge: false }),
+      deleteDoc(doc(ctx.firestore(), `organizations/${ORG_A}/posts/post-1`)),
     )
   })
 })
