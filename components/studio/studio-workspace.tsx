@@ -13,6 +13,7 @@ import { Roster } from "./roster"
 import { PipelineGraph } from "./pipeline-graph"
 import { ActivityStream } from "./activity-stream"
 import { Inspector } from "./inspector"
+import { EmptyRosterCta } from "./empty-roster-cta"
 
 /*
  * Three-column workspace for /studio.
@@ -70,14 +71,20 @@ export function StudioWorkspace({ agents, runs, ideation, publishCounts }: Props
       </div>
 
       {/* Center column */}
-      <main className="min-h-0 overflow-y-auto">
+      <main className="min-h-0 overflow-y-auto flex flex-col">
         <PageHero />
-        <PipelineGraph
-          agents={agents}
-          runs={runs}
-          initialPublishCounts={publishCounts}
-        />
-        <ActivityStream initialRuns={runs} initialIdeation={ideation} />
+        {agents.length === 0 ? (
+          <EmptyRosterCta agents={agents} />
+        ) : (
+          <>
+            <PipelineGraph
+              agents={agents}
+              runs={runs}
+              initialPublishCounts={publishCounts}
+            />
+            <ActivityStream initialRuns={runs} initialIdeation={ideation} />
+          </>
+        )}
       </main>
 
       {/* Inspector — persistent on wide screens (≥1280px) */}

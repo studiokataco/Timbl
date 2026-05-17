@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Play,
   Plus,
   Save,
 } from "lucide-react"
@@ -68,6 +69,45 @@ const TABS: { key: TabKey; label: string }[] = [
 export function AgentPlayground({ agent, allAgentNames }: Props) {
   const [tab, setTab] = useState<TabKey>("chat")
   const [unsavedNotice, setUnsavedNotice] = useState<string | null>(null)
+  const [running, setRunning] = useState(false)
+  const queryClient = useQueryClient()
+
+  async function runNow() {
+    if (running) return
+    setRunning(true)
+    try {
+      const res = await fetch(`/api/agents/${agent.name}/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: "Run now", trigger: "manual" }),
+      })
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "")
+        toast.error("Run failed to start", { description: detail.slice(0, 200) })
+        return
+      }
+      const runId = res.headers.get("X-Run-Id") ?? "run"
+      toast.success(`${agent.name} started`, { id: runId })
+      setTab("history")
+      // Drain the SSE stream so the connection stays alive until the run
+      // finishes server-side. Cancelling the fetch would mark the run
+      // `cancelled` (see app/api/agents/[agent]/run/route.ts).
+      const reader = res.body?.getReader()
+      if (reader) {
+        while (true) {
+          const { done } = await reader.read()
+          if (done) break
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ["agent-runs", agent.name] })
+    } catch (err) {
+      toast.error("Run failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      })
+    } finally {
+      setRunning(false)
+    }
+  }
 
   return (
     <div className="h-full flex flex-col min-h-0">
@@ -79,14 +119,34 @@ export function AgentPlayground({ agent, allAgentNames }: Props) {
           <h3 className="text-title-lg text-foreground truncate">
             {agent.name}
           </h3>
-          <span
-            className={cn(
-              "shrink-0 text-[10px] uppercase tracking-wide rounded-pill px-1.5 py-0.5",
-              PROVIDER_TONE[agent.provider] ?? "bg-secondary",
-            )}
-          >
-            {agent.provider}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={runNow}
+              disabled={running || !agent.enabled}
+              title={
+                agent.enabled
+                  ? "Trigger a manual run"
+                  : "Enable the agent first"
+              }
+            >
+              {running ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Play className="size-3.5" />
+              )}
+              <span className="ml-1">Run now</span>
+            </Button>
+            <span
+              className={cn(
+                "text-[10px] uppercase tracking-wide rounded-pill px-1.5 py-0.5",
+                PROVIDER_TONE[agent.provider] ?? "bg-secondary",
+              )}
+            >
+              {agent.provider}
+            </span>
+          </div>
         </div>
         {agent.description && (
           <p className="mt-1.5 text-body-sm text-muted-foreground line-clamp-2">
