@@ -9,6 +9,7 @@ import {
   orgPostStatusHistoryPath,
 } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
+import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post } from "@/lib/schemas"
 
 /*
@@ -80,6 +81,11 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
   }
 
   await postsRef.set(doc)
+  try {
+    await embedIfChanged("post", orgId, postsRef.id, doc as unknown as Record<string, unknown>)
+  } catch (err) {
+    console.warn(`[embed] post create soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
   revalidatePath("/calendar")
   return { ok: true, id: postsRef.id }
 }
@@ -122,6 +128,14 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
     )
   }
   await batch.commit()
+  try {
+    const after = await ref.get()
+    if (after.exists) {
+      await embedIfChanged("post", orgId, id, { ...after.data(), id } as Record<string, unknown>)
+    }
+  } catch (err) {
+    console.warn(`[embed] post update soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
   revalidatePath("/calendar")
   revalidatePath("/posts")
   return { ok: true, id }

@@ -71,6 +71,56 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "embedding.vector",
+          "vectorConfig": { "dimension": 768, "flat": {} }
+        }
+      ]
+    },
+    {
+      "collectionGroup": "campaigns",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "embedding.vector",
+          "vectorConfig": { "dimension": 768, "flat": {} }
+        }
+      ]
+    },
+    {
+      "collectionGroup": "templates",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "embedding.vector",
+          "vectorConfig": { "dimension": 768, "flat": {} }
+        }
+      ]
+    },
+    {
+      "collectionGroup": "awarenessDays",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "embedding.vector",
+          "vectorConfig": { "dimension": 768, "flat": {} }
+        }
+      ]
+    },
+    {
+      "collectionGroup": "agentMemory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "embedding.vector",
+          "vectorConfig": { "dimension": 768, "flat": {} }
+        }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { audit, postType } from "./_shared"
+import { embeddingSchema } from "./embedding"
 
 export const templateCadence = z.enum([
   "weekly",
@@ -21,5 +22,6 @@ export const templateSchema = audit.extend({
   blurbTemplate: z.string().optional(),
   designTemplateCanvaUrl: z.string().url().optional(),
   cadence: templateCadence.default("ad-hoc"),
+  embedding: embeddingSchema.optional(),
 })
 export type Template = z.infer<typeof templateSchema>

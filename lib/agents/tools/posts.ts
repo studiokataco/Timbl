@@ -2,6 +2,7 @@ import { z } from "zod"
 import { FunctionTool } from "@google/adk"
 import { randomUUID } from "node:crypto"
 
+import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPostsPath, orgKanbanColumnsPath } from "@/lib/firebase/paths"
 import { isoDate, isoTime, postType } from "@/lib/schemas/_shared"
@@ -84,6 +85,11 @@ export const createDraftPostTool = new FunctionTool({
       .collection(orgPostsPath(orgId))
       .doc(id)
       .set(doc)
+    try {
+      await embedIfChanged("post", orgId, id, doc as unknown as Record<string, unknown>)
+    } catch {
+      /* embedIfChanged soft-fails internally; never break the tool result */
+    }
     return { ok: true, postId: id }
   },
 })
@@ -131,6 +137,17 @@ export const updateDraftPostTool = new FunctionTool({
       }
     }
     await ref.set(flat, { merge: true })
+    try {
+      const after = await ref.get()
+      if (after.exists) {
+        await embedIfChanged("post", orgId, input.postId, {
+          ...after.data(),
+          id: input.postId,
+        } as Record<string, unknown>)
+      }
+    } catch {
+      /* soft-fail */
+    }
     return { ok: true, postId: input.postId }
   },
 })

@@ -6,6 +6,7 @@ import { seed0005AwarenessDays } from "./0005_awareness_days"
 import { seed0006KanbanColumns } from "./0006_kanban_columns"
 import { seed0007AgentConfigs } from "./0007_agent_configs"
 import { seed0008AwarenessResearcher } from "./0008_awareness_researcher"
+import { seed0009EmbeddingsBackfill } from "./0009_embeddings_backfill"
 
 /*
  * Seed runner. Each seed is independently idempotent — safe to re-run.
@@ -23,6 +24,7 @@ async function main() {
   await seed0006KanbanColumns()
   await seed0007AgentConfigs()
   await seed0008AwarenessResearcher()
+  await seed0009EmbeddingsBackfill()
   console.log("\nseed complete.")
 }
 

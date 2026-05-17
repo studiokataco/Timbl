@@ -9,6 +9,7 @@ import {
   orgTemplatesPath,
 } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
+import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import {
   postType as postTypeEnum,
   templateCadence,
@@ -64,16 +65,19 @@ export async function createTemplate(input: unknown): Promise<ServerActionResult
   const db = getDb()
   const id = parsed.data.id ?? slugify(parsed.data.name)
   const now = new Date().toISOString()
-  await db.doc(`${orgTemplatesPath(orgId)}/${id}`).set(
-    {
-      ...parsed.data,
-      id,
-      organizationId: orgId,
-      createdAt: now,
-      updatedAt: now,
-    },
-    { merge: true },
-  )
+  const doc = {
+    ...parsed.data,
+    id,
+    organizationId: orgId,
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.doc(`${orgTemplatesPath(orgId)}/${id}`).set(doc, { merge: true })
+  try {
+    await embedIfChanged("template", orgId, id, doc as Record<string, unknown>)
+  } catch (err) {
+    console.warn(`[embed] template create soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
   revalidatePath("/library")
   return { ok: true, id }
 }
@@ -86,9 +90,16 @@ export async function updateTemplate(input: unknown): Promise<ServerActionResult
   const { id, ...patch } = parsed.data
   const orgId = await getCurrentOrgId()
   const now = new Date().toISOString()
-  await getDb()
-    .doc(`${orgTemplatesPath(orgId)}/${id}`)
-    .set({ ...patch, updatedAt: now }, { merge: true })
+  const ref = getDb().doc(`${orgTemplatesPath(orgId)}/${id}`)
+  await ref.set({ ...patch, updatedAt: now }, { merge: true })
+  try {
+    const after = await ref.get()
+    if (after.exists) {
+      await embedIfChanged("template", orgId, id, { ...after.data(), id } as Record<string, unknown>)
+    }
+  } catch (err) {
+    console.warn(`[embed] template update soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
   revalidatePath("/library")
   return { ok: true, id }
 }
@@ -198,23 +209,26 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
 
   const id = slugify(parsed.data.name)
   const now = new Date().toISOString()
-  await db.doc(`${orgTemplatesPath(orgId)}/${id}`).set(
-    {
-      id,
-      organizationId: orgId,
-      name: parsed.data.name,
-      categoryId: post.categoryId,
-      defaultPostType: post.postType ?? "grid",
-      defaultHashtags: post.hashtags ?? [],
-      defaultCtaId: post.ctaId,
-      blurbTemplate: post.blurb,
-      designTemplateCanvaUrl: post.canvaUrl,
-      cadence: parsed.data.cadence,
-      createdAt: now,
-      updatedAt: now,
-    },
-    { merge: true },
-  )
+  const doc = {
+    id,
+    organizationId: orgId,
+    name: parsed.data.name,
+    categoryId: post.categoryId,
+    defaultPostType: post.postType ?? "grid",
+    defaultHashtags: post.hashtags ?? [],
+    defaultCtaId: post.ctaId,
+    blurbTemplate: post.blurb,
+    designTemplateCanvaUrl: post.canvaUrl,
+    cadence: parsed.data.cadence,
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.doc(`${orgTemplatesPath(orgId)}/${id}`).set(doc, { merge: true })
+  try {
+    await embedIfChanged("template", orgId, id, doc as Record<string, unknown>)
+  } catch (err) {
+    console.warn(`[embed] saveAsTemplate soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
   revalidatePath("/library")
   return { ok: true, id }
 }

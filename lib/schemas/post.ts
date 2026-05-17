@@ -9,6 +9,7 @@ import {
   postStatus,
   postType,
 } from "./_shared"
+import { embeddingSchema } from "./embedding"
 
 /*
  * channelStatuses is a sparse map. Keys are channel slugs (`instagram`,
@@ -88,6 +89,7 @@ export const postSchema = audit.extend({
   postedAt: isoTimestamp.optional(),
   migratedFrom: migratedFromSchema.optional(),
   agentMeta: agentMetaSchema.optional(),
+  embedding: embeddingSchema.optional(),
 })
 export type Post = z.infer<typeof postSchema>
 
