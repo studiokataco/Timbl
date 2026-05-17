@@ -65,6 +65,20 @@ export class AnthropicLlm extends BaseLlm {
     const messages = buildAnthropicMessages(llmRequest.contents)
     const modelName = (llmRequest.model || this.model).replace(/^anthropic\//, "")
 
+    // TEMP DEBUG — remove once schema validation is resolved.
+    console.log(
+      "[anthropic-llm DEBUG] tools count=%d names=%s",
+      tools.length,
+      tools.map((t) => t.name).join(","),
+    )
+    for (let i = 0; i < tools.length; i++) {
+      console.log(
+        "[anthropic-llm DEBUG] tools[%d] input_schema=%s",
+        i,
+        JSON.stringify(tools[i].input_schema),
+      )
+    }
+
     /* Prompt caching — Anthropic ephemeral cache (5-min TTL). Mark the
      * system prompt and the last tool with cache_control so the system
      * block + the entire tools array get cached. On repeat turns in a
