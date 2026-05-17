@@ -65,20 +65,6 @@ export class AnthropicLlm extends BaseLlm {
     const messages = buildAnthropicMessages(llmRequest.contents)
     const modelName = (llmRequest.model || this.model).replace(/^anthropic\//, "")
 
-    // TEMP DEBUG — remove once schema validation is resolved.
-    console.log(
-      "[anthropic-llm DEBUG] tools count=%d names=%s",
-      tools.length,
-      tools.map((t) => t.name).join(","),
-    )
-    for (let i = 0; i < tools.length; i++) {
-      console.log(
-        "[anthropic-llm DEBUG] tools[%d] input_schema=%s",
-        i,
-        JSON.stringify(tools[i].input_schema),
-      )
-    }
-
     /* Prompt caching — Anthropic ephemeral cache (5-min TTL). Mark the
      * system prompt and the last tool with cache_control so the system
      * block + the entire tools array get cached. On repeat turns in a
@@ -104,11 +90,19 @@ export class AnthropicLlm extends BaseLlm {
       return
     }
 
-    /* Streaming path. We consume RawMessageStreamEvent chunks and yield
-     * partial LlmResponses for text content; we buffer tool_use blocks
-     * until their stop event before yielding a single LlmResponse with a
-     * functionCall part. */
+    /* Streaming path.
+     *
+     * Gemini's convention (which ADK's runner expects) is ONE final
+     * LlmResponse per turn whose `parts` array contains every text +
+     * functionCall the model produced. If we instead yield a separate
+     * non-partial LlmResponse per tool, ADK treats the first one as the
+     * turn boundary, executes that single tool, and abandons the rest of
+     * the stream — Claude's other parallel tool_use blocks are silently
+     * dropped. So we collect all parts here and emit them together at
+     * message_stop. Intermediate partial:true text deltas still stream for
+     * the chat UI; they don't carry functionCalls. */
     let outputText = ""
+    const aggregatedParts: Part[] = []
     let pendingToolUse:
       | { id: string; name: string; jsonChunks: string[] }
       | undefined
@@ -161,21 +155,13 @@ export class AnthropicLlm extends BaseLlm {
                * the agent can correct on retry. */
               args = { _raw: fullJson }
             }
-            yield {
-              content: {
-                role: "model",
-                parts: [
-                  {
-                    functionCall: {
-                      id: pendingToolUse.id,
-                      name: pendingToolUse.name,
-                      args,
-                    } as FunctionCall,
-                  },
-                ],
-              },
-              partial: false,
-            } satisfies LlmResponse
+            aggregatedParts.push({
+              functionCall: {
+                id: pendingToolUse.id,
+                name: pendingToolUse.name,
+                args,
+              } as FunctionCall,
+            })
             pendingToolUse = undefined
           }
           break
@@ -184,12 +170,15 @@ export class AnthropicLlm extends BaseLlm {
           if (event.usage) usage.output_tokens = event.usage.output_tokens ?? 0
           if (event.delta.stop_reason) finishReason = event.delta.stop_reason
           break
-        case "message_stop":
-          // Final aggregate LlmResponse — completes the turn.
+        case "message_stop": {
+          // Final aggregate LlmResponse — text first (if any), then every
+          // functionCall in the order Claude emitted them. ADK's runner
+          // will execute the tool calls in parts order before re-invoking.
+          const parts: Part[] = []
+          if (outputText) parts.push({ text: outputText })
+          parts.push(...aggregatedParts)
           yield {
-            content: outputText
-              ? { role: "model", parts: [{ text: outputText }] }
-              : undefined,
+            content: parts.length ? { role: "model", parts } : undefined,
             partial: false,
             turnComplete: true,
             finishReason: mapFinishReason(finishReason) as never,
@@ -200,6 +189,7 @@ export class AnthropicLlm extends BaseLlm {
             } as never,
           } satisfies LlmResponse
           return
+        }
       }
     }
   }
