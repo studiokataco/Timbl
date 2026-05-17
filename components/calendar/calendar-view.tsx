@@ -73,8 +73,10 @@ export function CalendarView({
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   useEffect(() => {
+    // Mount-only hydration from localStorage; SSR can't read it.
     try {
       const stored = window.localStorage.getItem("calendar:sidebar-collapsed")
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored === "1") setSidebarCollapsed(true)
     } catch {}
   }, [])
