@@ -276,26 +276,95 @@ function buildAnthropicTools(req: LlmRequest): AnthropicTool[] {
   return out
 }
 
-/* ADK FunctionDeclarations carry the GenAI Type enum string ("OBJECT",
- * "STRING", "ARRAY", "INTEGER", "NUMBER", "BOOLEAN") on every `type` field.
- * Anthropic's tools API expects JSON Schema lowercase ("object", "string",
- * ...). Walk the schema and lowercase any `type` that's an uppercase string.
- * Preserves everything else (properties, required, items, enum, format). */
+/* Translate ADK/GenAI FunctionDeclaration schemas to strict JSON Schema
+ * 2020-12 (what Anthropic's tools API requires). Two problems to fix:
+ *
+ *   1. `type` values are GenAI enum strings ("OBJECT", "STRING", "ARRAY",
+ *      "INTEGER", "NUMBER", "BOOLEAN") — must be lowercased.
+ *   2. GenAI adds non-standard fields (`nullable`, `propertyOrdering`,
+ *      Google-flavoured `format` values like "int32") that fail
+ *      Anthropic's strict 2020-12 validation.
+ *
+ * We allowlist only the keywords Anthropic accepts and drop everything
+ * else. Recurse into the obvious schema-position fields (properties,
+ * items, additionalProperties, anyOf/oneOf/allOf, prefixItems). */
+const SCHEMA_PASSTHROUGH_KEYS = new Set([
+  "description",
+  "required",
+  "enum",
+  "const",
+  "default",
+  "minimum",
+  "maximum",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+  "multipleOf",
+  "minLength",
+  "maxLength",
+  "pattern",
+  "minItems",
+  "maxItems",
+  "uniqueItems",
+  "title",
+])
+
 function normalizeSchemaTypes(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(normalizeSchemaTypes)
-  if (node && typeof node === "object") {
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
-      if (k === "type" && typeof v === "string" && v === v.toUpperCase()) {
-        out[k] = v.toLowerCase()
-      } else {
-        out[k] = normalizeSchemaTypes(v)
+  if (!node || typeof node !== "object") return node
+
+  const obj = node as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === "type") {
+      if (typeof v === "string") out.type = v.toLowerCase()
+      else if (Array.isArray(v)) out.type = v.map((x) => (typeof x === "string" ? x.toLowerCase() : x))
+    } else if (k === "properties" && v && typeof v === "object") {
+      const props: Record<string, unknown> = {}
+      for (const [pname, pschema] of Object.entries(v as Record<string, unknown>)) {
+        props[pname] = normalizeSchemaTypes(pschema)
       }
+      out.properties = props
+    } else if (k === "items" || k === "additionalProperties" || k === "not") {
+      out[k] = normalizeSchemaTypes(v)
+    } else if (k === "anyOf" || k === "oneOf" || k === "allOf" || k === "prefixItems") {
+      out[k] = Array.isArray(v) ? v.map(normalizeSchemaTypes) : normalizeSchemaTypes(v)
+    } else if (k === "format" && typeof v === "string") {
+      /* Only pass through standard JSON Schema formats. Google emits
+       * "int32"/"int64" which aren't in the draft 2020-12 vocabulary and
+       * cause Anthropic's validator to reject the whole schema. */
+      if (STANDARD_FORMATS.has(v)) out.format = v
+    } else if (SCHEMA_PASSTHROUGH_KEYS.has(k)) {
+      out[k] = v
     }
-    return out
+    /* else: silently drop (nullable, propertyOrdering, examples, $id,
+     * $schema, etc.). Anthropic doesn't need any of these. */
   }
-  return node
+
+  /* If the original had `nullable: true`, model it as `type: [t, "null"]`
+   * — JSON Schema 2020-12 allows array of types. */
+  if ((obj as { nullable?: boolean }).nullable === true && typeof out.type === "string") {
+    out.type = [out.type, "null"]
+  }
+
+  return out
 }
+
+const STANDARD_FORMATS = new Set([
+  "date-time",
+  "date",
+  "time",
+  "duration",
+  "email",
+  "hostname",
+  "ipv4",
+  "ipv6",
+  "uri",
+  "uri-reference",
+  "uuid",
+  "regex",
+  "json-pointer",
+])
 
 /* Anthropic cache-control marker — minimum cacheable size is ~1024 tokens
  * (~4000 chars), so skip the marker on tiny inputs to avoid the API
