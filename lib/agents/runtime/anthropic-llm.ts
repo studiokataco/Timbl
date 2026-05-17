@@ -3,7 +3,6 @@ import type {
   ContentBlockParam,
   MessageCreateParamsStreaming,
   MessageParam,
-  RawMessageStreamEvent,
   TextBlockParam,
   Tool as AnthropicTool,
   ToolUseBlockParam,
@@ -123,27 +122,6 @@ export class AnthropicLlm extends BaseLlm {
 
     const finalMessage = await msgStream.finalMessage()
 
-    // TEMP DIAG — log what the SDK actually returns for every block.
-    console.log(
-      "[anthropic-llm DIAG] finalMessage.content blocks=%d",
-      finalMessage.content.length,
-    )
-    for (let i = 0; i < finalMessage.content.length; i++) {
-      const b = finalMessage.content[i]
-      if (b.type === "tool_use") {
-        console.log(
-          "[anthropic-llm DIAG] block[%d] tool_use name=%s id=%s input_type=%s input=%s",
-          i,
-          b.name,
-          b.id,
-          typeof b.input,
-          JSON.stringify(b.input).slice(0, 300),
-        )
-      } else {
-        console.log("[anthropic-llm DIAG] block[%d] type=%s", i, b.type)
-      }
-    }
-
     const parts: Part[] = []
     for (const block of finalMessage.content) {
       if (block.type === "text") {
@@ -180,47 +158,58 @@ export class AnthropicLlm extends BaseLlm {
     )
   }
 
+  /* Non-streaming path. ADK runs this when runConfig.streamingMode !== SSE,
+   * which is the default for /api/agents/{agent}/run since the route handler
+   * doesn't set a streamingMode. Use the SDK's messages.stream() helper —
+   * the same one the streaming path uses — so tool_use blocks come back with
+   * fully-aggregated `input`. The previous implementation read
+   * content_block.input at content_block_start time when it's still empty,
+   * which is exactly why every agent call landed at ADK with args={}. */
   private async collectFullResponse(
     params: MessageCreateParamsStreaming,
     abortSignal?: AbortSignal,
   ): Promise<LlmResponse> {
-    let text = ""
-    const functionCalls: FunctionCall[] = []
-    const usage = { input_tokens: 0, output_tokens: 0 }
-    let finishReason: string | undefined
+    const { stream: _omit, ...streamParams } = params as MessageCreateParamsStreaming & {
+      stream?: true
+    }
+    void _omit
 
-    for await (const ev of (await this.client.messages.create(params, {
+    const msgStream = this.client.messages.stream(streamParams, {
       signal: abortSignal,
-    })) as AsyncIterable<RawMessageStreamEvent>) {
-      if (ev.type === "content_block_start" && ev.content_block.type === "tool_use") {
-        functionCalls.push({
-          id: ev.content_block.id,
-          name: ev.content_block.name,
-          args: (ev.content_block.input ?? {}) as Record<string, unknown>,
-        } as FunctionCall)
-      } else if (
-        ev.type === "content_block_delta" &&
-        ev.delta.type === "text_delta"
-      ) {
-        text += ev.delta.text
-      } else if (ev.type === "message_delta") {
-        usage.output_tokens = ev.usage?.output_tokens ?? usage.output_tokens
-        finishReason = ev.delta.stop_reason ?? finishReason
-      } else if (ev.type === "message_start") {
-        usage.input_tokens = ev.message.usage?.input_tokens ?? 0
+    })
+
+    // Drain the stream — we don't yield partials in the non-streaming path.
+    for await (const _event of msgStream) {
+      if (abortSignal?.aborted) break
+    }
+
+    const finalMessage = await msgStream.finalMessage()
+
+    const parts: Part[] = []
+    for (const block of finalMessage.content) {
+      if (block.type === "text") {
+        if (block.text) parts.push({ text: block.text })
+      } else if (block.type === "tool_use") {
+        parts.push({
+          functionCall: {
+            id: block.id,
+            name: block.name,
+            args: (block.input ?? {}) as Record<string, unknown>,
+          } as FunctionCall,
+        })
       }
     }
-    const parts: Part[] = []
-    if (text) parts.push({ text })
-    for (const fc of functionCalls) parts.push({ functionCall: fc })
+
+    const inTok = finalMessage.usage?.input_tokens ?? 0
+    const outTok = finalMessage.usage?.output_tokens ?? 0
     return {
       content: parts.length ? { role: "model", parts } : undefined,
       turnComplete: true,
-      finishReason: mapFinishReason(finishReason) as never,
+      finishReason: mapFinishReason(finalMessage.stop_reason ?? undefined) as never,
       usageMetadata: {
-        promptTokenCount: usage.input_tokens,
-        candidatesTokenCount: usage.output_tokens,
-        totalTokenCount: usage.input_tokens + usage.output_tokens,
+        promptTokenCount: inTok,
+        candidatesTokenCount: outTok,
+        totalTokenCount: inTok + outTok,
       } as never,
     }
   }
