@@ -213,6 +213,7 @@ function FilterSelect({
   options: { value: string; label: string }[]
 }) {
   const isAll = !value
+  const emptyLabel = `Any ${placeholder.toLowerCase()}`
   return (
     <Select
       value={value || "_all"}
@@ -221,10 +222,15 @@ function FilterSelect({
       <SelectTrigger
         className={cn("w-36", isAll && "text-muted-foreground")}
       >
-        <SelectValue placeholder={`Any ${placeholder.toLowerCase()}`} />
+        <SelectValue placeholder={emptyLabel}>
+          {(v) => {
+            if (!v || v === "_all") return emptyLabel
+            return options.find((o) => o.value === v)?.label ?? v
+          }}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="_all">Any {placeholder.toLowerCase()}</SelectItem>
+        <SelectItem value="_all">{emptyLabel}</SelectItem>
         {options.map((o) => (
           <SelectItem key={o.value} value={o.value}>
             {o.label}

@@ -1,5 +1,7 @@
 # Phase 7 — production deploy runbook
 
+> **Status (2026-05-17):** Phase 7 is **complete**. The `sm-dashboard-e7641` project is live with Google SSO, Firestore, Functions (`asia-south1`), and App Hosting. This doc is now reference material — a runbook for bootstrapping a new prod project from scratch or rebuilding the deploy from a clean slate. No outstanding action items.
+
 This is the live runbook for taking the planner from emulator-only to a real Firebase deployment on the `sm-dashboard-e7641` project. Do it in this order — every step has a verification check before the next one runs.
 
 ## 0. Local prerequisites
@@ -89,6 +91,20 @@ firebase deploy --only functions
 firebase functions:params:set APP_BASE_URL --value "https://<backend-id>--sm-dashboard-e7641.<region>.hosted.app"
 firebase deploy --only functions:agentSweep
 ```
+
+### 5a. Grant the function runtime SA Firestore read
+
+The functions deploy onto the default compute SA (`{PROJECT_NUMBER}-compute@developer.gserviceaccount.com`). Since 2024, Google strips Editor role from new default compute SAs — so `agentSweep` will spam `PERMISSION_DENIED: Missing or insufficient permissions` on every minute tick because its `db.collection("organizations").get()` lacks `datastore.entities.get`. Grant the minimal role explicitly:
+
+```bash
+PROJECT_NUMBER=$(gcloud projects describe sm-dashboard-e7641 --format='value(projectNumber)')
+gcloud projects add-iam-policy-binding sm-dashboard-e7641 \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role="roles/datastore.viewer" \
+  --condition=None
+```
+
+Verify: within ~2 min, `firebase functions:log --only agentSweep --limit 5` shows `[agentSweep] tick` info lines instead of the PERMISSION_DENIED traceback.
 
 ## 6. Create the App Hosting backend
 

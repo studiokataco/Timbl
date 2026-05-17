@@ -1,12 +1,14 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Plus } from "lucide-react"
 
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import { cn } from "@/lib/utils"
 import { STAGES, stageForAgent, type Stage } from "./stage-map"
 import { PROVIDER_TONE } from "./status-tone"
+import { AddAgentSheet } from "./add-agent-sheet"
 
 /*
  * Left rail — agents grouped by pipeline stage.
@@ -25,6 +27,7 @@ export function Roster({ agents }: Props) {
   const params = useSearchParams()
   const focus = params.get("focus") ?? ""
   const selectedAgent = focus.startsWith("agent:") ? focus.slice(6) : null
+  const [addOpen, setAddOpen] = useState(false)
 
   const grouped = useMemo(() => {
     const out: Record<Stage, AgentConfig[]> = {
@@ -112,6 +115,21 @@ export function Roster({ agents }: Props) {
           </div>
         )
       })}
+
+      <button
+        type="button"
+        onClick={() => setAddOpen(true)}
+        className="mt-auto flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors"
+      >
+        <Plus className="size-3.5" />
+        Add agent
+      </button>
+
+      <AddAgentSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        installedAgents={agents}
+      />
     </nav>
   )
 }
