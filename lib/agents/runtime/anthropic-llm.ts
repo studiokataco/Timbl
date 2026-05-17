@@ -264,16 +264,37 @@ function buildAnthropicTools(req: LlmRequest): AnthropicTool[] {
       parameters?: Record<string, unknown>
     } })._getDeclaration?.()
     if (!decl?.name) continue
+    const schema = decl.parameters
+      ? (normalizeSchemaTypes(decl.parameters) as AnthropicTool["input_schema"])
+      : ({ type: "object", properties: {} } as AnthropicTool["input_schema"])
     out.push({
       name: decl.name,
       description: decl.description ?? "",
-      input_schema: (decl.parameters as AnthropicTool["input_schema"]) ?? {
-        type: "object",
-        properties: {},
-      },
+      input_schema: schema,
     })
   }
   return out
+}
+
+/* ADK FunctionDeclarations carry the GenAI Type enum string ("OBJECT",
+ * "STRING", "ARRAY", "INTEGER", "NUMBER", "BOOLEAN") on every `type` field.
+ * Anthropic's tools API expects JSON Schema lowercase ("object", "string",
+ * ...). Walk the schema and lowercase any `type` that's an uppercase string.
+ * Preserves everything else (properties, required, items, enum, format). */
+function normalizeSchemaTypes(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(normalizeSchemaTypes)
+  if (node && typeof node === "object") {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      if (k === "type" && typeof v === "string" && v === v.toUpperCase()) {
+        out[k] = v.toLowerCase()
+      } else {
+        out[k] = normalizeSchemaTypes(v)
+      }
+    }
+    return out
+  }
+  return node
 }
 
 /* Anthropic cache-control marker — minimum cacheable size is ~1024 tokens
