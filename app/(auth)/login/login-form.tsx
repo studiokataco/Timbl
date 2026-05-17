@@ -30,15 +30,26 @@ export function LoginForm() {
         toast.error("This Google account isn't authorised. Use a SAFE or Kataco workspace email.")
         return
       }
-      const idToken = await result.user.getIdToken(true)
-      const res = await fetch("/auth/callback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      })
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "")
-        throw new Error(detail || "Session creation failed")
+      const post = async (forceRefresh: boolean) => {
+        const idToken = await result.user.getIdToken(forceRefresh)
+        const res = await fetch("/auth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        })
+        if (!res.ok) {
+          const detail = await res.text().catch(() => "")
+          throw new Error(detail || "Session creation failed")
+        }
+        return (await res.json().catch(() => ({}))) as { refresh?: boolean }
+      }
+      /* Pass 1 — server provisions membership + sets custom claims. */
+      const first = await post(true)
+      /* Pass 2 — refresh ID token so the new claims are present, then
+       * the server mints the session cookie from a claim-bearing token. */
+      if (first.refresh) {
+        const second = await post(true)
+        if (second.refresh) throw new Error("Session not minted after claim refresh")
       }
       const next = search.get("next") ?? "/calendar"
       router.replace(next)
