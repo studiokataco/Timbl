@@ -294,6 +294,15 @@ const SCHEMA_PASSTHROUGH_KEYS = new Set([
   "enum",
   "const",
   "default",
+  "pattern",
+  "uniqueItems",
+  "title",
+])
+
+/* JSON Schema 2020-12 requires these to be numbers. ADK's GenAI-flavoured
+ * declaration emits them as STRINGS ("1", "2000"), which is enough on its
+ * own to make Anthropic's strict validator reject the whole schema. */
+const NUMERIC_KEYS = new Set([
   "minimum",
   "maximum",
   "exclusiveMinimum",
@@ -301,12 +310,18 @@ const SCHEMA_PASSTHROUGH_KEYS = new Set([
   "multipleOf",
   "minLength",
   "maxLength",
-  "pattern",
   "minItems",
   "maxItems",
-  "uniqueItems",
-  "title",
 ])
+
+function coerceNumber(v: unknown): number | undefined {
+  if (typeof v === "number" && Number.isFinite(v)) return v
+  if (typeof v === "string") {
+    const n = Number(v)
+    if (Number.isFinite(n)) return n
+  }
+  return undefined
+}
 
 function normalizeSchemaTypes(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(normalizeSchemaTypes)
@@ -334,6 +349,9 @@ function normalizeSchemaTypes(node: unknown): unknown {
        * "int32"/"int64" which aren't in the draft 2020-12 vocabulary and
        * cause Anthropic's validator to reject the whole schema. */
       if (STANDARD_FORMATS.has(v)) out.format = v
+    } else if (NUMERIC_KEYS.has(k)) {
+      const n = coerceNumber(v)
+      if (n !== undefined) out[k] = n
     } else if (SCHEMA_PASSTHROUGH_KEYS.has(k)) {
       out[k] = v
     }
