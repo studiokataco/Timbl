@@ -29,8 +29,11 @@ export const agentConfigSchema = audit.extend({
   systemPrompt: z.string().max(20_000),
 
   enabled: z.boolean().default(true),
-  /** Cron expression — only consulted when triggers.cron is true. */
-  schedule: z.string().optional(),
+  /** Cron expression — only consulted when triggers.cron is true.
+   * Nullable because seed 0007 explicitly writes `null` for unscheduled
+   * agents so the field exists at write time (Firestore allows queries
+   * like `where('schedule', '!=', null)` only when the field is present). */
+  schedule: z.string().nullable().optional(),
   allowedTools: z.array(z.string()).default([]),
   budgets: agentBudgetsSchema.default({
     maxLlmCalls: 40,

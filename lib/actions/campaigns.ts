@@ -5,6 +5,7 @@ import { z } from "zod"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
 import { orgCampaignsPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
+import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { campaignSchema, type Campaign } from "@/lib/schemas"
 
 const ServerActionResult = z.object({
@@ -33,7 +34,13 @@ export async function createCampaign(input: unknown): Promise<ServerActionResult
   const now = new Date().toISOString()
   const slug = parsed.data.slug || slugify(parsed.data.name)
   const ref = db.collection(orgCampaignsPath(orgId)).doc(slug)
-  await ref.set({ ...parsed.data, slug, organizationId: orgId, createdAt: now, updatedAt: now })
+  const doc = { ...parsed.data, slug, organizationId: orgId, createdAt: now, updatedAt: now }
+  await ref.set(doc)
+  try {
+    await embedIfChanged("campaign", orgId, slug, doc as Record<string, unknown>)
+  } catch (err) {
+    console.warn(`[embed] campaign create soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
   revalidatePath("/campaigns")
   return { ok: true, id: slug }
 }
@@ -46,7 +53,16 @@ export async function updateCampaign(input: unknown): Promise<ServerActionResult
   const orgId = await getCurrentOrgId()
   const db = getDb()
   const now = new Date().toISOString()
-  await db.doc(`${orgCampaignsPath(orgId)}/${id}`).set({ ...rest, updatedAt: now }, { merge: true })
+  const ref = db.doc(`${orgCampaignsPath(orgId)}/${id}`)
+  await ref.set({ ...rest, updatedAt: now }, { merge: true })
+  try {
+    const after = await ref.get()
+    if (after.exists) {
+      await embedIfChanged("campaign", orgId, id, { ...after.data(), id } as Record<string, unknown>)
+    }
+  } catch (err) {
+    console.warn(`[embed] campaign update soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
   revalidatePath("/campaigns")
   revalidatePath(`/campaigns/${id}`)
   return { ok: true, id }

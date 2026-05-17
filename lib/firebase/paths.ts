@@ -34,3 +34,7 @@ export const orgIdeationFeedPath = (orgId: string) =>
   `${orgPath(orgId)}/ideationFeed`
 export const orgAwarenessProposalsPath = (orgId: string) =>
   `${orgPath(orgId)}/awarenessDayProposals`
+
+/* Memory + RAG layer — see lib/embeddings/**. */
+export const orgAgentMemoryPath = (orgId: string) =>
+  `${orgPath(orgId)}/agentMemory`

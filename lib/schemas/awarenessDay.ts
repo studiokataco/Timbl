@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { audit, isoDate } from "./_shared"
+import { embeddingSchema } from "./embedding"
 
 export const awarenessImportance = z.enum(["low", "medium", "high"])
 export type AwarenessImportance = z.infer<typeof awarenessImportance>
@@ -22,5 +23,6 @@ export const awarenessDaySchema = audit.extend({
   recurringPattern: awarenessRecurrence.default("annual"),
   /** Default category slug to suggest when promoting this day to a post. */
   suggestedCategorySlug: z.string().optional(),
+  embedding: embeddingSchema.optional(),
 })
 export type AwarenessDay = z.infer<typeof awarenessDaySchema>
