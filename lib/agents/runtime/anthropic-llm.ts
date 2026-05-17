@@ -4,6 +4,7 @@ import type {
   MessageCreateParamsStreaming,
   MessageParam,
   RawMessageStreamEvent,
+  TextBlockParam,
   Tool as AnthropicTool,
   ToolUseBlockParam,
   ToolResultBlockParam,
@@ -59,17 +60,26 @@ export class AnthropicLlm extends BaseLlm {
     stream?: boolean,
     abortSignal?: AbortSignal,
   ): AsyncGenerator<LlmResponse, void> {
-    const system = extractSystemPrompt(llmRequest)
+    const systemText = extractSystemPrompt(llmRequest)
     const tools = buildAnthropicTools(llmRequest)
     const messages = buildAnthropicMessages(llmRequest.contents)
     const modelName = (llmRequest.model || this.model).replace(/^anthropic\//, "")
+
+    /* Prompt caching — Anthropic ephemeral cache (5-min TTL). Mark the
+     * system prompt and the last tool with cache_control so the system
+     * block + the entire tools array get cached. On repeat turns in a
+     * review loop (drafter + reviewer), the cache hit drops input cost
+     * on those segments by ~90%. Messages are not cached — they change
+     * every turn and caching them yields nothing. */
+    const system = withSystemCache(systemText)
+    const toolsWithCache = withToolsCache(tools)
 
     const base: MessageCreateParamsStreaming = {
       model: modelName,
       max_tokens: DEFAULT_MAX_TOKENS,
       system,
       messages,
-      tools: tools.length ? tools : undefined,
+      tools: toolsWithCache,
       stream: true,
     }
 
@@ -264,6 +274,39 @@ function buildAnthropicTools(req: LlmRequest): AnthropicTool[] {
     })
   }
   return out
+}
+
+/* Anthropic cache-control marker — minimum cacheable size is ~1024 tokens
+ * (~4000 chars), so skip the marker on tiny inputs to avoid the API
+ * rejecting the request or charging cache-write cost with no payoff. */
+const CACHE_MIN_CHARS = 4_000
+
+function withSystemCache(
+  systemText: string | undefined,
+): string | TextBlockParam[] | undefined {
+  if (!systemText) return undefined
+  if (systemText.length < CACHE_MIN_CHARS) return systemText
+  return [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }]
+}
+
+function withToolsCache(tools: AnthropicTool[]): AnthropicTool[] | undefined {
+  if (tools.length === 0) return undefined
+  /* Cache boundary applies to all items up to and including the marker —
+   * marking the LAST tool caches the entire tools array as one block. */
+  const totalChars = tools.reduce(
+    (n, t) =>
+      n +
+      (t.name?.length ?? 0) +
+      (t.description?.length ?? 0) +
+      JSON.stringify(t.input_schema ?? {}).length,
+    0,
+  )
+  if (totalChars < CACHE_MIN_CHARS) return tools
+  return tools.map((t, i, arr) =>
+    i === arr.length - 1
+      ? ({ ...t, cache_control: { type: "ephemeral" } } as AnthropicTool)
+      : t,
+  )
 }
 
 function buildAnthropicMessages(contents: Content[]): MessageParam[] {
