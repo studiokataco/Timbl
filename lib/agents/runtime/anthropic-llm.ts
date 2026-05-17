@@ -123,6 +123,27 @@ export class AnthropicLlm extends BaseLlm {
 
     const finalMessage = await msgStream.finalMessage()
 
+    // TEMP DIAG — log what the SDK actually returns for every block.
+    console.log(
+      "[anthropic-llm DIAG] finalMessage.content blocks=%d",
+      finalMessage.content.length,
+    )
+    for (let i = 0; i < finalMessage.content.length; i++) {
+      const b = finalMessage.content[i]
+      if (b.type === "tool_use") {
+        console.log(
+          "[anthropic-llm DIAG] block[%d] tool_use name=%s id=%s input_type=%s input=%s",
+          i,
+          b.name,
+          b.id,
+          typeof b.input,
+          JSON.stringify(b.input).slice(0, 300),
+        )
+      } else {
+        console.log("[anthropic-llm DIAG] block[%d] type=%s", i, b.type)
+      }
+    }
+
     const parts: Part[] = []
     for (const block of finalMessage.content) {
       if (block.type === "text") {
