@@ -127,7 +127,7 @@ const SEEDS: SeedConfig[] = [
     systemPrompt:
       "You are the SAFE planner's drafter. Your job is to write engaging, on-brand social posts. Each draft must include: a clear brief, a final blurb (the social copy itself), a hashtag list, and a brief rationale. Sentence case. No emojis unless the brand voice explicitly asks for them.",
     enabled: true,
-    allowedTools: ["readBrandConfig", "createDraftPost", "updateDraft"],
+    allowedTools: ["readBrandConfig", "retrieve", "recall", "createDraftPost", "updateDraft"],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },
   {
@@ -143,6 +143,7 @@ const SEEDS: SeedConfig[] = [
     enabled: true,
     allowedTools: [
       "readBrandConfig",
+      "recall",
       "listPosts",
       "updateDraft",
       "exit_loop",
@@ -179,7 +180,7 @@ const SEEDS: SeedConfig[] = [
     systemPrompt:
       "You are the SAFE planner's human-gate. Summarise the current draft in one short sentence, then call requestHumanApproval with that postId and summary. Say nothing else.",
     enabled: true,
-    allowedTools: ["listPosts", "requestHumanApproval"],
+    allowedTools: ["listPosts", "remember", "requestHumanApproval"],
     triggers: { manual: false, cron: false, systemUserId: "system" },
   },
   {
@@ -197,6 +198,7 @@ const SEEDS: SeedConfig[] = [
     allowedTools: [
       "readBrandConfig",
       "listUpcomingDays",
+      "retrieve",
       "google_search",
       "url_context",
       "persistIdeation",

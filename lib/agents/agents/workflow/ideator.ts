@@ -6,6 +6,7 @@ import { buildLlmAgentFromConfig } from "../../runtime/build-agent"
 import { listUpcomingAwarenessDaysTool } from "../../tools/awareness"
 import { readBrandConfigTool } from "../../tools/brand"
 import { persistIdeationTool } from "../../tools/research"
+import { retrieveTool } from "../../tools/retrieve"
 
 /*
  * Ideator — web-research-driven idea generator. Uses Gemini's first-party
@@ -25,6 +26,7 @@ export function buildIdeatorAgent(config: AgentConfig): LlmAgent {
     tools: [
       readBrandConfigTool,
       listUpcomingAwarenessDaysTool,
+      retrieveTool,
       GOOGLE_SEARCH,
       URL_CONTEXT,
       persistIdeationTool,
@@ -38,6 +40,7 @@ const IDEATOR_INSTRUCTION = [
   "  - Start by reading brandConfig and listing upcoming awareness days for the next 30 days.",
   "  - Use GOOGLE_SEARCH to discover trending topics and recent stories adjacent to the brand's audience.",
   "  - Use URL_CONTEXT to read 1–3 of the most relevant articles per topic.",
+  "  - Before persisting an idea, call retrieve({kind:'post', query: <idea title or summary>, k: 10}). If a high-similarity match exists (score ≥ 0.85 with the real-provider scale, or check the top-3 snippets), DROP the idea — the brand has already covered it. Quality > quantity.",
   "  - For each viable idea, call persistIdeation exactly once with:",
   "      title — punchy headline",
   "      summary — 2–3 sentences",

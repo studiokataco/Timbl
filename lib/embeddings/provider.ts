@@ -67,6 +67,16 @@ export async function embed(text: string): Promise<EmbedResult> {
 /* ── Gemini ─────────────────────────────────────────────────────────── */
 
 const GEMINI_MODEL = "gemini-embedding-001"
+/*
+ * Gemini's default output is 3072d, but Firestore native vector indexes cap
+ * at 2048. Request Matryoshka truncation to 768d — Google's recommended
+ * storage size — so the same vectors work in the emulator (brute-force
+ * cosine) and in Phase 7+ (native findNearest).
+ *
+ * If you change this, also bump `dimension` in firestore.indexes.json for
+ * every embedding.vector entry and re-run the embeddings backfill.
+ */
+const GEMINI_OUTPUT_DIM = 768
 
 async function embedGemini(text: string): Promise<EmbedResult> {
   const key = readGeminiKey()
@@ -75,7 +85,10 @@ async function embedGemini(text: string): Promise<EmbedResult> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ content: { parts: [{ text }] } }),
+    body: JSON.stringify({
+      content: { parts: [{ text }] },
+      outputDimensionality: GEMINI_OUTPUT_DIM,
+    }),
   })
   if (!res.ok) throw new Error(`[embed:gemini] ${res.status} ${await res.text()}`)
   const json = (await res.json()) as { embedding?: { values?: number[] } }
