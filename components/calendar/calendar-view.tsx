@@ -19,8 +19,8 @@ import {
   subMonths,
   subWeeks,
 } from "date-fns"
-import { useCallback, useMemo, useRef, useState } from "react"
-import { Sparkles } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { PanelRightClose, PanelRightOpen, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { PlanCadenceDialog } from "@/components/agents/plan-cadence-dialog"
@@ -70,6 +70,23 @@ export function CalendarView({
     () => new Set(categories.map((c) => c.id)),
   )
   const allCategoriesVisible = visibleCategoryIds.size === categories.length
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("calendar:sidebar-collapsed")
+      if (stored === "1") setSidebarCollapsed(true)
+    } catch {}
+  }, [])
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        window.localStorage.setItem("calendar:sidebar-collapsed", next ? "1" : "0")
+      } catch {}
+      return next
+    })
+  }, [])
 
   const { data: posts = initialPosts } = useQuery({
     queryKey: ["posts", orgId, range.start, range.end],
@@ -290,22 +307,54 @@ export function CalendarView({
 
         <aside
           aria-label="Calendar sidebar"
-          className="hidden lg:flex flex-col w-80 shrink-0 border-l border-border bg-secondary/15 px-6 overflow-y-auto"
+          className={`hidden lg:flex flex-col shrink-0 border-l border-border bg-secondary/15 overflow-hidden transition-[width] duration-200 ease-out ${
+            sidebarCollapsed ? "w-10" : "w-80"
+          }`}
         >
-          <div className="py-6">
-            <CategoryFilter
-              categories={categories}
-              visibleIds={visibleCategoryIds}
-              onToggle={toggleCategory}
-              onAll={() => setVisibleCategoryIds(allCategoryIds)}
-              onNone={() => setVisibleCategoryIds(new Set())}
-            />
-          </div>
-          <CalendarAwarenessRail
-            awarenessDays={awarenessDays}
-            plannedAwarenessIds={plannedAwarenessIds}
-            suggestions={suggestions}
-          />
+          {sidebarCollapsed ? (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Expand sidebar"
+              aria-expanded={false}
+              aria-controls="calendar-sidebar-content"
+              className="size-10 grid place-items-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+            >
+              <PanelRightOpen className="size-4" aria-hidden />
+            </button>
+          ) : (
+            <div
+              id="calendar-sidebar-content"
+              className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6"
+            >
+              <div className="pt-4 pb-2 flex justify-end -mr-2">
+                <button
+                  type="button"
+                  onClick={toggleSidebar}
+                  aria-label="Collapse sidebar"
+                  aria-expanded={true}
+                  aria-controls="calendar-sidebar-content"
+                  className="size-8 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                >
+                  <PanelRightClose className="size-4" aria-hidden />
+                </button>
+              </div>
+              <div className="pb-6">
+                <CategoryFilter
+                  categories={categories}
+                  visibleIds={visibleCategoryIds}
+                  onToggle={toggleCategory}
+                  onAll={() => setVisibleCategoryIds(allCategoryIds)}
+                  onNone={() => setVisibleCategoryIds(new Set())}
+                />
+              </div>
+              <CalendarAwarenessRail
+                awarenessDays={awarenessDays}
+                plannedAwarenessIds={plannedAwarenessIds}
+                suggestions={suggestions}
+              />
+            </div>
+          )}
         </aside>
       </div>
     </>
