@@ -92,106 +92,65 @@ export class AnthropicLlm extends BaseLlm {
 
     /* Streaming path.
      *
-     * Gemini's convention (which ADK's runner expects) is ONE final
-     * LlmResponse per turn whose `parts` array contains every text +
-     * functionCall the model produced. If we instead yield a separate
-     * non-partial LlmResponse per tool, ADK treats the first one as the
-     * turn boundary, executes that single tool, and abandons the rest of
-     * the stream — Claude's other parallel tool_use blocks are silently
-     * dropped. So we collect all parts here and emit them together at
-     * message_stop. Intermediate partial:true text deltas still stream for
-     * the chat UI; they don't carry functionCalls. */
-    let outputText = ""
-    const aggregatedParts: Part[] = []
-    let pendingToolUse:
-      | { id: string; name: string; jsonChunks: string[] }
-      | undefined
-    const usage = { input_tokens: 0, output_tokens: 0 }
-    let finishReason: string | undefined
+     * Use messages.stream() (the SDK helper) instead of raw
+     * messages.create({stream:true}). The helper correctly aggregates
+     * tool_use input across input_json_delta chunks; the raw event path
+     * silently dropped them under some conditions, yielding args={} to
+     * ADK and making every tool call fail zod parse.
+     *
+     * We still iterate raw events so we can yield partial:true text
+     * deltas for the chat UI, then await finalMessage() at the end to
+     * read the fully-parsed content blocks (with complete tool inputs)
+     * and emit ONE non-partial LlmResponse with all parts. */
+    const { stream: _omit, ...streamParams } = base as MessageCreateParamsStreaming & {
+      stream?: true
+    }
+    void _omit
 
-    const iterator = (await this.client.messages.create(base, {
+    const msgStream = this.client.messages.stream(streamParams, {
       signal: abortSignal,
-    })) as AsyncIterable<RawMessageStreamEvent>
+    })
 
-    for await (const event of iterator) {
+    for await (const event of msgStream) {
       if (abortSignal?.aborted) return
-      switch (event.type) {
-        case "message_start":
-          if (event.message.usage) {
-            usage.input_tokens = event.message.usage.input_tokens ?? 0
-          }
-          break
-        case "content_block_start": {
-          if (event.content_block.type === "tool_use") {
-            pendingToolUse = {
-              id: event.content_block.id,
-              name: event.content_block.name,
-              jsonChunks: [],
-            }
-          }
-          break
-        }
-        case "content_block_delta": {
-          const delta = event.delta
-          if (delta.type === "text_delta") {
-            outputText += delta.text
-            yield {
-              content: { role: "model", parts: [{ text: delta.text }] },
-              partial: true,
-            } satisfies LlmResponse
-          } else if (delta.type === "input_json_delta" && pendingToolUse) {
-            pendingToolUse.jsonChunks.push(delta.partial_json)
-          }
-          break
-        }
-        case "content_block_stop": {
-          if (pendingToolUse) {
-            const fullJson = pendingToolUse.jsonChunks.join("")
-            let args: Record<string, unknown> = {}
-            try {
-              args = fullJson ? (JSON.parse(fullJson) as Record<string, unknown>) : {}
-            } catch {
-              /* If the tool call args don't parse, emit them as a string so
-               * the agent can correct on retry. */
-              args = { _raw: fullJson }
-            }
-            aggregatedParts.push({
-              functionCall: {
-                id: pendingToolUse.id,
-                name: pendingToolUse.name,
-                args,
-              } as FunctionCall,
-            })
-            pendingToolUse = undefined
-          }
-          break
-        }
-        case "message_delta":
-          if (event.usage) usage.output_tokens = event.usage.output_tokens ?? 0
-          if (event.delta.stop_reason) finishReason = event.delta.stop_reason
-          break
-        case "message_stop": {
-          // Final aggregate LlmResponse — text first (if any), then every
-          // functionCall in the order Claude emitted them. ADK's runner
-          // will execute the tool calls in parts order before re-invoking.
-          const parts: Part[] = []
-          if (outputText) parts.push({ text: outputText })
-          parts.push(...aggregatedParts)
-          yield {
-            content: parts.length ? { role: "model", parts } : undefined,
-            partial: false,
-            turnComplete: true,
-            finishReason: mapFinishReason(finishReason) as never,
-            usageMetadata: {
-              promptTokenCount: usage.input_tokens,
-              candidatesTokenCount: usage.output_tokens,
-              totalTokenCount: usage.input_tokens + usage.output_tokens,
-            } as never,
-          } satisfies LlmResponse
-          return
-        }
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        yield {
+          content: { role: "model", parts: [{ text: event.delta.text }] },
+          partial: true,
+        } satisfies LlmResponse
       }
     }
+
+    const finalMessage = await msgStream.finalMessage()
+
+    const parts: Part[] = []
+    for (const block of finalMessage.content) {
+      if (block.type === "text") {
+        if (block.text) parts.push({ text: block.text })
+      } else if (block.type === "tool_use") {
+        parts.push({
+          functionCall: {
+            id: block.id,
+            name: block.name,
+            args: (block.input ?? {}) as Record<string, unknown>,
+          } as FunctionCall,
+        })
+      }
+    }
+
+    const inTok = finalMessage.usage?.input_tokens ?? 0
+    const outTok = finalMessage.usage?.output_tokens ?? 0
+    yield {
+      content: parts.length ? { role: "model", parts } : undefined,
+      partial: false,
+      turnComplete: true,
+      finishReason: mapFinishReason(finalMessage.stop_reason ?? undefined) as never,
+      usageMetadata: {
+        promptTokenCount: inTok,
+        candidatesTokenCount: outTok,
+        totalTokenCount: inTok + outTok,
+      } as never,
+    } satisfies LlmResponse
   }
 
   override async connect(): Promise<BaseLlmConnection> {
