@@ -36,7 +36,11 @@ import type {
  * Anthropic's input_schema. We pass it straight through.
  */
 
-const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6"
+/* Haiku 4.5 — ~3× cheaper than Sonnet 4.6 on both input and output tokens,
+ * and handles parallel tool calls + medium-length drafts well. If you need
+ * the heavier reasoning of Sonnet, set `model` on the AgentConfig directly
+ * rather than flipping this default. */
+const DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 const DEFAULT_MAX_TOKENS = 4096
 
 export class AnthropicLlm extends BaseLlm {
