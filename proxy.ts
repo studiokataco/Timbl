@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from "next/server"
  */
 
 const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/logout"]
-const PUBLIC_PREFIXES = ["/_next/", "/api/agents/cron/"]
+const PUBLIC_PREFIXES = ["/_next/", "/api/agents/cron/", "/api/diag/"]
 const SESSION_COOKIE = "__session"
 
 export default function proxy(req: NextRequest) {
