@@ -18,7 +18,7 @@ export default async function LibraryPage() {
         <div className="mx-auto w-full max-w-6xl space-y-8">
           <PageHeader
             title="Library"
-            description="Reusable starting points for recurring content. Save any post as a template from the composer kebab."
+            description="Reusable starting points for recurring content."
           />
           <LibraryView templates={templates} categories={categories} ctas={ctas} />
         </div>

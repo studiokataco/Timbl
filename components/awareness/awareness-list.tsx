@@ -37,7 +37,7 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
       <EmptyState
         icon={Globe}
         title="No awareness days in the next 90 days"
-        body="Curated dates rotate annually. Check back closer to international observance weeks, or add your own to the calendar with quick add."
+        body="Add your own awareness days to the calendar with quick add or find existing awareness days using AI."
         size="lg"
       />
     )

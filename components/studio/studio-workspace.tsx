@@ -135,8 +135,7 @@ function PageHero() {
       </p>
       <h1 className="mt-2 text-display-sm text-foreground">Studio</h1>
       <p className="mt-2 text-body-sm text-muted-foreground max-w-2xl">
-        Watch agents move work from idea to schedule, and approve the steps
-        that need a human in the loop.
+        Control AI agents work from idea to schedule. Agents can be enabled/disabled, and their settings can be edited.
       </p>
     </header>
   )
