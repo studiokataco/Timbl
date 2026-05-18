@@ -59,6 +59,26 @@ type Props = {
 
 type TabKey = "chat" | "tune" | "tools" | "history"
 
+/*
+ * Agents that have meaningful behavior even with no user input — they read
+ * from Firestore state, scan awareness windows, or sweep pending work. For
+ * these the "Run now" button can fire safely with an empty input. Everything
+ * else (drafter, reviewer, ideator, the config wizards, human-gate) needs
+ * the user to type a brief / draft / decision first, so we hide the button
+ * for them. Keeping this list explicit so a new agent has to opt in rather
+ * than silently inherit a half-broken UI.
+ */
+const HEADLESS_AGENTS: ReadonlySet<string> = new Set([
+  "cadence-planner",
+  "awareness-researcher",
+  "approval-triage",
+  "scheduler",
+  "pipeline",
+])
+
+const LIVE_INTRO =
+  "Live run · messages create real drafts, write to Firestore, and use LLM credits."
+
 const TABS: { key: TabKey; label: string }[] = [
   { key: "chat", label: "Chat" },
   { key: "tune", label: "Tune" },
@@ -120,24 +140,26 @@ export function AgentPlayground({ agent, allAgentNames }: Props) {
             {agent.name}
           </h3>
           <div className="flex items-center gap-1.5 shrink-0">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={runNow}
-              disabled={running || !agent.enabled}
-              title={
-                agent.enabled
-                  ? "Trigger a manual run"
-                  : "Enable the agent first"
-              }
-            >
-              {running ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Play className="size-3.5" />
-              )}
-              <span className="ml-1">Run now</span>
-            </Button>
+            {HEADLESS_AGENTS.has(agent.name) && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={runNow}
+                disabled={running || !agent.enabled}
+                title={
+                  agent.enabled
+                    ? "Trigger a manual run (no input needed for this agent)"
+                    : "Enable the agent first"
+                }
+              >
+                {running ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Play className="size-3.5" />
+                )}
+                <span className="ml-1">Run now</span>
+              </Button>
+            )}
             <span
               className={cn(
                 "text-[10px] uppercase tracking-wide rounded-pill px-1.5 py-0.5",
@@ -161,7 +183,7 @@ export function AgentPlayground({ agent, allAgentNames }: Props) {
         {tab === "chat" && (
           <AgentChat
             agentName={agent.name}
-            intro={`Sandbox run · nothing persists beyond the session log.`}
+            intro={LIVE_INTRO}
             banner={unsavedNotice ?? undefined}
             agentCatalog={allAgentNames}
             onAgentSwitch={(name) => {
