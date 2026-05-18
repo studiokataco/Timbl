@@ -152,8 +152,12 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     role: "workflow",
     description:
       "Writes a draft post from a brief, honouring brandConfig. Iterated in the review loop until the reviewer is satisfied.",
-    provider: "gemini",
-    model: "gemini-2.5-flash",
+    /* Anthropic Haiku 4.5 — picked over Gemini Flash for tool-calling
+     * reliability and over Sonnet for cost (~3× cheaper than Sonnet 4.6
+     * per token). Override per-deployment by editing the Firestore
+     * agentConfigs/drafter doc if you need heavier reasoning. */
+    provider: "anthropic",
+    model: "claude-haiku-4-5-20251001",
     temperature: 0.8,
     systemPrompt:
       "You are the SAFE planner's drafter. Your job is to write engaging, on-brand social posts. Each draft must include: a clear brief, a final blurb (the social copy itself), a hashtag list, and a brief rationale. Sentence case. No emojis unless the brand voice explicitly asks for them.",
