@@ -17,30 +17,7 @@ export const dynamic = "force-dynamic"
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("x-agent-cron-secret")
   if (!secret || secret !== process.env.AGENT_CRON_SECRET) {
-    /* Root-cause diag: print non-secret-leaking comparison so we can
-     * see WHY the bound env doesn't match Secret Manager. Will be
-     * removed once the mismatch is fixed. */
-    const { createHash } = await import("node:crypto")
-    const hash = (s: string | undefined | null) =>
-      s ? createHash("sha256").update(s).digest("hex").slice(0, 12) : null
-    const env = process.env.AGENT_CRON_SECRET
-    return Response.json(
-      {
-        ok: false,
-        error: "unauthorized",
-        diag: {
-          envPresent: env !== undefined,
-          envLen: env?.length ?? null,
-          envSha12: hash(env),
-          envEndsWithNewline: env ? env.endsWith("\n") : null,
-          envEndsWithCR: env ? env.endsWith("\r") : null,
-          envTrimEq: env ? env.trim() === env : null,
-          sentLen: secret?.length ?? null,
-          sentSha12: hash(secret),
-        },
-      },
-      { status: 401 },
-    )
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 })
   }
 
   const tool = new FunctionTool({
