@@ -13,7 +13,10 @@ import {
 export default async function KanbanPage() {
   const today = new Date()
   const start = format(subYears(today, 1), "yyyy-MM-dd")
-  const end = format(addDays(today, 90), "yyyy-MM-dd")
+  /* +1y forward so agent-drafted posts dated at far-future awareness
+   * days (eg. World Mental Health Day in October when drafted in May)
+   * still render. Was +90d which silently hid those drafts. */
+  const end = format(addDays(today, 365), "yyyy-MM-dd")
 
   const [posts, categories, users] = await Promise.all([
     fetchPostsInRange(start, end),

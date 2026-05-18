@@ -55,7 +55,11 @@ export const agentRunSchema = audit.extend({
     completionTokens: 0,
     usdCost: 0,
   }),
-  parentRunId: z.string().optional(),
-  dedupKey: z.string().optional(),
+  /* Stored as `null` by triggers/manual.ts when absent (Firestore can't
+   * persist `undefined`). Zod v4's .optional() rejects null, so allow both
+   * — otherwise every agentRun fails safeParse silently in listAgentRuns
+   * and /studio renders "No agent runs yet" despite real runs existing. */
+  parentRunId: z.string().nullable().optional(),
+  dedupKey: z.string().nullable().optional(),
 })
 export type AgentRunDoc = z.infer<typeof agentRunSchema>

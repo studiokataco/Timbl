@@ -18,7 +18,9 @@ import {
 export default async function PostsPage() {
   const today = new Date()
   const start = format(subYears(today, 1), "yyyy-MM-dd")
-  const end = format(addDays(today, 90), "yyyy-MM-dd")
+  /* +1y forward so agent-drafted posts dated at far-future awareness
+   * days still render. Was +90d which hid drafts beyond 3 months out. */
+  const end = format(addDays(today, 365), "yyyy-MM-dd")
 
   const [posts, categories, users] = await Promise.all([
     fetchPostsInRange(start, end),
@@ -32,7 +34,7 @@ export default async function PostsPage() {
         <div className="mx-auto w-full max-w-6xl space-y-8">
           <PageHeader
             title="All posts"
-            description="Filter, sort, bulk-update. Filters live in the URL — paste a link to share a saved view."
+            description="Filter, sort, export, bulk-update. Select from the dropdowns or search to find a post."
           />
           <PostsTable posts={posts} categories={categories} users={users} />
         </div>

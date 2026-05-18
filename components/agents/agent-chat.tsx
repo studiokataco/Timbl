@@ -397,12 +397,19 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     onStreamingChange?.(streaming)
   }, [streaming, onStreamingChange])
 
+  /* Auto-scroll only when a NEW transcript item is added — not on every
+   * streaming text mutation. Depending on `[transcript]` (whole array)
+   * fired on every SSE chunk and queued multiple concurrent smooth-scroll
+   * animations, so the viewport ended up positioned above the final
+   * answer ("thinking scrolls down + result appears above it"). Length-
+   * based dep fires once per new bubble — streamed text updates the
+   * existing bubble in place. */
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     })
-  }, [transcript])
+  }, [transcript.length])
 
   /* Slash autocomplete state derived from the input. */
   const slashState = useMemo(() => {
