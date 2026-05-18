@@ -26,7 +26,7 @@ export default async function AwarenessPage() {
         <div className="mx-auto w-full max-w-6xl space-y-8">
           <PageHeader
             title="Awareness days"
-            description="Upcoming observances over the next 90 days. Promote any to a draft post in one tap."
+            description="Research or schedule awareness days. Promote any to a draft post in one tap."
             action={<FindAwarenessButton />}
           />
           <AwarenessProposalsStrip proposals={proposals} />

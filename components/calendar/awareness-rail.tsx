@@ -120,7 +120,7 @@ export function CalendarAwarenessRail({
         </div>
         {suggestions.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            All caught up — no nudges right now.
+            All caught up - no nudges right now.
           </p>
         ) : (
           <ul className="flex flex-col gap-1.5">

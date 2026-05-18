@@ -33,7 +33,7 @@ export default async function CampaignsPage() {
           <EmptyState
             icon={Megaphone}
             title="No campaigns yet"
-            body="Group related posts into a series with a shared timeline, theme, and progress bar — useful for fundraising drives, anniversaries, or awareness weeks."
+            body="Group related posts into a series with a shared timeline, theme, and progress bar"
             action={
               <LinkButton size="sm" href="/settings/campaigns">
                 Create your first campaign
