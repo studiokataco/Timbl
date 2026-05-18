@@ -14,14 +14,9 @@ export const dynamic = "force-dynamic"
  * functionCall.args arrives populated. Gated by the same secret as
  * /api/agents/cron/tick. Delete this file after the bug is found.
  */
-/* One-time hardcoded token. The file (and this constant) will be deleted
- * once the diagnostic is complete; the AGENT_CRON_SECRET env binding
- * appears mismatched in prod so we can't use that here. */
-const ONE_TIME_TOKEN = "def21f7b8bbe659ab2059770fb02f5193c5184d881a3f68f"
-
 export async function GET(req: NextRequest) {
-  const token = req.headers.get("x-diag-token")
-  if (token !== ONE_TIME_TOKEN) {
+  const secret = req.headers.get("x-agent-cron-secret")
+  if (!secret || secret !== process.env.AGENT_CRON_SECRET) {
     return Response.json({ ok: false, error: "unauthorized" }, { status: 401 })
   }
 
