@@ -14,14 +14,7 @@ import {
   ideationStatus,
   type IdeationItem,
 } from "@/lib/schemas/ideationItem"
-import { isoDate } from "@/lib/schemas/_shared"
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+import { isoDate, type ServerActionResult } from "@/lib/schemas/_shared"
 
 const listInput = z.object({
   status: ideationStatus.optional(),

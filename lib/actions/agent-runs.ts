@@ -9,13 +9,7 @@ import {
   agentRunSchema,
   type AgentRunDoc,
 } from "@/lib/schemas/agentRun"
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+import type { ServerActionResult } from "@/lib/schemas"
 
 const listInput = z.object({
   limit: z.number().int().min(1).max(200).default(50),

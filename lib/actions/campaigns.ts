@@ -6,14 +6,7 @@ import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
 import { orgCampaignsPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
-import { campaignSchema, type Campaign } from "@/lib/schemas"
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+import { campaignSchema, type Campaign, type ServerActionResult } from "@/lib/schemas"
 
 const createSchema = campaignSchema.omit({ id: true, organizationId: true, createdAt: true, updatedAt: true })
 const updateSchema = createSchema.partial().extend({ id: z.string().min(1) })

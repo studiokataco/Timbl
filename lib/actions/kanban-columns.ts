@@ -4,13 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
 import { orgKanbanColumnsPath, orgPostsPath } from "@/lib/firebase/paths"
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+import type { ServerActionResult } from "@/lib/schemas"
 
 const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected #rrggbb")
 const labelSchema = z.string().trim().min(1).max(40)
@@ -115,24 +109,30 @@ export async function deleteKanbanColumn(input: unknown): Promise<ServerActionRe
   const orgId = await getCurrentOrgId()
   const db = getDb()
 
-  // Re-status all posts whose status equals the deleted column id, then delete the column doc.
-  // Done in a transaction so we never orphan posts.
-  await db.runTransaction(async (tx) => {
-    const colRef = db.doc(`${orgKanbanColumnsPath(orgId)}/${parsed.data.id}`)
-    const moveToRef = db.doc(`${orgKanbanColumnsPath(orgId)}/${parsed.data.moveTo}`)
-    const [colSnap, moveToSnap] = await Promise.all([tx.get(colRef), tx.get(moveToRef)])
-    if (!colSnap.exists) throw new Error("Column not found")
-    if (!moveToSnap.exists) throw new Error("Move-to column not found")
+  /* Re-status all posts whose status equals the deleted column id, then
+   * delete the column doc. Done in a transaction so we never orphan posts.
+   * Throws inside the callback are the only way to roll back, so we catch
+   * at the outer boundary to translate them into the {ok,error} contract. */
+  try {
+    await db.runTransaction(async (tx) => {
+      const colRef = db.doc(`${orgKanbanColumnsPath(orgId)}/${parsed.data.id}`)
+      const moveToRef = db.doc(`${orgKanbanColumnsPath(orgId)}/${parsed.data.moveTo}`)
+      const [colSnap, moveToSnap] = await Promise.all([tx.get(colRef), tx.get(moveToRef)])
+      if (!colSnap.exists) throw new Error("Column not found")
+      if (!moveToSnap.exists) throw new Error("Move-to column not found")
 
-    const postsSnap = await tx.get(
-      db.collection(orgPostsPath(orgId)).where("status", "==", parsed.data.id),
-    )
-    const now = new Date().toISOString()
-    postsSnap.docs.forEach((p) => {
-      tx.set(p.ref, { status: parsed.data.moveTo, updatedAt: now }, { merge: true })
+      const postsSnap = await tx.get(
+        db.collection(orgPostsPath(orgId)).where("status", "==", parsed.data.id),
+      )
+      const now = new Date().toISOString()
+      postsSnap.docs.forEach((p) => {
+        tx.set(p.ref, { status: parsed.data.moveTo, updatedAt: now }, { merge: true })
+      })
+      tx.delete(colRef)
     })
-    tx.delete(colRef)
-  })
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Delete failed" }
+  }
   revalidatePath("/kanban")
   return { ok: true }
 }

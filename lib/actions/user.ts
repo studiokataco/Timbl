@@ -4,13 +4,7 @@ import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
 import { orgUsersPath } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
-import type { User } from "@/lib/schemas"
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+import type { User, ServerActionResult } from "@/lib/schemas"
 
 const preferencesPatchSchema = z
   .object({

@@ -6,18 +6,16 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { orgPostsPath } from "@/lib/firebase/paths"
 import { getAgentSession } from "@/lib/actions/agent-sessions"
+import type { ServerActionResult } from "@/lib/schemas"
 
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-  /* Set when the post's review pause needs the run to be resumed via the
-   * SSE endpoint /api/agents/runs/{runId}/resume. The UI consumes this to
-   * stream the continuation if the user wants to watch it. */
-  resumeRunId: z.string().optional(),
-  resumeToolCallId: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+/* Local extension: approve/reject return a resumeRunId + resumeToolCallId
+ * when the post's review pause needs the run resumed via the SSE endpoint
+ * /api/agents/runs/{runId}/resume. The UI consumes these to stream the
+ * continuation if the user wants to watch it. */
+type AgentDraftReviewResult = ServerActionResult & {
+  resumeRunId?: string
+  resumeToolCallId?: string
+}
 
 async function patchAgentMeta(
   orgId: string,
@@ -46,7 +44,7 @@ const approveInput = z.object({ postId: z.string().min(1) })
 
 export async function approveAgentDraft(
   input: unknown,
-): Promise<ServerActionResult> {
+): Promise<AgentDraftReviewResult> {
   const parsed = approveInput.safeParse(input)
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
@@ -80,7 +78,7 @@ const resolveHumanGateInput = z.object({
   comment: z.string().max(4_000).optional(),
 })
 
-export type ResolveHumanGateResult = ServerActionResult & {
+export type ResolveHumanGateResult = AgentDraftReviewResult & {
   postId?: string
 }
 
@@ -128,7 +126,7 @@ const rejectInput = z.object({
 
 export async function rejectAgentDraft(
   input: unknown,
-): Promise<ServerActionResult> {
+): Promise<AgentDraftReviewResult> {
   const parsed = rejectInput.safeParse(input)
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
