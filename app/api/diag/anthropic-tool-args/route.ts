@@ -8,11 +8,10 @@ import { retrieveTool } from "@/lib/agents/tools/retrieve"
 import { recallTool } from "@/lib/agents/tools/memory"
 import { readBrandConfigTool } from "@/lib/agents/tools/brand"
 import { createDraftPostTool } from "@/lib/agents/tools/posts"
-import { buildDrafterAgent } from "@/lib/agents/agents/workflow/drafter"
+import { resolveAgent } from "@/lib/agents"
 import { AGENT_APP_NAME } from "@/lib/agents/runtime/runner"
 import { FirestoreSessionService } from "@/lib/agents/runtime/session-service"
 import { RUNTIME_STATE_KEY, type RuntimeCtx } from "@/lib/agents/runtime/context"
-import type { AgentConfig } from "@/lib/schemas/agentConfig"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -69,39 +68,15 @@ async function runDirectPath() {
   return yields
 }
 
-/* Path B: full ADK Runner with the real drafter agent built from a
- * synthesized AgentConfig (matches what's seeded in prod). */
+/* Path B: full ADK Runner with the actual seeded drafter agent loaded
+ * from Firestore (resolveAgent is what the real /api/agents/{agent}/run
+ * route uses via startAgentRun). Identical to prod. */
 async function runRunnerPath() {
-  const drafterConfig: AgentConfig = {
-    id: "drafter",
-    organizationId: SAFE_ORG_ID,
-    name: "drafter",
-    role: "workflow",
-    provider: "anthropic",
-    model: "claude-sonnet-4-6",
-    temperature: 0.7,
-    systemPrompt:
-      "You are the drafter. Call the listed tools to gather context, then draft a post via createDraftPost.",
-    enabled: true,
-    schedule: null,
-    allowedTools: [
-      "readBrandConfig",
-      "retrieve",
-      "recall",
-      "createDraftPost",
-      "updateDraft",
-    ],
-    budgets: {
-      maxLlmCalls: 10,
-      maxToolCalls: 20,
-      maxUsdCost: 1,
-      maxReviewLoops: 3,
-      monthlyUsdCap: 50,
-    },
-    triggers: { manual: true, cron: false, systemUserId: "system" },
-  } as AgentConfig
-
-  const agent = buildDrafterAgent(drafterConfig)
+  const resolved = await resolveAgent(SAFE_ORG_ID, "drafter")
+  if (!resolved) {
+    throw new Error("resolveAgent('drafter') returned null in diag")
+  }
+  const agent = resolved.agent
   const sessionService = new FirestoreSessionService(SAFE_ORG_ID)
   const runner = new Runner({
     appName: AGENT_APP_NAME,
