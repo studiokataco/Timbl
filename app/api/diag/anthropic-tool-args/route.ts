@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server"
-import { z } from "zod"
-import { FunctionTool } from "@google/adk"
-import type { LlmRequest, LlmResponse } from "@google/adk"
+import { Runner } from "@google/adk"
+import type { Event, LlmRequest, LlmResponse } from "@google/adk"
 import type { Content, Part } from "@google/genai"
 
 import { AnthropicLlm } from "@/lib/agents/runtime/anthropic-llm"
@@ -9,96 +8,186 @@ import { retrieveTool } from "@/lib/agents/tools/retrieve"
 import { recallTool } from "@/lib/agents/tools/memory"
 import { readBrandConfigTool } from "@/lib/agents/tools/brand"
 import { createDraftPostTool } from "@/lib/agents/tools/posts"
+import { buildDrafterAgent } from "@/lib/agents/agents/workflow/drafter"
+import { AGENT_APP_NAME } from "@/lib/agents/runtime/runner"
+import { FirestoreSessionService } from "@/lib/agents/runtime/session-service"
+import { RUNTIME_STATE_KEY, type RuntimeCtx } from "@/lib/agents/runtime/context"
+import type { AgentConfig } from "@/lib/schemas/agentConfig"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-/*
- * Diagnostic endpoint — calls Anthropic with one tool and reports whether
- * functionCall.args arrives populated. Gated by the same secret as
- * /api/agents/cron/tick. Delete this file after the bug is found.
- */
+const SAFE_ORG_ID = "safe-foundation"
+
+const USER_PROMPT =
+  "Write a short Instagram post for World Mental Health Day on October 10, 2026. " +
+  "Start by calling readBrandConfig and retrieve in parallel — for retrieve " +
+  "use kind='post' and query='World Mental Health Day young people'. " +
+  "Also call recall with query='mental health hooks'. Then draft the post."
+
+const summarize = (parts: Part[] | undefined) => {
+  return (parts ?? []).map((p: Part) => {
+    if ("functionCall" in p && p.functionCall) {
+      return {
+        kind: "call" as const,
+        name: p.functionCall.name,
+        argsKeys: Object.keys(p.functionCall.args ?? {}),
+        args: p.functionCall.args,
+      }
+    }
+    if ("text" in p && p.text) {
+      return { kind: "text" as const, textPreview: p.text.slice(0, 100) }
+    }
+    return { kind: "unknown" as const }
+  })
+}
+
+/* Path A: direct AnthropicLlm with a manually-built LlmRequest. */
+async function runDirectPath() {
+  const llm = new AnthropicLlm({ model: "claude-sonnet-4-6" })
+  const llmReq = {
+    model: "claude-sonnet-4-6",
+    contents: [
+      { role: "user", parts: [{ text: USER_PROMPT }] } as Content,
+    ],
+    config: {
+      systemInstruction:
+        "You are the drafter. Call the listed tools to gather context, then draft a post via createDraftPost.",
+    },
+    toolsDict: {
+      readBrandConfig: readBrandConfigTool,
+      retrieve: retrieveTool,
+      recall: recallTool,
+      createDraftPost: createDraftPostTool,
+    },
+  } as unknown as LlmRequest
+
+  const yields: ReturnType<typeof summarize>[] = []
+  for await (const resp of llm.generateContentAsync(llmReq, false)) {
+    yields.push(summarize((resp as LlmResponse).content?.parts))
+  }
+  return yields
+}
+
+/* Path B: full ADK Runner with the real drafter agent built from a
+ * synthesized AgentConfig (matches what's seeded in prod). */
+async function runRunnerPath() {
+  const drafterConfig: AgentConfig = {
+    id: "drafter",
+    organizationId: SAFE_ORG_ID,
+    name: "drafter",
+    role: "workflow",
+    provider: "anthropic",
+    model: "claude-sonnet-4-6",
+    temperature: 0.7,
+    systemPrompt:
+      "You are the drafter. Call the listed tools to gather context, then draft a post via createDraftPost.",
+    enabled: true,
+    schedule: null,
+    allowedTools: [
+      "readBrandConfig",
+      "retrieve",
+      "recall",
+      "createDraftPost",
+      "updateDraft",
+    ],
+    budgets: {
+      maxLlmCalls: 10,
+      maxToolCalls: 20,
+      maxUsdCost: 1,
+      maxReviewLoops: 3,
+      monthlyUsdCap: 50,
+    },
+    triggers: { manual: true, cron: false, systemUserId: "system" },
+  } as AgentConfig
+
+  const agent = buildDrafterAgent(drafterConfig)
+  const sessionService = new FirestoreSessionService(SAFE_ORG_ID)
+  const runner = new Runner({
+    appName: AGENT_APP_NAME,
+    agent,
+    sessionService,
+  })
+
+  const runtimeCtx: RuntimeCtx = {
+    orgId: SAFE_ORG_ID,
+    userId: "diag-user",
+    runId: "diag-run",
+    agentName: "drafter",
+  }
+  const session = await sessionService.createSession({
+    appName: AGENT_APP_NAME,
+    userId: "diag-user",
+    sessionId: undefined,
+    state: {
+      [RUNTIME_STATE_KEY]: runtimeCtx,
+      agentName: "drafter",
+    },
+  })
+
+  const events: Array<{ author?: string; parts: ReturnType<typeof summarize> }> = []
+  try {
+    let count = 0
+    const gen = runner.runAsync({
+      userId: "diag-user",
+      sessionId: session.id,
+      newMessage: { role: "user", parts: [{ text: USER_PROMPT }] } as Content,
+    })
+    for await (const event of gen as AsyncGenerator<Event>) {
+      count++
+      const e = event as unknown as {
+        author?: string
+        content?: { parts?: Part[] }
+      }
+      events.push({ author: e.author, parts: summarize(e.content?.parts) })
+      /* Cap at first 2 events — user + first model turn — that's all we need. */
+      if (count >= 2) break
+    }
+  } finally {
+    try {
+      await sessionService.deleteSession({
+        appName: AGENT_APP_NAME,
+        userId: "diag-user",
+        sessionId: session.id,
+      })
+    } catch {
+      /* ignore cleanup errors */
+    }
+  }
+  return events
+}
+
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("x-agent-cron-secret")
   if (!secret || secret !== process.env.AGENT_CRON_SECRET) {
     return Response.json({ ok: false, error: "unauthorized" }, { status: 401 })
   }
 
-  /* Mimic the drafter request shape: multiple real tools, parallel-call
-   * prompt, system prompt long enough to trigger prompt caching. */
-  const toolsDict: Record<string, unknown> = {
-    readBrandConfig: readBrandConfigTool,
-    retrieve: retrieveTool,
-    recall: recallTool,
-    createDraftPost: createDraftPostTool,
+  let directYields: ReturnType<typeof summarize>[] = []
+  let directError: string | undefined
+  try {
+    directYields = await runDirectPath()
+  } catch (err) {
+    directError = err instanceof Error ? err.message : String(err)
   }
 
-  const longSystem = (
-    "You are the drafter agent for SAFE Foundation, a youth mental health charity. " +
-    "When given a brief you (1) gather context in parallel via readBrandConfig, " +
-    "retrieve (post + awarenessDay), recall (past corrections), then (2) compose " +
-    "a single warm, hopeful Instagram post in sentence case and (3) create it as " +
-    "a draft via createDraftPost. Always include brief and rationale. Scheduled " +
-    "date must be YYYY-MM-DD. Categories use slugs; channels are an array of " +
-    "instagram|facebook|linkedin. Default postType is grid. Always cite a real " +
-    "awarenessDay when one is provided in the user's request. "
-  ).repeat(5) /* push system over CACHE_MIN_CHARS (4000) to trigger caching */
-
-  const contents: Content[] = [
-    {
-      role: "user",
-      parts: [
-        {
-          text:
-            "Write a short Instagram post for World Mental Health Day on October 10, 2026. " +
-            "Start by calling readBrandConfig and retrieve in parallel — for retrieve " +
-            "use kind='post' and query='World Mental Health Day young people'. " +
-            "Also call recall with query='mental health hooks'. Then draft the post.",
-        },
-      ],
-    },
-  ]
-  const llmReq = {
-    model: "claude-sonnet-4-6",
-    contents,
-    config: { systemInstruction: longSystem },
-    toolsDict,
-  } as unknown as LlmRequest
-
-  const llm = new AnthropicLlm({ model: "claude-sonnet-4-6" })
-
-  const summarize = (resp: LlmResponse) => {
-    const parts = resp.content?.parts ?? []
-    return parts.map((p: Part) => {
-      if ("functionCall" in p && p.functionCall) {
-        return {
-          kind: "call",
-          name: p.functionCall.name,
-          argsKeys: Object.keys(p.functionCall.args ?? {}),
-          args: p.functionCall.args,
-        }
-      }
-      if ("text" in p && p.text) {
-        return { kind: "text", textPreview: p.text.slice(0, 80) }
-      }
-      return { kind: "unknown" }
-    })
-  }
-
-  const streamingYields: ReturnType<typeof summarize>[] = []
-  for await (const resp of llm.generateContentAsync(llmReq, true)) {
-    streamingYields.push(summarize(resp))
-  }
-
-  const nonStreamingYields: ReturnType<typeof summarize>[] = []
-  for await (const resp of llm.generateContentAsync(llmReq, false)) {
-    nonStreamingYields.push(summarize(resp))
+  let runnerEvents: Array<{
+    author?: string
+    parts: ReturnType<typeof summarize>
+  }> = []
+  let runnerError: string | undefined
+  try {
+    runnerEvents = await runRunnerPath()
+  } catch (err) {
+    runnerError = err instanceof Error ? err.message : String(err)
   }
 
   return Response.json({
-    ok: true,
+    ok: !directError && !runnerError,
     nodeVersion: process.version,
-    streamingYields,
-    nonStreamingYields,
+    directYields,
+    directError,
+    runnerEvents,
+    runnerError,
   })
 }
