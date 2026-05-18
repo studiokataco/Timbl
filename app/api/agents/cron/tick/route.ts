@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server"
+import { timingSafeEqual } from "node:crypto"
 import { z } from "zod"
 
 import { getAdminDb } from "@/lib/firebase/admin"
@@ -42,7 +43,12 @@ export async function POST(req: NextRequest) {
       { status: 503 },
     )
   }
-  if (secret !== expected) {
+  /* Constant-time check. timingSafeEqual throws on unequal lengths, so the
+   * length pre-check guards it. Leaking the secret's length is fine — the
+   * secret is service-managed and not user-supplied. */
+  const a = Buffer.from(secret ?? "", "utf8")
+  const b = Buffer.from(expected, "utf8")
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 })
   }
 

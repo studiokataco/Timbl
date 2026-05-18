@@ -42,12 +42,12 @@ export async function fetchCategories(): Promise<WithId<Category>[]> {
 
 export async function fetchCtas(): Promise<WithId<Cta>[]> {
   const orgId = await getCurrentOrgId()
-  const snap = await getDb().collection(orgCtasPath(orgId)).get()
+  const snap = await getDb().collection(orgCtasPath(orgId)).limit(500).get()
   return snap.docs.map((d) => snapToData<Cta>(d))
 }
 
 export async function fetchUsers(): Promise<WithId<User>[]> {
   const orgId = await getCurrentOrgId()
-  const snap = await getDb().collection(orgUsersPath(orgId)).get()
+  const snap = await getDb().collection(orgUsersPath(orgId)).limit(500).get()
   return snap.docs.map((d) => snapToData<User>(d))
 }

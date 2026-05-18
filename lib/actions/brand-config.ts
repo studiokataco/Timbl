@@ -1,7 +1,5 @@
 "use server"
 
-import { z } from "zod"
-
 import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { orgBrandConfigDocPath } from "@/lib/firebase/paths"
@@ -10,13 +8,7 @@ import {
   brandConfigPatchSchema,
   type BrandConfig,
 } from "@/lib/schemas/brandConfig"
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+import type { ServerActionResult } from "@/lib/schemas"
 
 export async function fetchBrandConfig(): Promise<BrandConfig | null> {
   const orgId = await getCurrentOrgId()

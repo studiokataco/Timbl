@@ -7,7 +7,7 @@ import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { retrieve } from "@/lib/embeddings/retrieve"
 import { orgAgentMemoryPath } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
-import { type AgentMemory } from "@/lib/schemas"
+import { type AgentMemory, type ServerActionResult } from "@/lib/schemas"
 
 /*
  * Agent memory CRUD + semantic listing. recordMemory is what human-gate
@@ -15,13 +15,6 @@ import { type AgentMemory } from "@/lib/schemas"
  * recall() agent-tool will wrap — semantic when `query` is set, exact-topic
  * lookup when only `topic`, otherwise the latest 50.
  */
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
 
 const recordSchema = z.object({
   topic: z.string().min(1).max(120),

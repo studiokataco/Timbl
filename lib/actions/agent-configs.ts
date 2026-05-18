@@ -17,15 +17,9 @@ import {
   listAgentDefaultNames,
   type AgentDefault,
 } from "@/lib/agents/defaults"
+import type { ServerActionResult } from "@/lib/schemas"
 
 const UNDELETABLE_AGENTS = new Set(["hello", "pipeline"])
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
 
 export async function listAgentConfigs(): Promise<AgentConfig[]> {
   const orgId = await getCurrentOrgId()

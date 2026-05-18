@@ -11,7 +11,7 @@ import {
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { fetchPostsInRange } from "@/lib/queries/posts.server"
-import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post } from "@/lib/schemas"
+import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
 
 /* Client-callable wrapper around the server-only fetchPostsInRange. Used by
  * the calendar's client useQuery to refetch when the user navigates months
@@ -43,13 +43,6 @@ export async function fetchPostsInRangeAction(
 const updateInputSchema = postSchema
   .partial()
   .extend({ id: z.string().min(1) })
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
 
 export async function createQuickAddPost(input: unknown): Promise<ServerActionResult> {
   const parsed = quickAddPostSchema.safeParse(input)

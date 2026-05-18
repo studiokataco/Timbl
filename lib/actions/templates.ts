@@ -14,6 +14,7 @@ import {
   postType as postTypeEnum,
   templateCadence,
   type Post,
+  type ServerActionResult,
   type Template,
 } from "@/lib/schemas"
 
@@ -22,13 +23,6 @@ import {
  * library page invokes. Every action goes through getCurrentOrgId() and
  * writes under /organizations/{orgId}/...
  */
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
 
 const createSchema = z.object({
   id: z.string().optional(),

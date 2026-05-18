@@ -71,3 +71,16 @@ export const audit = z.object({
   createdAt: isoTimestamp.optional(),
   updatedAt: isoTimestamp.optional(),
 })
+
+/*
+ * Canonical shape returned by every server action. `id` is set on successful
+ * creates/updates so callers can navigate or revalidate. Actions that need
+ * extra fields (e.g. agent-suggestions surfacing a resumeRunId) extend this
+ * type locally via intersection.
+ */
+export const serverActionResult = z.object({
+  ok: z.boolean(),
+  id: z.string().optional(),
+  error: z.string().optional(),
+})
+export type ServerActionResult = z.infer<typeof serverActionResult>

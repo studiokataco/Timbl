@@ -9,14 +9,7 @@ import {
   orgPostsPath,
 } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
-import type { AwarenessDay, Post } from "@/lib/schemas"
-
-const ServerActionResult = z.object({
-  ok: z.boolean(),
-  id: z.string().optional(),
-  error: z.string().optional(),
-})
-export type ServerActionResult = z.infer<typeof ServerActionResult>
+import type { AwarenessDay, Post, ServerActionResult } from "@/lib/schemas"
 
 const promoteSchema = z.object({
   awarenessDayId: z.string().min(1),
