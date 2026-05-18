@@ -10,7 +10,23 @@ import {
 } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
+import { fetchPostsInRange } from "@/lib/queries/posts.server"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post } from "@/lib/schemas"
+
+/* Client-callable wrapper around the server-only fetchPostsInRange. Used by
+ * the calendar's client useQuery to refetch when the user navigates months
+ * past the SSR-hydrated window (eg. Oct 2026 when SSR fetched today±60d). */
+const rangeInput = z.object({
+  start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+})
+
+export async function fetchPostsInRangeAction(
+  input: z.infer<typeof rangeInput>,
+): Promise<WithId<Post>[]> {
+  const { start, end } = rangeInput.parse(input)
+  return fetchPostsInRange(start, end)
+}
 
 /*
  * Post mutations. Every action:

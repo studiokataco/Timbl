@@ -12,9 +12,12 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  endOfMonth,
+  endOfWeek,
   format,
   parseISO,
   startOfMonth,
+  startOfWeek,
   subDays,
   subMonths,
   subWeeks,
@@ -24,7 +27,7 @@ import { PanelRightClose, PanelRightOpen, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { PlanCadenceDialog } from "@/components/agents/plan-cadence-dialog"
-import { updatePost } from "@/lib/actions/posts"
+import { fetchPostsInRangeAction, updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post, User } from "@/lib/schemas"
@@ -90,12 +93,43 @@ export function CalendarView({
     })
   }, [])
 
+  /* Visible-month range derived from `visibleDate` + `view`. The SSR
+   * range covers today±60d; when the user navigates the calendar past
+   * that window (e.g. an October post drafted in May), the query needs
+   * to refetch against the visible window or the post stays invisible. */
+  const visibleRange = useMemo(() => {
+    if (view === "day") {
+      const d = format(visibleDate, "yyyy-MM-dd")
+      return { start: d, end: d }
+    }
+    if (view === "week") {
+      return {
+        start: format(startOfWeek(visibleDate, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+        end: format(endOfWeek(visibleDate, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+      }
+    }
+    /* month + list: pad by a week on each side so the 6-row grid leading/
+     * trailing days are also covered. */
+    return {
+      start: format(subDays(startOfMonth(visibleDate), 7), "yyyy-MM-dd"),
+      end: format(addDays(endOfMonth(visibleDate), 7), "yyyy-MM-dd"),
+    }
+  }, [visibleDate, view])
+
+  const isSsrRange =
+    visibleRange.start === range.start && visibleRange.end === range.end
+
   const { data: posts = initialPosts } = useQuery({
-    queryKey: ["posts", orgId, range.start, range.end],
-    queryFn: async () => initialPosts,
-    initialData: initialPosts,
+    queryKey: ["posts", orgId, visibleRange.start, visibleRange.end],
+    queryFn: () => fetchPostsInRangeAction(visibleRange),
+    initialData: isSsrRange ? initialPosts : undefined,
+    placeholderData: (prev) => prev ?? initialPosts,
     staleTime: 30_000,
   })
+  /* Real-time stays subscribed to the SSR window — that's the working
+   * range where users see live edits. Navigating far-future months still
+   * refetches via the useQuery above, but doesn't get onSnapshot updates
+   * (which would be wasteful for far-future static content anyway). */
   usePostsRealtime({ orgId, ...range, queryClient })
 
   const sensors = useSensors(
@@ -280,21 +314,20 @@ export function CalendarView({
 
           <section
             aria-label="Plan cadence with an AI agent"
-            className="mt-8 rounded-lg bg-secondary px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            className="mt-6 rounded-lg bg-secondary px-4 py-3 sm:px-5 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
           >
-            <div className="max-w-prose">
-              <h2 className="text-display-sm text-foreground">
+            <div className="min-w-0">
+              <h2 className="text-body-sm font-medium text-foreground">
                 Let an agent plan your next two weeks
               </h2>
-              <p className="mt-1.5 text-body-sm text-muted-foreground">
-                The cadence planner reads your brand&apos;s preferred days and times,
-                avoids conflicts, and writes pending drafts to your calendar.
+              <p className="text-caption text-muted-foreground">
+                Read your preferred days and times, avoids conflicts, writes pending drafts.
               </p>
             </div>
             <Button
               onClick={() => setPlanOpen(true)}
               className="gap-1.5 self-stretch sm:self-auto whitespace-nowrap"
-              size="lg"
+              size="sm"
             >
               <Sparkles className="size-4" aria-hidden />
               Plan cadence

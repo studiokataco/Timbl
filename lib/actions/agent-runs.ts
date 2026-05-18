@@ -42,7 +42,15 @@ export async function listAgentRuns(
       id: d.id,
       organizationId: orgId,
     })
-    if (r.success) out.push(r.data)
+    if (r.success) {
+      out.push(r.data)
+    } else {
+      /* Log + skip rather than silently drop. Schema drift here
+       * previously hid the Activity panel for hours of debugging. */
+      console.warn(
+        `[listAgentRuns] dropped run ${d.id}: ${r.error.issues.map((i) => `${i.path.join(".")}=${i.message}`).join("; ")}`,
+      )
+    }
   }
   return out
 }
