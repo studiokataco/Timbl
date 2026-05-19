@@ -3,6 +3,8 @@ import type { Content } from "@google/genai"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
+import { requireQuota } from "@/lib/plans/gate"
+import { emitAgentRun } from "@/lib/telemetry/agent-events"
 
 import { resolveAgent } from ".."
 import { AGENT_APP_NAME, buildRunner } from "../runtime/runner"
@@ -44,6 +46,12 @@ export interface StartRunResult {
 export async function startAgentRun(
   input: StartRunInput,
 ): Promise<StartRunResult> {
+  /* Plan gate: every run, regardless of trigger, counts against the
+   * agentRuns quota. Throws PlanGateError on overage; the route handler
+   * surfaces it to the UI as a structured upsell. Cron triggers also
+   * gate so a runaway schedule can't burn through a billing period. */
+  await requireQuota(input.orgId, "agentRuns")
+
   const resolved = await resolveAgent(input.orgId, input.agentName)
   if (!resolved) {
     throw new Error(
@@ -149,4 +157,27 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
     patch["outputs.ideationItemIds"] = input.outputsPatch.ideationItemIds
   }
   await ref.set(patch, { merge: true })
+
+  /* Telemetry: emit on terminal state. Succeeded + failed both count
+   * against quota (LLM tokens were burned either way). Cancelled doesn't.
+   * Best-effort — a counter-write failure must not break the UI flow. */
+  if (input.status === "succeeded" || input.status === "failed") {
+    try {
+      const snap = await ref.get()
+      const data = snap.data() ?? {}
+      await emitAgentRun({
+        orgId: input.orgId,
+        runId: input.runId,
+        agentName: (data.agentName as string) ?? "unknown",
+        outcome: input.status,
+        promptTokens: (data.metrics?.promptTokens as number) ?? 0,
+        completionTokens: (data.metrics?.completionTokens as number) ?? 0,
+        usdCost: (data.metrics?.usdCost as number) ?? 0,
+      })
+    } catch (err) {
+      console.warn(
+        `[agent-events] emit failed for run=${input.runId}: ${err instanceof Error ? err.message : err}`,
+      )
+    }
+  }
 }

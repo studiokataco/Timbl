@@ -23,11 +23,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Social planner — SAFE",
+    default: "Social planner",
     template: "%s · Social planner",
   },
-  description:
-    "Calendar-first social media planning for the SAFE Foundation team.",
+  description: "Calendar-first social media planning for agencies and brands.",
   applicationName: "Social planner",
 }
 

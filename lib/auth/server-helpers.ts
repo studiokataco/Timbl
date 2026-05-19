@@ -10,7 +10,7 @@ import { DEV_SESSION, type DevOrganisation, type DevUser } from "./dev-session"
  * Two execution paths:
  *
  *   1. Emulator / local dev (NEXT_PUBLIC_USE_EMULATORS=1):
- *      The dev shim returns the SAFE Foundation admin. Admin SDK bypasses
+ *      The dev shim returns the demo workspace admin. Admin SDK bypasses
  *      Security Rules; app-layer `organizationId` filtering is the only
  *      isolation guarantee.
  *

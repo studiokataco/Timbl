@@ -14,7 +14,9 @@ import { cn } from "@/lib/utils"
 
 const NAV: { href: string; label: string }[] = [
   { href: "/settings/campaigns", label: "Campaigns" },
+  { href: "/settings/categories", label: "Categories" },
   { href: "/settings/brand", label: "Brand" },
+  { href: "/settings/workspace", label: "Workspace" },
 ]
 
 export function SettingsNav() {

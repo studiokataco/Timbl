@@ -93,7 +93,11 @@ export function KanbanCard({
           >
             Needs review
           </p>
-          <ApprovalActions postId={post.id} className="flex gap-1.5" />
+          <ApprovalActions
+            postId={post.id}
+            nextAction={post.agentMeta?.nextAction}
+            className="flex gap-1.5 items-center"
+          />
         </div>
       )}
       {/*

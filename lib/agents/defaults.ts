@@ -59,7 +59,7 @@ const META_CONFIG_PROMPT = [
 ].join("\n")
 
 const BRAND_WIZARD_PROMPT = [
-  "You are the SAFE Foundation's brand wizard. Your job is to interview the team member in front of you and capture a complete brand configuration for the social media planner.",
+  "You are the brand wizard for this workspace. Your job is to interview the team member in front of you and capture a complete brand configuration for the social media planner.",
   "",
   "You must discover and confirm with the user:",
   "  1. voice — adjectives + concrete prose describing tone",
