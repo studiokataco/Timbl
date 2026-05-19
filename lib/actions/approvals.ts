@@ -11,6 +11,8 @@ import {
   orgIdeationFeedPath,
   orgPostsPath,
 } from "@/lib/firebase/paths"
+import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
+import { incrementUsage } from "@/lib/telemetry/agent-events"
 import {
   nextActionKind,
   type NextAction,
@@ -176,7 +178,7 @@ type ResolverOutcome =
       resumeRunId?: string
       resumeToolCallId?: string
     }
-  | { ok: false; error: string }
+  | { ok: false; error: string; gate?: ServerActionResult["gate"] }
 
 async function runResolver(input: ResolverInput): Promise<ResolverOutcome> {
   switch (input.nextAction.kind) {
@@ -206,6 +208,20 @@ async function resolveSchedulePost(i: ResolverInput): Promise<ResolverOutcome> {
   if (i.itemType !== "post") return { ok: false, error: "schedule_post_requires_post" }
   const db = getAdminDb()
   const ref = db.collection(orgPostsPath(i.orgId)).doc(i.itemId)
+
+  /* Only gate + meter the first time this post transitions to scheduled.
+   * Re-approving an already-scheduled post shouldn't double-count. */
+  const wasScheduled = i.sourceData.status === "scheduled"
+  if (!wasScheduled) {
+    try {
+      await requireQuota(i.orgId, "scheduledPosts")
+    } catch (err) {
+      const gated = gateErrorToResult(err)
+      if (gated) return gated
+      throw err
+    }
+  }
+
   const time = resolveTargetTime(i.nextAction.targetTime)
   const patch: Record<string, unknown> = {
     "agentMeta.reviewState": "approved",
@@ -218,6 +234,17 @@ async function resolveSchedulePost(i: ResolverInput): Promise<ResolverOutcome> {
     patch[`channelStatuses.${i.nextAction.targetChannel}`] = "scheduled"
   }
   await ref.set(patch, { merge: true })
+
+  if (!wasScheduled) {
+    try {
+      await incrementUsage(i.orgId, "scheduledPosts")
+    } catch (err) {
+      console.warn(
+        `[usage] scheduledPosts increment failed: ${err instanceof Error ? err.message : err}`,
+      )
+    }
+  }
+
   return {
     ok: true,
     artifactId: i.itemId,
