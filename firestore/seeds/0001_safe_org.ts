@@ -23,6 +23,17 @@ export async function seedSafeOrg() {
        * today gets quota-gated. New signups land on free_v1 via the
        * onboarding wizard (Phase E). */
       plan: "agency_v1",
+      /* SAFE is the legacy demo org — already has categories, agents,
+       * templates from the seed scripts that follow. Marking onboarding
+       * as complete here keeps the (app) layout from redirecting it to
+       * /onboarding on every dev boot. */
+      onboarding: {
+        completedAt: new Date().toISOString(),
+        profile: {
+          industry: "nonprofit",
+          channels: ["instagram", "facebook"],
+        },
+      },
     }),
     { merge: true },
   )
