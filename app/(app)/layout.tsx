@@ -4,11 +4,13 @@ import { AskAiButton } from "@/components/agents/ask-ai-button"
 import { CommandPalette } from "@/components/shared/command-palette"
 import { DialogsProvider } from "@/components/shared/dialogs-provider"
 import { Onboarding } from "@/components/shared/onboarding"
+import { PlanFeaturesProvider } from "@/components/shared/plan-features-provider"
 import { QueryProvider } from "@/components/shared/query-provider"
 import { Sidebar } from "@/components/shared/sidebar"
 import { TopBar } from "@/components/shared/top-bar"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
-import { getCurrentUser } from "@/lib/auth/server-helpers"
+import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
+import { getOrgPlanFeatures } from "@/lib/plans/gate"
 
 /*
  * (app) tree shares one QueryClient + sidebar nav + global ⌘K palette + the
@@ -21,26 +23,30 @@ import { getCurrentUser } from "@/lib/auth/server-helpers"
  * composer in place.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [referenceData, user] = await Promise.all([
+  const orgId = await getCurrentOrgId()
+  const [referenceData, user, planFeatures] = await Promise.all([
     fetchReferenceData(),
     getCurrentUser(),
+    getOrgPlanFeatures(orgId),
   ])
   return (
     <QueryProvider>
-      <DialogsProvider data={referenceData}>
-        <div className="flex flex-1 min-h-0">
-          <Sidebar />
-          <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
-            <TopBar userName={user.name} />
-            {children}
+      <PlanFeaturesProvider value={planFeatures}>
+        <DialogsProvider data={referenceData}>
+          <div className="flex flex-1 min-h-0">
+            <Sidebar />
+            <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
+              <TopBar userName={user.name} />
+              {children}
+            </div>
           </div>
-        </div>
-        <CommandPalette />
-        <Onboarding />
-        <AgentDrawer />
-        <AgentCommandModal />
-        <AskAiButton />
-      </DialogsProvider>
+          <CommandPalette />
+          <Onboarding />
+          <AgentDrawer />
+          <AgentCommandModal />
+          <AskAiButton />
+        </DialogsProvider>
+      </PlanFeaturesProvider>
     </QueryProvider>
   )
 }

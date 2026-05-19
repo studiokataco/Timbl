@@ -3,6 +3,7 @@ import type { Content } from "@google/genai"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
+import { requireQuota } from "@/lib/plans/gate"
 
 import { resolveAgent } from ".."
 import { AGENT_APP_NAME, buildRunner } from "../runtime/runner"
@@ -44,6 +45,12 @@ export interface StartRunResult {
 export async function startAgentRun(
   input: StartRunInput,
 ): Promise<StartRunResult> {
+  /* Plan gate: every run, regardless of trigger, counts against the
+   * agentRuns quota. Throws PlanGateError on overage; the route handler
+   * surfaces it to the UI as a structured upsell. Cron triggers also
+   * gate so a runaway schedule can't burn through a billing period. */
+  await requireQuota(input.orgId, "agentRuns")
+
   const resolved = await resolveAgent(input.orgId, input.agentName)
   if (!resolved) {
     throw new Error(

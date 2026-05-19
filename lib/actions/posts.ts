@@ -10,6 +10,7 @@ import {
 } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
+import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
 import { fetchPostsInRange } from "@/lib/queries/posts.server"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
 
@@ -118,6 +119,20 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
   const nextStatus = parsed.data.status
   const statusChanged =
     nextStatus && postStatusSchema.safeParse(nextStatus).success && nextStatus !== prevStatus
+
+  /* Gate the scheduledPosts quota on the transition INTO scheduled. We
+   * deliberately don't gate on every other status change (only this one
+   * costs against the plan) and don't double-count if the post is
+   * already scheduled. */
+  if (statusChanged && nextStatus === "scheduled") {
+    try {
+      await requireQuota(orgId, "scheduledPosts")
+    } catch (err) {
+      const gated = gateErrorToResult(err)
+      if (gated) return gated
+      throw err
+    }
+  }
 
   const batch = db.batch()
   batch.set(
