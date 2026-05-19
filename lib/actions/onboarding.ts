@@ -4,16 +4,22 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
 import {
   orgAgentConfigsPath,
   orgCategoriesPath,
   orgPath,
+  orgTemplatesPath,
 } from "@/lib/firebase/paths"
 import {
   getIndustryDefaults,
   type CategorySuggestion,
 } from "@/lib/onboarding/industry-defaults"
+import {
+  getStarterTemplate,
+  type StarterTemplate,
+} from "@/lib/onboarding/template-library"
+import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import type { ServerActionResult } from "@/lib/schemas"
 
 /*
@@ -40,6 +46,8 @@ const selectionsInput = z.object({
   agentIds: z.array(z.string().min(1)).default([]),
   /* Channels the user said they care about on step 5. */
   channels: z.array(z.string().min(1)).default([]),
+  /* Template slugs the user kept selected on step 4. */
+  templateSlugs: z.array(z.string().min(1)).default([]),
 })
 
 const completeInput = z.object({
@@ -138,7 +146,42 @@ export async function applyOnboardingSelections(
   })
   await batch.commit()
 
-  /* 3. Channels: persisted on the onboarding profile (not authoritative
+  /* 3. Templates: write each picked starter-library row into the org's
+   * /templates collection. Skips rows that already exist (re-running the
+   * wizard never clobbers user edits). categoryId is resolved to a
+   * present category at write time so a user who deselected the suggested
+   * category in step 3 still gets a usable template. */
+  if (parsed.data.templateSlugs.length > 0) {
+    const tplCol = db.collection(orgTemplatesPath(orgId))
+    const allCats = await db.collection(orgCategoriesPath(orgId)).get()
+    const catSlugs = new Set(allCats.docs.map((d) => d.data().slug as string))
+    const firstCategoryId =
+      (allCats.docs[0]?.data().id as string | undefined) ??
+      (allCats.docs[0]?.data().slug as string | undefined)
+
+    for (const slug of parsed.data.templateSlugs) {
+      const lib = getStarterTemplate(slug)
+      if (!lib) continue
+      const ref = tplCol.doc(slug)
+      if ((await ref.get()).exists) continue
+      const categoryId = resolveCategoryForTemplate(lib, catSlugs, firstCategoryId)
+      if (!categoryId) continue // No categories at all — skip rather than orphan.
+      await ref.set({
+        id: slug,
+        organizationId: orgId,
+        name: lib.name,
+        categoryId,
+        defaultPostType: lib.defaultPostType,
+        defaultHashtags: lib.defaultHashtags,
+        blurbTemplate: lib.blurbTemplate,
+        cadence: lib.cadence,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
+  }
+
+  /* 4. Channels: persisted on the onboarding profile (not authoritative
    * for connection state — just the user's stated preference). */
   await db.doc(orgPath(orgId)).set(
     {
@@ -154,7 +197,17 @@ export async function applyOnboardingSelections(
 
   revalidatePath("/calendar")
   revalidatePath("/settings/categories")
+  revalidatePath("/library")
   return { ok: true, id: orgId }
+}
+
+function resolveCategoryForTemplate(
+  lib: StarterTemplate,
+  presentSlugs: Set<string>,
+  fallback: string | undefined,
+): string | undefined {
+  if (presentSlugs.has(lib.preferredCategorySlug)) return lib.preferredCategorySlug
+  return fallback
 }
 
 export async function completeOnboarding(
@@ -165,16 +218,25 @@ export async function completeOnboarding(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
   const orgId = await getCurrentOrgId()
+  const completedAt = new Date().toISOString()
   await getAdminDb().doc(orgPath(orgId)).set(
     {
       onboarding: {
-        completedAt: new Date().toISOString(),
+        completedAt,
         skippedSteps: parsed.data.skippedSteps,
       },
-      updatedAt: new Date().toISOString(),
+      updatedAt: completedAt,
     },
     { merge: true },
   )
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "onboarding.complete",
+    actorUserId: actor?.id ?? null,
+    target: { type: "organization", id: orgId },
+    meta: { skippedSteps: parsed.data.skippedSteps },
+  })
   revalidatePath("/")
   return { ok: true, id: orgId }
 }

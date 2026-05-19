@@ -11,13 +11,12 @@ import {
   orgIdeationFeedPath,
   orgPostsPath,
 } from "@/lib/firebase/paths"
-import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
+import { gateErrorToResult, getOrgPlan, requireQuota } from "@/lib/plans/gate"
 import { incrementUsage } from "@/lib/telemetry/agent-events"
-import {
-  nextActionKind,
-  type NextAction,
-  type NextActionKind,
-  type ServerActionResult,
+import type {
+  NextAction,
+  NextActionKind,
+  ServerActionResult,
 } from "@/lib/schemas/_shared"
 
 /*
@@ -113,6 +112,7 @@ export async function approveItem(input: unknown): Promise<ApproveItemResult> {
       orgId,
       itemType,
       itemId,
+      actorUserId: user.id,
       sourceData: data,
       nextAction: effective,
     })
@@ -165,6 +165,9 @@ type ResolverInput = {
   orgId: string
   itemType: "post" | "ideation"
   itemId: string
+  /* User clicking approve — used by multiStepApproval to track distinct
+   * reviewers across multiple approval clicks. */
+  actorUserId?: string
   sourceData: Record<string, unknown> & {
     agentMeta?: { sourceRunId?: string; toolCallId?: string }
   }
@@ -222,20 +225,53 @@ async function resolveSchedulePost(i: ResolverInput): Promise<ResolverOutcome> {
     }
   }
 
+  /* Multi-step approval gate. Plans with the `multiStepApproval` feature
+   * require N distinct approvers before the post can flip to scheduled.
+   * Plans without the feature treat first approval as final.
+   *
+   * Default required count is 2 when the plan has the feature; producers
+   * can override via post.requiredApprovers (e.g. for high-risk
+   * categories). The current approver's id is added to approvedBy; a
+   * single user clicking approve twice never satisfies the requirement
+   * because the set dedupes. */
+  const plan = await getOrgPlan(i.orgId)
+  const multiStepRequired =
+    plan.features.multiStepApproval && !wasScheduled
+  const required =
+    (i.sourceData.requiredApprovers as number | undefined) ??
+    (multiStepRequired ? 2 : 1)
+
+  const prevApprovers = (i.sourceData.approvedBy as string[] | undefined) ?? []
+  const approverSet = new Set<string>(prevApprovers)
+  if (i.actorUserId) approverSet.add(i.actorUserId)
+  const approvers = Array.from(approverSet)
+
+  const enoughApprovers = approvers.length >= required
+  const finalize = enoughApprovers || !multiStepRequired
+
   const time = resolveTargetTime(i.nextAction.targetTime)
   const patch: Record<string, unknown> = {
-    "agentMeta.reviewState": "approved",
-    status: "scheduled",
+    approvedBy: approvers,
+    requiredApprovers: required,
     updatedAt: new Date().toISOString(),
   }
-  if (time.date) patch.scheduledDate = time.date
-  if (time.time) patch.scheduledTime = time.time
-  if (i.nextAction.targetChannel) {
-    patch[`channelStatuses.${i.nextAction.targetChannel}`] = "scheduled"
+
+  if (finalize) {
+    patch["agentMeta.reviewState"] = "approved"
+    patch.status = "scheduled"
+    if (time.date) patch.scheduledDate = time.date
+    if (time.time) patch.scheduledTime = time.time
+    if (i.nextAction.targetChannel) {
+      patch[`channelStatuses.${i.nextAction.targetChannel}`] = "scheduled"
+    }
+  } else {
+    /* Partial approval — record reviewer count but keep status in review. */
+    patch.status = "review"
   }
+
   await ref.set(patch, { merge: true })
 
-  if (!wasScheduled) {
+  if (finalize && !wasScheduled) {
     try {
       await incrementUsage(i.orgId, "scheduledPosts")
     } catch (err) {
@@ -249,8 +285,8 @@ async function resolveSchedulePost(i: ResolverInput): Promise<ResolverOutcome> {
     ok: true,
     artifactId: i.itemId,
     artifactType: "post",
-    resumeRunId: i.sourceData.agentMeta?.sourceRunId,
-    resumeToolCallId: i.sourceData.agentMeta?.toolCallId,
+    resumeRunId: finalize ? i.sourceData.agentMeta?.sourceRunId : undefined,
+    resumeToolCallId: finalize ? i.sourceData.agentMeta?.toolCallId : undefined,
   }
 }
 
@@ -591,5 +627,6 @@ export async function listApprovalsLog(
   })
 }
 
-/* Re-export the kinds enum for callers that need to discriminate. */
-export { nextActionKind }
+/* nextActionKind enum stays in lib/schemas/_shared.ts — re-exporting a
+ * Zod object from a "use server" file trips Next's invalid-use-server-value
+ * check. Callers import it directly from @/lib/schemas. */
