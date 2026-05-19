@@ -11,6 +11,7 @@ import {
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
+import { incrementUsage } from "@/lib/telemetry/agent-events"
 import { fetchPostsInRange } from "@/lib/queries/posts.server"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
 
@@ -152,6 +153,19 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
     )
   }
   await batch.commit()
+
+  /* Bump the scheduledPosts counter AFTER the write succeeds so a failed
+   * batch doesn't waste quota. Best-effort — never blocks the user. */
+  if (statusChanged && nextStatus === "scheduled") {
+    try {
+      await incrementUsage(orgId, "scheduledPosts")
+    } catch (err) {
+      console.warn(
+        `[usage] scheduledPosts increment failed: ${err instanceof Error ? err.message : err}`,
+      )
+    }
+  }
+
   try {
     const after = await ref.get()
     if (after.exists) {
