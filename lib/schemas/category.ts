@@ -17,5 +17,10 @@ export const categorySchema = audit.extend({
   defaultCtaId: z.string().optional(),
   isActive: z.boolean().default(true),
   displayOrder: z.number().int().nonnegative().default(0),
+  /* `system: true` marks a category as seeded-by-default and prevents
+   * deletion (rename/recolor/reorder is fine). Stops a fat-finger click
+   * from removing the only category an existing org has posts pointing
+   * at. Set by seeds; never editable from the UI. */
+  system: z.boolean().default(false),
 })
 export type Category = z.infer<typeof categorySchema>
