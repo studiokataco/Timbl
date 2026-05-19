@@ -186,7 +186,10 @@ export async function installDefaultAgents(): Promise<
   for (const def of AGENT_DEFAULTS) {
     const ref = col.doc(def.name)
     const snap = await ref.get()
-    if (snap.exists) {
+    /* Overwrite stubs left by the multi-tenant blocking trigger
+     * (functions/src/setUserClaims.ts marks them needsHydration:true).
+     * Fully-formed rows are left alone so user edits survive. */
+    if (snap.exists && snap.data()?.needsHydration !== true) {
       skipped.push(def.name)
       continue
     }

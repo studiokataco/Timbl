@@ -45,3 +45,8 @@ export const orgAgentMemoryPath = (orgId: string) =>
 export const orgUsagePath = (orgId: string) => `${orgPath(orgId)}/usage`
 export const orgUsageDocPath = (orgId: string, period: string) =>
   `${orgUsagePath(orgId)}/${period}`
+
+/* Append-only audit log — category create/delete, plan change, member
+ * add, template create, etc. Distinct from approvalsLog (which records
+ * agent-suggestion approvals only). */
+export const orgAuditLogPath = (orgId: string) => `${orgPath(orgId)}/auditLog`

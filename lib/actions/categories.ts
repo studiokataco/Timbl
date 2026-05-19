@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
-import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
+import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
 import { orgCategoriesPath, orgPostsPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { gateErrorToResult, requireFeature } from "@/lib/plans/gate"
+import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import {
   categorySchema,
   type Category,
@@ -123,6 +124,13 @@ export async function createCategory(input: unknown): Promise<ServerActionResult
     updatedAt: now,
   }
   await ref.set(doc)
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "category.create",
+    actorUserId: actor?.id ?? null,
+    target: { type: "category", id: doc.id, label: doc.name },
+  })
   revalidatePath("/settings/categories")
   revalidatePath("/calendar")
   return { ok: true, id: ref.id }
@@ -246,7 +254,16 @@ export async function deleteCategory(input: unknown): Promise<ServerActionResult
     }
   }
 
+  const deletedName = (snap.data()?.name as string | undefined) ?? parsed.data.id
   await ref.delete()
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "category.delete",
+    actorUserId: actor?.id ?? null,
+    target: { type: "category", id: parsed.data.id, label: deletedName },
+    meta: parsed.data.reassignTo ? { reassignedTo: parsed.data.reassignTo } : {},
+  })
   revalidatePath("/settings/categories")
   revalidatePath("/calendar")
   return { ok: true, id: parsed.data.id }

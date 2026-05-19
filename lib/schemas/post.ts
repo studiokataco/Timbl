@@ -94,6 +94,16 @@ export const postSchema = audit.extend({
   migratedFrom: migratedFromSchema.optional(),
   agentMeta: agentMetaSchema.optional(),
   embedding: embeddingSchema.optional(),
+  /* Multi-step approval. On plans with the `multiStepApproval` feature
+   * enabled, posts cannot transition to `scheduled` until at least
+   * `requiredApprovers` distinct user ids appear in `approvedBy`. Plans
+   * without the feature ignore this entirely — single approval flips the
+   * status as before.
+   *
+   * Optional so legacy/quick-add posts don't need to set them. The
+   * resolver reads them as `?? []` / `?? 1`. */
+  approvedBy: z.array(z.string()).optional(),
+  requiredApprovers: z.number().int().min(1).max(5).optional(),
 })
 export type Post = z.infer<typeof postSchema>
 

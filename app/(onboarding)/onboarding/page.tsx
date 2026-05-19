@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { getOnboardingState } from "@/lib/onboarding/state"
 import { listIndustries } from "@/lib/onboarding/industry-defaults"
+import { hydrateAgentStubs } from "@/lib/org/hydrate"
 import { OnboardingWizard } from "@/components/onboarding/wizard"
 
 /*
@@ -18,6 +19,10 @@ import { OnboardingWizard } from "@/components/onboarding/wizard"
 export default async function OnboardingPage() {
   const orgId = await getCurrentOrgId()
   if (!orgId) redirect("/")
+  /* If the blocking trigger created stub agentConfigs (needsHydration:true),
+   * fill them in with full prompts/budgets/tools BEFORE the wizard renders.
+   * Cheap when nothing needs hydrating; one-shot when the org is new. */
+  await hydrateAgentStubs(orgId)
   const state = await getOnboardingState(orgId)
   const industries = listIndustries()
   return (

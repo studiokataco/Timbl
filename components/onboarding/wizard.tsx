@@ -122,6 +122,9 @@ export function OnboardingWizard({
   const [enabledChannels, setEnabledChannels] = useState<Set<string>>(
     () => new Set(initialProfile.channels ?? ["instagram"]),
   )
+  const [pickedTemplates, setPickedTemplates] = useState<Set<string>>(
+    () => new Set(defaults.templateSlugs),
+  )
 
   /* When the industry changes, refresh the suggested selections so users
    * who jump back to step 1 don't get stuck with the previous industry's
@@ -131,6 +134,7 @@ export function OnboardingWizard({
     const next = getIndustryDefaults(value)
     setEnabledAgents(new Set(next.suggestedAgents))
     setPickedCategories(new Set(next.categories.map((c) => c.slug)))
+    setPickedTemplates(new Set(next.templateSlugs))
     if (!tone) {
       /* Only adopt the tone hint when the user hasn't typed one — don't
        * stomp customizations. */
@@ -176,6 +180,7 @@ export function OnboardingWizard({
         categorySlugs: [...pickedCategories],
         agentIds: [...enabledAgents],
         channels: [...enabledChannels],
+        templateSlugs: [...pickedTemplates],
       })
       if (!result.ok) {
         toast.error(result.error ?? "Could not save selections")
@@ -234,7 +239,11 @@ export function OnboardingWizard({
             />
           ) : null}
           {activeStep === "templates" ? (
-            <TemplatesStep templateSlugs={defaults.templateSlugs} />
+            <TemplatesStep
+              suggestions={defaults.templateSlugs}
+              picked={pickedTemplates}
+              onToggle={(slug) => toggle(pickedTemplates, slug, setPickedTemplates)}
+            />
           ) : null}
           {activeStep === "channels" ? (
             <ChannelsStep
@@ -550,27 +559,55 @@ function CategoriesStep({
   )
 }
 
-function TemplatesStep({ templateSlugs }: { templateSlugs: string[] }) {
+function TemplatesStep({
+  suggestions,
+  picked,
+  onToggle,
+}: {
+  suggestions: string[]
+  picked: Set<string>
+  onToggle: (slug: string) => void
+}) {
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-xl font-medium">Starter templates</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Suggested templates for your industry. You&apos;ll be able to edit
-          them in the composer.
+          We&apos;ll create these as templates in your library. Deselect any
+          you don&apos;t want; you can always create more later.
         </p>
       </header>
-      {templateSlugs.length > 0 ? (
+      {suggestions.length > 0 ? (
         <ul className="space-y-2">
-          {templateSlugs.map((slug) => (
-            <li
-              key={slug}
-              className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
-            >
-              <span className="text-sm font-medium">{slug}</span>
-              <Badge variant="outline">Suggested</Badge>
-            </li>
-          ))}
+          {suggestions.map((slug) => {
+            const on = picked.has(slug)
+            return (
+              <li key={slug}>
+                <button
+                  type="button"
+                  onClick={() => onToggle(slug)}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition",
+                    on
+                      ? "border-foreground bg-muted/30"
+                      : "border-border hover:border-foreground/40",
+                  )}
+                >
+                  <span className="text-sm font-medium">
+                    {slug.replace(/-/g, " ")}
+                  </span>
+                  <span
+                    className={cn(
+                      "flex size-4 items-center justify-center rounded border",
+                      on ? "border-foreground bg-foreground" : "border-border",
+                    )}
+                  >
+                    {on ? <Check className="size-2.5 text-background" /> : null}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
         </ul>
       ) : (
         <p className="text-sm text-muted-foreground">
