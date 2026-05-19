@@ -122,5 +122,24 @@ export const serverActionResult = z.object({
   ok: z.boolean(),
   id: z.string().optional(),
   error: z.string().optional(),
+  /* Set when the action was blocked by a plan gate. Lets the client
+   * render a context-aware upgrade prompt without a second round-trip.
+   * Shape mirrors lib/plans/gate.ts PlanGateReason. */
+  gate: z
+    .union([
+      z.object({
+        kind: z.literal("feature"),
+        feature: z.string(),
+        currentTier: z.string(),
+      }),
+      z.object({
+        kind: z.literal("quota"),
+        metric: z.string(),
+        limit: z.number(),
+        used: z.number(),
+        currentTier: z.string(),
+      }),
+    ])
+    .optional(),
 })
 export type ServerActionResult = z.infer<typeof serverActionResult>

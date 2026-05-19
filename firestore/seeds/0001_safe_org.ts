@@ -19,6 +19,10 @@ export async function seedSafeOrg() {
       slug: "safe-foundation",
       name: "SAFE Foundation",
       primaryColor: "#111111",
+      /* Existing org gets the top self-serve tier so nothing they use
+       * today gets quota-gated. New signups land on free_v1 via the
+       * onboarding wizard (Phase E). */
+      plan: "agency_v1",
     }),
     { merge: true },
   )

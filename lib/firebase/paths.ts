@@ -39,3 +39,9 @@ export const orgAwarenessProposalsPath = (orgId: string) =>
 /* Memory + RAG layer — see lib/embeddings/**. */
 export const orgAgentMemoryPath = (orgId: string) =>
   `${orgPath(orgId)}/agentMemory`
+
+/* Usage counters keyed by YYYY-MM. Phase B reads these for quota gates;
+ * Phase C writes them via the agent-event emitter. */
+export const orgUsagePath = (orgId: string) => `${orgPath(orgId)}/usage`
+export const orgUsageDocPath = (orgId: string, period: string) =>
+  `${orgUsagePath(orgId)}/${period}`
