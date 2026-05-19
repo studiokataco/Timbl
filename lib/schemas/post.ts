@@ -6,6 +6,7 @@ import {
   isoDate,
   isoTime,
   isoTimestamp,
+  nextActionSchema,
   postStatus,
   postType,
 } from "./_shared"
@@ -50,6 +51,9 @@ export const agentMetaSchema = z.object({
   ideationItemId: z.string().optional(),
   reviewState: z.enum(["pending", "approved", "rejected"]).optional(),
   toolCallId: z.string().optional(),
+  /* What approveItem should do on approval. Omitted = legacy 'noop' (status
+   * change only). Producer agents populate this when they create the draft. */
+  nextAction: nextActionSchema.optional(),
 })
 export type AgentMeta = z.infer<typeof agentMetaSchema>
 

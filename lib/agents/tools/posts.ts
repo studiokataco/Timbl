@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPostsPath, orgKanbanColumnsPath } from "@/lib/firebase/paths"
-import { isoDate, isoTime, postType } from "@/lib/schemas/_shared"
+import { isoDate, isoTime, nextActionKind, postType } from "@/lib/schemas/_shared"
 
 import { getRuntimeCtx } from "../runtime/context"
 
@@ -41,6 +41,16 @@ const createInput = z.object({
   confidence: z.number().min(0).max(1).optional(),
   rationale: z.string().max(4_000).optional(),
   reviewState: z.enum(["pending", "approved", "rejected"]).default("pending"),
+  /* What should happen when a human approves this draft. Default is
+   * `schedule_post` — drafter output is ready content awaiting only a
+   * human OK to move into the schedule. Producers that want a different
+   * outcome (e.g. a strategist proposing a draft that still needs
+   * editorial review) can override. */
+  nextActionKind: nextActionKind.default("schedule_post"),
+  nextActionChannel: z.string().optional(),
+  /* ISO timestamp or "auto" — `auto` lets the resolver/category cadence
+   * pick the slot. */
+  nextActionTime: z.string().optional(),
 })
 
 export const createDraftPostTool = new FunctionTool({
@@ -77,6 +87,12 @@ export const createDraftPostTool = new FunctionTool({
         rationale: input.rationale,
         ideationItemId: input.ideationItemId,
         reviewState: input.reviewState,
+        nextAction: {
+          kind: input.nextActionKind,
+          targetChannel: input.nextActionChannel,
+          targetTime: input.nextActionTime,
+          categoryId: input.categoryId,
+        },
       },
       createdAt: now,
       updatedAt: now,
