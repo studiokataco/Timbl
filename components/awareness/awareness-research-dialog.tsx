@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { addDays, format } from "date-fns"
@@ -18,15 +18,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { AgentChat } from "@/components/agents/agent-chat"
+import { AgentChat, type AgentChatHandle } from "@/components/agents/agent-chat"
 
 /*
  * Triggers the awareness-researcher agent. Two-stage flow:
  *   1. Form — date range + optional region.
- *   2. Run — once submitted, swaps to an embedded AgentChat seeded with
- *      the structured prompt. The agent streams its discoveries inline;
- *      when the stream finishes we refresh the parent page so the new
- *      proposals strip is visible.
+ *   2. Run — once submitted, swaps to an embedded AgentChat and
+ *      auto-sends the structured prompt so the agent starts streaming
+ *      immediately. When the stream finishes we refresh the parent page
+ *      so the new proposals strip is visible.
  */
 
 const schema = z.object({
@@ -53,11 +53,14 @@ export function AwarenessResearchDialog({
     }
   }, [])
   const [running, setRunning] = useState<FormValues | null>(null)
+  const chatRef = useRef<AgentChatHandle>(null)
+  const submittedKeyRef = useRef<string | null>(null)
 
   const form = useForm<FormValues>({ defaultValues: defaults })
 
   function reset() {
     setRunning(null)
+    submittedKeyRef.current = null
     form.reset(defaults)
   }
 
@@ -80,6 +83,19 @@ export function AwarenessResearchDialog({
   const intro = running
     ? buildIntro(running)
     : undefined
+
+  /* Once the user picks a date range, fire the seeded prompt at the
+   * awareness-researcher agent automatically. The `intro` was previously
+   * only rendered as static help text, so the chat sat empty until the
+   * user retyped it into the composer — making it look like the engine
+   * had hung. queueMicrotask defers until the ref is wired post-mount. */
+  useEffect(() => {
+    if (!running || !intro) return
+    const key = `${running.from}|${running.to}|${running.region ?? ""}`
+    if (submittedKeyRef.current === key) return
+    submittedKeyRef.current = key
+    queueMicrotask(() => chatRef.current?.submit(intro))
+  }, [running, intro])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -149,9 +165,9 @@ export function AwarenessResearchDialog({
         ) : (
           <div className="flex-1 min-h-0">
             <AgentChat
+              ref={chatRef}
               agentName="awareness-researcher"
-              intro={intro}
-              placeholder={`Find awareness days from ${running.from} to ${running.to}…`}
+              placeholder={`Refine the search or ask a follow-up…`}
               onFinish={() => router.refresh()}
             />
           </div>
