@@ -246,6 +246,10 @@ export async function seedCategoriesAndCtas() {
         defaultCtaId,
         isActive: true,
         displayOrder: cat.displayOrder,
+        /* Seeded categories are non-deletable from the UI; rename/recolor
+         * is fine. Custom categories created via /settings/categories are
+         * deletable (after post-reassignment). */
+        system: true,
       }),
       { merge: true },
     )

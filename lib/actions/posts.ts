@@ -10,6 +10,8 @@ import {
 } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
+import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
+import { incrementUsage } from "@/lib/telemetry/agent-events"
 import { fetchPostsInRange } from "@/lib/queries/posts.server"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
 
@@ -119,6 +121,20 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
   const statusChanged =
     nextStatus && postStatusSchema.safeParse(nextStatus).success && nextStatus !== prevStatus
 
+  /* Gate the scheduledPosts quota on the transition INTO scheduled. We
+   * deliberately don't gate on every other status change (only this one
+   * costs against the plan) and don't double-count if the post is
+   * already scheduled. */
+  if (statusChanged && nextStatus === "scheduled") {
+    try {
+      await requireQuota(orgId, "scheduledPosts")
+    } catch (err) {
+      const gated = gateErrorToResult(err)
+      if (gated) return gated
+      throw err
+    }
+  }
+
   const batch = db.batch()
   batch.set(
     ref,
@@ -137,6 +153,19 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
     )
   }
   await batch.commit()
+
+  /* Bump the scheduledPosts counter AFTER the write succeeds so a failed
+   * batch doesn't waste quota. Best-effort — never blocks the user. */
+  if (statusChanged && nextStatus === "scheduled") {
+    try {
+      await incrementUsage(orgId, "scheduledPosts")
+    } catch (err) {
+      console.warn(
+        `[usage] scheduledPosts increment failed: ${err instanceof Error ? err.message : err}`,
+      )
+    }
+  }
+
   try {
     const after = await ref.get()
     if (after.exists) {

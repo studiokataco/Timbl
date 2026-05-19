@@ -6,6 +6,7 @@ import { X } from "lucide-react"
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import type { IdeationItem } from "@/lib/schemas/ideationItem"
+import type { ApprovalLogRow } from "@/lib/actions/approvals"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { useMediaQuery } from "@/lib/hooks/use-media-query"
 
@@ -33,10 +34,17 @@ type Props = {
   agents: AgentConfig[]
   runs: AgentRunDoc[]
   ideation: IdeationItem[]
+  approvals?: ApprovalLogRow[]
   publishCounts?: { scheduled: number; posted: number }
 }
 
-export function StudioWorkspace({ agents, runs, ideation, publishCounts }: Props) {
+export function StudioWorkspace({
+  agents,
+  runs,
+  ideation,
+  approvals = [],
+  publishCounts,
+}: Props) {
   const router = useRouter()
   const params = useSearchParams()
   const focus = params.get("focus") ?? ""
@@ -82,7 +90,11 @@ export function StudioWorkspace({ agents, runs, ideation, publishCounts }: Props
               runs={runs}
               initialPublishCounts={publishCounts}
             />
-            <ActivityStream initialRuns={runs} initialIdeation={ideation} />
+            <ActivityStream
+              initialRuns={runs}
+              initialIdeation={ideation}
+              initialApprovals={approvals}
+            />
           </>
         )}
       </main>

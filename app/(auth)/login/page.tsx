@@ -13,7 +13,7 @@ export default function LoginPage() {
       <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
         <p className="text-sm text-muted-foreground">
-          Use your SAFE Foundation or Kataco Google account.
+          Use your workspace Google account.
         </p>
       </header>
       <Suspense fallback={null}>

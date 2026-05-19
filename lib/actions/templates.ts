@@ -10,6 +10,8 @@ import {
 } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
+import { gateErrorToResult, requireFeature } from "@/lib/plans/gate"
+import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import {
   postType as postTypeEnum,
   templateCadence,
@@ -56,6 +58,13 @@ export async function createTemplate(input: unknown): Promise<ServerActionResult
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" }
   }
   const orgId = await getCurrentOrgId()
+  try {
+    await requireFeature(orgId, "templates")
+  } catch (err) {
+    const gated = gateErrorToResult(err)
+    if (gated) return gated
+    throw err
+  }
   const db = getDb()
   const id = parsed.data.id ?? slugify(parsed.data.name)
   const now = new Date().toISOString()
@@ -67,6 +76,13 @@ export async function createTemplate(input: unknown): Promise<ServerActionResult
     updatedAt: now,
   }
   await db.doc(`${orgTemplatesPath(orgId)}/${id}`).set(doc, { merge: true })
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "template.create",
+    actorUserId: actor?.id ?? null,
+    target: { type: "template", id, label: parsed.data.name },
+  })
   try {
     await embedIfChanged("template", orgId, id, doc as Record<string, unknown>)
   } catch (err) {
@@ -101,7 +117,17 @@ export async function updateTemplate(input: unknown): Promise<ServerActionResult
 export async function deleteTemplate(id: string): Promise<ServerActionResult> {
   if (!id) return { ok: false, error: "No id" }
   const orgId = await getCurrentOrgId()
-  await getDb().doc(`${orgTemplatesPath(orgId)}/${id}`).delete()
+  const ref = getDb().doc(`${orgTemplatesPath(orgId)}/${id}`)
+  const snap = await ref.get()
+  const name = (snap.data()?.name as string | undefined) ?? id
+  await ref.delete()
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "template.delete",
+    actorUserId: actor?.id ?? null,
+    target: { type: "template", id, label: name },
+  })
   revalidatePath("/library")
   return { ok: true, id }
 }
@@ -191,6 +217,13 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" }
   }
   const orgId = await getCurrentOrgId()
+  try {
+    await requireFeature(orgId, "templates")
+  } catch (err) {
+    const gated = gateErrorToResult(err)
+    if (gated) return gated
+    throw err
+  }
   const db = getDb()
 
   const postSnap = await db.doc(`${orgPostsPath(orgId)}/${parsed.data.postId}`).get()

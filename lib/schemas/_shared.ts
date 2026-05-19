@@ -73,6 +73,46 @@ export const audit = z.object({
 })
 
 /*
+ * nextAction declares what should happen when a human approves an
+ * agent-produced artifact (a post draft, an ideation item, a calendar
+ * suggestion, a template proposal). The producing agent sets it at creation
+ * time; the approveItem dispatcher reads it and runs the matching resolver.
+ *
+ * `noop` is the legacy default — existing rows without a next_action are
+ * treated as "approve = status change only", preserving today's behavior.
+ *
+ * Producers are responsible for populating the payload fields they need; the
+ * resolver in lib/actions/approvals.ts validates shape per-kind before
+ * dispatching to the corresponding existing server action.
+ */
+export const nextActionKind = z.enum([
+  "create_draft",
+  "schedule_post",
+  "instantiate_template",
+  "add_to_calendar",
+  "assign_review",
+  "regenerate",
+  "noop",
+])
+export type NextActionKind = z.infer<typeof nextActionKind>
+
+export const nextActionSchema = z.object({
+  kind: nextActionKind,
+  /* Free-form per-kind data (templateId, briefText, mediaRefs, etc.).
+   * Validated by the resolver, not by this schema, to keep producer agents
+   * unblocked when adding new payload fields. */
+  payload: z.record(z.string(), z.unknown()).optional(),
+  targetChannel: z.string().optional(),
+  /* ISO timestamp or the literal 'auto' to slot via category cadence rules. */
+  targetTime: z.union([isoTimestamp, z.literal("auto")]).optional(),
+  categoryId: z.string().optional(),
+  /* Set when approval should re-link to an existing artifact rather than
+   * create a new one (e.g. re-approving a regenerated draft). */
+  linkedArtifactId: z.string().optional(),
+})
+export type NextAction = z.infer<typeof nextActionSchema>
+
+/*
  * Canonical shape returned by every server action. `id` is set on successful
  * creates/updates so callers can navigate or revalidate. Actions that need
  * extra fields (e.g. agent-suggestions surfacing a resumeRunId) extend this
@@ -82,5 +122,24 @@ export const serverActionResult = z.object({
   ok: z.boolean(),
   id: z.string().optional(),
   error: z.string().optional(),
+  /* Set when the action was blocked by a plan gate. Lets the client
+   * render a context-aware upgrade prompt without a second round-trip.
+   * Shape mirrors lib/plans/gate.ts PlanGateReason. */
+  gate: z
+    .union([
+      z.object({
+        kind: z.literal("feature"),
+        feature: z.string(),
+        currentTier: z.string(),
+      }),
+      z.object({
+        kind: z.literal("quota"),
+        metric: z.string(),
+        limit: z.number(),
+        used: z.number(),
+        currentTier: z.string(),
+      }),
+    ])
+    .optional(),
 })
 export type ServerActionResult = z.infer<typeof serverActionResult>

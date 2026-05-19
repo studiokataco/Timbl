@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { audit, isoDate } from "./_shared"
+import { audit, isoDate, nextActionSchema } from "./_shared"
 
 export const ideationStatus = z.enum(["new", "used", "dismissed"])
 export type IdeationStatus = z.infer<typeof ideationStatus>
@@ -21,5 +21,8 @@ export const ideationItemSchema = audit.extend({
 
   createdByRunId: z.string(),
   promotedPostId: z.string().optional(),
+  /* What approveItem should do when a human accepts this idea (typically
+   * 'create_draft' with title/summary as payload). */
+  nextAction: nextActionSchema.optional(),
 })
 export type IdeationItem = z.infer<typeof ideationItemSchema>

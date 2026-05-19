@@ -4,12 +4,16 @@ import { useEffect, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
-import { History, Lightbulb } from "lucide-react"
+import { CheckCircle2, History, Lightbulb } from "lucide-react"
 
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import type { IdeationItem } from "@/lib/schemas/ideationItem"
 import { listAgentRuns } from "@/lib/actions/agent-runs"
 import { listIdeationFeed } from "@/lib/actions/ideation"
+import {
+  listApprovalsLog,
+  type ApprovalLogRow,
+} from "@/lib/actions/approvals"
 import {
   getPostsByIds,
   type PublishStatusProjection,
@@ -41,6 +45,7 @@ import { PublishChip } from "./publish-chip"
 type Props = {
   initialRuns: AgentRunDoc[]
   initialIdeation?: IdeationItem[]
+  initialApprovals?: ApprovalLogRow[]
 }
 
 /* Compact row shape for ideation items that surface alongside runs. */
@@ -56,7 +61,13 @@ type RunRowKind = {
   createdAt: string
   run: AgentRunDoc
 }
-type FeedRow = RunRowKind | IdeationRow
+type ApprovalRowKind = {
+  kind: "approval"
+  id: string
+  createdAt: string
+  entry: ApprovalLogRow
+}
+type FeedRow = RunRowKind | IdeationRow | ApprovalRowKind
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -87,7 +98,11 @@ function matchesFilter(run: AgentRunDoc, filter: FilterKey): boolean {
   }
 }
 
-export function ActivityStream({ initialRuns, initialIdeation = [] }: Props) {
+export function ActivityStream({
+  initialRuns,
+  initialIdeation = [],
+  initialApprovals = [],
+}: Props) {
   const router = useRouter()
   const params = useSearchParams()
   const focus = params.get("focus") ?? ""
@@ -114,6 +129,15 @@ export function ActivityStream({ initialRuns, initialIdeation = [] }: Props) {
     staleTime: 0,
   })
   const ideation = ideationData ?? initialIdeation
+
+  const { data: approvalsData } = useQuery({
+    queryKey: ["studio", "approvals"],
+    queryFn: () => listApprovalsLog({ limit: 50 }),
+    refetchInterval: 8_000,
+    initialData: initialApprovals,
+    staleTime: 0,
+  })
+  const approvals = approvalsData ?? initialApprovals
 
   /* Dedupe postIds across visible runs and fetch their publish state in one
    * batched call so the chip strip on each run card costs us a single read
@@ -156,13 +180,15 @@ export function ActivityStream({ initialRuns, initialIdeation = [] }: Props) {
     new Set<string>([
       ...initialRuns.map((r) => r.id),
       ...initialIdeation.map((i) => i.id),
+      ...initialApprovals.map((a) => a.id),
     ]),
   )
   useEffect(() => {
     const set = seenRef.current
     for (const r of runs) set.add(r.id)
     for (const i of ideation) set.add(i.id)
-  }, [runs, ideation])
+    for (const a of approvals) set.add(a.id)
+  }, [runs, ideation, approvals])
 
   const filtered = useMemo<FeedRow[]>(() => {
     const runRows: RunRowKind[] = runs
@@ -173,9 +199,9 @@ export function ActivityStream({ initialRuns, initialIdeation = [] }: Props) {
         createdAt: r.startedAt ?? r.createdAt ?? "",
         run: r,
       }))
-    // Ideation surfaces only on the All filter — for the focused filters
-    // (live / awaiting / failed / succeeded) the activity is purely run-
-    // status oriented and a mixed feed would confuse those views.
+    // Ideation + approval entries surface only on the All filter — for the
+    // focused filters (live / awaiting / failed / succeeded) the activity is
+    // purely run-status oriented and a mixed feed would confuse those views.
     const ideationRows: IdeationRow[] =
       filter === "all"
         ? ideation.map((i) => ({
@@ -185,20 +211,34 @@ export function ActivityStream({ initialRuns, initialIdeation = [] }: Props) {
             item: i,
           }))
         : []
-    // Pull approval cards to the top, then sort the remainder by createdAt desc.
-    const approvals: FeedRow[] = []
+    const approvalRows: ApprovalRowKind[] =
+      filter === "all"
+        ? approvals
+            /* Skip reverted entries — the undo restored prior state, so
+             * showing the row is just noise. */
+            .filter((a) => a.revertedAt === null)
+            .map((a) => ({
+              kind: "approval",
+              id: a.id,
+              createdAt: a.createdAt,
+              entry: a,
+            }))
+        : []
+    // Pull awaiting-approval run cards to the top; everything else sorts
+    // by createdAt desc.
+    const pending: FeedRow[] = []
     const rest: FeedRow[] = []
-    for (const row of [...runRows, ...ideationRows]) {
+    for (const row of [...runRows, ...ideationRows, ...approvalRows]) {
       if (row.kind === "run" && row.run.status === "awaiting_human") {
-        approvals.push(row)
+        pending.push(row)
       } else {
         rest.push(row)
       }
     }
-    approvals.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    pending.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
     rest.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-    return [...approvals, ...rest]
-  }, [runs, ideation, filter])
+    return [...pending, ...rest]
+  }, [runs, ideation, approvals, filter])
 
   function setFilter(next: FilterKey) {
     const sp = new URLSearchParams(params.toString())
@@ -302,6 +342,19 @@ export function ActivityStream({ initialRuns, initialIdeation = [] }: Props) {
           {/* eslint-disable-next-line react-hooks/refs */}
           {filtered.map((row) => {
             const isNew = !seenRef.current.has(row.id)
+            if (row.kind === "approval") {
+              return (
+                <li
+                  key={`a:${row.id}`}
+                  className={cn(
+                    isNew &&
+                      "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-300",
+                  )}
+                >
+                  <ApprovalRowView entry={row.entry} />
+                </li>
+              )
+            }
             if (row.kind === "ideation") {
               const active = selectedIdeation === row.id
               return (
@@ -528,6 +581,68 @@ function IdeationRow({
 
 function labelFor(k: FilterKey): string {
   return FILTERS.find((f) => f.key === k)?.label ?? "All"
+}
+
+function ApprovalRowView({ entry }: { entry: ApprovalLogRow }) {
+  const label = approvalLabel(entry)
+  return (
+    <div
+      className={cn(
+        "w-full overflow-hidden rounded-lg border border-border bg-background px-4 py-3 text-left",
+      )}
+    >
+      <div className="flex items-center gap-3 flex-wrap">
+        <span
+          aria-hidden
+          className="size-6 shrink-0 rounded-md bg-secondary flex items-center justify-center"
+        >
+          <CheckCircle2 className="size-3.5 text-foreground" />
+        </span>
+        <span className="text-sm font-semibold text-foreground truncate max-w-[60%]">
+          {label}
+        </span>
+        <Badge
+          variant="outline"
+          className="text-[10px] uppercase tracking-wide rounded-pill border-border bg-background text-muted-foreground"
+        >
+          Approved
+        </Badge>
+        {entry.sourceAgent ? (
+          <Badge
+            variant="outline"
+            className="text-[10px] tracking-wide rounded-pill border-border bg-background text-muted-foreground"
+          >
+            via {entry.sourceAgent}
+          </Badge>
+        ) : null}
+        <span className="flex-1" />
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {relTime(entry.createdAt)}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function approvalLabel(entry: ApprovalLogRow): string {
+  switch (entry.nextActionKind) {
+    case "schedule_post":
+      return "Post scheduled"
+    case "add_to_calendar":
+      return "Added to calendar"
+    case "create_draft":
+      return "Draft created"
+    case "instantiate_template":
+      return "Template instantiated"
+    case "assign_review":
+      return "Assigned for review"
+    case "regenerate":
+      return "Regenerated"
+    case "noop":
+      return "Approved"
+    default:
+      return "Approved"
+  }
 }
 
 function relTime(iso: string | undefined): string {

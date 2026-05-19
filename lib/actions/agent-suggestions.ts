@@ -6,15 +6,19 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { orgPostsPath } from "@/lib/firebase/paths"
 import { getAgentSession } from "@/lib/actions/agent-sessions"
+import { approveItem } from "@/lib/actions/approvals"
 import type { ServerActionResult } from "@/lib/schemas"
 
 /* Local extension: approve/reject return a resumeRunId + resumeToolCallId
  * when the post's review pause needs the run resumed via the SSE endpoint
  * /api/agents/runs/{runId}/resume. The UI consumes these to stream the
- * continuation if the user wants to watch it. */
+ * continuation if the user wants to watch it. The approval-log id is
+ * surfaced so the UI can offer Undo. */
 type AgentDraftReviewResult = ServerActionResult & {
   resumeRunId?: string
   resumeToolCallId?: string
+  approvalLogId?: string
+  nextActionKind?: string
 }
 
 async function patchAgentMeta(
@@ -40,7 +44,17 @@ async function patchAgentMeta(
   }
 }
 
-const approveInput = z.object({ postId: z.string().min(1) })
+const approveInput = z.object({
+  postId: z.string().min(1),
+  /* Caller can override channel/time at click-time via the inline picker. */
+  override: z
+    .object({
+      targetChannel: z.string().optional(),
+      targetTime: z.string().optional(),
+      categoryId: z.string().optional(),
+    })
+    .optional(),
+})
 
 export async function approveAgentDraft(
   input: unknown,
@@ -49,16 +63,22 @@ export async function approveAgentDraft(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
-  const orgId = await getCurrentOrgId()
-  const result = await patchAgentMeta(orgId, parsed.data.postId, {
-    reviewState: "approved",
+  /* Delegate to the unified dispatcher. Posts without a declared next_action
+   * resolve as 'noop' (legacy: status flip only) so callers built before the
+   * dispatcher existed keep working unchanged. */
+  const result = await approveItem({
+    itemType: "post",
+    itemId: parsed.data.postId,
+    override: parsed.data.override,
   })
   if (!result.ok) return { ok: false, error: result.error }
   return {
     ok: true,
     id: parsed.data.postId,
-    resumeRunId: result.sourceRunId,
-    resumeToolCallId: result.toolCallId,
+    resumeRunId: result.resumeRunId,
+    resumeToolCallId: result.resumeToolCallId,
+    approvalLogId: result.approvalLogId,
+    nextActionKind: result.nextActionKind,
   }
 }
 
@@ -119,9 +139,24 @@ export async function resolveHumanGate(
   return r
 }
 
+/* Canned rejection reasons surfaced in the UI; free text falls into
+ * `reasonNote`. `regenerate` toggles the regenerate flow — sets a flag on
+ * the post that downstream agent runs can pick up to produce a new draft
+ * incorporating the feedback. */
+export const REJECT_REASONS = [
+  "off_brand",
+  "wrong_timing",
+  "already_covered",
+  "factual_issue",
+  "other",
+] as const
+export type RejectReason = (typeof REJECT_REASONS)[number]
+
 const rejectInput = z.object({
   postId: z.string().min(1),
-  reason: z.string().max(2_000).optional(),
+  reason: z.enum(REJECT_REASONS).optional(),
+  reasonNote: z.string().max(2_000).optional(),
+  regenerate: z.boolean().optional(),
 })
 
 export async function rejectAgentDraft(
@@ -132,8 +167,13 @@ export async function rejectAgentDraft(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
   const orgId = await getCurrentOrgId()
+  const composed = composeRationale(parsed.data.reason, parsed.data.reasonNote)
   const patch: Record<string, unknown> = { reviewState: "rejected" }
-  if (parsed.data.reason) patch.rationale = parsed.data.reason
+  if (composed) patch.rationale = composed
+  if (parsed.data.regenerate) {
+    patch.regenerateRequested = true
+    patch.regenerateFeedback = composed ?? null
+  }
   const result = await patchAgentMeta(orgId, parsed.data.postId, patch)
   if (!result.ok) return { ok: false, error: result.error }
   return {
@@ -142,4 +182,22 @@ export async function rejectAgentDraft(
     resumeRunId: result.sourceRunId,
     resumeToolCallId: result.toolCallId,
   }
+}
+
+function composeRationale(
+  reason: RejectReason | undefined,
+  note: string | undefined,
+): string | undefined {
+  const parts: string[] = []
+  if (reason && reason !== "other") parts.push(REJECT_REASON_LABELS[reason])
+  if (note) parts.push(note)
+  return parts.length > 0 ? parts.join(" — ") : undefined
+}
+
+export const REJECT_REASON_LABELS: Record<RejectReason, string> = {
+  off_brand: "Off-brand",
+  wrong_timing: "Wrong timing",
+  already_covered: "Already covered",
+  factual_issue: "Factual issue",
+  other: "Other",
 }

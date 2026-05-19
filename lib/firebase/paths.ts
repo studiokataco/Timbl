@@ -12,6 +12,7 @@ export const orgCtasPath = (orgId: string) => `${orgPath(orgId)}/ctas`
 export const orgCampaignsPath = (orgId: string) => `${orgPath(orgId)}/campaigns`
 export const orgTemplatesPath = (orgId: string) => `${orgPath(orgId)}/templates`
 export const orgEventsPath = (orgId: string) => `${orgPath(orgId)}/events`
+export const orgApprovalsLogPath = (orgId: string) => `${orgPath(orgId)}/approvalsLog`
 export const orgPostStatusHistoryPath = (orgId: string, postId: string) =>
   `${orgPostsPath(orgId)}/${postId}/statusHistory`
 export const orgKanbanColumnsPath = (orgId: string) => `${orgPath(orgId)}/kanbanColumns`
@@ -38,3 +39,14 @@ export const orgAwarenessProposalsPath = (orgId: string) =>
 /* Memory + RAG layer — see lib/embeddings/**. */
 export const orgAgentMemoryPath = (orgId: string) =>
   `${orgPath(orgId)}/agentMemory`
+
+/* Usage counters keyed by YYYY-MM. Phase B reads these for quota gates;
+ * Phase C writes them via the agent-event emitter. */
+export const orgUsagePath = (orgId: string) => `${orgPath(orgId)}/usage`
+export const orgUsageDocPath = (orgId: string, period: string) =>
+  `${orgUsagePath(orgId)}/${period}`
+
+/* Append-only audit log — category create/delete, plan change, member
+ * add, template create, etc. Distinct from approvalsLog (which records
+ * agent-suggestion approvals only). */
+export const orgAuditLogPath = (orgId: string) => `${orgPath(orgId)}/auditLog`
