@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation"
+
 import { AgentCommandModal } from "@/components/agents/agent-command-modal"
 import { AgentDrawer } from "@/components/agents/agent-drawer"
 import { AskAiButton } from "@/components/agents/ask-ai-button"
@@ -6,10 +8,12 @@ import { DialogsProvider } from "@/components/shared/dialogs-provider"
 import { Onboarding } from "@/components/shared/onboarding"
 import { PlanFeaturesProvider } from "@/components/shared/plan-features-provider"
 import { QueryProvider } from "@/components/shared/query-provider"
+import { ShortcutsDialog } from "@/components/shared/shortcuts-dialog"
 import { Sidebar } from "@/components/shared/sidebar"
 import { TopBar } from "@/components/shared/top-bar"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
+import { isOnboardingComplete } from "@/lib/onboarding/state"
 import { getOrgPlanFeatures } from "@/lib/plans/gate"
 
 /*
@@ -24,6 +28,12 @@ import { getOrgPlanFeatures } from "@/lib/plans/gate"
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const orgId = await getCurrentOrgId()
+  /* First-launch redirect: orgs that never completed the wizard land on
+   * /onboarding. /onboarding lives outside this layout group, so the
+   * redirect cannot loop. The (onboarding) layout owns its own chrome. */
+  if (!(await isOnboardingComplete(orgId))) {
+    redirect("/onboarding")
+  }
   const [referenceData, user, planFeatures] = await Promise.all([
     fetchReferenceData(),
     getCurrentUser(),
@@ -41,6 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <CommandPalette />
+          <ShortcutsDialog />
           <Onboarding />
           <AgentDrawer />
           <AgentCommandModal />

@@ -11,7 +11,7 @@ import { retrieveTool } from "../../tools/retrieve"
 /*
  * Ideator — web-research-driven idea generator. Uses Gemini's first-party
  * grounding (GOOGLE_SEARCH + URL_CONTEXT) to discover awareness days, trending
- * topics, and adjacent stories the SAFE Foundation team could comment on,
+ * topics, and adjacent stories the workspace could comment on,
  * then writes each discovery as an ideationFeed item with source URLs so a
  * human can verify claims before promoting to a post.
  *

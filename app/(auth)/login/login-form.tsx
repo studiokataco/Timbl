@@ -27,7 +27,7 @@ export function LoginForm() {
       const domain = email.split("@")[1]
       if (!domain || !ALLOWED_DOMAINS.includes(domain)) {
         await auth.signOut()
-        toast.error("This Google account isn't authorised. Use a SAFE or Kataco workspace email.")
+        toast.error("This Google account isn't authorised for this workspace.")
         return
       }
       const post = async (forceRefresh: boolean) => {

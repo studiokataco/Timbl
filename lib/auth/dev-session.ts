@@ -1,5 +1,5 @@
 /*
- * Development auth shim. Returns a SAFE Foundation admin for every request
+ * Development auth shim. Returns the demo workspace admin for every request
  * — but ONLY when NEXT_PUBLIC_USE_EMULATORS=1 (set by `pnpm dev`). In any
  * other environment this module's identity is meaningless; server-helpers
  * routes through `lib/auth/session.ts` instead.
