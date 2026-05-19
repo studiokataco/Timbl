@@ -118,16 +118,15 @@ export function CategoryDialog({
     }
   }, [open, defaults, form, mode])
 
-  /* Auto-derive slug from name until the user types into the slug field. */
+  /* Auto-derive slug from name until the user types into the slug field.
+   * Watching via the field-level subscription (NOT form.watch with a
+   * callback) keeps React Compiler happy — form.watch's callback can't
+   * be safely memoized. */
+  const watchedName = form.watch("name")
   useEffect(() => {
     if (mode !== "create" || slugTouched) return
-    const sub = form.watch((values, info) => {
-      if (info.name === "name") {
-        form.setValue("slug", slugify(values.name ?? ""), { shouldDirty: true })
-      }
-    })
-    return () => sub.unsubscribe()
-  }, [form, mode, slugTouched])
+    form.setValue("slug", slugify(watchedName ?? ""), { shouldDirty: true })
+  }, [form, mode, slugTouched, watchedName])
 
   const onSubmit = form.handleSubmit((values) => {
     const parsed = schema.safeParse(values)
