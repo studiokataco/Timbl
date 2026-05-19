@@ -118,6 +118,13 @@ export async function promoteIdeationItem(
         sourceAgent: "ideator",
         ideationItemId: parsed.data.itemId,
         reviewState: "pending",
+        /* A promoted ideation produces a draft; approval moves it onto
+         * the calendar at the suggested or human-picked time. */
+        nextAction: {
+          kind: "schedule_post" as const,
+          targetTime: undefined,
+          categoryId: parsed.data.categoryId ?? undefined,
+        },
       },
       createdAt: now,
       updatedAt: now,
