@@ -13,6 +13,7 @@ import {
   Save,
 } from "lucide-react"
 import { toast } from "sonner"
+import cronstrue from "cronstrue"
 
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
@@ -339,6 +340,26 @@ function TuneTab({
 
   const anyDirty = Object.values(dirty).some(Boolean)
 
+  /* Human-readable read-out of the cron `schedule` field. cronstrue turns
+   * "0 9-18 * * 1-5" into "At 0 minutes past the hour, between 09:00 and
+   * 18:59, Monday through Friday". Empty schedule = no cron run. */
+  const scheduleHuman = useMemo<{ text: string; error: boolean }>(() => {
+    const expr = schedule.trim()
+    if (!expr) {
+      return { text: "No schedule — runs only when triggered manually.", error: false }
+    }
+    try {
+      const human = cronstrue.toString(expr, {
+        throwExceptionOnParseError: true,
+        verbose: false,
+        use24HourTimeFormat: false,
+      })
+      return { text: human, error: false }
+    } catch {
+      return { text: "Not a valid cron expression.", error: true }
+    }
+  }, [schedule])
+
   const reset = () => {
     setProvider(agent.provider)
     setModel(agent.model)
@@ -446,13 +467,25 @@ function TuneTab({
         />
       </Field>
 
-      <Field label="Schedule (cron)" dirty={dirty.schedule}>
+      <Field label="Schedule" dirty={dirty.schedule}>
         <Input
           value={schedule}
           onChange={(e) => setSchedule(e.target.value)}
           placeholder="0 6 * * *"
           className="font-mono"
         />
+        {/* Plain-English read-out of the cron expression — nobody should
+         * have to decode "0 9-18 * * 1-5" by eye. */}
+        <p
+          className={cn(
+            "mt-1.5 text-[11px] leading-snug",
+            scheduleHuman.error
+              ? "text-rose-600 dark:text-rose-400"
+              : "text-muted-foreground",
+          )}
+        >
+          {scheduleHuman.text}
+        </p>
       </Field>
 
       <Field label="System prompt" dirty={dirty.systemPrompt}>
