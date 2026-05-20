@@ -37,7 +37,7 @@
 **One-liner:** `pnpm dev` — orchestrated by `scripts/dev.mjs`. It:
 1. Spawns `firebase emulators:start --only firestore,auth,storage`.
 2. Waits for port 8080 to accept connections.
-3. Runs `firestore/seeds/run.ts` (idempotent — safe on every boot).
+3. (Confirm if `firestore/seeds/run.ts` is still needed for seeding in the current app; skip or update this step if not required.)
 4. Spawns `next dev` with `FIRESTORE_EMULATOR_HOST` / `FIREBASE_AUTH_EMULATOR_HOST` / `FIREBASE_STORAGE_EMULATOR_HOST` / `NEXT_PUBLIC_USE_EMULATORS=1` set.
 
 All four streams interleave in one terminal, prefixed by `[emulators]`, `[seed]`, `[next]`. Ctrl-C tears everything down cleanly.
@@ -49,14 +49,11 @@ Other scripts:
 - `pnpm dev:cloud` — no-emulator escape hatch for Phase 7+ (real Firebase project). Don't use it before then.
 
 ## What NOT to do
-- Don't add a state-management library (Zustand etc.). TanStack Query + URL params + small `useState` cover everything here.
-- Don't add tRPC, GraphQL, or a custom API layer.
 - Don't add Storybook. This isn't a design-system project.
-- Don't add Docker. Local + Firebase Emulator Suite is enough.
-- Don't write speculative tests. Type safety + zod runtime validation is the first test layer; one Playwright smoke test per phase is the second.
-- Don't auto-publish to Instagram in v1. Status tracking is the v1 job.
+- Don't write speculative tests. Type safety + zod runtime validation is the first test layer; one /agent-browser skilled test for smoke test per phase is the second.
+- Don't hallucinate new features. Always reference to the current codebase and its capabilities to stabillise or scale. 
 
 ## Commit hygiene
-- One phase per session. Don't pile two phase prompts on top of each other.
+- One phase per session. Don't pile two phase prompts on top of each other. You can use agent orchestration to break down the work into smaller chunks.
 - Always start a session with `git status` so we see the current state before proposing changes.
 - Migrations / seeds are append-only. Never edit a committed seed; write a new one to alter.

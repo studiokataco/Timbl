@@ -113,6 +113,30 @@ export const nextActionSchema = z.object({
 export type NextAction = z.infer<typeof nextActionSchema>
 
 /*
+ * Canned rejection reasons surfaced when a reviewer rejects an agent draft.
+ * Free-text notes fall into `reasonNote`; `REJECT_REASON_LABELS` maps each
+ * key to its display string. These live here rather than in the
+ * agent-suggestions "use server" action file — a "use server" module may
+ * only export async functions, so runtime consts have to live elsewhere.
+ */
+export const REJECT_REASONS = [
+  "off_brand",
+  "wrong_timing",
+  "already_covered",
+  "factual_issue",
+  "other",
+] as const
+export type RejectReason = (typeof REJECT_REASONS)[number]
+
+export const REJECT_REASON_LABELS: Record<RejectReason, string> = {
+  off_brand: "Off-brand",
+  wrong_timing: "Wrong timing",
+  already_covered: "Already covered",
+  factual_issue: "Factual issue",
+  other: "Other",
+}
+
+/*
  * Canonical shape returned by every server action. `id` is set on successful
  * creates/updates so callers can navigate or revalidate. Actions that need
  * extra fields (e.g. agent-suggestions surfacing a resumeRunId) extend this

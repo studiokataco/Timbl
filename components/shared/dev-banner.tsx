@@ -1,12 +1,18 @@
-import { DEV_SESSION } from "@/lib/auth/dev-session"
+import { getCurrentOrganisation, getCurrentUser } from "@/lib/auth/server-helpers"
 
 /*
  * Visible only in emulator mode (NEXT_PUBLIC_USE_EMULATORS=1). Reminds the
  * developer the dev shim is providing identity instead of real Firebase
- * Auth. Renders nothing in production.
+ * Auth, and names the org the SAFE-demo-mode toggle currently resolves to
+ * (Settings → Workspace). Renders nothing in production.
  */
-export function DevBanner() {
+export async function DevBanner() {
   if (process.env.NEXT_PUBLIC_USE_EMULATORS !== "1") return null
+
+  const [user, org] = await Promise.all([
+    getCurrentUser(),
+    getCurrentOrganisation(),
+  ])
 
   return (
     <div
@@ -16,8 +22,8 @@ export function DevBanner() {
     >
       <span aria-hidden>🛠</span>
       <span>
-        Emulator mode — auto-signed in as <strong>{DEV_SESSION.user.name}</strong> @{" "}
-        {DEV_SESSION.organisation.name}
+        Emulator mode — auto-signed in as <strong>{user.name}</strong> @{" "}
+        {org.name}
       </span>
     </div>
   )

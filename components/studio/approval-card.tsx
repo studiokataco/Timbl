@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import { getAgentSession } from "@/lib/actions/agent-sessions"
 import { resolveHumanGate } from "@/lib/actions/agent-suggestions"
+import { revertApproval } from "@/lib/actions/approvals"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -23,8 +24,10 @@ import { cn } from "@/lib/utils"
  * Approve / Edit & approve / Reject all dispatch through
  * `resolveHumanGate({ runId, decision, comment? })` which locates the
  * postId via the same session-events lookup server-side and delegates
- * to the existing approve/reject post writers (which also fire the
- * /api/agents/runs/{runId}/resume so the pipeline finishes).
+ * to the unified `approveItem` dispatcher (which writes an approvalsLog
+ * entry) and fires /api/agents/runs/{runId}/resume so the pipeline
+ * finishes. On approve, the success toast carries a 5-second Undo that
+ * reverses the side-effect via `revertApproval`.
  *
  * Visual: surface-card body, left ink-orange accent strip, no shadow.
  */
@@ -54,6 +57,12 @@ export function ApprovalCard({ run, active, onSelect }: Props) {
 
   const gate = extractGate(session?.events)
 
+  function invalidateAll() {
+    queryClient.invalidateQueries({ queryKey: ["studio", "runs"] })
+    queryClient.invalidateQueries({ queryKey: ["studio", "session", run.id] })
+    queryClient.invalidateQueries({ queryKey: ["posts"] })
+  }
+
   function act(decision: "approve" | "reject", commentArg?: string) {
     startTransition(async () => {
       const res = await resolveHumanGate({
@@ -65,7 +74,29 @@ export function ApprovalCard({ run, active, onSelect }: Props) {
         toast.error("Failed", { description: res.error })
         return
       }
-      toast.success(decision === "approve" ? "Approved" : "Rejected")
+      if (decision === "approve") {
+        const logId = res.approvalLogId
+        toast.success(approvedTitle(res.nextActionKind), {
+          duration: 5_000,
+          action: logId
+            ? {
+                label: "Undo",
+                onClick: () => {
+                  revertApproval({ approvalLogId: logId }).then((r) => {
+                    if (r.ok) {
+                      toast.message("Approval reverted")
+                      invalidateAll()
+                    } else {
+                      toast.error("Couldn't undo", { description: r.error })
+                    }
+                  })
+                },
+              }
+            : undefined,
+        })
+      } else {
+        toast.success("Rejected")
+      }
       if (res.resumeRunId && res.resumeToolCallId) {
         fetch(`/api/agents/runs/${res.resumeRunId}/resume`, {
           method: "POST",
@@ -79,9 +110,7 @@ export function ApprovalCard({ run, active, onSelect }: Props) {
           /* surfaced via the run timeline if it fails */
         })
       }
-      queryClient.invalidateQueries({ queryKey: ["studio", "runs"] })
-      queryClient.invalidateQueries({ queryKey: ["studio", "session", run.id] })
-      queryClient.invalidateQueries({ queryKey: ["posts"] })
+      invalidateAll()
       setEditing(false)
       setComment("")
     })
@@ -233,6 +262,23 @@ function extractGate(
     return { postId: args.postId, summary: args.summary }
   }
   return null
+}
+
+function approvedTitle(kind: string | undefined): string {
+  switch (kind) {
+    case "schedule_post":
+      return "Approved & scheduled"
+    case "add_to_calendar":
+      return "Approved & added to calendar"
+    case "create_draft":
+      return "Approved — draft created"
+    case "instantiate_template":
+      return "Approved — template applied"
+    case "assign_review":
+      return "Approved & assigned"
+    default:
+      return "Approved"
+  }
 }
 
 function relTime(iso: string | undefined): string {

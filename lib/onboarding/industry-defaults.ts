@@ -56,7 +56,7 @@ const SIG = {
 export const GENERIC_DEFAULTS: IndustryDefaults = {
   label: "Other",
   description: "Generic starter categories. You can tailor everything later from Settings.",
-  suggestedAgents: ["strategist", "drafter"],
+  suggestedAgents: ["drafter", "ideator"],
   categories: [
     { slug: "announcements", name: "Announcements", color: SIG.coral, icon: "megaphone", defaultPostType: "grid" },
     { slug: "behind-the-scenes", name: "Behind the scenes", color: SIG.peach, icon: "camera", defaultPostType: "carousel" },
@@ -71,7 +71,7 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
   agency: {
     label: "Marketing / creative agency",
     description: "Multi-brand workflow with approval flows and reusable templates.",
-    suggestedAgents: ["strategist", "drafter", "approver"],
+    suggestedAgents: ["drafter", "cadence-planner", "approval-triage"],
     categories: [
       { slug: "client-wins", name: "Client wins", color: SIG.emerald, icon: "trophy", defaultPostType: "carousel" },
       { slug: "case-studies", name: "Case studies", color: SIG.violet, icon: "file-text", defaultPostType: "carousel" },
@@ -84,7 +84,7 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
   ecommerce: {
     label: "E-commerce / DTC brand",
     description: "Product-led storytelling with launches, drops, and user content.",
-    suggestedAgents: ["strategist", "drafter"],
+    suggestedAgents: ["drafter", "ideator"],
     categories: [
       { slug: "product-launches", name: "Product launches", color: SIG.coral, icon: "rocket", defaultPostType: "carousel" },
       { slug: "ugc", name: "Customer content", color: SIG.peach, icon: "heart", defaultPostType: "reel" },
@@ -97,7 +97,7 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
   saas: {
     label: "SaaS / software product",
     description: "Feature launches, customer stories, technical content.",
-    suggestedAgents: ["strategist", "drafter", "researcher"],
+    suggestedAgents: ["drafter", "ideator", "cadence-planner"],
     categories: [
       { slug: "feature-launches", name: "Feature launches", color: SIG.violet, icon: "sparkles", defaultPostType: "carousel" },
       { slug: "customer-stories", name: "Customer stories", color: SIG.emerald, icon: "quote", defaultPostType: "carousel" },
@@ -110,7 +110,7 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
   nonprofit: {
     label: "Nonprofit / cause",
     description: "Mission stories, calls to action, awareness moments.",
-    suggestedAgents: ["strategist", "drafter", "awareness-researcher"],
+    suggestedAgents: ["drafter", "awareness-researcher", "ideator"],
     categories: [
       { slug: "mission", name: "Mission stories", color: SIG.coral, icon: "heart", defaultPostType: "carousel" },
       { slug: "campaigns", name: "Campaigns", color: SIG.violet, icon: "megaphone", defaultPostType: "grid" },
@@ -123,7 +123,7 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
   creator: {
     label: "Creator / personal brand",
     description: "Daily-cadence content focused on one voice.",
-    suggestedAgents: ["strategist", "drafter"],
+    suggestedAgents: ["drafter", "ideator"],
     categories: [
       { slug: "daily-thoughts", name: "Daily thoughts", color: SIG.peach, icon: "message-circle", defaultPostType: "grid" },
       { slug: "tutorials", name: "Tutorials", color: SIG.coral, icon: "graduation-cap", defaultPostType: "reel" },
@@ -136,7 +136,7 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
   "local-business": {
     label: "Local / hospitality",
     description: "Foot-traffic posts: menus, hours, events, neighborhood.",
-    suggestedAgents: ["strategist", "drafter"],
+    suggestedAgents: ["drafter", "cadence-planner"],
     categories: [
       { slug: "menu-specials", name: "Menu & specials", color: SIG.coral, icon: "utensils", defaultPostType: "grid" },
       { slug: "events", name: "Events", color: SIG.violet, icon: "calendar", defaultPostType: "grid" },

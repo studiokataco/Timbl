@@ -59,14 +59,20 @@ const DEFAULT_KANBAN_COLUMNS = [
  * `installDefaultAgents` call which the app triggers on first wizard open
  * if any field is missing. Splitting it this way keeps the blocking trigger
  * fast (under the 7s timeout). */
-const AGENT_STUBS = [
-  { name: "strategist", role: "Strategist" },
-  { name: "drafter", role: "Drafter" },
-  { name: "researcher", role: "Researcher" },
-  { name: "approver", role: "Approver" },
-  { name: "ideator", role: "Ideator" },
-  { name: "awareness-researcher", role: "Awareness researcher" },
-  { name: "brand-wizard", role: "Brand wizard" },
+const AGENT_STUBS: { name: string; role: "config" | "workflow" }[] = [
+  { name: "hello", role: "config" },
+  { name: "brand-wizard", role: "config" },
+  { name: "settings-assistant", role: "config" },
+  { name: "meta-config", role: "config" },
+  { name: "drafter", role: "workflow" },
+  { name: "reviewer", role: "workflow" },
+  { name: "scheduler", role: "workflow" },
+  { name: "human-gate", role: "workflow" },
+  { name: "ideator", role: "workflow" },
+  { name: "pipeline", role: "workflow" },
+  { name: "cadence-planner", role: "workflow" },
+  { name: "approval-triage", role: "workflow" },
+  { name: "awareness-researcher", role: "workflow" },
 ]
 
 export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
