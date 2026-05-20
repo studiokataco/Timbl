@@ -14,6 +14,7 @@ import {
   Megaphone,
   Moon,
   Plus,
+  Settings,
   Sun,
 } from "lucide-react"
 import {
@@ -215,6 +216,13 @@ export function CommandPalette() {
           <CommandItem onSelect={() => go("/campaigns")} value="campaigns">
             <Megaphone />
             <span>Campaigns</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => go("/settings")}
+            value="settings workspace wizard brand categories"
+          >
+            <Settings />
+            <span>Settings</span>
           </CommandItem>
         </CommandGroup>
 
