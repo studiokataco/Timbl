@@ -30,12 +30,17 @@ export interface RetrieveOptions {
 const SNIPPET_LEN = 240
 const SCAN_LIMIT = 2000
 
+/* Length mismatch means the two vectors came from different embedding
+ * models — scoring them against each other is meaningless. Return 0
+ * instead of the old Math.min() truncation, which silently produced a
+ * plausible-but-wrong similarity. The model filter in retrieve() should
+ * prevent this from ever being reached; this is the backstop. */
 function cosine(a: number[], b: number[]): number {
-  const n = Math.min(a.length, b.length)
+  if (a.length !== b.length) return 0
   let dot = 0
   let na = 0
   let nb = 0
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i]
     na += a[i] * a[i]
     nb += b[i] * b[i]
@@ -50,13 +55,22 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
   const db = getAdminDb()
   const path = collectionPathFor(opts.kind, opts.orgId)
 
-  const { vector } = await embed(opts.query)
+  /* Embed the query and pin retrieval to that exact model. Only stored
+   * vectors stamped with the same `embedding.model` are scored — a
+   * collection mid-migration (mixed models) yields sparse-but-correct
+   * results, never cross-model garbage (§6.7). */
+  const { vector, model } = await embed(opts.query)
 
   if (useNativeKnn) {
+    /* Over-fetch, then post-filter by model. findNearest can't prefilter
+     * on embedding.model without a composite vector index; fetching a
+     * wider window and filtering in-process is correct and index-free.
+     * During a re-embed migration this can still return < k — that's the
+     * accepted sparse-but-correct behaviour. */
     const knnQuery = db.collection(path).findNearest({
       vectorField: "embedding.vector",
       queryVector: FieldValue.vector(vector),
-      limit: k,
+      limit: k * 4,
       distanceMeasure: "COSINE",
     })
     const snap = await knnQuery.get()
@@ -64,6 +78,8 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
     for (const d of snap.docs) {
       const data = d.data() as Record<string, unknown>
       if (opts.filter && !opts.filter(data)) continue
+      const emb = data.embedding as { model?: string } | undefined
+      if (emb?.model !== model) continue
       hits.push({
         id: d.id,
         snippet: toEmbeddingText(opts.kind, data).slice(0, SNIPPET_LEN),
@@ -72,7 +88,7 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
         score: 1 - ((d as unknown as { distance?: number }).distance ?? 0),
       })
     }
-    return hits
+    return hits.slice(0, k)
   }
 
   // Emulator brute force.
@@ -81,8 +97,11 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
   for (const d of snap.docs) {
     const data = d.data() as Record<string, unknown>
     if (opts.filter && !opts.filter(data)) continue
-    const emb = data.embedding as { vector?: number[] } | undefined
+    const emb = data.embedding as
+      | { vector?: number[]; model?: string }
+      | undefined
     if (!emb?.vector?.length) continue
+    if (emb.model !== model) continue
     scored.push({
       id: d.id,
       snippet: toEmbeddingText(opts.kind, data).slice(0, SNIPPET_LEN),

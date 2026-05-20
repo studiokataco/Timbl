@@ -64,6 +64,32 @@ export async function embed(text: string): Promise<EmbedResult> {
   }
 }
 
+/*
+ * The model string embed() will stamp on a vector right now, derived from
+ * the same resolution as embed() but WITHOUT making a network call.
+ *
+ * Two consumers need this:
+ *   - embedIfChanged() re-embeds when a stored vector's model no longer
+ *     matches (model switch, not just a text edit).
+ *   - retrieve() filters stored vectors to the current model so a
+ *     mixed-model collection never cross-scores (§6.7).
+ *
+ * Keeping this in lockstep with resolveProvider() is the contract — if a
+ * new provider branch is added to embed(), add it here too.
+ */
+export function currentEmbeddingModel(): string {
+  switch (resolveProvider()) {
+    case "gemini":
+      return GEMINI_MODEL
+    case "voyage":
+      return VOYAGE_MODEL
+    case "openai":
+      return OPENAI_MODEL
+    case "mock":
+      return MOCK_MODEL
+  }
+}
+
 /* ── Gemini ─────────────────────────────────────────────────────────── */
 
 const GEMINI_MODEL = "gemini-embedding-001"

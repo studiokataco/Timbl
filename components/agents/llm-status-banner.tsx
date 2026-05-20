@@ -27,7 +27,7 @@ export function LlmStatusBanner({ className }: { className?: string }) {
 
   const message =
     data.effective === "mock"
-      ? "No LLM API key configured — running on mock provider. Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env.local to enable real responses."
+      ? "No LLM API key configured — running on mock provider. Set GEMINI_API_KEY, ANTHROPIC_API_KEY or OPENROUTER_API_KEY in .env.local to enable real responses."
       : "GEMINI_API_KEY not set — falling back to Anthropic. Set GEMINI_API_KEY in .env.local for Gemini-default agents."
 
   return (
