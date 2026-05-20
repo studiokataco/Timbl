@@ -91,6 +91,11 @@ export async function startAgentRun(
       userId: input.userId,
       trigger: input.trigger,
       status: "queued",
+      /* Record the model the run uses so a prod-swap A/B can compare it
+       * against the prior model's runs (§6.6). Taken from the resolved
+       * agentConfig — the source of truth the runner was built from. */
+      provider: resolved.config.provider,
+      model: resolved.config.model,
       startedAt: new Date().toISOString(),
       inputSummary: input.input.slice(0, 2_000),
       outputs: { postIds: [], ideationItemIds: [] },

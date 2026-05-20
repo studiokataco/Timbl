@@ -79,6 +79,16 @@ env:
     availability:
       - RUNTIME
 
+  # Single PLATFORM OpenRouter key — SAFE owns it, cost folded into the
+  # subscription. Used by the openai-compatible adapter for provider=openrouter.
+  # Create the secret + grant the App Hosting SA secretAccessor before deploy:
+  #   gcloud secrets create OPENROUTER_API_KEY --replication-policy=automatic
+  #   printf '%s' "$KEY" | gcloud secrets versions add OPENROUTER_API_KEY --data-file=-
+  - variable: OPENROUTER_API_KEY
+    secret: OPENROUTER_API_KEY
+    availability:
+      - RUNTIME
+
   # SENTRY_DSN intentionally unbound — Sentry isn't set up. Cloud Logging
   # in App Hosting + Functions provides primary error visibility. Re-wire
   # when @sentry/nextjs lands.

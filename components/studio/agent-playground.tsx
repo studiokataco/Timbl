@@ -17,7 +17,12 @@ import { toast } from "sonner"
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import { updateAgentConfig } from "@/lib/actions/agent-configs"
+import {
+  MODEL_SUGGESTIONS,
+  isLocalAiAvailable,
+} from "@/lib/agents/provider-catalog"
 import { listAgentRuns } from "@/lib/actions/agent-runs"
+import { estimateUsdCost } from "@/lib/agents/pricing"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -404,6 +409,12 @@ function TuneTab({
           <SelectContent>
             <SelectItem value="gemini">Gemini</SelectItem>
             <SelectItem value="anthropic">Anthropic</SelectItem>
+            <SelectItem value="openrouter">OpenRouter</SelectItem>
+            {/* Ollama hits a localhost model server — unreachable from
+                Cloud Run, so it's hidden on the hosted web build. */}
+            {isLocalAiAvailable() && (
+              <SelectItem value="ollama">Ollama (local)</SelectItem>
+            )}
             <SelectItem value="mock">Mock (testing)</SelectItem>
           </SelectContent>
         </Select>
@@ -413,10 +424,14 @@ function TuneTab({
         <Input
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          placeholder={
-            provider === "anthropic" ? "claude-sonnet-4-6" : "gemini-2.5-flash"
-          }
+          list="model-suggestions"
+          placeholder={MODEL_SUGGESTIONS[provider]?.[0] ?? "gemini-2.5-flash"}
         />
+        <datalist id="model-suggestions">
+          {(MODEL_SUGGESTIONS[provider] ?? []).map((id) => (
+            <option key={id} value={id} />
+          ))}
+        </datalist>
       </Field>
 
       <Field label="Temperature" dirty={dirty.temperature}>
@@ -910,8 +925,21 @@ function RunRow({
       >
         {run.status.replace("_", " ")}
       </Badge>
-      <span className="flex-1 min-w-0 text-[11px] font-mono text-muted-foreground truncate">
-        {run.id.slice(0, 12)}
+      <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <span className="text-[11px] font-mono text-muted-foreground truncate">
+          {run.id.slice(0, 12)}
+        </span>
+        {/* Model the run used — the axis of a prod-swap A/B comparison. */}
+        {run.model ? (
+          <span className="text-[10px] font-mono text-foreground/70 truncate">
+            {run.model}
+          </span>
+        ) : null}
+      </span>
+      <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+        {run.metrics.promptTokens + run.metrics.completionTokens > 0
+          ? `${run.metrics.promptTokens}/${run.metrics.completionTokens} tok`
+          : "—"}
       </span>
       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
         {run.durationMs != null
@@ -919,9 +947,21 @@ function RunRow({
           : "—"}
       </span>
       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-        ${run.metrics.usdCost.toFixed(3)}
+        ${runCost(run).toFixed(3)}
       </span>
     </button>
+  )
+}
+
+/* Cost shown per run: the metrics.usdCost captured at run time when
+ * present, else an estimate from the static price table (§6.6). Estimate
+ * is 0 for local Ollama models and any model with no price entry. */
+function runCost(run: AgentRunDoc): number {
+  if (run.metrics.usdCost > 0) return run.metrics.usdCost
+  return estimateUsdCost(
+    run.model,
+    run.metrics.promptTokens,
+    run.metrics.completionTokens,
   )
 }
 
@@ -935,7 +975,7 @@ function computeStats(runs: AgentRunDoc[]) {
     durations.length > 0
       ? durations.reduce((a, b) => a + b, 0) / durations.length
       : null
-  const totalUsd = runs.reduce((sum, r) => sum + (r.metrics.usdCost ?? 0), 0)
+  const totalUsd = runs.reduce((sum, r) => sum + runCost(r), 0)
   return { total, success, avgDurMs, totalUsd }
 }
 
