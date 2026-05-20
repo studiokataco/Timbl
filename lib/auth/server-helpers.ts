@@ -1,8 +1,16 @@
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { readSessionClaims } from "@/lib/auth/session"
-import { DEV_SESSION, type DevOrganisation, type DevUser } from "./dev-session"
+import {
+  DEV_ORG_COOKIE,
+  getDevSession,
+  normalizeDevOrgMode,
+  type DevOrganisation,
+  type DevSession,
+  type DevUser,
+} from "./dev-session"
 
 /*
  * Single chokepoint for "who is the current user / org" on the server.
@@ -25,8 +33,15 @@ import { DEV_SESSION, type DevOrganisation, type DevUser } from "./dev-session"
 
 const useDevShim = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
 
+/* Resolve the active dev session from the DEV_ORG_COOKIE (SAFE demo vs
+ * wizard-built tenant). Only meaningful under the emulator shim. */
+async function resolveDevSession(): Promise<DevSession> {
+  const store = await cookies()
+  return getDevSession(normalizeDevOrgMode(store.get(DEV_ORG_COOKIE)?.value))
+}
+
 export async function getCurrentUser(): Promise<DevUser> {
-  if (useDevShim) return DEV_SESSION.user
+  if (useDevShim) return (await resolveDevSession()).user
   const claims = await readSessionClaims()
   if (!claims) redirect("/login")
   return {
@@ -38,14 +53,14 @@ export async function getCurrentUser(): Promise<DevUser> {
 }
 
 export async function getCurrentOrgId(): Promise<string> {
-  if (useDevShim) return DEV_SESSION.organisation.id
+  if (useDevShim) return (await resolveDevSession()).organisation.id
   const claims = await readSessionClaims()
   if (!claims) redirect("/login")
   return claims.organizationId
 }
 
 export async function getCurrentOrganisation(): Promise<DevOrganisation> {
-  if (useDevShim) return DEV_SESSION.organisation
+  if (useDevShim) return (await resolveDevSession()).organisation
   const claims = await readSessionClaims()
   if (!claims) redirect("/login")
   /* Membership doc carries display name + slug for the org. The slug

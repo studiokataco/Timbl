@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Check, ChevronLeft, ChevronRight, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +18,7 @@ import {
   getIndustryDefaults,
   type IndustryId,
 } from "@/lib/onboarding/industry-defaults"
+import { WIZARD_AGENT_CATALOG } from "@/lib/onboarding/agent-catalog"
 import { cn } from "@/lib/utils"
 
 /*
@@ -45,36 +45,9 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: "channels", label: "Channels" },
 ]
 
-/* Agent catalog — kept here for v1 so the wizard can render without a
- * round-trip. When seeds/defaults.ts ships the full agent catalog this
- * list should be derived from it instead. */
-const AGENT_CATALOG: { id: string; label: string; description: string }[] = [
-  {
-    id: "strategist",
-    label: "Strategist",
-    description: "Plans monthly themes and surfaces gaps in the calendar.",
-  },
-  {
-    id: "drafter",
-    label: "Drafter",
-    description: "Writes post drafts from a brief or category cadence.",
-  },
-  {
-    id: "researcher",
-    label: "Researcher",
-    description: "Finds trends, sources, and references for posts.",
-  },
-  {
-    id: "approver",
-    label: "Approver",
-    description: "Reviews drafts and flags off-brand or risky content.",
-  },
-  {
-    id: "awareness-researcher",
-    label: "Awareness researcher",
-    description: "Finds awareness days, observances, and cultural moments.",
-  },
-]
+/* Agent catalog lives in lib/onboarding/agent-catalog.ts — every id there
+ * is a real agent in lib/agents/defaults.ts, so the toggle writes to a doc
+ * the runtime can actually run. */
 
 const CHANNEL_OPTIONS: { id: string; label: string }[] = [
   { id: "instagram", label: "Instagram" },
@@ -86,6 +59,8 @@ const CHANNEL_OPTIONS: { id: string; label: string }[] = [
 ]
 
 interface InitialProfile {
+  /* Org display name — sourced from the org doc, not onboarding.profile. */
+  name?: string
   industry?: string
   audience?: string
   tone?: string
@@ -107,6 +82,9 @@ export function OnboardingWizard({
   /* Form state — flat for simplicity. Each step writes its slice. */
   const [industry, setIndustry] = useState<string>(
     initialProfile.industry ?? "agency",
+  )
+  const [workspaceName, setWorkspaceName] = useState(
+    initialProfile.name ?? "",
   )
   const [audience, setAudience] = useState(initialProfile.audience ?? "")
   const [tone, setTone] = useState(initialProfile.tone ?? "")
@@ -162,6 +140,7 @@ export function OnboardingWizard({
     }
     startTransition(async () => {
       const result = await saveOnboardingProfile({
+        name: workspaceName.trim() || undefined,
         industry,
         audience: audience || undefined,
         tone: tone || undefined,
@@ -219,6 +198,8 @@ export function OnboardingWizard({
           {activeStep === "profile" ? (
             <ProfileStep
               industries={industries}
+              workspaceName={workspaceName}
+              onWorkspaceNameChange={setWorkspaceName}
               industry={industry}
               onIndustryChange={onIndustryChange}
               audience={audience}
@@ -369,6 +350,8 @@ function Stepper({
 
 function ProfileStep({
   industries,
+  workspaceName,
+  onWorkspaceNameChange,
   industry,
   onIndustryChange,
   audience,
@@ -378,6 +361,8 @@ function ProfileStep({
   suggestedTone,
 }: {
   industries: { id: IndustryId; label: string }[]
+  workspaceName: string
+  onWorkspaceNameChange: (v: string) => void
   industry: string
   onIndustryChange: (v: string) => void
   audience: string
@@ -391,10 +376,23 @@ function ProfileStep({
       <header>
         <h1 className="text-xl font-medium">Tell us about your work</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          We&apos;ll tailor categories, templates, and agent suggestions to your
-          industry.
+          We&apos;ll tailor categories, templates, and your AI agents to your
+          business.
         </p>
       </header>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="onb-workspace-name">Workspace name</Label>
+        <Input
+          id="onb-workspace-name"
+          placeholder="Acme Studio"
+          value={workspaceName}
+          onChange={(e) => onWorkspaceNameChange(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Shown across the app and used to tailor your agents.
+        </p>
+      </div>
 
       <div className="space-y-1.5">
         <Label>What kind of work is this for?</Label>
@@ -473,7 +471,7 @@ function AgentsStep({
         </p>
       </header>
       <ul className="grid gap-2">
-        {AGENT_CATALOG.map((agent) => {
+        {WIZARD_AGENT_CATALOG.map((agent) => {
           const on = enabled.has(agent.id)
           return (
             <li key={agent.id}>
