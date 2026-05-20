@@ -1,5 +1,12 @@
-import { redirect } from "next/navigation"
+import { SettingsOverview } from "@/components/settings/settings-overview"
 
-export default function SettingsIndex() {
-  redirect("/settings/campaigns")
+/*
+ * Settings landing — an overview of every settings surface. Previously
+ * this route redirected straight to /settings/campaigns, which made
+ * "Settings" land on a page that didn't look like settings. The
+ * settings sub-nav (components/shared/settings-nav.tsx) carries "Overview"
+ * as its first tab and points here.
+ */
+export default function SettingsIndexPage() {
+  return <SettingsOverview />
 }
