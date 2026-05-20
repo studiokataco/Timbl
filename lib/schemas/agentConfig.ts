@@ -1,7 +1,13 @@
 import { z } from "zod"
 import { audit } from "./_shared"
 
-export const agentProvider = z.enum(["gemini", "anthropic", "mock"])
+export const agentProvider = z.enum([
+  "gemini",
+  "anthropic",
+  "openrouter",
+  "ollama",
+  "mock",
+])
 export type AgentProvider = z.infer<typeof agentProvider>
 
 export const agentRole = z.enum(["config", "workflow"])

@@ -9,7 +9,7 @@ import {
   orgTemplatesPath,
 } from "@/lib/firebase/paths"
 
-import { embed } from "./provider"
+import { embed, currentEmbeddingModel } from "./provider"
 
 /*
  * Single source of truth for "what text drives similarity for this kind"
@@ -88,8 +88,19 @@ export async function embedIfChanged(
   if (!text) return "skipped-empty"
 
   const hash = sourceHash(text)
-  const existing = doc.embedding as { sourceHash?: string } | undefined
-  if (existing?.sourceHash === hash) return "skipped-hash"
+  const existing = doc.embedding as
+    | { sourceHash?: string; model?: string }
+    | undefined
+  /* Skip only when BOTH the source text AND the embedding model are
+   * unchanged. A model switch (§6.7) leaves the hash identical but must
+   * still trigger a re-embed — otherwise stale-model vectors linger and
+   * retrieve() silently filters them out. */
+  if (
+    existing?.sourceHash === hash &&
+    existing.model === currentEmbeddingModel()
+  ) {
+    return "skipped-hash"
+  }
 
   let result: { vector: number[]; dim: number; model: string }
   try {

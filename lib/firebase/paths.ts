@@ -36,6 +36,11 @@ export const orgIdeationFeedPath = (orgId: string) =>
 export const orgAwarenessProposalsPath = (orgId: string) =>
   `${orgPath(orgId)}/awarenessDayProposals`
 
+/* Notify-only model-update notifications (§6.8 of the pluggable-providers
+ * phase). One doc per flagged provider model. */
+export const orgModelUpdatesPath = (orgId: string) =>
+  `${orgPath(orgId)}/modelUpdates`
+
 /* Memory + RAG layer — see lib/embeddings/**. */
 export const orgAgentMemoryPath = (orgId: string) =>
   `${orgPath(orgId)}/agentMemory`
