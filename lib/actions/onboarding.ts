@@ -7,6 +7,7 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
 import {
   orgAgentConfigsPath,
+  orgBrandConfigDocPath,
   orgCategoriesPath,
   orgPath,
   orgTemplatesPath,
@@ -19,6 +20,8 @@ import {
   getStarterTemplate,
   type StarterTemplate,
 } from "@/lib/onboarding/template-library"
+import { WIZARD_AGENT_IDS } from "@/lib/onboarding/agent-catalog"
+import { getAgentDefault } from "@/lib/agents/defaults"
 import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import type { ServerActionResult } from "@/lib/schemas"
 
@@ -34,6 +37,9 @@ import type { ServerActionResult } from "@/lib/schemas"
  */
 
 const profileInput = z.object({
+  /* Workspace display name — lands on the org doc's `name`, not inside
+   * onboarding.profile. Optional so a blank field doesn't wipe the name. */
+  name: z.string().min(1).max(120).optional(),
   industry: z.string().min(1),
   audience: z.string().max(280).optional(),
   tone: z.string().max(280).optional(),
@@ -62,22 +68,27 @@ export async function saveOnboardingProfile(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
   const orgId = await getCurrentOrgId()
+  const { name, ...profile } = parsed.data
   await getAdminDb().doc(orgPath(orgId)).set(
     {
-      onboarding: {
-        profile: parsed.data,
-      },
+      /* Only set `name` when the user actually typed one — an empty field
+       * must not blank out the org's existing name on a wizard re-run. */
+      ...(name ? { name } : {}),
+      onboarding: { profile },
       updatedAt: new Date().toISOString(),
     },
     { merge: true },
   )
+  revalidatePath("/", "layout")
   return { ok: true, id: orgId }
 }
 
-/* Persists the picked categories + agent toggles + channel hints. Channels
- * land on the onboarding profile (no real channel-connection collection
- * exists pre-Phase-7); agent toggles patch each agentConfig's `isEnabled`
- * flag; categories are upserted by slug. */
+/* Persists everything the wizard collected: categories upserted by slug;
+ * the wizard-selectable agents toggled via their `enabled` flag and, when
+ * enabled, re-tailored with a workspace-context prompt block; templates
+ * materialised from the starter library; channels stored on the profile;
+ * and a brandConfig doc seeded so every workflow agent reads the niche at
+ * run time. */
 export async function applyOnboardingSelections(
   input: unknown,
 ): Promise<ServerActionResult> {
@@ -130,20 +141,38 @@ export async function applyOnboardingSelections(
     nextOrder += 1
   }
 
-  /* 2. Agent toggles: patch isEnabled on existing agentConfigs. We do
-   * not create new agentConfig docs from here — the catalog is seeded
-   * by defaults.ts. The wizard just turns rows on/off. */
+  /* 2. Agent toggles + niche tailoring. We touch ONLY the wizard-
+   * selectable agents — never the config / pipeline-machinery agents,
+   * which must stay enabled or the agent runtime breaks. We write
+   * `enabled` (the field the schema, seeds, and AI Command Centre all
+   * read — the wizard used to write a dead `isEnabled` field). For each
+   * enabled pick we rebuild `systemPrompt` from the agent's default plus
+   * a workspace-context block; rebuilding from the default (not the
+   * stored prompt) keeps it idempotent across wizard re-runs. */
+  const orgName =
+    (orgSnap.data()?.name as string | undefined) ?? "this workspace"
+  const profile = (orgSnap.data()?.onboarding?.profile ?? {}) as {
+    audience?: string
+    tone?: string
+  }
   const agentCol = db.collection(orgAgentConfigsPath(orgId))
-  const allAgents = await agentCol.get()
   const batch = db.batch()
-  allAgents.docs.forEach((doc) => {
-    const want = parsed.data.agentIds.includes(doc.id)
-    batch.set(
-      doc.ref,
-      { isEnabled: want, updatedAt: now },
-      { merge: true },
-    )
-  })
+  for (const agentId of WIZARD_AGENT_IDS) {
+    const ref = agentCol.doc(agentId)
+    if (!(await ref.get()).exists) continue
+    const enabled = parsed.data.agentIds.includes(agentId)
+    const patch: Record<string, unknown> = { enabled, updatedAt: now }
+    if (enabled) {
+      const tailored = tailorAgentPrompt(agentId, {
+        orgName,
+        industryLabel: defaults.label,
+        audience: profile.audience,
+        tone: profile.tone,
+      })
+      if (tailored) patch.systemPrompt = tailored
+    }
+    batch.set(ref, patch, { merge: true })
+  }
   await batch.commit()
 
   /* 3. Templates: write each picked starter-library row into the org's
@@ -195,10 +224,74 @@ export async function applyOnboardingSelections(
     { merge: true },
   )
 
+  /* 5. Brand config: the single doc every workflow agent reads at run
+   * time via readBrandConfig. Seeding it from the wizard profile means
+   * the niche reaches agents even beyond the spliced prompts. Cadence is
+   * written only on first create — a wizard re-run must not reset a
+   * cadence the user has since tuned in /settings/brand. */
+  const VALID_BRAND_CHANNELS = ["instagram", "facebook", "linkedin", "website", "fb_groups"]
+  const brandChannels = parsed.data.channels.filter((c) =>
+    VALID_BRAND_CHANNELS.includes(c),
+  )
+  const wizardProfile = (orgSnap.data()?.onboarding?.profile ?? {}) as {
+    audience?: string
+    tone?: string
+  }
+  /* brandConfigSchema requires non-empty voice + audience; fall back to
+   * the industry defaults so the doc always validates on read. */
+  const voice = wizardProfile.tone?.trim() || defaults.toneHint
+  const audience =
+    wizardProfile.audience?.trim() || `${defaults.label} audience`
+  const brandRef = db.doc(orgBrandConfigDocPath(orgId))
+  const brandSnap = await brandRef.get()
+  const brandPatch: Record<string, unknown> = {
+    id: "default",
+    organizationId: orgId,
+    voice,
+    audience,
+    channels: brandChannels,
+    updatedAt: now,
+  }
+  if (!brandSnap.exists) {
+    brandPatch.targetCadence = { perWeek: 3, preferredDays: [], preferredTimes: [] }
+    brandPatch.createdAt = now
+  }
+  await brandRef.set(brandPatch, { merge: true })
+
   revalidatePath("/calendar")
   revalidatePath("/settings/categories")
+  revalidatePath("/settings/brand")
   revalidatePath("/library")
+  revalidatePath("/", "layout")
   return { ok: true, id: orgId }
+}
+
+/*
+ * Rebuilds an agent's systemPrompt from its (workspace-neutral) default in
+ * lib/agents/defaults.ts plus a workspace-context block derived from the
+ * wizard profile. Always starts from the default — never the stored
+ * prompt — so re-running the wizard re-tailors cleanly instead of stacking
+ * context blocks. Returns null for unknown agent names.
+ */
+function tailorAgentPrompt(
+  agentName: string,
+  ctx: { orgName: string; industryLabel: string; audience?: string; tone?: string },
+): string | null {
+  const base = getAgentDefault(agentName)?.systemPrompt
+  if (!base) return null
+  const lines = [
+    base,
+    "",
+    "Workspace context (set by the setup wizard):",
+    `  - Workspace: ${ctx.orgName}`,
+    `  - Industry: ${ctx.industryLabel}`,
+  ]
+  if (ctx.audience?.trim()) lines.push(`  - Audience: ${ctx.audience.trim()}`)
+  if (ctx.tone?.trim()) lines.push(`  - Voice & tone: ${ctx.tone.trim()}`)
+  lines.push(
+    "Honour this context in every post, idea, and plan you produce.",
+  )
+  return lines.join("\n")
 }
 
 function resolveCategoryForTemplate(

@@ -7,6 +7,11 @@ import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { orgPostsPath } from "@/lib/firebase/paths"
 import { getAgentSession } from "@/lib/actions/agent-sessions"
 import { approveItem } from "@/lib/actions/approvals"
+import {
+  REJECT_REASONS,
+  REJECT_REASON_LABELS,
+  type RejectReason,
+} from "@/lib/schemas/_shared"
 import type { ServerActionResult } from "@/lib/schemas"
 
 /* Local extension: approve/reject return a resumeRunId + resumeToolCallId
@@ -139,19 +144,11 @@ export async function resolveHumanGate(
   return r
 }
 
-/* Canned rejection reasons surfaced in the UI; free text falls into
- * `reasonNote`. `regenerate` toggles the regenerate flow — sets a flag on
- * the post that downstream agent runs can pick up to produce a new draft
- * incorporating the feedback. */
-export const REJECT_REASONS = [
-  "off_brand",
-  "wrong_timing",
-  "already_covered",
-  "factual_issue",
-  "other",
-] as const
-export type RejectReason = (typeof REJECT_REASONS)[number]
-
+/* Rejection input. `REJECT_REASONS` / `REJECT_REASON_LABELS` /
+ * `RejectReason` now live in lib/schemas/_shared.ts — a "use server" file
+ * may only export async functions. `regenerate` toggles the regenerate
+ * flow: sets a flag on the post that downstream agent runs pick up to
+ * produce a new draft incorporating the feedback. */
 const rejectInput = z.object({
   postId: z.string().min(1),
   reason: z.enum(REJECT_REASONS).optional(),
@@ -192,12 +189,4 @@ function composeRationale(
   if (reason && reason !== "other") parts.push(REJECT_REASON_LABELS[reason])
   if (note) parts.push(note)
   return parts.length > 0 ? parts.join(" — ") : undefined
-}
-
-export const REJECT_REASON_LABELS: Record<RejectReason, string> = {
-  off_brand: "Off-brand",
-  wrong_timing: "Wrong timing",
-  already_covered: "Already covered",
-  factual_issue: "Factual issue",
-  other: "Other",
 }
