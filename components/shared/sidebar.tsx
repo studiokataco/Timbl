@@ -10,6 +10,7 @@ import {
   BookOpen,
   Globe,
   Sparkles,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -39,6 +40,15 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/library", label: "Library", icon: BookOpen },
       { href: "/awareness", label: "Awareness days", icon: Globe },
+    ],
+  },
+  {
+    heading: "Workspace",
+    items: [
+      // /settings redirects to /settings/campaigns; the settings sub-nav
+      // (Campaigns/Categories/Brand/Workspace) takes over from there.
+      // The Workspace tab is where the setup wizard is re-run.
+      { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
 ]
