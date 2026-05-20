@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { audit, isoTimestamp } from "./_shared"
+import { agentProvider } from "./agentConfig"
 
 export const agentRunTrigger = z.enum(["manual", "cron", "pipeline"])
 export type AgentRunTrigger = z.infer<typeof agentRunTrigger>
@@ -37,6 +38,12 @@ export const agentRunSchema = audit.extend({
   userId: z.string().min(1),
   trigger: agentRunTrigger,
   status: agentRunStatus.default("queued"),
+  /* The provider + exact model the run actually used — captured at run
+   * start so a prod-swap A/B (§6.6 of the pluggable-providers plan) can
+   * compare a swapped model against the prior model's runs. Optional +
+   * nullable: runs written before this field existed have neither. */
+  provider: agentProvider.nullable().optional(),
+  model: z.string().nullable().optional(),
   startedAt: isoTimestamp,
   finishedAt: isoTimestamp.optional(),
   durationMs: z.number().int().nonnegative().optional(),

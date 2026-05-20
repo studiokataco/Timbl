@@ -22,6 +22,10 @@ export const PROVIDER_TONE: Record<string, string> = {
     "bg-violet-100 text-violet-900 dark:bg-violet-900/40 dark:text-violet-200",
   anthropic:
     "bg-orange-100 text-orange-900 dark:bg-orange-900/40 dark:text-orange-200",
+  openrouter:
+    "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200",
+  ollama:
+    "bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-200",
   mock:
     "bg-secondary text-muted-foreground",
 }
