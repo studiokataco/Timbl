@@ -161,6 +161,18 @@ export async function updateCategory(input: unknown): Promise<ServerActionResult
   }
 
   await ref.set({ ...patch, updatedAt: new Date().toISOString() }, { merge: true })
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "category.update",
+    actorUserId: actor?.id ?? null,
+    target: {
+      type: "category",
+      id,
+      label: (patch.name as string | undefined) ?? (snap.data()?.name as string | undefined) ?? id,
+    },
+    meta: { fields: Object.keys(patch) },
+  })
   revalidatePath("/settings/categories")
   revalidatePath("/calendar")
   return { ok: true, id }
@@ -182,6 +194,18 @@ export async function reorderCategories(input: unknown): Promise<ServerActionRes
     )
   })
   await batch.commit()
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "category.reorder",
+    actorUserId: actor?.id ?? null,
+    target: {
+      type: "category",
+      id: "*",
+      label: `${parsed.data.orderedIds.length} categories`,
+    },
+    meta: { orderedIds: parsed.data.orderedIds },
+  })
   revalidatePath("/settings/categories")
   revalidatePath("/calendar")
   return { ok: true }

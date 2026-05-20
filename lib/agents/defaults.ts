@@ -35,7 +35,7 @@ export interface AgentDefault {
 }
 
 const SETTINGS_ASSISTANT_PROMPT = [
-  "You are the SAFE planner's in-app configuration assistant. You live in a global chat drawer (opened with Cmd-J).",
+  "You are this workspace's in-app configuration assistant. You live in a global chat drawer (opened with Cmd-J).",
   "",
   "You can:",
   "  - Read and edit the brand configuration directly (readBrandConfig, writeBrandConfig).",
@@ -49,7 +49,7 @@ const SETTINGS_ASSISTANT_PROMPT = [
 ].join("\n")
 
 const META_CONFIG_PROMPT = [
-  "You are the SAFE planner's meta-config agent. Your job is to read another agent's configuration and propose targeted improvements — sharper prompts, a more appropriate model, better budgets.",
+  "You are this workspace's meta-config agent. Your job is to read another agent's configuration and propose targeted improvements — sharper prompts, a more appropriate model, better budgets.",
   "",
   "Rules:",
   "  - Always start by calling readAgentConfig with the agent's name.",
@@ -78,7 +78,7 @@ const BRAND_WIZARD_PROMPT = [
 ].join("\n")
 
 const AWARENESS_RESEARCHER_PROMPT =
-  "You are the SAFE planner's awareness-day researcher. Given a date range and optional region, use Google Search and URL_CONTEXT to find real, verifiable awareness days, international observances, and significant cultural / health / social dates. Every proposal must cite at least one reputable source URL. Stop after 5–10 high-quality items. Never invent dates or sources."
+  "You are this workspace's awareness-day researcher. Given a date range and optional region, use Google Search and URL_CONTEXT to find real, verifiable awareness days, international observances, and significant cultural / health / social dates. Every proposal must cite at least one reputable source URL. Stop after 5–10 high-quality items. Never invent dates or sources."
 
 const DEFAULT_BUDGETS: AgentBudgetsDefault = {
   maxLlmCalls: 40,
@@ -98,7 +98,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     model: "gemini-2.5-flash",
     temperature: 0.2,
     systemPrompt:
-      "You are the SAFE planner's diagnostic agent. Reply briefly and clearly to whatever the user says. If the user just says 'ping', reply 'pong'.",
+      "You are this workspace's diagnostic agent. Reply briefly and clearly to whatever the user says. If the user just says 'ping', reply 'pong'.",
     enabled: true,
     allowedTools: [],
     triggers: { manual: true, cron: false, systemUserId: "system" },
@@ -160,7 +160,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     model: "claude-haiku-4-5-20251001",
     temperature: 0.8,
     systemPrompt:
-      "You are the SAFE planner's drafter. Your job is to write engaging, on-brand social posts. Each draft must include: a clear brief, a final blurb (the social copy itself), a hashtag list, and a brief rationale. Sentence case. No emojis unless the brand voice explicitly asks for them.",
+      "You are this workspace's drafter. Your job is to write engaging, on-brand social posts. Each draft must include: a clear brief, a final blurb (the social copy itself), a hashtag list, and a brief rationale. Sentence case. No emojis unless the brand voice explicitly asks for them.",
     enabled: true,
     allowedTools: [
       "readBrandConfig",
@@ -180,7 +180,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     model: "gemini-2.5-pro",
     temperature: 0.2,
     systemPrompt:
-      "You are the SAFE planner's reviewer. Read the latest draft and judge whether it is publishable against the brand's voice and forbidden topics. Be ruthless on tone and on factual claims. If publishable, call EXIT_LOOP and say nothing more. If not, emit one focused critique under 200 words and update the draft's rationale field with that critique.",
+      "You are this workspace's reviewer. Read the latest draft and judge whether it is publishable against the brand's voice and forbidden topics. Be ruthless on tone and on factual claims. If publishable, call EXIT_LOOP and say nothing more. If not, emit one focused critique under 200 words and update the draft's rationale field with that critique.",
     enabled: true,
     allowedTools: [
       "readBrandConfig",
@@ -200,7 +200,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     model: "gemini-2.5-flash",
     temperature: 0.1,
     systemPrompt:
-      "You are the SAFE planner's scheduler. Read the brand's preferred cadence, list near-term events to avoid double-booking, call findOpenSlots, and pick ONE slot. Then call scheduleDraft. Never invent dates.",
+      "You are this workspace's scheduler. Read the brand's preferred cadence, list near-term events to avoid double-booking, call findOpenSlots, and pick ONE slot. Then call scheduleDraft. Never invent dates.",
     enabled: true,
     allowedTools: [
       "readBrandConfig",
@@ -219,7 +219,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     model: "gemini-2.5-flash",
     temperature: 0.0,
     systemPrompt:
-      "You are the SAFE planner's human-gate. Summarise the current draft in one short sentence, then call requestHumanApproval with that postId and summary. Say nothing else.",
+      "You are this workspace's human-gate. Summarise the current draft in one short sentence, then call requestHumanApproval with that postId and summary. Say nothing else.",
     enabled: true,
     allowedTools: ["listPosts", "remember", "requestHumanApproval"],
     triggers: { manual: false, cron: false, systemUserId: "system" },
@@ -234,7 +234,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     temperature: 0.6,
     schedule: "0 6 * * *",
     systemPrompt:
-      "You are the SAFE planner's ideator. Discover 5–7 high-quality post ideas per run by combining the brand's audience, upcoming awareness days, and current web stories. Every claim must be grounded in a sourceUrl. Stop at 7 items.",
+      "You are this workspace's ideator. Discover 5–7 high-quality post ideas per run by combining the brand's audience, upcoming awareness days, and current web stories. Every claim must be grounded in a sourceUrl. Stop at 7 items.",
     enabled: true,
     allowedTools: [
       "readBrandConfig",
@@ -270,7 +270,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     temperature: 0.5,
     schedule: "0 7 * * 1",
     systemPrompt:
-      "You are the SAFE planner's cadence planner. Given a date range, produce a balanced set of draft posts that honour the brand's cadence and avoid duplicating existing posts. Each draft must include a clear brief; mark all reviewState='pending' so humans approve before publishing.",
+      "You are this workspace's cadence planner. Given a date range, produce a balanced set of draft posts that honour the brand's cadence and avoid duplicating existing posts. Each draft must include a clear brief; mark all reviewState='pending' so humans approve before publishing.",
     enabled: true,
     allowedTools: [
       "readBrandConfig",
@@ -292,7 +292,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     temperature: 0.1,
     schedule: "0 9-18 * * 1-5",
     systemPrompt:
-      "You are the SAFE planner's approval triage. Find pending drafts whose scheduledDate is within 3 days and prepend a [triage] reminder to their rationale. Report a short summary.",
+      "You are this workspace's approval triage. Find pending drafts whose scheduledDate is within 3 days and prepend a [triage] reminder to their rationale. Report a short summary.",
     enabled: true,
     allowedTools: ["listPosts", "updateDraft"],
     triggers: { manual: true, cron: true, systemUserId: "system" },

@@ -20,15 +20,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
+import { approveAgentDraft, rejectAgentDraft } from "@/lib/actions/agent-suggestions"
+import { revertApproval } from "@/lib/actions/approvals"
 import {
-  approveAgentDraft,
-  rejectAgentDraft,
   REJECT_REASON_LABELS,
   REJECT_REASONS,
+  type NextAction,
+  type NextActionKind,
   type RejectReason,
-} from "@/lib/actions/agent-suggestions"
-import { revertApproval } from "@/lib/actions/approvals"
-import type { NextAction, NextActionKind } from "@/lib/schemas/_shared"
+} from "@/lib/schemas/_shared"
 
 /*
  * Approve/Reject controls rendered on any kanban card whose
