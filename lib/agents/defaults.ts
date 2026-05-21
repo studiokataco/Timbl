@@ -95,7 +95,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Diagnostic echo agent used by /api/agents/hello/run smoke tests.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.2,
     systemPrompt:
       "You are this workspace's diagnostic agent. Reply briefly and clearly to whatever the user says. If the user just says 'ping', reply 'pong'.",
@@ -109,7 +109,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Interviews an admin to capture brand voice, audience, channels, cadence, and forbidden topics, then writes them to brandConfig.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.4,
     systemPrompt: BRAND_WIZARD_PROMPT,
     enabled: true,
@@ -122,7 +122,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "General-purpose configuration chat in the global drawer. Edits brand config directly and proposes (never applies) changes to other agents.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.5,
     systemPrompt: SETTINGS_ASSISTANT_PROMPT,
     enabled: true,
@@ -140,7 +140,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Reads another agent's config and proposes tweaks (model, temperature, prompt). Proposals queue for human approval.",
     provider: "gemini",
-    model: "gemini-2.5-pro",
+    model: "gemini-3.5-flash",
     temperature: 0.3,
     systemPrompt: META_CONFIG_PROMPT,
     enabled: true,
@@ -177,7 +177,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Reviews drafts against brandConfig + forbiddenTopics. Calls EXIT_LOOP when publishable; otherwise emits a critique for the drafter.",
     provider: "gemini",
-    model: "gemini-2.5-pro",
+    model: "gemini-3.5-flash",
     temperature: 0.2,
     systemPrompt:
       "You are this workspace's reviewer. Read the latest draft and judge whether it is publishable against the brand's voice and forbidden topics. Be ruthless on tone and on factual claims. If publishable, call EXIT_LOOP and say nothing more. If not, emit one focused critique under 200 words and update the draft's rationale field with that critique.",
@@ -197,7 +197,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Picks a posting slot from the available windows that honours brandConfig.targetCadence.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.1,
     systemPrompt:
       "You are this workspace's scheduler. Read the brand's preferred cadence, list near-term events to avoid double-booking, call findOpenSlots, and pick ONE slot. Then call scheduleDraft. Never invent dates.",
@@ -216,7 +216,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "One-shot agent that pauses the pipeline awaiting human approval of the current draft.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.0,
     systemPrompt:
       "You are this workspace's human-gate. Summarise the current draft in one short sentence, then call requestHumanApproval with that postId and summary. Say nothing else.",
@@ -230,7 +230,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Web-research-driven idea generator. Uses GOOGLE_SEARCH + URL_CONTEXT to discover awareness days and trending topics, persists each to ideationFeed with source URLs.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.6,
     schedule: "0 6 * * *",
     systemPrompt:
@@ -252,7 +252,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Sequential pipeline: review-loop → human-gate → scheduler. The brief is supplied as the run input.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.4,
     systemPrompt:
       "(composite — pipeline agents have no LLM of their own; their sub-agents do the work)",
@@ -266,7 +266,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Bulk-drafts a posting plan for a date range, respecting brandConfig.targetCadence. Used by the calendar toolbar 'Plan cadence' button and the weekly cron.",
     provider: "gemini",
-    model: "gemini-2.5-pro",
+    model: "gemini-3.5-flash",
     temperature: 0.5,
     schedule: "0 7 * * 1",
     systemPrompt:
@@ -288,7 +288,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Scans pending drafts and nudges any whose scheduledDate is approaching but still unreviewed.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.1,
     schedule: "0 9-18 * * 1-5",
     systemPrompt:
@@ -303,7 +303,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Web-research-driven discovery of awareness days. Uses Gemini GOOGLE_SEARCH grounding to find real observances in a window, writes them as proposals for human review before they enter the official awarenessDays collection.",
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     temperature: 0.3,
     systemPrompt: AWARENESS_RESEARCHER_PROMPT,
     enabled: true,
