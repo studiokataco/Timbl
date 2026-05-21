@@ -23,8 +23,9 @@ type Section = {
   title: string
   description: string
   icon: typeof Briefcase
-  /** Set when the section lives outside the /settings tab shell. */
-  external?: boolean
+  /** Short tag shown next to the title when the section lives outside the
+   *  /settings tab shell (e.g. its own top-level page). */
+  badge?: string
 }
 
 const SECTIONS: Section[] = [
@@ -50,9 +51,10 @@ const SECTIONS: Section[] = [
     icon: Tags,
   },
   {
-    href: "/settings/campaigns",
+    href: "/campaigns",
     title: "Campaigns",
-    description: "Create, edit, and archive campaigns. Admin only.",
+    description:
+      "Browse, create, edit, and archive campaigns — content series with a shared timeline.",
     icon: Megaphone,
   },
   {
@@ -61,7 +63,7 @@ const SECTIONS: Section[] = [
     description:
       "Agent providers, models, schedules, budgets, and model-update alerts live in Studio.",
     icon: Bot,
-    external: true,
+    badge: "Studio",
   },
 ]
 
@@ -90,9 +92,9 @@ export function SettingsOverview() {
               <span className="flex-1 min-w-0">
                 <span className="flex items-center gap-1 text-sm font-medium text-foreground">
                   {s.title}
-                  {s.external && (
+                  {s.badge && (
                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      · Studio
+                      · {s.badge}
                     </span>
                   )}
                 </span>
