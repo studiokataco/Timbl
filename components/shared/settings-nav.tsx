@@ -23,7 +23,6 @@ const NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: "/settings/workspace", label: "Workspace" },
   { href: "/settings/brand", label: "Brand" },
   { href: "/settings/categories", label: "Categories" },
-  { href: "/settings/campaigns", label: "Campaigns" },
 ]
 
 export function SettingsNav() {

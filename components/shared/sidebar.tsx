@@ -45,9 +45,9 @@ const GROUPS: NavGroup[] = [
   {
     heading: "Workspace",
     items: [
-      // /settings redirects to /settings/campaigns; the settings sub-nav
-      // (Campaigns/Categories/Brand/Workspace) takes over from there.
-      // The Workspace tab is where the setup wizard is re-run.
+      // /settings is the Settings overview; its sub-nav (Overview/
+      // Workspace/Brand/Categories) takes over from there. The Workspace
+      // tab is where the setup wizard is re-run.
       { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
