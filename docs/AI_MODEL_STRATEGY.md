@@ -176,9 +176,9 @@ API/docs before wiring; if it can't be confirmed, surface that — never guess.
 
 | Model | Exact ID | Provider | Notes |
 |---|---|---|---|
-| Gemini 2.5 Flash | `gemini-2.5-flash` | gemini | In use — default for most agents |
-| Gemini 2.5 Pro | `gemini-2.5-pro` | gemini | In use — reviewer / meta-config / cadence-planner |
-| Gemini 3.5 Flash | `gemini-3.5-flash` *(⚠️ confirm)* | gemini | Primary Gemini upgrade target; exact ID unconfirmed |
+| Gemini 3.5 Flash | `gemini-3.5-flash` | gemini | **In use — all 12 Gemini agents** (swapped 2026-05-21; ID verified GA against the live API) |
+| Gemini 2.5 Flash | `gemini-2.5-flash` | gemini | Previous default — replaced by 3.5 Flash |
+| Gemini 2.5 Pro | `gemini-2.5-pro` | gemini | Previously reviewer / meta-config / cadence-planner — replaced by 3.5 Flash |
 | Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | anthropic | In use — current `drafter` |
 | Claude Sonnet 4.6 | `claude-sonnet-4-6` | anthropic | Registry fallback |
 | DeepSeek V4-flash | `deepseek/deepseek-v4-flash` *(⚠️ confirm slug)* | openrouter | Cheapest credible option |
@@ -207,10 +207,10 @@ API/docs before wiring; if it can't be confirmed, surface that — never guess.
 
 ## 10. Quick answers
 
-- **"When do we switch all models to Gemini 3.5 Flash / Gemma 4?"** — The
-  mechanism is live; the switch is a per-agent A/B you run whenever you like
-  (§3). Gemini 3.5 Flash: confirm its ID first. Gemma 4: **not on hosted
-  prod** — desktop only.
+- **"When do we switch all models to Gemini 3.5 Flash / Gemma 4?"** — Gemini
+  3.5 Flash: **done** — all 12 Gemini agents swapped in prod on 2026-05-21
+  (`drafter` stays on Anthropic Haiku 4.5). Gemma 4: **not on hosted prod** —
+  desktop only. OpenRouter models: per-agent A/B whenever you like (§3).
 - **"Can we run everything local to hit 0% cost?"** — Only in dev or the
   future desktop app. The hosted SaaS floor is cheap-API, ~10–15%.
 - **"Is a new model auto-adopted when it ships?"** — No. You're notified;
