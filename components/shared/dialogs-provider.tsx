@@ -8,6 +8,7 @@ import {
   useState,
 } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { QuickAddDialog } from "@/components/quick-add/quick-add-dialog"
 import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
 import { fetchPostAction } from "@/lib/actions/posts"
@@ -57,6 +58,7 @@ export function DialogsProvider({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const queryClient = useQueryClient()
 
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddDate, setQuickAddDate] = useState<Date | null>(null)
@@ -95,8 +97,12 @@ export function DialogsProvider({
   )
 
   const onCreated = useCallback(() => {
+    /* Invalidate TanStack-Query caches first so calendar re-renders
+     * instantly off the fresh fetch; router.refresh is in addition
+     * (for SSR-rendered surfaces like Kanban, List, Settings). */
+    queryClient.invalidateQueries({ queryKey: ["posts"] })
     router.refresh()
-  }, [router])
+  }, [router, queryClient])
 
   const onSavedFromQuickAdd = useCallback(() => {
     // Smart navigation: only nav to /calendar when triggered from the TopBar

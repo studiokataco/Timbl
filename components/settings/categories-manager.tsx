@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   DndContext,
@@ -70,6 +70,15 @@ export function CategoriesManager({
   const router = useRouter()
   const plan = usePlanFeatures()
   const [items, setItems] = useState(categories)
+  /* Keep local state in sync with server prop after router.refresh() —
+   * without this, a successful delete/create/edit roundtrips back but
+   * the optimistic UI never reconciles with truth. We only adopt the
+   * server snapshot when no mutation is in-flight, to avoid a flicker
+   * of the pre-mutation state. */
+  const inflightRef = useRef(0)
+  useEffect(() => {
+    if (inflightRef.current === 0) setItems(categories)
+  }, [categories])
   const [dialogState, setDialogState] = useState<
     | { mode: "closed" }
     | { mode: "create" }
@@ -88,17 +97,36 @@ export function CategoriesManager({
     const oldIndex = items.findIndex((i) => i.id === active.id)
     const newIndex = items.findIndex((i) => i.id === over.id)
     if (oldIndex === -1 || newIndex === -1) return
+    const prev = items
     const next = arrayMove(items, oldIndex, newIndex)
     setItems(next)
+    inflightRef.current++
     startTransition(async () => {
       const result = await reorderCategories({
         orderedIds: next.map((i) => i.id),
       })
+      inflightRef.current--
       if (!result.ok) {
+        setItems(prev)
         toast.error(result.error ?? "Could not reorder")
+      } else {
         router.refresh()
       }
     })
+  }
+
+  function onOptimisticUpsert(cat: WithId<Category>) {
+    setItems((curr) => {
+      const idx = curr.findIndex((c) => c.id === cat.id)
+      if (idx === -1) return [...curr, cat]
+      const next = curr.slice()
+      next[idx] = cat
+      return next
+    })
+  }
+
+  function onOptimisticDelete(id: string) {
+    setItems((curr) => curr.filter((c) => c.id !== id))
   }
 
   const canCreate = plan.features.customCategories
@@ -169,12 +197,16 @@ export function CategoriesManager({
         }}
         mode={dialogState.mode === "edit" ? "edit" : "create"}
         category={dialogState.mode === "edit" ? dialogState.category : undefined}
+        onOptimisticUpsert={onOptimisticUpsert}
+        nextDisplayOrder={items.length}
       />
 
       <DeleteCategoryDialog
         target={deleteState}
         allCategories={items}
         onClose={() => setDeleteState(null)}
+        onOptimisticDelete={onOptimisticDelete}
+        inflightRef={inflightRef}
       />
     </>
   )
@@ -274,14 +306,17 @@ function DeleteCategoryDialog({
   target,
   allCategories,
   onClose,
+  onOptimisticDelete,
+  inflightRef,
 }: {
   target: WithId<Category> | null
   allCategories: WithId<Category>[]
   onClose: () => void
+  onOptimisticDelete: (id: string) => void
+  inflightRef: { current: number }
 }) {
   const router = useRouter()
   const [reassignTo, setReassignTo] = useState<string>("")
-  const [pending, startTransition] = useTransition()
 
   const options = useMemo(
     () => allCategories.filter((c) => c.id !== target?.id),
@@ -297,29 +332,40 @@ function DeleteCategoryDialog({
 
   function onConfirm() {
     if (!target) return
-    startTransition(async () => {
-      const result = await deleteCategory({
-        id: target.id,
-        reassignTo: reassignTo || undefined,
-      })
-      if (!result.ok) {
-        if (
-          result.error?.toLowerCase().includes("has posts") &&
-          !reassignTo
-        ) {
-          /* Server says we need a reassign target; the dialog already
-           * shows the picker below, so just toast the requirement. */
-          toast.error("Pick a category to reassign posts to.")
+    const id = target.id
+    const reassign = reassignTo || undefined
+    /* Hide the row + close the dialog immediately. If the server
+     * rejects (e.g. category has posts and no reassign target), we
+     * roll back via router.refresh() and toast the error. */
+    onOptimisticDelete(id)
+    onClose()
+    setReassignTo("")
+    inflightRef.current++
+    void deleteCategory({ id, reassignTo: reassign })
+      .then((result) => {
+        inflightRef.current--
+        if (!result.ok) {
+          if (
+            result.error?.toLowerCase().includes("has posts") &&
+            !reassign
+          ) {
+            toast.error("Pick a category to reassign posts to.", {
+              description: "Reopening the category — try again with a target.",
+            })
+          } else {
+            toast.error(result.error ?? "Could not delete")
+          }
+          router.refresh()
           return
         }
-        toast.error(result.error ?? "Could not delete")
-        return
-      }
-      toast.success("Category deleted")
-      onClose()
-      setReassignTo("")
-      router.refresh()
-    })
+        toast.success("Category deleted")
+        router.refresh()
+      })
+      .catch(() => {
+        inflightRef.current--
+        toast.error("Could not delete")
+        router.refresh()
+      })
   }
 
   return (
@@ -356,15 +402,11 @@ function DeleteCategoryDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => handleClose(false)} disabled={pending}>
+          <Button variant="ghost" onClick={() => handleClose(false)}>
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirm}
-            disabled={pending}
-          >
-            {pending ? "Deleting…" : "Delete category"}
+          <Button variant="destructive" onClick={onConfirm}>
+            Delete category
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -191,47 +191,58 @@ export function CalendarView({
 
       const post = activeData.post
 
-      if (overData.type === "cell") {
-        if (post.scheduledDate === overData.iso) return
-        const res = await updatePost({ id: post.id, scheduledDate: overData.iso })
+      /* Optimistically patch every cached posts query so the chip
+       * jumps to the new cell immediately. We patch by id across all
+       * date-range query keys — cheaper than re-fetching, and avoids
+       * the flicker where the chip snaps back to origin while the
+       * server roundtrips. */
+      const patchCache = (
+        patch: Partial<Pick<Post, "scheduledDate" | "scheduledTime">>,
+      ) => {
+        queryClient.setQueriesData<WithId<Post>[]>(
+          { queryKey: ["posts", orgId] },
+          (curr) =>
+            curr?.map((p) => (p.id === post.id ? { ...p, ...patch } : p)),
+        )
+      }
+
+      const finish = async (
+        patch: Partial<Pick<Post, "scheduledDate" | "scheduledTime">>,
+        successMsg: string,
+      ) => {
+        patchCache(patch)
+        const res = await updatePost({ id: post.id, ...patch })
         if (!res.ok) {
           toast.error(res.error ?? "Could not move post")
-        } else {
-          toast.success(`Moved to ${format(parseISO(overData.iso), "EEE d MMM")}`)
           queryClient.invalidateQueries({ queryKey: ["posts"] })
+          return
         }
+        toast.success(successMsg)
+        queryClient.invalidateQueries({ queryKey: ["posts"] })
+      }
+
+      if (overData.type === "cell") {
+        if (post.scheduledDate === overData.iso) return
+        await finish(
+          { scheduledDate: overData.iso },
+          `Moved to ${format(parseISO(overData.iso), "EEE d MMM")}`,
+        )
       } else if (overData.type === "timeslot") {
         const newTime = `${String(overData.hour).padStart(2, "0")}:00`
         if (post.scheduledDate === overData.iso && post.scheduledTime === newTime) return
-        const res = await updatePost({
-          id: post.id,
-          scheduledDate: overData.iso,
-          scheduledTime: newTime,
-        })
-        if (!res.ok) {
-          toast.error(res.error ?? "Could not move post")
-        } else {
-          toast.success(
-            `Moved to ${format(parseISO(overData.iso), "EEE d MMM")} at ${newTime}`,
-          )
-          queryClient.invalidateQueries({ queryKey: ["posts"] })
-        }
+        await finish(
+          { scheduledDate: overData.iso, scheduledTime: newTime },
+          `Moved to ${format(parseISO(overData.iso), "EEE d MMM")} at ${newTime}`,
+        )
       } else if (overData.type === "allday") {
         if (post.scheduledDate === overData.iso && !post.scheduledTime) return
-        const res = await updatePost({
-          id: post.id,
-          scheduledDate: overData.iso,
-          scheduledTime: undefined,
-        })
-        if (!res.ok) {
-          toast.error(res.error ?? "Could not move post")
-        } else {
-          toast.success(`Moved to ${format(parseISO(overData.iso), "EEE d MMM")}`)
-          queryClient.invalidateQueries({ queryKey: ["posts"] })
-        }
+        await finish(
+          { scheduledDate: overData.iso, scheduledTime: undefined },
+          `Moved to ${format(parseISO(overData.iso), "EEE d MMM")}`,
+        )
       }
     },
-    [queryClient],
+    [queryClient, orgId],
   )
 
   const toggleCategory = useCallback((id: string) => {

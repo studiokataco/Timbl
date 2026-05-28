@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   DndContext,
@@ -42,6 +42,14 @@ export function KanbanBoard({ posts, categories, users }: Props) {
   const campaigns = data.campaigns
   const columns = data.kanbanColumns
   const [, startTransition] = useTransition()
+  /* Optimistic post layer — drag/drop and status-select mutate this
+   * instantly. Server result reconciles on router.refresh() unless a
+   * mutation is in-flight (to avoid flicker). */
+  const [optimisticPosts, setOptimisticPosts] = useState(posts)
+  const inflightRef = useRef(0)
+  useEffect(() => {
+    if (inflightRef.current === 0) setOptimisticPosts(posts)
+  }, [posts])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [filterCategory, setFilterCategory] = useState("")
   const [filterAssignee, setFilterAssignee] = useState("")
@@ -64,7 +72,7 @@ export function KanbanBoard({ posts, categories, users }: Props) {
   const columnIdSet = useMemo(() => new Set(columns.map((c) => c.id)), [columns])
 
   const filtered = useMemo(() => {
-    let rows = posts
+    let rows = optimisticPosts
     if (filterCategory) rows = rows.filter((p) => p.categoryId === filterCategory)
     if (filterAssignee) rows = rows.filter((p) => p.assigneeId === filterAssignee)
     if (filterCampaign) rows = rows.filter((p) => p.campaignId === filterCampaign)
@@ -75,7 +83,7 @@ export function KanbanBoard({ posts, categories, users }: Props) {
       )
     }
     return rows
-  }, [posts, filterCategory, filterAssignee, filterCampaign, filterQ])
+  }, [optimisticPosts, filterCategory, filterAssignee, filterCampaign, filterQ])
 
   const byStatus = useMemo(() => {
     const map = new Map<string, WithId<Post>[]>()
@@ -88,9 +96,31 @@ export function KanbanBoard({ posts, categories, users }: Props) {
   }, [filtered, columns, columnIdSet])
 
   const activePost = useMemo(
-    () => posts.find((p) => p.id === activeId) ?? null,
-    [posts, activeId],
+    () => optimisticPosts.find((p) => p.id === activeId) ?? null,
+    [optimisticPosts, activeId],
   )
+
+  function applyOptimisticStatus(id: string, next: PostStatus) {
+    setOptimisticPosts((curr) =>
+      curr.map((p) => (p.id === id ? { ...p, status: next } : p)),
+    )
+  }
+
+  function commitStatus(post: WithId<Post>, next: PostStatus) {
+    const prevStatus = post.status
+    applyOptimisticStatus(post.id, next)
+    inflightRef.current++
+    startTransition(async () => {
+      const res = await updatePost({ id: post.id, status: next })
+      inflightRef.current--
+      if (!res.ok) {
+        applyOptimisticStatus(post.id, prevStatus)
+        toast.error(res.error ?? "Could not update status")
+        return
+      }
+      router.refresh()
+    })
+  }
 
   function onDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string)
@@ -101,14 +131,9 @@ export function KanbanBoard({ posts, categories, users }: Props) {
     if (!over || active.id === over.id) return
     const newStatus = over.id as PostStatus
     if (!columnIdSet.has(newStatus)) return
-    const post = posts.find((p) => p.id === active.id)
+    const post = optimisticPosts.find((p) => p.id === active.id)
     if (!post || post.status === newStatus) return
-
-    startTransition(async () => {
-      const res = await updatePost({ id: post.id, status: newStatus })
-      if (!res.ok) toast.error(res.error ?? "Could not update status")
-      else router.refresh()
-    })
+    commitStatus(post, newStatus)
   }
 
   const openComposer = (p: WithId<Post>) => {
@@ -117,14 +142,8 @@ export function KanbanBoard({ posts, categories, users }: Props) {
 
   const onStatusChange = (post: WithId<Post>, next: PostStatus) => {
     if (post.status === next) return
-    startTransition(async () => {
-      const res = await updatePost({ id: post.id, status: next })
-      if (!res.ok) toast.error(res.error ?? "Could not update status")
-      else {
-        toast.success(`Moved to ${next}`)
-        router.refresh()
-      }
-    })
+    commitStatus(post, next)
+    toast.success(`Moved to ${next}`)
   }
 
   return (

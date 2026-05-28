@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
@@ -78,6 +78,12 @@ export function CampaignsBoard({ campaigns }: Props) {
   const [editing, setEditing] = useState<CampaignRow | null>(null)
   const [form, setForm] = useState<FormState>(BLANK)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
+  /* Optimistic grid — create/edit/delete update this instantly. */
+  const [items, setItems] = useState(campaigns)
+  const inflightRef = useRef(0)
+  useEffect(() => {
+    if (inflightRef.current === 0) setItems(campaigns)
+  }, [campaigns])
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -115,38 +121,75 @@ export function CampaignsBoard({ campaigns }: Props) {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      color: form.color.trim() || undefined,
+      startDate: form.startDate || undefined,
+      endDate: form.endDate || undefined,
+      status: form.status,
+    }
+    const prev = items
+    const wasEditing = editing
+    const now = new Date().toISOString()
+    if (wasEditing) {
+      setItems((curr) =>
+        curr.map((c) => (c.id === wasEditing.id ? { ...c, ...payload } : c)),
+      )
+    } else {
+      setItems((curr) => [
+        ...curr,
+        {
+          id: `temp-${now}`,
+          organizationId: "",
+          name: payload.name,
+          description: payload.description,
+          color: payload.color,
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+          status: payload.status,
+          slug: `temp-${now}`,
+          createdAt: now,
+          updatedAt: now,
+          postCount: 0,
+          scheduledOrPosted: 0,
+        } as CampaignRow,
+      ])
+    }
+    setDialogOpen(false)
+    toast.success(wasEditing ? "Campaign updated." : "Campaign created.")
+    inflightRef.current++
     startTransition(async () => {
-      const payload = {
-        name: form.name.trim(),
-        description: form.description.trim() || undefined,
-        color: form.color.trim() || undefined,
-        startDate: form.startDate || undefined,
-        endDate: form.endDate || undefined,
-        status: form.status,
-      }
-      const res = editing
-        ? await updateCampaign({ id: editing.id, ...payload })
+      const res = wasEditing
+        ? await updateCampaign({ id: wasEditing.id, ...payload })
         : await createCampaign(payload)
+      inflightRef.current--
       if (!res.ok) {
+        setItems(prev)
+        toast.dismiss()
         toast.error(res.error ?? "Could not save campaign")
         return
       }
-      toast.success(editing ? "Campaign updated." : "Campaign created.")
-      setDialogOpen(false)
       router.refresh()
     })
   }
 
   const onDelete = (c: CampaignRow) => {
     if (!confirm(`Delete "${c.name}"? This won't remove linked posts.`)) return
+    const prev = items
+    setItems((curr) => curr.filter((x) => x.id !== c.id))
+    toast.success("Campaign deleted.")
+    inflightRef.current++
     startTransition(async () => {
       const res = await deleteCampaign(c.id)
+      inflightRef.current--
       if (!res.ok) {
+        setItems(prev)
+        toast.dismiss()
         toast.error(res.error ?? "Could not delete")
-      } else {
-        toast.success("Campaign deleted.")
-        router.refresh()
+        return
       }
+      router.refresh()
     })
   }
 
@@ -163,7 +206,7 @@ export function CampaignsBoard({ campaigns }: Props) {
         }
       />
 
-      {campaigns.length === 0 ? (
+      {items.length === 0 ? (
         <EmptyState
           icon={Megaphone}
           title="No campaigns yet"
@@ -177,7 +220,7 @@ export function CampaignsBoard({ campaigns }: Props) {
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
-          {campaigns.map((c) => {
+          {items.map((c) => {
             const pct =
               c.postCount > 0
                 ? Math.round((c.scheduledOrPosted / c.postCount) * 100)
