@@ -279,6 +279,7 @@ function TuneTab({
   agent: AgentConfig
   onTestWithEdits: (notice: string) => void
 }) {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
 
@@ -405,6 +406,7 @@ function TuneTab({
         toast.success(`Saved ${agent.name}`)
         queryClient.invalidateQueries({ queryKey: ["agent-configs"] })
         queryClient.invalidateQueries({ queryKey: ["studio", "runs"] })
+        router.refresh()
       } else {
         toast.error("Save failed", { description: res.error })
       }
@@ -715,6 +717,7 @@ function BudgetField({
 /* ---------------- ToolsTab ---------------- */
 
 function ToolsTab({ agent }: { agent: AgentConfig }) {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
   const allowed = agent.allowedTools
@@ -727,6 +730,7 @@ function ToolsTab({ agent }: { agent: AgentConfig }) {
       })
       if (res.ok) {
         queryClient.invalidateQueries({ queryKey: ["agent-configs"] })
+        router.refresh()
       } else {
         toast.error("Tool update failed", { description: res.error })
       }
