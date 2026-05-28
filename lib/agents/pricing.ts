@@ -31,8 +31,7 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   // --- Gemini (verify against ai.google.dev/gemini-api/docs/pricing) ---
   "gemini-2.5-flash": { inputPer1M: 0.3, outputPer1M: 2.5 },
   "gemini-2.5-pro": { inputPer1M: 1.25, outputPer1M: 10 },
-  // gemini-3.5-flash: pricing unconfirmed at time of writing — omitted
-  //   deliberately. Add the numbers once Google publishes them.
+  "gemini-3.5-flash": { inputPer1M: 1.5, outputPer1M: 9 },
 
   // --- Anthropic (verify against anthropic.com/pricing) ---
   "claude-haiku-4-5-20251001": { inputPer1M: 1, outputPer1M: 5 },
