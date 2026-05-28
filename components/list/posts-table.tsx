@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import { Download, FilterX, ListChecks } from "lucide-react"
@@ -51,6 +51,13 @@ export function PostsTable({ posts, categories, users }: Props) {
   const { openComposer } = useDialogs()
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  /* Optimistic shadow over the server-supplied posts; bulk-status
+   * applies instantly and reconciles when router.refresh() resolves. */
+  const [optimisticPosts, setOptimisticPosts] = useState(posts)
+  const inflightRef = useRef(0)
+  useEffect(() => {
+    if (inflightRef.current === 0) setOptimisticPosts(posts)
+  }, [posts])
 
   const status = (searchParams.get("status") ?? "").split(",").filter(Boolean) as PostStatus[]
   const category = (searchParams.get("category") ?? "").split(",").filter(Boolean)
@@ -78,7 +85,7 @@ export function PostsTable({ posts, categories, users }: Props) {
   const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users])
 
   const filtered = useMemo(() => {
-    let rows = posts
+    let rows = optimisticPosts
     if (status.length) rows = rows.filter((p) => status.includes(p.status))
     if (category.length) rows = rows.filter((p) => p.categoryId && category.includes(p.categoryId))
     if (assignee.length) rows = rows.filter((p) => p.assigneeId && assignee.includes(p.assigneeId))
@@ -99,7 +106,7 @@ export function PostsTable({ posts, categories, users }: Props) {
       return sortDir === "asc" ? cmp : -cmp
     })
     return rows
-  }, [posts, status, category, assignee, dateFrom, dateTo, q, sortBy, sortDir])
+  }, [optimisticPosts, status, category, assignee, dateFrom, dateTo, q, sortBy, sortDir])
 
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -164,14 +171,22 @@ export function PostsTable({ posts, categories, users }: Props) {
 
   const bulkMarkScheduled = () => {
     if (selected.size === 0) return
+    const ids = Array.from(selected)
+    const prev = optimisticPosts
+    setOptimisticPosts((curr) =>
+      curr.map((p) => (selected.has(p.id) ? { ...p, status: "scheduled" } : p)),
+    )
+    setSelected(new Set())
+    inflightRef.current++
     startTransition(async () => {
-      const res = await bulkSetStatus(Array.from(selected), "scheduled")
+      const res = await bulkSetStatus(ids, "scheduled")
+      inflightRef.current--
       if (!res.ok) {
+        setOptimisticPosts(prev)
         toast.error(res.error ?? "Bulk update failed")
         return
       }
       toast.success(`Marked ${res.updated} posts as scheduled`)
-      setSelected(new Set())
       router.refresh()
     })
   }

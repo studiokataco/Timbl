@@ -75,6 +75,10 @@ export type CategoryDialogProps = {
   onOpenChange: (v: boolean) => void
   mode: "create" | "edit"
   category?: WithId<Category>
+  /* Optional optimistic hook — parent updates local state before the
+   * server confirms so the UI feels instant. */
+  onOptimisticUpsert?: (cat: WithId<Category>) => void
+  nextDisplayOrder?: number
 }
 
 export function CategoryDialog({
@@ -82,8 +86,10 @@ export function CategoryDialog({
   onOpenChange,
   mode,
   category,
+  onOptimisticUpsert,
+  nextDisplayOrder,
 }: CategoryDialogProps) {
-  const [pending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const [slugTouched, setSlugTouched] = useState(false)
 
   const defaults: FormValues = useMemo(
@@ -138,18 +144,49 @@ export function CategoryDialog({
       return
     }
 
-    startTransition(async () => {
-      const payload = {
-        ...parsed.data,
-        icon: parsed.data.icon || undefined,
-        description: parsed.data.description || undefined,
+    const payload = {
+      ...parsed.data,
+      icon: parsed.data.icon || undefined,
+      description: parsed.data.description || undefined,
+    }
+
+    /* Optimistic local upsert. For create we mint a temp id; the
+     * server reply will replace it after router.refresh(). For edit
+     * we patch the existing record in-place. */
+    if (onOptimisticUpsert) {
+      const now = new Date().toISOString()
+      if (mode === "create") {
+        onOptimisticUpsert({
+          id: `temp-${now}`,
+          organizationId: "",
+          name: payload.name,
+          slug: payload.slug,
+          color: payload.color,
+          icon: payload.icon,
+          description: payload.description,
+          defaultPostType: payload.defaultPostType,
+          defaultHashtags: [],
+          isActive: true,
+          displayOrder: nextDisplayOrder ?? 0,
+          system: false,
+          createdAt: now,
+          updatedAt: now,
+        } as WithId<Category>)
+      } else if (category) {
+        onOptimisticUpsert({ ...category, ...payload, updatedAt: now })
       }
+    }
+    onOpenChange(false)
+    toast.success(mode === "create" ? "Category created" : "Category updated")
+
+    startTransition(async () => {
       const result =
         mode === "create"
           ? await createCategory(payload)
           : await updateCategory({ id: category!.id, ...payload })
 
       if (!result.ok) {
+        toast.dismiss()
         if (result.gate?.kind === "feature") {
           toast.error("Upgrade required", {
             description:
@@ -158,10 +195,7 @@ export function CategoryDialog({
         } else {
           toast.error(result.error ?? "Could not save category")
         }
-        return
       }
-      toast.success(mode === "create" ? "Category created" : "Category updated")
-      onOpenChange(false)
     })
   })
 
@@ -272,12 +306,11 @@ export function CategoryDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              disabled={pending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : mode === "create" ? "Create category" : "Save changes"}
+            <Button type="submit">
+              {mode === "create" ? "Create category" : "Save changes"}
             </Button>
           </DialogFooter>
         </form>

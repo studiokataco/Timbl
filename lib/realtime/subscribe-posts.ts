@@ -7,8 +7,9 @@ import {
   query,
   where,
 } from "firebase/firestore"
+import { signInAnonymously } from "firebase/auth"
 import { useEffect } from "react"
-import { getClientDb } from "@/lib/firebase/client"
+import { getClientAuth, getClientDb } from "@/lib/firebase/client"
 import { orgPostsPath } from "@/lib/firebase/paths"
 import type { QueryClient } from "@tanstack/react-query"
 
@@ -17,11 +18,11 @@ import type { QueryClient } from "@tanstack/react-query"
  * QueryClient.invalidateQueries on every snapshot so the calendar's
  * useQuery refetches and re-renders.
  *
- * NOTE: until Phase 7 the client-side Firestore SDK runs against the
- * emulator only when the app is configured to talk to it. For Phase 2 we
- * simply skip the subscription if no real Firebase config is present —
- * the calendar still updates after every server-action mutation via the
- * router refresh, just without cross-tab realtime.
+ * Pre-Phase 7 (no real Firebase Auth user) the security rules reject
+ * unauthenticated reads. We attempt anonymous sign-in to get past the
+ * rule — works only if Anonymous provider is enabled in the console.
+ * If sign-in or the snapshot fails we log and bail; mutations still
+ * reconcile through router.refresh() + queryClient invalidation.
  */
 export function usePostsRealtime(opts: {
   orgId: string
@@ -33,20 +34,24 @@ export function usePostsRealtime(opts: {
   const { orgId, start, end, queryClient, enabled = true } = opts
   useEffect(() => {
     if (!enabled) return
-    const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
-    if (!useEmulators && process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "demo-api-key") {
-      return
-    }
     if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) return
+    if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "demo-api-key") return
 
     let unsub: (() => void) | undefined
     let cancelled = false
-    // Defer attach by a tick so React StrictMode's double-invoke can't
-    // subscribe and unsubscribe in the same microtask — which trips
-    // Firestore's watch-stream assertion (ID: ca9, ve:-1).
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       if (cancelled) return
       try {
+        const auth = getClientAuth()
+        if (!auth.currentUser) {
+          try {
+            await signInAnonymously(auth)
+          } catch (err) {
+            console.warn("[realtime] anon sign-in failed; realtime disabled", err)
+            return
+          }
+        }
+        if (cancelled) return
         const db = getClientDb()
         const q = query(
           collection(db, orgPostsPath(orgId)),
@@ -56,11 +61,16 @@ export function usePostsRealtime(opts: {
         )
         unsub = onSnapshot(
           q,
-          () => queryClient.invalidateQueries({ queryKey: ["posts", orgId, start, end] }),
-          () => undefined,
+          () =>
+            queryClient.invalidateQueries({
+              queryKey: ["posts", orgId, start, end],
+            }),
+          (err) => {
+            console.warn("[realtime] posts snapshot error", err)
+          },
         )
-      } catch {
-        /* No-op — realtime is best-effort during dev. */
+      } catch (err) {
+        console.warn("[realtime] init failed", err)
       }
     }, 0)
     return () => {
@@ -68,9 +78,7 @@ export function usePostsRealtime(opts: {
       clearTimeout(timer)
       try {
         unsub?.()
-      } catch {
-        /* No-op. */
-      }
+      } catch {}
     }
   }, [orgId, start, end, queryClient, enabled])
 }
