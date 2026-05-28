@@ -60,6 +60,7 @@ migration/report.csv
 
 # Local-only walkthroughs / docs (not source of truth — those live in PRD/plan files)
 docs/AGENTS_WALKTHROUGH.md
+docs/*
 
 # Cloud Functions build output
 functions/lib/
