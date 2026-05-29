@@ -264,7 +264,7 @@ export async function bulkCreateCategories(input: unknown): Promise<ServerAction
   }
 
   function uniqueSlug(base: string): string {
-    let slug = slugify(base)
+    const slug = slugify(base)
     let candidate = slug
     let i = 2
     while (existingSlugs.has(candidate)) {
