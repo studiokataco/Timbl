@@ -1,0 +1,10 @@
+onlyBuiltDependencies:
+  - "@firebase/util"
+  - "@google/genai"
+  - esbuild
+  - msw
+  - protobufjs
+  - re2
+  - sharp
+  - sqlite3
+  - unrs-resolver
