@@ -86,6 +86,17 @@ service cloud.firestore {
         allow read: if inOrg(orgId);
         allow write: if false;
       }
+
+      // OAuth app credentials for the publishing layer. Admins may read the
+      // public projection (id, channel, audit fields) to detect whether a
+      // platform is configured; the clientIdEnc/clientSecretEnc fields are
+      // never returned to the client because the page reads via Admin SDK
+      // and projects them out. Writes go through the setPlatformOauthApp
+      // server action only.
+      match /oauthApps/{channel} {
+        allow read: if inOrg(orgId) && isAdminOrEditor();
+        allow write: if false;
+      }
     }
 
     // --- Global: awarenessDays -----------------------------------------

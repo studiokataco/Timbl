@@ -20,6 +20,8 @@ export const orgKanbanColumnsPath = (orgId: string) => `${orgPath(orgId)}/kanban
 /* Publishing layer — token vault + publish-attempt telemetry. */
 export const orgSocialAccountsPath = (orgId: string) => `${orgPath(orgId)}/socialAccounts`
 export const orgPublishRunsPath = (orgId: string) => `${orgPath(orgId)}/publishRuns`
+/* Per-org OAuth app credentials, encrypted with SOCIAL_TOKEN_KEY. doc id = channel. */
+export const orgOauthAppsPath = (orgId: string) => `${orgPath(orgId)}/oauthApps`
 
 export const awarenessDaysPath = "awarenessDays"
 
