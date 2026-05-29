@@ -13,6 +13,7 @@ const ERRORS: Record<string, string> = {
   state: "Connection expired or was tampered with. Try again.",
   callback: "Couldn't finish connecting. Try again.",
   connect: "Couldn't start the connection. Try again.",
+  not_configured: "This channel isn't configured yet. Add its OAuth credentials in Secret Manager.",
   oauth: "The provider didn't return an authorization code.",
   unknown_channel: "Unknown channel.",
 }

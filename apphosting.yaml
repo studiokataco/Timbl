@@ -20,6 +20,16 @@ env:
     availability:
       - BUILD
 
+  # Public origin — used by OAuth redirect_uri registration and by the
+  # connect/callback routes to build user-facing redirects. Without this,
+  # appBaseUrl() falls back to localhost and redirects leak Cloud Run's
+  # internal 0.0.0.0:8080 listener address.
+  - variable: APP_BASE_URL
+    value: https://safe-planner--sm-dashboard-e7641.asia-east1.hosted.app
+    availability:
+      - BUILD
+      - RUNTIME
+
   # ---------------------------------------------------------------------------
   # Public (NEXT_PUBLIC_*) — exposed to the browser bundle.
   # Available at BUILD time so Next inlines them into the client chunks.
