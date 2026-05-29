@@ -34,9 +34,15 @@ import { logger } from "firebase-functions"
  * behavior.
  */
 
-const LEGACY_DOMAIN_TO_ORG: Record<string, string> = {
-  "safefoundation.org.uk": "safe-foundation",
-  "kataco.in": "safe-foundation",
+const LEGACY_DOMAIN_TO_ORG: Record<
+  string,
+  { orgId: string; role: "admin" | "editor" | "contributor" }
+> = {
+  "safefoundation.org.uk": { orgId: "safe-foundation", role: "contributor" },
+  /* Kataco is the platform team — every kataco.in signup gets admin on
+   * safe-foundation so they can manage OAuth credentials, agents, etc.
+   * without a separate role-grant step. */
+  "kataco.in": { orgId: "safe-foundation", role: "admin" },
 }
 
 const DEFAULT_PLAN_FOR_NEW_ORG = "agency_v1"
@@ -99,23 +105,24 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
   }
 
   /* 2. Legacy domain map — back-compat for SAFE/Kataco. */
-  const legacyOrgId = LEGACY_DOMAIN_TO_ORG[domain]
-  if (legacyOrgId) {
+  const legacy = LEGACY_DOMAIN_TO_ORG[domain]
+  if (legacy) {
     const seed = await provisionContributor(
       db,
-      legacyOrgId,
+      legacy.orgId,
       email,
       user.displayName ?? email.split("@")[0],
-      "contributor",
+      legacy.role,
     )
-    logger.info("[claims] provisioned legacy contributor", {
+    logger.info("[claims] provisioned legacy member", {
       email,
-      orgId: legacyOrgId,
+      orgId: legacy.orgId,
+      role: legacy.role,
       userId: seed.userId,
     })
     return {
       customClaims: {
-        organizationId: legacyOrgId,
+        organizationId: legacy.orgId,
         role: seed.role,
         userId: seed.userId,
       },
