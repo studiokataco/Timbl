@@ -97,6 +97,54 @@ env:
     availability:
       - RUNTIME
 
+  # ---------------------------------------------------------------------------
+  # Publishing layer — token vault key, worker HMAC, and per-platform OAuth
+  # apps. Create each secret + grant the App Hosting SA secretAccessor once:
+  #   gcloud secrets create SOCIAL_TOKEN_KEY --replication-policy=automatic
+  #   printf '%s' "$(openssl rand -hex 32)" | gcloud secrets versions add SOCIAL_TOKEN_KEY --data-file=-
+  #   gcloud secrets create PUBLISH_SWEEP_SECRET --replication-policy=automatic
+  #   printf '%s' "$(openssl rand -hex 32)" | gcloud secrets versions add PUBLISH_SWEEP_SECRET --data-file=-
+  #   # then LINKEDIN_/X_/META_ client id+secret from each platform's developer app.
+  - variable: SOCIAL_TOKEN_KEY
+    secret: SOCIAL_TOKEN_KEY
+    availability:
+      - RUNTIME
+
+  - variable: PUBLISH_SWEEP_SECRET
+    secret: PUBLISH_SWEEP_SECRET
+    availability:
+      - RUNTIME
+
+  - variable: LINKEDIN_CLIENT_ID
+    secret: LINKEDIN_CLIENT_ID
+    availability:
+      - RUNTIME
+
+  - variable: LINKEDIN_CLIENT_SECRET
+    secret: LINKEDIN_CLIENT_SECRET
+    availability:
+      - RUNTIME
+
+  - variable: X_CLIENT_ID
+    secret: X_CLIENT_ID
+    availability:
+      - RUNTIME
+
+  - variable: X_CLIENT_SECRET
+    secret: X_CLIENT_SECRET
+    availability:
+      - RUNTIME
+
+  - variable: META_APP_ID
+    secret: META_APP_ID
+    availability:
+      - RUNTIME
+
+  - variable: META_APP_SECRET
+    secret: META_APP_SECRET
+    availability:
+      - RUNTIME
+
   # SENTRY_DSN intentionally unbound — Sentry isn't set up. Cloud Logging
   # in App Hosting + Functions provides primary error visibility. Re-wire
   # when @sentry/nextjs lands.

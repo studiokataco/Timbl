@@ -5,6 +5,7 @@ import {
   Tags,
   Megaphone,
   Bot,
+  Share2,
   ChevronRight,
 } from "lucide-react"
 
@@ -49,6 +50,13 @@ const SECTIONS: Section[] = [
     description:
       "Categories drive post colours, default types, and how the calendar groups work.",
     icon: Tags,
+  },
+  {
+    href: "/settings/channels",
+    title: "Channels",
+    description:
+      "Connect social accounts so scheduled posts publish automatically at their slot.",
+    icon: Share2,
   },
   {
     href: "/campaigns",

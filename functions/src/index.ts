@@ -7,4 +7,5 @@ setGlobalOptions({ region: "asia-south1", maxInstances: 5 })
 
 export { beforeUserSignedIn } from "./setUserClaims"
 export { agentSweep } from "./agentSweep"
+export { publishSweep } from "./publishSweep"
 export { modelUpdateCheck } from "./modelUpdateCheck"

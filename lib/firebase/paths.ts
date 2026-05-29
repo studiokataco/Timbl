@@ -17,6 +17,10 @@ export const orgPostStatusHistoryPath = (orgId: string, postId: string) =>
   `${orgPostsPath(orgId)}/${postId}/statusHistory`
 export const orgKanbanColumnsPath = (orgId: string) => `${orgPath(orgId)}/kanbanColumns`
 
+/* Publishing layer — token vault + publish-attempt telemetry. */
+export const orgSocialAccountsPath = (orgId: string) => `${orgPath(orgId)}/socialAccounts`
+export const orgPublishRunsPath = (orgId: string) => `${orgPath(orgId)}/publishRuns`
+
 export const awarenessDaysPath = "awarenessDays"
 
 /* Agent runtime collections — see lib/agents/** and plan §2. */
