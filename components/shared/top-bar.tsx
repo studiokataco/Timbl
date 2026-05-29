@@ -1,8 +1,16 @@
 "use client"
 
-import { Plus, Search, Sparkles } from "lucide-react"
+import { LogOut, Plus, Search, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 
@@ -76,9 +84,34 @@ export function TopBar({ userName }: { userName: string }) {
           <Plus aria-hidden className="size-4" />
         </Button>
 
-        <Avatar className="size-9">
-          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                aria-label="Account menu"
+                className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            }
+          >
+            <Avatar className="size-9">
+              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-44">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              {userName}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              render={<a href="/auth/logout" />}
+            >
+              <LogOut aria-hidden />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )
