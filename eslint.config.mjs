@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Claude Code tooling — not app source
     ".claude/**",
+    // Cloud Functions compiled output — TS-emitted CommonJS, not source
+    "functions/lib/**",
   ]),
 ]);
 
