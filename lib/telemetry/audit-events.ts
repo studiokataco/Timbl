@@ -30,6 +30,8 @@ export type AuditEventKind =
   | "category.update"
   | "category.delete"
   | "category.reorder"
+  | "category.bulk_create"
+  | "category.bulk_delete"
   | "template.create"
   | "template.delete"
   | "plan.change"
