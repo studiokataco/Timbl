@@ -62,6 +62,25 @@ const deleteInput = z.object({
   reassignTo: z.string().optional(),
 })
 
+const bulkCreateInput = z.object({
+  items: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(80),
+        color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+        defaultPostType: z.enum(["grid", "carousel", "reel", "story", "video"]),
+      }),
+    )
+    .min(1)
+    .max(50),
+})
+
+const bulkDeleteInput = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+  /* When any of the deleted categories have posts, reassign them here. */
+  reassignTo: z.string().optional(),
+})
+
 export async function listCategoriesForSettings(): Promise<WithId<Category>[]> {
   const orgId = await getCurrentOrgId()
   const snap = await getDb()
@@ -205,6 +224,181 @@ export async function reorderCategories(input: unknown): Promise<ServerActionRes
       label: `${parsed.data.orderedIds.length} categories`,
     },
     meta: { orderedIds: parsed.data.orderedIds },
+  })
+  revalidatePath("/settings/categories")
+  revalidatePath("/calendar")
+  return { ok: true }
+}
+
+export async function bulkCreateCategories(input: unknown): Promise<ServerActionResult> {
+  const parsed = bulkCreateInput.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
+  }
+  const orgId = await getCurrentOrgId()
+  try {
+    await requireFeature(orgId, "customCategories")
+  } catch (err) {
+    const gated = gateErrorToResult(err)
+    if (gated) return gated
+    throw err
+  }
+
+  const db = getDb()
+  const col = db.collection(orgCategoriesPath(orgId))
+
+  /* Get current max displayOrder to append after. */
+  const max = await col.orderBy("displayOrder", "desc").limit(1).get()
+  let nextOrder = ((max.docs[0]?.data().displayOrder as number | undefined) ?? -1) + 1
+
+  /* Collect existing slugs to detect conflicts before writing. */
+  const slugsSnap = await col.select("slug").get()
+  const existingSlugs = new Set(slugsSnap.docs.map((d) => d.data().slug as string))
+
+  function slugify(input: string): string {
+    return input
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60)
+  }
+
+  function uniqueSlug(base: string): string {
+    let slug = slugify(base)
+    let candidate = slug
+    let i = 2
+    while (existingSlugs.has(candidate)) {
+      candidate = `${slug}-${i++}`
+    }
+    existingSlugs.add(candidate)
+    return candidate
+  }
+
+  const now = new Date().toISOString()
+  const batch = db.batch()
+  const created: string[] = []
+
+  for (const item of parsed.data.items) {
+    const ref = col.doc()
+    const slug = uniqueSlug(item.name)
+    const doc: Category = {
+      id: ref.id,
+      organizationId: orgId,
+      name: item.name,
+      slug,
+      color: item.color,
+      defaultPostType: item.defaultPostType,
+      defaultHashtags: [],
+      isActive: true,
+      displayOrder: nextOrder++,
+      system: false,
+      createdAt: now,
+      updatedAt: now,
+    }
+    batch.set(ref, doc)
+    created.push(ref.id)
+  }
+
+  await batch.commit()
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "category.bulk_create",
+    actorUserId: actor?.id ?? null,
+    target: { type: "category", id: "*", label: `${created.length} categories` },
+    meta: { ids: created },
+  })
+  revalidatePath("/settings/categories")
+  revalidatePath("/calendar")
+  return { ok: true }
+}
+
+export async function bulkDeleteCategories(input: unknown): Promise<ServerActionResult> {
+  const parsed = bulkDeleteInput.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
+  }
+  const { ids, reassignTo } = parsed.data
+  const orgId = await getCurrentOrgId()
+  const db = getDb()
+
+  /* Validate reassign target if provided. */
+  if (reassignTo) {
+    if (ids.includes(reassignTo)) {
+      return { ok: false, error: "Cannot reassign posts to a category being deleted." }
+    }
+    const targetSnap = await db.doc(`${orgCategoriesPath(orgId)}/${reassignTo}`).get()
+    if (!targetSnap.exists) {
+      return { ok: false, error: "Reassign target category not found." }
+    }
+  }
+
+  /* Check for system categories and posts needing reassignment. */
+  for (const id of ids) {
+    const snap = await db.doc(`${orgCategoriesPath(orgId)}/${id}`).get()
+    if (!snap.exists) continue
+    if (snap.data()?.system === true) {
+      return { ok: false, error: `"${snap.data()?.name}" is a system category and cannot be deleted.` }
+    }
+    const linked = await db
+      .collection(orgPostsPath(orgId))
+      .where("categoryId", "==", id)
+      .limit(1)
+      .get()
+    if (!linked.empty && !reassignTo) {
+      return {
+        ok: false,
+        error: `"${snap.data()?.name}" has posts. Pick a category to reassign them to.`,
+      }
+    }
+  }
+
+  /* Reassign posts and delete categories. */
+  const deletedNames: string[] = []
+  for (const id of ids) {
+    const snap = await db.doc(`${orgCategoriesPath(orgId)}/${id}`).get()
+    if (!snap.exists) continue
+    deletedNames.push((snap.data()?.name as string | undefined) ?? id)
+
+    if (reassignTo) {
+      let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined
+      while (true) {
+        let q = db
+          .collection(orgPostsPath(orgId))
+          .where("categoryId", "==", id)
+          .orderBy("__name__")
+          .limit(400)
+        if (cursor) q = q.startAfter(cursor)
+        const page = await q.get()
+        if (page.empty) break
+        const batch = db.batch()
+        page.docs.forEach((d) => {
+          batch.set(
+            d.ref,
+            { categoryId: reassignTo, updatedAt: new Date().toISOString() },
+            { merge: true },
+          )
+        })
+        await batch.commit()
+        if (page.size < 400) break
+        cursor = page.docs[page.docs.length - 1]
+      }
+    }
+  }
+
+  const deleteBatch = db.batch()
+  for (const id of ids) {
+    deleteBatch.delete(db.doc(`${orgCategoriesPath(orgId)}/${id}`))
+  }
+  await deleteBatch.commit()
+
+  const actor = await getCurrentUser()
+  await writeAuditEvent({
+    orgId,
+    kind: "category.bulk_delete",
+    actorUserId: actor?.id ?? null,
+    target: { type: "category", id: "*", label: `${ids.length} categories` },
+    meta: { ids, ...(reassignTo ? { reassignedTo: reassignTo } : {}) },
   })
   revalidatePath("/settings/categories")
   revalidatePath("/calendar")
