@@ -90,6 +90,7 @@ const CHANNELS: { key: string; label: string }[] = [
   { key: "linkedin", label: "LinkedIn" },
   { key: "website", label: "Website" },
   { key: "fb_groups", label: "FB Groups" },
+  { key: "x", label: "X" },
 ]
 
 const CHANNEL_STATUS_OPTIONS: ChannelStatus[] = [

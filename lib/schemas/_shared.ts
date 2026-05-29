@@ -39,6 +39,7 @@ export const channelKey = z.enum([
   "linkedin",
   "website",
   "fb_groups",
+  "x",
 ])
 export type ChannelKey = z.infer<typeof channelKey>
 

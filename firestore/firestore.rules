@@ -71,6 +71,21 @@ service cloud.firestore {
           allow update, delete: if false;
         }
       }
+
+      // Publishing layer — token vault. Members may read account metadata
+      // (the app never exposes the encrypted token fields to the client);
+      // writes go through the Admin SDK / OAuth callback only.
+      match /socialAccounts/{accountId} {
+        allow read: if inOrg(orgId) && isAdminOrEditor();
+        allow write: if false;
+      }
+
+      // Publish-attempt telemetry. Read-only for members; the worker writes
+      // via the Admin SDK.
+      match /publishRuns/{runId} {
+        allow read: if inOrg(orgId);
+        allow write: if false;
+      }
     }
 
     // --- Global: awarenessDays -----------------------------------------
