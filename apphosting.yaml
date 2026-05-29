@@ -12,6 +12,14 @@ runConfig:
   timeoutSeconds: 300
 
 env:
+  # Lift Node's default ~2 GB old-space cap during install + build.
+  # pnpm install + next build together exceed 2 GB on the App Hosting
+  # buildpack VM and crash with "JavaScript heap out of memory" (OOM).
+  - variable: NODE_OPTIONS
+    value: --max-old-space-size=4096
+    availability:
+      - BUILD
+
   # ---------------------------------------------------------------------------
   # Public (NEXT_PUBLIC_*) — exposed to the browser bundle.
   # Available at BUILD time so Next inlines them into the client chunks.
