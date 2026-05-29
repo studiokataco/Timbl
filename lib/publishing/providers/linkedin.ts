@@ -5,7 +5,13 @@ import type { SocialAccount } from "@/lib/schemas/socialAccount"
 import { CHANNEL_RULES, validatePost } from "../rules"
 import { encrypt, decrypt } from "../crypto"
 import { signState } from "../state"
-import { appBaseUrl, expiresAtIso, redirectUri, requireEnv } from "../oauth"
+import {
+  appBaseUrl,
+  expiresAtIso,
+  loadOauthApp,
+  redirectUri,
+  type OauthAppCredentials,
+} from "../oauth"
 import type { Publisher, PublishResult } from "../types"
 
 const AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization"
@@ -22,11 +28,18 @@ type TokenResponse = {
   scope?: string
 }
 
-async function exchange(body: Record<string, string>): Promise<TokenResponse> {
+async function exchange(
+  body: Record<string, string>,
+  app: OauthAppCredentials,
+): Promise<TokenResponse> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(body),
+    body: new URLSearchParams({
+      ...body,
+      client_id: app.clientId,
+      client_secret: app.clientSecret,
+    }),
   })
   if (!res.ok) throw new Error(`linkedin token exchange failed: ${res.status}`)
   return (await res.json()) as TokenResponse
@@ -37,10 +50,11 @@ export const linkedinPublisher: Publisher = {
   rules: CHANNEL_RULES.linkedin,
 
   async connect(orgId) {
+    const app = await loadOauthApp(orgId, "linkedin")
     const state = signState(orgId)
     const url = `${AUTH_URL}?${new URLSearchParams({
       response_type: "code",
-      client_id: requireEnv("LINKEDIN_CLIENT_ID"),
+      client_id: app.clientId,
       redirect_uri: redirectUri("linkedin"),
       state,
       scope: SCOPES.join(" "),
@@ -49,13 +63,15 @@ export const linkedinPublisher: Publisher = {
   },
 
   async callback(orgId, code) {
-    const token = await exchange({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: redirectUri("linkedin"),
-      client_id: requireEnv("LINKEDIN_CLIENT_ID"),
-      client_secret: requireEnv("LINKEDIN_CLIENT_SECRET"),
-    })
+    const app = await loadOauthApp(orgId, "linkedin")
+    const token = await exchange(
+      {
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: redirectUri("linkedin"),
+      },
+      app,
+    )
     const me = await fetch(USERINFO_URL, {
       headers: { Authorization: `Bearer ${token.access_token}` },
     })
@@ -80,12 +96,14 @@ export const linkedinPublisher: Publisher = {
 
   async refresh(account) {
     if (!account.refreshTokenEnc) return account
-    const token = await exchange({
-      grant_type: "refresh_token",
-      refresh_token: decrypt(account.refreshTokenEnc),
-      client_id: requireEnv("LINKEDIN_CLIENT_ID"),
-      client_secret: requireEnv("LINKEDIN_CLIENT_SECRET"),
-    })
+    const app = await loadOauthApp(account.organizationId, "linkedin")
+    const token = await exchange(
+      {
+        grant_type: "refresh_token",
+        refresh_token: decrypt(account.refreshTokenEnc),
+      },
+      app,
+    )
     return {
       ...account,
       accessTokenEnc: encrypt(token.access_token),

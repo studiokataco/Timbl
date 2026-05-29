@@ -125,48 +125,11 @@ env:
     availability:
       - RUNTIME
 
-  # Platform OAuth apps — uncomment each pair after creating the secret
-  # in Secret Manager AND granting the App Hosting SA secretAccessor:
-  #   gcloud secrets create LINKEDIN_CLIENT_ID --replication-policy=automatic
-  #   printf '%s' "$ID" | gcloud secrets versions add LINKEDIN_CLIENT_ID --data-file=-
-  #   firebase apphosting:secrets:grantaccess LINKEDIN_CLIENT_ID --backend safe-planner
-  # Values come from each platform's developer console:
-  #   LinkedIn → https://www.linkedin.com/developers/apps
-  #   X        → https://developer.twitter.com/en/portal/dashboard
-  #   Meta     → https://developers.facebook.com/apps
-  # Publishing routes (`/api/social/[channel]/*`) will throw with
-  # "<NAME> is not configured" until the matching pair is bound — that's
-  # the intended fail-closed behaviour.
-  #
-  # - variable: LINKEDIN_CLIENT_ID
-  #   secret: LINKEDIN_CLIENT_ID
-  #   availability:
-  #     - RUNTIME
-  #
-  # - variable: LINKEDIN_CLIENT_SECRET
-  #   secret: LINKEDIN_CLIENT_SECRET
-  #   availability:
-  #     - RUNTIME
-  #
-  # - variable: X_CLIENT_ID
-  #   secret: X_CLIENT_ID
-  #   availability:
-  #     - RUNTIME
-  #
-  # - variable: X_CLIENT_SECRET
-  #   secret: X_CLIENT_SECRET
-  #   availability:
-  #     - RUNTIME
-  #
-  # - variable: META_APP_ID
-  #   secret: META_APP_ID
-  #   availability:
-  #     - RUNTIME
-  #
-  # - variable: META_APP_SECRET
-  #   secret: META_APP_SECRET
-  #   availability:
-  #     - RUNTIME
+  # Platform OAuth app credentials (LinkedIn / X / Meta) are stored in
+  # Firestore, AES-256-GCM-encrypted with SOCIAL_TOKEN_KEY, and managed
+  # from /settings/channels by an org admin. No per-platform secret
+  # bindings needed here — adding a platform = one dialog entry, not a
+  # redeploy. See lib/publishing/oauth.ts → loadOauthApp().
 
   # SENTRY_DSN intentionally unbound — Sentry isn't set up. Cloud Logging
   # in App Hosting + Functions provides primary error visibility. Re-wire

@@ -7,7 +7,12 @@ import type { SocialAccount } from "@/lib/schemas/socialAccount"
 import { CHANNEL_RULES, validatePost } from "../rules"
 import { encrypt, decrypt } from "../crypto"
 import { signState } from "../state"
-import { expiresAtIso, redirectUri, requireEnv } from "../oauth"
+import {
+  expiresAtIso,
+  loadOauthApp,
+  redirectUri,
+  type OauthAppCredentials,
+} from "../oauth"
 import type { Publisher, PublishResult } from "../types"
 
 const AUTH_URL = "https://twitter.com/i/oauth2/authorize"
@@ -24,24 +29,27 @@ type TokenResponse = {
 }
 
 /* PKCE without server-side storage: the verifier is deterministically
- * derived from the signed state, so the callback recomputes it. method=plain
- * means challenge === verifier. */
-function verifierFromState(state: string): string {
-  return createHash("sha256").update(`${state}:${requireEnv("X_CLIENT_ID")}`).digest("hex")
+ * derived from the signed state + client_id, so the callback recomputes it.
+ * method=plain means challenge === verifier. */
+function verifierFromState(state: string, clientId: string): string {
+  return createHash("sha256").update(`${state}:${clientId}`).digest("hex")
 }
 
-function basicAuth(): string {
-  return Buffer.from(`${requireEnv("X_CLIENT_ID")}:${requireEnv("X_CLIENT_SECRET")}`).toString("base64")
+function basicAuth(app: OauthAppCredentials): string {
+  return Buffer.from(`${app.clientId}:${app.clientSecret}`).toString("base64")
 }
 
-async function exchange(body: Record<string, string>): Promise<TokenResponse> {
+async function exchange(
+  body: Record<string, string>,
+  app: OauthAppCredentials,
+): Promise<TokenResponse> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${basicAuth()}`,
+      Authorization: `Basic ${basicAuth(app)}`,
     },
-    body: new URLSearchParams(body),
+    body: new URLSearchParams({ ...body, client_id: app.clientId }),
   })
   if (!res.ok) throw new Error(`x token exchange failed: ${res.status}`)
   return (await res.json()) as TokenResponse
@@ -52,11 +60,12 @@ export const xPublisher: Publisher = {
   rules: CHANNEL_RULES.x,
 
   async connect(orgId) {
+    const app = await loadOauthApp(orgId, "x")
     const state = signState(orgId)
-    const challenge = verifierFromState(state)
+    const challenge = verifierFromState(state, app.clientId)
     const url = `${AUTH_URL}?${new URLSearchParams({
       response_type: "code",
-      client_id: requireEnv("X_CLIENT_ID"),
+      client_id: app.clientId,
       redirect_uri: redirectUri("x"),
       scope: SCOPES.join(" "),
       state,
@@ -67,13 +76,16 @@ export const xPublisher: Publisher = {
   },
 
   async callback(orgId, code, state) {
-    const token = await exchange({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: redirectUri("x"),
-      client_id: requireEnv("X_CLIENT_ID"),
-      code_verifier: verifierFromState(state),
-    })
+    const app = await loadOauthApp(orgId, "x")
+    const token = await exchange(
+      {
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: redirectUri("x"),
+        code_verifier: verifierFromState(state, app.clientId),
+      },
+      app,
+    )
     const me = await fetch(ME_URL, {
       headers: { Authorization: `Bearer ${token.access_token}` },
     })
@@ -98,11 +110,14 @@ export const xPublisher: Publisher = {
 
   async refresh(account) {
     if (!account.refreshTokenEnc) return account
-    const token = await exchange({
-      grant_type: "refresh_token",
-      refresh_token: decrypt(account.refreshTokenEnc),
-      client_id: requireEnv("X_CLIENT_ID"),
-    })
+    const app = await loadOauthApp(account.organizationId, "x")
+    const token = await exchange(
+      {
+        grant_type: "refresh_token",
+        refresh_token: decrypt(account.refreshTokenEnc),
+      },
+      app,
+    )
     return {
       ...account,
       accessTokenEnc: encrypt(token.access_token),

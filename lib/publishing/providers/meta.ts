@@ -6,7 +6,12 @@ import type { SocialAccount } from "@/lib/schemas/socialAccount"
 import { CHANNEL_RULES, validatePost } from "../rules"
 import { encrypt, decrypt } from "../crypto"
 import { signState } from "../state"
-import { expiresAtIso, redirectUri, requireEnv } from "../oauth"
+import {
+  expiresAtIso,
+  loadOauthApp,
+  redirectUri,
+  type OauthAppCredentials,
+} from "../oauth"
 import type { Publisher, PublishResult } from "../types"
 
 const GRAPH_VERSION = "v19.0"
@@ -20,11 +25,15 @@ const SCOPES: Record<"facebook" | "instagram", string[]> = {
 
 type TokenResponse = { access_token: string; expires_in?: number }
 
-async function exchangeCode(code: string, channel: ChannelKey): Promise<TokenResponse> {
+async function exchangeCode(
+  code: string,
+  channel: ChannelKey,
+  app: OauthAppCredentials,
+): Promise<TokenResponse> {
   const res = await fetch(
     `${GRAPH}/oauth/access_token?${new URLSearchParams({
-      client_id: requireEnv("META_APP_ID"),
-      client_secret: requireEnv("META_APP_SECRET"),
+      client_id: app.clientId,
+      client_secret: app.clientSecret,
       redirect_uri: redirectUri(channel),
       code,
     })}`,
@@ -40,9 +49,10 @@ function buildMetaPublisher(channel: "facebook" | "instagram"): Publisher {
     rules: CHANNEL_RULES[channel],
 
     async connect(orgId) {
+      const app = await loadOauthApp(orgId, channel)
       const state = signState(orgId)
       const url = `${AUTH_URL}?${new URLSearchParams({
-        client_id: requireEnv("META_APP_ID"),
+        client_id: app.clientId,
         redirect_uri: redirectUri(channel),
         state,
         response_type: "code",
@@ -52,7 +62,8 @@ function buildMetaPublisher(channel: "facebook" | "instagram"): Publisher {
     },
 
     async callback(orgId, code) {
-      const token = await exchangeCode(code, channel)
+      const app = await loadOauthApp(orgId, channel)
+      const token = await exchangeCode(code, channel, app)
       const me = await fetch(`${GRAPH}/me?fields=id,name&access_token=${token.access_token}`)
       if (!me.ok) throw new Error(`meta /me failed: ${me.status}`)
       const profile = (await me.json()) as { id: string; name?: string }
@@ -73,11 +84,12 @@ function buildMetaPublisher(channel: "facebook" | "instagram"): Publisher {
     },
 
     async refresh(account) {
+      const app = await loadOauthApp(account.organizationId, channel)
       const res = await fetch(
         `${GRAPH}/oauth/access_token?${new URLSearchParams({
           grant_type: "fb_exchange_token",
-          client_id: requireEnv("META_APP_ID"),
-          client_secret: requireEnv("META_APP_SECRET"),
+          client_id: app.clientId,
+          client_secret: app.clientSecret,
           fb_exchange_token: decrypt(account.accessTokenEnc),
         })}`,
       )
