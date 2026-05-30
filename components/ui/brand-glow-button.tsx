@@ -1,6 +1,11 @@
 "use client"
 
-import { useEffect, useRef, type ComponentProps } from "react"
+import {
+  useEffect,
+  useRef,
+  type ComponentProps,
+  type MouseEvent,
+} from "react"
 import gsap from "gsap"
 
 import { brandGlowBoxShadow } from "@/lib/ui/brand-glow-box-shadow"
@@ -11,6 +16,7 @@ export function BrandGlowButton({
   children,
   onClick,
   flashOnClick = true,
+  style,
   ...props
 }: ComponentProps<"button"> & { flashOnClick?: boolean }) {
   const btnRef = useRef<HTMLButtonElement | null>(null)
@@ -67,7 +73,7 @@ export function BrandGlowButton({
     glowTweenRef.current?.resume()
   }
 
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     if (!reducedRef.current && flashOnClick && flashRef.current) {
       gsap
         .timeline()
@@ -81,6 +87,7 @@ export function BrandGlowButton({
     <button
       ref={btnRef}
       type="button"
+      {...props}
       onClick={handleClick}
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
@@ -90,8 +97,7 @@ export function BrandGlowButton({
         "relative inline-flex items-center justify-center rounded-full bg-background text-sm font-medium text-foreground will-change-transform shadow-lg disabled:pointer-events-none disabled:opacity-50",
         className
       )}
-      style={{ boxShadow: brandGlowBoxShadow() }}
-      {...props}
+      style={{ ...style, boxShadow: brandGlowBoxShadow() }}
     >
       <span
         ref={flashRef}
