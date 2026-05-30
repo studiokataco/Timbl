@@ -15,7 +15,7 @@ import {
 import { listUpcomingAwarenessDaysTool } from "../../tools/awareness"
 
 /*
- * Cadence-planner — bulk-drafts a posting plan for an upcoming window
+ * Cadence-planner - bulk-drafts a posting plan for an upcoming window
  * (typically a week or month). One run produces N drafts; each draft has
  * agentMeta.reviewState='pending' so humans approve through the standard
  * kanban affordance.
@@ -44,7 +44,7 @@ const CADENCE_INSTRUCTION = [
   "Workflow context:",
   "  - Read brandConfig.targetCadence (perWeek, preferredDays, preferredTimes).",
   "  - Call findOpenSlots with the user-supplied date range and the cadence preferences.",
-  "  - For each returned slot, decide a topic — combine awareness days, brand priorities, and existing posts (use listPosts to avoid repeating).",
+  "  - For each returned slot, decide a topic - combine awareness days, brand priorities, and existing posts (use listPosts to avoid repeating).",
   "  - Call createDraftPost once per slot. Set status='idea', reviewState='pending', and include a clear `brief`.",
   "  - Be terse in your final reply: just summarise how many drafts you created and the date range.",
 ].join("\n")

@@ -3,7 +3,7 @@ import { audit, isoTimestamp } from "./_shared"
 import { agentProvider } from "./agentConfig"
 
 /*
- * A model-update notification — one provider model that the bi-weekly
+ * A model-update notification - one provider model that the bi-weekly
  * (or manual) check found and that is NOT already in use or in the §4
  * shortlist. Notify-only: nothing here is auto-applied. A human reviews
  * it, then optionally swaps an agent's model in Studio and prod-swap A/Bs.
@@ -21,7 +21,7 @@ export const modelUpdateSchema = audit.extend({
   modelId: z.string().min(1),
   /** When the check first surfaced this model. */
   detectedAt: isoTimestamp,
-  /** Operator dismissed the notification — kept so it isn't re-flagged. */
+  /** Operator dismissed the notification - kept so it isn't re-flagged. */
   dismissed: z.boolean().default(false),
 })
 export type ModelUpdate = z.infer<typeof modelUpdateSchema>

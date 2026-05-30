@@ -5,7 +5,7 @@ import { getFirestore } from "firebase-admin/firestore"
 import { CronExpressionParser } from "cron-parser"
 
 /*
- * Sweep function — production replacement for scripts/agent-cron.mjs.
+ * Sweep function - production replacement for scripts/agent-cron.mjs.
  *
  * Fires once a minute. Loads every enabled agent in every org, evaluates
  * the agent's cron schedule against the current minute, and POSTs to

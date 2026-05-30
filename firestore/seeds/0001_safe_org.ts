@@ -5,7 +5,7 @@ import { db, ensureEmulator, SAFE_ADMIN_USER_ID, SAFE_ORG_ID, withAudit } from "
  * Idempotent: setDoc with merge keyed by stable slugs (`safe-foundation`,
  * `admin`).
  *
- * The admin user is intentionally generic — `admin@safefoundation.dev`,
+ * The admin user is intentionally generic - `admin@safefoundation.dev`,
  * display name "SAFE Admin". Real staff users land via the CSV migration
  * (Phase 8) and via Google SSO first-login (Phase 7).
  */
@@ -23,7 +23,7 @@ export async function seedSafeOrg() {
        * today gets quota-gated. New signups land on free_v1 via the
        * onboarding wizard (Phase E). */
       plan: "agency_v1",
-      /* SAFE is the legacy demo org — already has categories, agents,
+      /* SAFE is the legacy demo org - already has categories, agents,
        * templates from the seed scripts that follow. Marking onboarding
        * as complete here keeps the (app) layout from redirecting it to
        * /onboarding on every dev boot. */

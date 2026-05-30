@@ -4,7 +4,7 @@ import { logger } from "firebase-functions"
 import { getFirestore } from "firebase-admin/firestore"
 
 /*
- * Publish sweep — clones agentSweep's shape. Fires once a minute and POSTs
+ * Publish sweep - clones agentSweep's shape. Fires once a minute and POSTs
  * /api/publish/tick for every org. The tick endpoint loads each org's due
  * scheduled posts and publishes them; it's idempotent per channel so a
  * duplicate hit across a minute boundary is safe.

@@ -12,14 +12,14 @@ import {
 } from "../../tools/posts"
 
 /*
- * Reviewer — reads the latest draft, checks it against brandConfig + the
+ * Reviewer - reads the latest draft, checks it against brandConfig + the
  * brand's forbidden topics, and either:
  *
  *   - calls EXIT_LOOP if the draft is publishable, OR
  *   - emits a concrete critique string and updates the draft's `rationale`
  *     field with that critique so the next drafter iteration has context.
  *
- * Reviewer never mutates the blurb/brief directly — that's drafter's job.
+ * Reviewer never mutates the blurb/brief directly - that's drafter's job.
  * Reviewer's only writes are critique text into agentMeta.rationale (so the
  * UI can show "AI review: X").
  */
@@ -36,7 +36,7 @@ export function buildReviewerAgent(config: AgentConfig): LlmAgent {
  * be rejected at the publish API boundary. Sourced from the publishing layer
  * so there's one source of truth. */
 const PUBLISH_RULES_CONTEXT =
-  "Per-channel publish limits — fail a draft that violates the limit for any channel it targets: " +
+  "Per-channel publish limits - fail a draft that violates the limit for any channel it targets: " +
   Object.entries(CHANNEL_RULES)
     .map(([ch, r]) => {
       const parts: string[] = []

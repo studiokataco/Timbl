@@ -26,18 +26,18 @@ import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import type { ServerActionResult } from "@/lib/schemas"
 
 /*
- * Onboarding mutations. The wizard calls these in order — each step
+ * Onboarding mutations. The wizard calls these in order - each step
  * persists immediately so a tab close mid-flow doesn't lose work. Only
  * `completeOnboarding` flips the `completedAt` flag and unlocks /(app).
  *
- * `applySelections` is idempotent — re-running the wizard from settings
+ * `applySelections` is idempotent - re-running the wizard from settings
  * will skip categories that already exist by slug. We never delete
  * existing categories the user already created (that's the dedicated
  * /settings/categories surface).
  */
 
 const profileInput = z.object({
-  /* Workspace display name — lands on the org doc's `name`, not inside
+  /* Workspace display name - lands on the org doc's `name`, not inside
    * onboarding.profile. Optional so a blank field doesn't wipe the name. */
   name: z.string().min(1).max(120).optional(),
   industry: z.string().min(1),
@@ -71,7 +71,7 @@ export async function saveOnboardingProfile(
   const { name, ...profile } = parsed.data
   await getAdminDb().doc(orgPath(orgId)).set(
     {
-      /* Only set `name` when the user actually typed one — an empty field
+      /* Only set `name` when the user actually typed one - an empty field
        * must not blank out the org's existing name on a wizard re-run. */
       ...(name ? { name } : {}),
       onboarding: { profile },
@@ -142,10 +142,10 @@ export async function applyOnboardingSelections(
   }
 
   /* 2. Agent toggles + niche tailoring. We touch ONLY the wizard-
-   * selectable agents — never the config / pipeline-machinery agents,
+   * selectable agents - never the config / pipeline-machinery agents,
    * which must stay enabled or the agent runtime breaks. We write
    * `enabled` (the field the schema, seeds, and AI Command Centre all
-   * read — the wizard used to write a dead `isEnabled` field). For each
+   * read - the wizard used to write a dead `isEnabled` field). For each
    * enabled pick we rebuild `systemPrompt` from the agent's default plus
    * a workspace-context block; rebuilding from the default (not the
    * stored prompt) keeps it idempotent across wizard re-runs. */
@@ -194,7 +194,7 @@ export async function applyOnboardingSelections(
       const ref = tplCol.doc(slug)
       if ((await ref.get()).exists) continue
       const categoryId = resolveCategoryForTemplate(lib, catSlugs, firstCategoryId)
-      if (!categoryId) continue // No categories at all — skip rather than orphan.
+      if (!categoryId) continue // No categories at all - skip rather than orphan.
       await ref.set({
         id: slug,
         organizationId: orgId,
@@ -211,7 +211,7 @@ export async function applyOnboardingSelections(
   }
 
   /* 4. Channels: persisted on the onboarding profile (not authoritative
-   * for connection state — just the user's stated preference). */
+   * for connection state - just the user's stated preference). */
   await db.doc(orgPath(orgId)).set(
     {
       onboarding: {
@@ -227,7 +227,7 @@ export async function applyOnboardingSelections(
   /* 5. Brand config: the single doc every workflow agent reads at run
    * time via readBrandConfig. Seeding it from the wizard profile means
    * the niche reaches agents even beyond the spliced prompts. Cadence is
-   * written only on first create — a wizard re-run must not reset a
+   * written only on first create - a wizard re-run must not reset a
    * cadence the user has since tuned in /settings/brand. */
   const VALID_BRAND_CHANNELS = ["instagram", "facebook", "linkedin", "website", "fb_groups"]
   const brandChannels = parsed.data.channels.filter((c) =>
@@ -269,8 +269,8 @@ export async function applyOnboardingSelections(
 /*
  * Rebuilds an agent's systemPrompt from its (workspace-neutral) default in
  * lib/agents/defaults.ts plus a workspace-context block derived from the
- * wizard profile. Always starts from the default — never the stored
- * prompt — so re-running the wizard re-tailors cleanly instead of stacking
+ * wizard profile. Always starts from the default - never the stored
+ * prompt - so re-running the wizard re-tailors cleanly instead of stacking
  * context blocks. Returns null for unknown agent names.
  */
 function tailorAgentPrompt(
@@ -336,7 +336,7 @@ export async function completeOnboarding(
 
 /* Re-run-setup escape hatch: clears completedAt so the (app) layout
  * redirects to /onboarding on next nav. The user's existing categories
- * etc. stay intact — re-running the wizard just augments. */
+ * etc. stay intact - re-running the wizard just augments. */
 export async function resetOnboarding(): Promise<ServerActionResult> {
   const orgId = await getCurrentOrgId()
   await getAdminDb().doc(orgPath(orgId)).set(

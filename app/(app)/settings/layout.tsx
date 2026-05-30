@@ -1,7 +1,7 @@
 import { SettingsNav } from "@/components/shared/settings-nav"
 
 /*
- * Settings shell — horizontal sub-nav under the global TopBar (provided by
+ * Settings shell - horizontal sub-nav under the global TopBar (provided by
  * the root (app) layout). Each settings page renders only its own content
  * area; the layout owns chrome below TopBar. Keep page-level components
  * focused on their data, not on chrome positioning.

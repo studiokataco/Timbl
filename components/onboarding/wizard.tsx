@@ -45,7 +45,7 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: "channels", label: "Channels" },
 ]
 
-/* Agent catalog lives in lib/onboarding/agent-catalog.ts — every id there
+/* Agent catalog lives in lib/onboarding/agent-catalog.ts - every id there
  * is a real agent in lib/agents/defaults.ts, so the toggle writes to a doc
  * the runtime can actually run. */
 
@@ -59,7 +59,7 @@ const CHANNEL_OPTIONS: { id: string; label: string }[] = [
 ]
 
 interface InitialProfile {
-  /* Org display name — sourced from the org doc, not onboarding.profile. */
+  /* Org display name - sourced from the org doc, not onboarding.profile. */
   name?: string
   industry?: string
   audience?: string
@@ -79,7 +79,7 @@ export function OnboardingWizard({
   const [activeStep, setActiveStep] = useState<StepId>("profile")
   const [skipped, setSkipped] = useState<Set<StepId>>(new Set())
 
-  /* Form state — flat for simplicity. Each step writes its slice. */
+  /* Form state - flat for simplicity. Each step writes its slice. */
   const [industry, setIndustry] = useState<string>(
     initialProfile.industry ?? "agency",
   )
@@ -114,7 +114,7 @@ export function OnboardingWizard({
     setPickedCategories(new Set(next.categories.map((c) => c.slug)))
     setPickedTemplates(new Set(next.templateSlugs))
     if (!tone) {
-      /* Only adopt the tone hint when the user hasn't typed one — don't
+      /* Only adopt the tone hint when the user hasn't typed one - don't
        * stomp customizations. */
       setTone(next.toneHint)
     }
@@ -629,7 +629,7 @@ function ChannelsStep({
       <header>
         <h1 className="text-xl font-medium">Which channels do you post to?</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pick what you care about — connecting accounts happens later.
+          Pick what you care about - connecting accounts happens later.
         </p>
       </header>
       <ul className="grid gap-2 sm:grid-cols-2">

@@ -43,7 +43,7 @@ export async function buildPipelineAgent(
   if (!scheduler) missing.push("scheduler")
   if (missing.length > 0) {
     throw new Error(
-      `Pipeline cannot be constructed — missing sub-agents: ${missing.join(", ")}. Seed agentConfigs for these names.`,
+      `Pipeline cannot be constructed - missing sub-agents: ${missing.join(", ")}. Seed agentConfigs for these names.`,
     )
   }
 

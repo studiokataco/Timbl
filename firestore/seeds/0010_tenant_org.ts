@@ -12,13 +12,13 @@ import {
 import { WIZARD_AGENT_IDS } from "@/lib/onboarding/agent-catalog"
 
 /*
- * Seeds the second dev org — a clean tenant for exercising the onboarding
- * wizard end-to-end. Unlike SAFE Foundation (0001–0009), this org gets:
+ * Seeds the second dev org - a clean tenant for exercising the onboarding
+ * wizard end-to-end. Unlike SAFE Foundation (0001-0009), this org gets:
  *
  *   - NO categories, templates, awareness days, or campaigns. The wizard
  *     is the only thing that should populate those, so its output is
  *     visible against an empty slate instead of buried under SAFE seeds.
- *   - NO `onboarding.completedAt` — so the (app) layout redirects to
+ *   - NO `onboarding.completedAt` - so the (app) layout redirects to
  *     /onboarding on first visit, exactly like a real new signup.
  *   - The FULL real-agent catalog from lib/agents/defaults.ts. The five
  *     wizard-selectable agents start `enabled: false` (the wizard turns
@@ -46,13 +46,13 @@ export async function seed0010TenantOrg() {
   ensureEmulator()
   const orgRef = db().doc(`organizations/${TENANT_ORG_ID}`)
 
-  /* 1. Org doc — FIRST WRITE ONLY. No completedAt → first visit lands on
+  /* 1. Org doc - FIRST WRITE ONLY. No completedAt → first visit lands on
    * the wizard. The name is a placeholder the wizard's step-one field
    * overwrites. Unlike the other writes here, this is NOT merged on
    * re-seed: once the wizard has set `name` + `onboarding.completedAt`,
    * a `pnpm dev` re-seed must not stomp them back to the placeholder. */
   if ((await orgRef.get()).exists) {
-    console.log("✓ organization: Your workspace (tenant) — exists, skipping")
+    console.log("✓ organization: Your workspace (tenant) - exists, skipping")
   } else {
     await orgRef.set(
       withAudit({
@@ -84,7 +84,7 @@ export async function seed0010TenantOrg() {
     )
   console.log("✓ user: Workspace owner (role=admin)")
 
-  /* 3. Kanban columns — only if none exist yet (board needs a shape). */
+  /* 3. Kanban columns - only if none exist yet (board needs a shape). */
   const colsCol = orgRef.collection("kanbanColumns")
   if ((await colsCol.limit(1).get()).empty) {
     for (let i = 0; i < DEFAULT_KANBAN_COLUMNS.length; i++) {

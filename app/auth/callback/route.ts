@@ -6,6 +6,7 @@ import { createSessionFromIdToken, setSessionCookie } from "@/lib/auth/session"
 import {
   ALLOWED_DOMAINS,
   isAllowedDomain,
+  MembershipError,
   resolveOrProvisionMembership,
 } from "@/lib/auth/membership"
 
@@ -14,20 +15,6 @@ export const dynamic = "force-dynamic"
 
 const bodySchema = z.object({ idToken: z.string().min(20) })
 
-/*
- * Two-pass sign-in:
- *
- *   Pass 1 — ID token has no membership claims yet. Verify the token,
- *   reject non-allowed domains, resolve or auto-provision the membership
- *   doc, write custom claims via Admin SDK, and return { refresh: true }.
- *
- *   Pass 2 — client refreshes its ID token (claims now present), POSTs
- *   again. We mint the session cookie from that claim-bearing token.
- *
- * The two-pass dance avoids blocking-trigger functions, which can't run
- * under the org's allowedPolicyMemberDomains constraint (allUsers is
- * forbidden as a Cloud Run invoker).
- */
 export async function POST(req: NextRequest) {
   let payload: z.infer<typeof bodySchema>
   try {
@@ -61,10 +48,28 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const claims = await resolveOrProvisionMembership({
-    email,
-    displayName: decoded.name as string | undefined,
-  })
+  let claims: Awaited<ReturnType<typeof resolveOrProvisionMembership>>
+  try {
+    claims = await resolveOrProvisionMembership({
+      email,
+      displayName: decoded.name as string | undefined,
+      googleUid: decoded.uid,
+      photoURL: (decoded.picture as string | undefined) ?? null,
+    })
+  } catch (err) {
+    if (err instanceof MembershipError) {
+      if (err.code === "access_pending") {
+        return Response.json({ ok: false, accessPending: true, error: err.message })
+      }
+      if (err.code === "member_inactive") {
+        return Response.json({ ok: false, error: err.message }, { status: 403 })
+      }
+    }
+    return Response.json(
+      { ok: false, error: err instanceof Error ? err.message : "Membership failed" },
+      { status: 403 },
+    )
+  }
 
   const hasClaims =
     decoded.organizationId === claims.organizationId &&

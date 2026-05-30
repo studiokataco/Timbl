@@ -29,7 +29,7 @@ export type PaletteData = {
 
 /*
  * Lightweight payload for the command palette. Trimmed to the fields the
- * palette needs to render and rank — no full post documents — so the round
+ * palette needs to render and rank - no full post documents - so the round
  * trip is cheap. The palette caches the result for 60s on the client.
  */
 export async function fetchPaletteData(): Promise<PaletteData> {

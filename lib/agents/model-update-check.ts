@@ -11,15 +11,15 @@ import { fetchProviderModels, diffNewModels } from "./model-catalog"
 /*
  * Core of the notify-only model-update check (§6.8). Shared by the manual
  * "check now" server action and the bi-weekly scheduled function's API
- * route — so the logic lives here, not in either caller.
+ * route - so the logic lives here, not in either caller.
  *
  * Per org:
- *   1. Honour the `aiConfig.notifyModelUpdates` toggle — off means skip.
+ *   1. Honour the `aiConfig.notifyModelUpdates` toggle - off means skip.
  *   2. Build the "known" set: the §4 shortlist (MODEL_SUGGESTIONS) plus
  *      every model currently configured on an agentConfig.
  *   3. Fetch each provider's live model list, diff for plausible newer
  *      family members, and write one modelUpdates doc per new model.
- * Nothing is auto-applied — a human reviews and swaps in Studio.
+ * Nothing is auto-applied - a human reviews and swaps in Studio.
  */
 
 /** Firestore doc ids can't contain `/`; model ids can. Slugify. */
@@ -67,7 +67,7 @@ export async function checkOrgModelUpdates(
   for (const m of newModels) {
     const docId = slugifyModelId(m.id)
     const ref = col.doc(docId)
-    // Skip a model already flagged — re-flagging would resurface a
+    // Skip a model already flagged - re-flagging would resurface a
     // notification the operator may have dismissed.
     if ((await ref.get()).exists) continue
     await ref.set({
@@ -86,7 +86,7 @@ export async function checkOrgModelUpdates(
   return { checked: true, flagged }
 }
 
-/** Run the check for every org — used by the scheduled-function route. */
+/** Run the check for every org - used by the scheduled-function route. */
 export async function checkAllOrgsModelUpdates(): Promise<{
   orgs: number
   flagged: number

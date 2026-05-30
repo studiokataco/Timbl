@@ -13,7 +13,7 @@ import {
 } from "@/lib/schemas"
 
 /* Connected accounts are gated against the plan's `brands` quota. Each brand
- * may connect up to this many channels — enough to cover all v1 platforms. */
+ * may connect up to this many channels - enough to cover all v1 platforms. */
 const CHANNELS_PER_BRAND = 4
 
 async function countActive(orgId: string): Promise<number> {

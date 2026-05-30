@@ -60,7 +60,7 @@ export async function startAgentRun(
   }
 
   const runId = randomUUID()
-  const sessionId = runId // 1:1 sessions and runs in v1 — simpler audit trail.
+  const sessionId = runId // 1:1 sessions and runs in v1 - simpler audit trail.
 
   const runtimeCtx: RuntimeCtx = {
     orgId: input.orgId,
@@ -93,7 +93,7 @@ export async function startAgentRun(
       status: "queued",
       /* Record the model the run uses so a prod-swap A/B can compare it
        * against the prior model's runs (§6.6). Taken from the resolved
-       * agentConfig — the source of truth the runner was built from. */
+       * agentConfig - the source of truth the runner was built from. */
       provider: resolved.config.provider,
       model: resolved.config.model,
       startedAt: new Date().toISOString(),
@@ -165,7 +165,7 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
 
   /* Telemetry: emit on terminal state. Succeeded + failed both count
    * against quota (LLM tokens were burned either way). Cancelled doesn't.
-   * Best-effort — a counter-write failure must not break the UI flow. */
+   * Best-effort - a counter-write failure must not break the UI flow. */
   if (input.status === "succeeded" || input.status === "failed") {
     try {
       const snap = await ref.get()

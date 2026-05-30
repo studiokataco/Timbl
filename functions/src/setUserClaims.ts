@@ -4,20 +4,20 @@ import { logger } from "firebase-functions"
 
 /*
  * Multi-tenant blocking trigger. Runs on every sign-in attempt and emits
- * custom claims — `organizationId`, `role`, `userId` — that Firestore Rules
+ * custom claims - `organizationId`, `role`, `userId` - that Firestore Rules
  * read on every request.
  *
  * Resolution order:
  *
- *   1. EXISTING MEMBERSHIP — if the user's email already appears in any
+ *   1. EXISTING MEMBERSHIP - if the user's email already appears in any
  *      /organizations/{orgId}/users/* row, sign them in to that org. Back-
  *      compat for SAFE/Kataco staff already provisioned in safe-foundation.
  *
- *   2. LEGACY DOMAIN MAP — if email domain is in LEGACY_DOMAIN_TO_ORG, route
+ *   2. LEGACY DOMAIN MAP - if email domain is in LEGACY_DOMAIN_TO_ORG, route
  *      to that org and auto-provision a contributor row. This keeps the
  *      pre-multi-tenant behavior for the original allowlist.
  *
- *   3. NEW DOMAIN → NEW ORG — for any other domain, create a brand-new org
+ *   3. NEW DOMAIN → NEW ORG - for any other domain, create a brand-new org
  *      keyed by the domain slug (e.g. `acme.com` → `acme-com`), bootstrap
  *      its agentConfig catalog and kanban columns, and mark the signing-in
  *      user as the org's admin.
@@ -29,7 +29,7 @@ import { logger } from "firebase-functions"
  * `installDefaultAgents` can repair an org.
  *
  * Production note: SAFE Foundation prod deploy can pin this behind a
- * feature flag if open-signup needs to wait — set ENV.NEW_ORG_SIGNUP=off
+ * feature flag if open-signup needs to wait - set ENV.NEW_ORG_SIGNUP=off
  * in App Hosting secrets to fall back to the legacy "deny non-allowlisted"
  * behavior.
  */
@@ -39,7 +39,7 @@ const LEGACY_DOMAIN_TO_ORG: Record<
   { orgId: string; role: "admin" | "editor" | "contributor" }
 > = {
   "safefoundation.org.uk": { orgId: "safe-foundation", role: "contributor" },
-  /* Kataco is the platform team — every kataco.in signup gets admin on
+  /* Kataco is the platform team - every kataco.in signup gets admin on
    * safe-foundation so they can manage OAuth credentials, agents, etc.
    * without a separate role-grant step. */
   "kataco.in": { orgId: "safe-foundation", role: "admin" },
@@ -59,7 +59,7 @@ const DEFAULT_KANBAN_COLUMNS = [
   { id: "archived", label: "Archived", color: "#64748b" },
 ]
 
-/* Minimal agent seeds — names match AGENT_DEFAULTS in lib/agents/defaults.ts.
+/* Minimal agent seeds - names match AGENT_DEFAULTS in lib/agents/defaults.ts.
  * Only the fields needed to make the row queryable by /settings/agents are
  * populated; the full systemPrompt / budgets / tools come from a follow-up
  * `installDefaultAgents` call which the app triggers on first wizard open
@@ -91,7 +91,7 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
 
   const db = getFirestore()
 
-  /* 1. Existing membership — fastest path, no provisioning. */
+  /* 1. Existing membership - fastest path, no provisioning. */
   const membership = await findMembership(db, email)
   if (membership) {
     logger.info("[claims] resolved membership", { email, ...membership })
@@ -104,7 +104,7 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
     }
   }
 
-  /* 2. Legacy domain map — back-compat for SAFE/Kataco. */
+  /* 2. Legacy domain map - back-compat for SAFE/Kataco. */
   const legacy = LEGACY_DOMAIN_TO_ORG[domain]
   if (legacy) {
     const seed = await provisionContributor(
@@ -221,7 +221,7 @@ async function ensureOrgBootstrap(
   const orgRef = db.doc(`organizations/${orgId}`)
   const snap = await orgRef.get()
   if (snap.exists) {
-    /* Org already exists — a second user from the same domain. Don't
+    /* Org already exists - a second user from the same domain. Don't
      * re-seed (idempotent), just attach the user via provisionContributor. */
     return
   }
@@ -239,7 +239,7 @@ async function ensureOrgBootstrap(
   })
 
   /* Stub agentConfigs. The app will hydrate full fields on first wizard
-   * open via the in-app installDefaultAgents action — keep this fast. */
+   * open via the in-app installDefaultAgents action - keep this fast. */
   const agentCol = orgRef.collection("agentConfigs")
   for (const stub of AGENT_STUBS) {
     await agentCol.doc(stub.name).set({
@@ -256,7 +256,7 @@ async function ensureOrgBootstrap(
     })
   }
 
-  /* Kanban columns — full set, since these are tiny and never change. */
+  /* Kanban columns - full set, since these are tiny and never change. */
   const colsCol = orgRef.collection("kanbanColumns")
   for (let i = 0; i < DEFAULT_KANBAN_COLUMNS.length; i++) {
     const c = DEFAULT_KANBAN_COLUMNS[i]
@@ -278,7 +278,7 @@ function domainToOrgId(domain: string): string {
 }
 
 function deriveOrgName(domain: string): string {
-  /* "acme.com" → "Acme" — best effort capitalized first label. The user
+  /* "acme.com" → "Acme" - best effort capitalized first label. The user
    * can rename in /settings/workspace. */
   const first = domain.split(".")[0] ?? domain
   return first.charAt(0).toUpperCase() + first.slice(1)

@@ -37,18 +37,28 @@ export function LoginForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ idToken }),
         })
-        if (!res.ok) {
-          const detail = await res.text().catch(() => "")
-          throw new Error(detail || "Session creation failed")
+        const data = (await res.json().catch(() => ({}))) as {
+          refresh?: boolean
+          accessPending?: boolean
+          error?: string
         }
-        return (await res.json().catch(() => ({}))) as { refresh?: boolean }
+        if (data.accessPending) {
+          await auth.signOut()
+          router.replace("/access-pending")
+          return { done: true as const }
+        }
+        if (!res.ok) {
+          await auth.signOut()
+          throw new Error(data.error || "Session creation failed")
+        }
+        return { refresh: data.refresh, done: false as const }
       }
-      /* Pass 1 — server provisions membership + sets custom claims. */
+      /* Pass 1 - server provisions membership + sets custom claims. */
       const first = await post(true)
-      /* Pass 2 — refresh ID token so the new claims are present, then
-       * the server mints the session cookie from a claim-bearing token. */
+      if (first.done) return
       if (first.refresh) {
         const second = await post(true)
+        if (second.done) return
         if (second.refresh) throw new Error("Session not minted after claim refresh")
       }
       const next = search.get("next") ?? "/calendar"

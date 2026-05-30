@@ -13,7 +13,7 @@ import { getRuntimeCtx } from "../runtime/context"
 /*
  * Proposes awareness days discovered by the agent via Gemini's native
  * Google Search grounding. The tool itself does NOT perform the web
- * search — the LLM does, via GOOGLE_SEARCH. Each call records ONE
+ * search - the LLM does, via GOOGLE_SEARCH. Each call records ONE
  * proposed day to /organizations/{orgId}/awarenessDayProposals/{auto-id}
  * with `proposed: true` and `status: "proposed"`, so a human can vet it
  * in the UI before it lands in the official `awarenessDays` collection.
@@ -39,7 +39,7 @@ const input = z.object({
 export const proposeAwarenessDayTool = new FunctionTool({
   name: "proposeAwarenessDay",
   description:
-    "Record ONE proposed awareness day discovered via Google Search grounding. Call once per day. `sourceUrls` must contain real URLs from the grounded search results — do not invent URLs.",
+    "Record ONE proposed awareness day discovered via Google Search grounding. Call once per day. `sourceUrls` must contain real URLs from the grounded search results - do not invent URLs.",
   parameters: input,
   execute: async (item, ctx) => {
     const { orgId, runId } = getRuntimeCtx(ctx)

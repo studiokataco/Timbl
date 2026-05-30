@@ -8,7 +8,7 @@ import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { campaignSchema, type Campaign, type ServerActionResult } from "@/lib/schemas"
 
-/* `slug` is optional on input — createCampaign() derives it from the name
+/* `slug` is optional on input - createCampaign() derives it from the name
  * (see `parsed.data.slug || slugify(...)` below). Without this the schema
  * rejected every UI submission (the form never sends a slug), so campaign
  * creation silently failed before it reached Firestore. */

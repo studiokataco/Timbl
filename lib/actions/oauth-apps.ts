@@ -29,7 +29,7 @@ async function requireAdmin(): Promise<{ orgId: string; userId: string }> {
 }
 
 /* Persist a channel's OAuth client_id + client_secret. Values are encrypted
- * with SOCIAL_TOKEN_KEY before writing — Firestore only ever sees ciphertext.
+ * with SOCIAL_TOKEN_KEY before writing - Firestore only ever sees ciphertext.
  * For Meta both facebook and instagram docs are written from one input pair. */
 export async function setPlatformOauthApp(
   channel: ChannelKey,
@@ -103,7 +103,7 @@ export async function listConfiguredChannels(): Promise<ChannelKey[]> {
     .map((r) => r.data)
 }
 
-/* Public redirect URI for a channel — surfaced verbatim in the Setup UI
+/* Public redirect URI for a channel - surfaced verbatim in the Setup UI
  * so admins copy-paste it into the platform's developer console. */
 export async function getChannelRedirectUri(channel: ChannelKey): Promise<string> {
   return redirectUri(channel)

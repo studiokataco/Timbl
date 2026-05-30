@@ -26,7 +26,7 @@ export const SAFE_ORG_ID = "safe-foundation"
 export const SAFE_ADMIN_USER_ID = "admin"
 
 /*
- * Second dev org — a clean, near-empty tenant the onboarding wizard fills
+ * Second dev org - a clean, near-empty tenant the onboarding wizard fills
  * in. Kept deliberately bare (no categories / templates / awareness days)
  * so a wizard run is the ONLY thing that populates it. The Settings →
  * Workspace demo toggle switches the dev session between this org and

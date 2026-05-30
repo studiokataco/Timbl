@@ -7,7 +7,7 @@ import { collectionPathFor, embedIfChanged, type Kind } from "@/lib/embeddings/e
  * changed. In mock mode (AGENT_MOCK_LLM=1 or no provider key) the writes
  * are still deterministic, so seed/dev boots are stable across reboots.
  *
- * Scans up to BACKFILL_LIMIT per kind — well above the seeded corpus and
+ * Scans up to BACKFILL_LIMIT per kind - well above the seeded corpus and
  * enough to catch any organic growth during dev. Bumps required if SAFE
  * ever exceeds it.
  */

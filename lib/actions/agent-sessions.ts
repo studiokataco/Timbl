@@ -53,7 +53,7 @@ export async function getAgentSession(
   const db = getAdminDb()
 
   // Look up the run doc to discover sessionId. We don't trust callers to
-  // pass session ids directly — runs are the unit the UI selects.
+  // pass session ids directly - runs are the unit the UI selects.
   const runSnap = await db
     .collection(orgAgentRunsPath(orgId))
     .doc(parsed.runId)

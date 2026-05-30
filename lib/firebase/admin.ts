@@ -58,7 +58,7 @@ export function getAdminApp(): App {
               storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
             }
           : {
-              // Emulator path — works without credentials when the
+              // Emulator path - works without credentials when the
               // FIRESTORE_EMULATOR_HOST / FIREBASE_AUTH_EMULATOR_HOST
               // env vars are set.
               projectId:

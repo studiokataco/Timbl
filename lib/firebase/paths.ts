@@ -1,11 +1,14 @@
 /*
  * Path builders for Firestore collections. One source of truth for the
- * /organizations/{orgId}/... layout — every server action and query routes
+ * /organizations/{orgId}/... layout - every server action and query routes
  * through these helpers, so the multi-tenant scoping is impossible to forget.
  */
 
 export const orgPath = (orgId: string) => `organizations/${orgId}`
 export const orgUsersPath = (orgId: string) => `${orgPath(orgId)}/users`
+export const orgInvitesPath = (orgId: string) => `${orgPath(orgId)}/invites`
+export const orgAccessRequestsPath = (orgId: string) =>
+  `${orgPath(orgId)}/accessRequests`
 export const orgPostsPath = (orgId: string) => `${orgPath(orgId)}/posts`
 export const orgCategoriesPath = (orgId: string) => `${orgPath(orgId)}/categories`
 export const orgCtasPath = (orgId: string) => `${orgPath(orgId)}/ctas`
@@ -17,7 +20,7 @@ export const orgPostStatusHistoryPath = (orgId: string, postId: string) =>
   `${orgPostsPath(orgId)}/${postId}/statusHistory`
 export const orgKanbanColumnsPath = (orgId: string) => `${orgPath(orgId)}/kanbanColumns`
 
-/* Publishing layer — token vault + publish-attempt telemetry. */
+/* Publishing layer - token vault + publish-attempt telemetry. */
 export const orgSocialAccountsPath = (orgId: string) => `${orgPath(orgId)}/socialAccounts`
 export const orgPublishRunsPath = (orgId: string) => `${orgPath(orgId)}/publishRuns`
 /* Per-org OAuth app credentials, encrypted with SOCIAL_TOKEN_KEY. doc id = channel. */
@@ -25,7 +28,7 @@ export const orgOauthAppsPath = (orgId: string) => `${orgPath(orgId)}/oauthApps`
 
 export const awarenessDaysPath = "awarenessDays"
 
-/* Agent runtime collections — see lib/agents/** and plan §2. */
+/* Agent runtime collections - see lib/agents/** and plan §2. */
 export const orgBrandConfigPath = (orgId: string) => `${orgPath(orgId)}/brandConfig`
 export const orgBrandConfigDocPath = (orgId: string) =>
   `${orgBrandConfigPath(orgId)}/default`
@@ -47,7 +50,7 @@ export const orgAwarenessProposalsPath = (orgId: string) =>
 export const orgModelUpdatesPath = (orgId: string) =>
   `${orgPath(orgId)}/modelUpdates`
 
-/* Memory + RAG layer — see lib/embeddings/**. */
+/* Memory + RAG layer - see lib/embeddings/**. */
 export const orgAgentMemoryPath = (orgId: string) =>
   `${orgPath(orgId)}/agentMemory`
 
@@ -57,7 +60,7 @@ export const orgUsagePath = (orgId: string) => `${orgPath(orgId)}/usage`
 export const orgUsageDocPath = (orgId: string, period: string) =>
   `${orgUsagePath(orgId)}/${period}`
 
-/* Append-only audit log — category create/delete, plan change, member
+/* Append-only audit log - category create/delete, plan change, member
  * add, template create, etc. Distinct from approvalsLog (which records
  * agent-suggestion approvals only). */
 export const orgAuditLogPath = (orgId: string) => `${orgPath(orgId)}/auditLog`

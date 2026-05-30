@@ -7,18 +7,18 @@ import {
 import { currentEmbeddingModel } from "@/lib/embeddings/provider"
 
 /*
- * Re-embed migration — append-only (never edit 0009; this is its successor
+ * Re-embed migration - append-only (never edit 0009; this is its successor
  * for the model-switch case, per §6.7 of the pluggable-providers plan).
  *
  * Run this MANUALLY after the embedding model changes. It is NOT wired
- * into firestore/seeds/run.ts — a re-embed is an on-demand migration, not
+ * into firestore/seeds/run.ts - a re-embed is an on-demand migration, not
  * something every `pnpm seed` should do.
  *
  * Mechanism: embedIfChanged() now re-embeds whenever a stored vector's
  * `embedding.model` differs from the current model (not just on a text
  * edit). So this script simply walks every embeddable collection in every
  * org and calls it. Idempotent: a second run is all skip-hash. During the
- * migration retrieve() returns sparse-but-correct results — stale-model
+ * migration retrieve() returns sparse-but-correct results - stale-model
  * vectors are filtered out, quality ramps, nothing breaks.
  *
  * Per-org kinds live under organizations/{orgId}/...; awarenessDay is a
@@ -52,13 +52,13 @@ async function reembedKind(kind: Kind, orgId: string): Promise<void> {
 
 export async function seed0011ReembedMigration(): Promise<void> {
   ensureEmulator()
-  console.log(`→ re-embed migration — target model: ${currentEmbeddingModel()}`)
+  console.log(`→ re-embed migration - target model: ${currentEmbeddingModel()}`)
 
   const orgs = await db().collection("organizations").get()
   for (const org of orgs.docs) {
     for (const kind of PER_ORG_KINDS) await reembedKind(kind, org.id)
   }
-  // awarenessDay is a single global collection — migrate it once.
+  // awarenessDay is a single global collection - migrate it once.
   if (orgs.docs[0]) {
     for (const kind of GLOBAL_KINDS) {
       await reembedKind(kind, orgs.docs[0].id)

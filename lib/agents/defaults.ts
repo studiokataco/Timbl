@@ -6,7 +6,7 @@
  *     actions in `lib/actions/agent-configs.ts`
  *
  * Each entry corresponds to a registered factory in
- * `lib/agents/index.ts:FACTORIES` — the ADK runtime only knows how to run
+ * `lib/agents/index.ts:FACTORIES` - the ADK runtime only knows how to run
  * an agent whose name appears in that registry, so the installer rejects
  * unknown names.
  */
@@ -40,7 +40,7 @@ const SETTINGS_ASSISTANT_PROMPT = [
   "You can:",
   "  - Read and edit the brand configuration directly (readBrandConfig, writeBrandConfig).",
   "  - Read other agents' configurations (readAgentConfig).",
-  "  - Propose changes to other agents' configurations (proposeAgentConfigChange) — proposals are NEVER applied automatically; a human reviews them in /settings/agents.",
+  "  - Propose changes to other agents' configurations (proposeAgentConfigChange) - proposals are NEVER applied automatically; a human reviews them in /settings/agents.",
   "",
   "Style:",
   "  - Reply concisely. One paragraph or fewer where possible.",
@@ -49,7 +49,7 @@ const SETTINGS_ASSISTANT_PROMPT = [
 ].join("\n")
 
 const META_CONFIG_PROMPT = [
-  "You are this workspace's meta-config agent. Your job is to read another agent's configuration and propose targeted improvements — sharper prompts, a more appropriate model, better budgets.",
+  "You are this workspace's meta-config agent. Your job is to read another agent's configuration and propose targeted improvements - sharper prompts, a more appropriate model, better budgets.",
   "",
   "Rules:",
   "  - Always start by calling readAgentConfig with the agent's name.",
@@ -62,12 +62,12 @@ const BRAND_WIZARD_PROMPT = [
   "You are the brand wizard for this workspace. Your job is to interview the team member in front of you and capture a complete brand configuration for the social media planner.",
   "",
   "You must discover and confirm with the user:",
-  "  1. voice — adjectives + concrete prose describing tone",
-  "  2. audience — who the brand is talking to",
-  "  3. channels — which platforms they post to (instagram, facebook, linkedin, website, fb_groups)",
-  "  4. targetCadence — posts per week, preferred days (mon-sun), preferred posting times (HH:MM)",
-  "  5. forbiddenTopics — any topics or phrasings the brand avoids",
-  "  6. samplePosts — 2–4 short examples of on-brand posts",
+  "  1. voice - adjectives + concrete prose describing tone",
+  "  2. audience - who the brand is talking to",
+  "  3. channels - which platforms they post to (instagram, facebook, linkedin, website, fb_groups)",
+  "  4. targetCadence - posts per week, preferred days (mon-sun), preferred posting times (HH:MM)",
+  "  5. forbiddenTopics - any topics or phrasings the brand avoids",
+  "  6. samplePosts - 2-4 short examples of on-brand posts",
   "",
   "Conversation rules:",
   "  - Ask one focused question at a time. Never dump a long checklist on the user.",
@@ -78,7 +78,7 @@ const BRAND_WIZARD_PROMPT = [
 ].join("\n")
 
 const AWARENESS_RESEARCHER_PROMPT =
-  "You are this workspace's awareness-day researcher. Given a date range and optional region, use Google Search and URL_CONTEXT to find real, verifiable awareness days, international observances, and significant cultural / health / social dates. Every proposal must cite at least one reputable source URL. Stop after 5–10 high-quality items. Never invent dates or sources."
+  "You are this workspace's awareness-day researcher. Given a date range and optional region, use Google Search and URL_CONTEXT to find real, verifiable awareness days, international observances, and significant cultural / health / social dates. Every proposal must cite at least one reputable source URL. Stop after 5-10 high-quality items. Never invent dates or sources."
 
 const DEFAULT_BUDGETS: AgentBudgetsDefault = {
   maxLlmCalls: 40,
@@ -152,7 +152,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     role: "workflow",
     description:
       "Writes a draft post from a brief, honouring brandConfig. Iterated in the review loop until the reviewer is satisfied.",
-    /* Anthropic Haiku 4.5 — picked over Gemini Flash for tool-calling
+    /* Anthropic Haiku 4.5 - picked over Gemini Flash for tool-calling
      * reliability and over Sonnet for cost (~3× cheaper than Sonnet 4.6
      * per token). Override per-deployment by editing the Firestore
      * agentConfigs/drafter doc if you need heavier reasoning. */
@@ -234,7 +234,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     temperature: 0.6,
     schedule: "0 6 * * *",
     systemPrompt:
-      "You are this workspace's ideator. Discover 5–7 high-quality post ideas per run by combining the brand's audience, upcoming awareness days, and current web stories. Every claim must be grounded in a sourceUrl. Stop at 7 items.",
+      "You are this workspace's ideator. Discover 5-7 high-quality post ideas per run by combining the brand's audience, upcoming awareness days, and current web stories. Every claim must be grounded in a sourceUrl. Stop at 7 items.",
     enabled: true,
     allowedTools: [
       "readBrandConfig",
@@ -255,7 +255,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     model: "gemini-3.5-flash",
     temperature: 0.4,
     systemPrompt:
-      "(composite — pipeline agents have no LLM of their own; their sub-agents do the work)",
+      "(composite - pipeline agents have no LLM of their own; their sub-agents do the work)",
     enabled: true,
     allowedTools: [],
     triggers: { manual: true, cron: false, systemUserId: "system" },

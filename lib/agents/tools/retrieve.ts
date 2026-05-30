@@ -11,7 +11,7 @@ import { getRuntimeCtx } from "../runtime/context"
  * ground new work in prior approved posts (drafter), avoid re-treading
  * covered ideas (ideator), or pull adjacent context (reviewer).
  *
- * The optional `approvedOnly` flag is the most common drafter filter — it
+ * The optional `approvedOnly` flag is the most common drafter filter - it
  * narrows posts to those a human has signed off on, so the voice samples
  * the LLM sees are authoritative rather than aspirational.
  */
@@ -23,9 +23,9 @@ const retrieveInput = z.object({
   kind: kindEnum.describe(
     "Which collection to search: post (drafts + scheduled + posted), campaign, template, awarenessDay, or agentMemory.",
   ),
-  query: z.string().min(1).describe("Natural-language query — the brief, topic, or idea you want adjacent context for."),
+  query: z.string().min(1).describe("Natural-language query - the brief, topic, or idea you want adjacent context for."),
   k: z.number().int().min(1).max(20).default(5),
-  campaignId: z.string().optional().describe("Optional — narrow to a single campaign. Only meaningful for kind=post."),
+  campaignId: z.string().optional().describe("Optional - narrow to a single campaign. Only meaningful for kind=post."),
   approvedOnly: z.boolean().default(false).describe(
     "Posts only: when true, returns only posts whose agentMeta.reviewState === 'approved'. Use when grounding voice from authoritative examples.",
   ),

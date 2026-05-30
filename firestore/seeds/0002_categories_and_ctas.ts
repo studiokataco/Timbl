@@ -13,7 +13,7 @@ const CTAS: Array<{ slug: string; label: string; description?: string }> = [
   {
     slug: "learn-change-behaviour",
     label: "Learn / change behaviour",
-    description: "Educational call to action — invite the audience to read, watch, or change a habit.",
+    description: "Educational call to action - invite the audience to read, watch, or change a habit.",
   },
   { slug: "visit-shop", label: "Visit shop" },
   { slug: "volunteer", label: "Volunteer" },
@@ -35,7 +35,7 @@ type CategorySeed = {
 }
 
 // Colour assignments cycle through the DESIGN.md badge-pastel palette
-// (Cal.com voice — orange / pink / violet / emerald + a small extended set
+// (Cal.com voice - orange / pink / violet / emerald + a small extended set
 // for visual distinction on the calendar grid).
 const SIG = {
   coral: "#fb923c",   // badge-orange
@@ -51,7 +51,7 @@ const SIG = {
 const CATEGORIES: CategorySeed[] = [
   {
     slug: "ethical-boutique-pick",
-    name: "Ethical Boutique – Pick of Week",
+    name: "Ethical Boutique - Pick of Week",
     color: SIG.coral,
     icon: "shopping-bag",
     defaultPostType: "grid",
@@ -67,7 +67,7 @@ const CATEGORIES: CategorySeed[] = [
   },
   {
     slug: "ethical-boutique-general",
-    name: "Ethical Boutique – General",
+    name: "Ethical Boutique - General",
     color: SIG.peach,
     icon: "shirt",
     defaultPostType: "grid",
@@ -117,7 +117,7 @@ const CATEGORIES: CategorySeed[] = [
   },
   {
     slug: "did-you-know",
-    name: "Did You Know – GC Facts",
+    name: "Did You Know - GC Facts",
     color: SIG.cream,
     icon: "lightbulb",
     defaultPostType: "carousel",
@@ -204,7 +204,7 @@ export async function seedCategoriesAndCtas() {
   const ctaCol = orgRef.collection("ctas")
   const catCol = orgRef.collection("categories")
 
-  // CTAs first — categories reference them by id (= slug).
+  // CTAs first - categories reference them by id (= slug).
   const ctaIdBySlug = new Map<string, string>()
   for (const cta of CTAS) {
     const id = cta.slug

@@ -6,7 +6,7 @@ import { buildLlmAgentFromConfig } from "../../runtime/build-agent"
 import { proposeAwarenessDayTool } from "../../tools/awareness-research"
 
 /*
- * Awareness researcher — Gemini-grounded discovery of real, dated
+ * Awareness researcher - Gemini-grounded discovery of real, dated
  * observances (international days, awareness weeks, cultural/health
  * dates) within a requested window. Uses GOOGLE_SEARCH for live web
  * lookup and URL_CONTEXT to read the most authoritative source pages,
@@ -14,7 +14,7 @@ import { proposeAwarenessDayTool } from "../../tools/awareness-research"
  * via `proposeAwarenessDay`. A human accepts or rejects proposals in
  * /awareness before they enter the official collection.
  *
- * Gemini-only — GOOGLE_SEARCH grounding has no Anthropic equivalent.
+ * Gemini-only - GOOGLE_SEARCH grounding has no Anthropic equivalent.
  * If pointed at a non-Gemini provider the persistence tool short-
  * circuits with a clear error.
  */
@@ -35,13 +35,13 @@ const AWARENESS_RESEARCHER_INSTRUCTION = [
   "  - Use GOOGLE_SEARCH to discover REAL, verifiable awareness days, international observances, and significant cultural / health / social dates within that window. Prefer official or reputable sources (UN, WHO, government health bodies, established NGOs, mainstream press).",
   "  - Use URL_CONTEXT to confirm at least one source per proposed day. Do not invent URLs.",
   "  - For each verified day, call proposeAwarenessDay EXACTLY once with:",
-  "      date — the ISO date YYYY-MM-DD the day falls on this year",
-  "      name — short canonical name (e.g. \"World Health Day\")",
-  "      description — one or two sentences of context",
-  "      sourceUrls — the URLs you grounded the claim in (at least one)",
-  "      importance — low | medium | high based on cultural weight",
-  "      recurringPattern — annual | weekly | fixed-date | custom",
-  "  - Stop after 5–10 high-quality items. Quality > quantity.",
+  "      date - the ISO date YYYY-MM-DD the day falls on this year",
+  "      name - short canonical name (e.g. \"World Health Day\")",
+  "      description - one or two sentences of context",
+  "      sourceUrls - the URLs you grounded the claim in (at least one)",
+  "      importance - low | medium | high based on cultural weight",
+  "      recurringPattern - annual | weekly | fixed-date | custom",
+  "  - Stop after 5-10 high-quality items. Quality > quantity.",
   "  - Refuse to invent facts. If you cannot find a reputable source for a candidate day, skip it.",
   "  - When done, briefly summarise what you proposed. Say nothing else.",
 ].join("\n")

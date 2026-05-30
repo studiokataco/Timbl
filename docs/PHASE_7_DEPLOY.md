@@ -1,8 +1,8 @@
-# Phase 7 — production deploy runbook
+# Phase 7 - production deploy runbook
 
-> **Status (2026-05-17):** Phase 7 is **complete**. The `sm-dashboard-e7641` project is live with Google SSO, Firestore, Functions (`asia-south1`), and App Hosting. This doc is now reference material — a runbook for bootstrapping a new prod project from scratch or rebuilding the deploy from a clean slate. No outstanding action items.
+> **Status (2026-05-17):** Phase 7 is **complete**. The `sm-dashboard-e7641` project is live with Google SSO, Firestore, Functions (`asia-south1`), and App Hosting. This doc is now reference material - a runbook for bootstrapping a new prod project from scratch or rebuilding the deploy from a clean slate. No outstanding action items.
 
-This is the live runbook for taking the planner from emulator-only to a real Firebase deployment on the `sm-dashboard-e7641` project. Do it in this order — every step has a verification check before the next one runs.
+This is the live runbook for taking the planner from emulator-only to a real Firebase deployment on the `sm-dashboard-e7641` project. Do it in this order - every step has a verification check before the next one runs.
 
 ## 0. Local prerequisites
 
@@ -41,7 +41,7 @@ In **Firebase Console → Authentication → Sign-in method**:
 2. Set the support email.
 3. In **Authentication → Settings → Authorized domains**, ensure the App Hosting domain and `localhost` are listed (default is fine).
 
-The blocking trigger that restricts to `@safefoundation.org.uk` and `@kataco.in` lives in `functions/src/setUserClaims.ts` — it deploys with the rest of the functions in step 5.
+The blocking trigger that restricts to `@safefoundation.org.uk` and `@kataco.in` lives in `functions/src/setUserClaims.ts` - it deploys with the rest of the functions in step 5.
 
 ## 3. Provision Firestore + Storage
 
@@ -67,12 +67,12 @@ pnpm secrets:bootstrap
 
 The script is idempotent. You'll need values for:
 
-- `FIREBASE_ADMIN_SA_JSON` — service-account JSON (single line). Generate via **Console → Project settings → Service accounts → Generate new private key**.
-- `AGENT_CRON_SECRET` — `openssl rand -hex 32`.
-- `GEMINI_API_KEY` — https://aistudio.google.com/api-keys.
-- `ANTHROPIC_API_KEY` — https://console.anthropic.com/settings/keys (optional fallback).
-- `SENTRY_DSN` — https://sentry.io project DSN (optional, agents work without it).
-- `NEXT_PUBLIC_FIREBASE_API_KEY`, `_APP_ID`, `_MESSAGING_SENDER_ID` — **Console → Project settings → Web app config**.
+- `FIREBASE_ADMIN_SA_JSON` - service-account JSON (single line). Generate via **Console → Project settings → Service accounts → Generate new private key**.
+- `AGENT_CRON_SECRET` - `openssl rand -hex 32`.
+- `GEMINI_API_KEY` - https://aistudio.google.com/api-keys.
+- `ANTHROPIC_API_KEY` - https://console.anthropic.com/settings/keys (optional fallback).
+- `SENTRY_DSN` - https://sentry.io project DSN (optional, agents work without it).
+- `NEXT_PUBLIC_FIREBASE_API_KEY`, `_APP_ID`, `_MESSAGING_SENDER_ID` - **Console → Project settings → Web app config**.
 
 Verify: `gcloud secrets list --project sm-dashboard-e7641` shows every secret with a version.
 
@@ -94,7 +94,7 @@ firebase deploy --only functions:agentSweep
 
 ### 5a. Grant the function runtime SA Firestore read
 
-The functions deploy onto the default compute SA (`{PROJECT_NUMBER}-compute@developer.gserviceaccount.com`). Since 2024, Google strips Editor role from new default compute SAs — so `agentSweep` will spam `PERMISSION_DENIED: Missing or insufficient permissions` on every minute tick because its `db.collection("organizations").get()` lacks `datastore.entities.get`. Grant the minimal role explicitly:
+The functions deploy onto the default compute SA (`{PROJECT_NUMBER}-compute@developer.gserviceaccount.com`). Since 2024, Google strips Editor role from new default compute SAs - so `agentSweep` will spam `PERMISSION_DENIED: Missing or insufficient permissions` on every minute tick because its `db.collection("organizations").get()` lacks `datastore.entities.get`. Grant the minimal role explicitly:
 
 ```bash
 PROJECT_NUMBER=$(gcloud projects describe sm-dashboard-e7641 --format='value(projectNumber)')
@@ -110,7 +110,7 @@ Verify: within ~2 min, `firebase functions:log --only agentSweep --limit 5` show
 
 GitHub remote: `https://github.com/studiokataco/SAFE.git` (branch `main`).
 
-Prereq — make sure the latest local work is pushed:
+Prereq - make sure the latest local work is pushed:
 
 ```bash
 git status                                # confirm a clean tree (or commit phase 7 first)
@@ -123,7 +123,7 @@ In **Firebase Console → App Hosting**:
 2. Connect the GitHub repo (`studiokataco/SAFE`). Authorise the Firebase GitHub app on first connect.
 3. Live branch: `main`. Root: `/`. The `apphosting.yaml` at the repo root is the manifest.
 4. Build trigger: rollout on every push to `main`.
-5. After the first build kicks off, copy the generated URL — update `APP_BASE_URL` (step 5) and Firebase Auth's authorized domains (Console → Authentication → Settings → Authorized domains).
+5. After the first build kicks off, copy the generated URL - update `APP_BASE_URL` (step 5) and Firebase Auth's authorized domains (Console → Authentication → Settings → Authorized domains).
 
 Verify: `firebase apphosting:backends:list --project sm-dashboard-e7641` shows the backend as `ACTIVE`.
 

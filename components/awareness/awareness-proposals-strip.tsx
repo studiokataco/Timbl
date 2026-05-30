@@ -65,7 +65,7 @@ export function AwarenessProposalsStrip({
           {proposals.length} proposed awareness {proposals.length === 1 ? "day" : "days"}
         </h2>
         <p className="text-xs text-muted-foreground">
-          From the awareness-researcher — accept to add to your calendar, or reject to dismiss.
+          From the awareness-researcher - accept to add to your calendar, or reject to dismiss.
         </p>
       </header>
 

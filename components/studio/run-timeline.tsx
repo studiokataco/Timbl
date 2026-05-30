@@ -87,7 +87,7 @@ export function RunTimeline({ run }: Props) {
             <Metric label="Duration">
               {run.durationMs != null
                 ? `${(run.durationMs / 1000).toFixed(2)}s`
-                : "—"}
+                : "-"}
             </Metric>
             <Metric label="LLM">{run.metrics.llmCalls.toString()}</Metric>
             <Metric label="Tools">{run.metrics.toolCalls.toString()}</Metric>
@@ -242,7 +242,7 @@ function TimelineRow({ row }: { row: TimelineEventRow }) {
       </Row>
     )
   }
-  // call_code / code_result / tool_confirmation — generic fallback.
+  // call_code / code_result / tool_confirmation - generic fallback.
   return (
     <Row row={row} dot={<DotHollow />} label={ev.type} author={row.author}>
       <ExpandableJson title="Payload" data={ev as unknown} />
@@ -431,16 +431,16 @@ function Metric({
 }
 
 function fmtTs(ms: number): string {
-  if (!ms) return "—"
+  if (!ms) return "-"
   try {
     return format(new Date(ms), "HH:mm:ss")
   } catch {
-    return "—"
+    return "-"
   }
 }
 
 function safeFmt(iso?: string): string {
-  if (!iso) return "—"
+  if (!iso) return "-"
   try {
     return format(parseISO(iso), "d MMM HH:mm:ss")
   } catch {

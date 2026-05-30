@@ -86,7 +86,7 @@ afterAll(async () => {
 })
 
 beforeEach(async () => {
-  /* Clear any per-test mutations — but keep the baseline seeds. */
+  /* Clear any per-test mutations - but keep the baseline seeds. */
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore()
     const snap = await getDocs(collection(db, `organizations/${ORG_A}/posts`))

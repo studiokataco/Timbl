@@ -16,13 +16,13 @@ import { PROVIDER_TONE } from "./status-tone"
 import { cn } from "@/lib/utils"
 
 /*
- * Model-updates card (§6.8) — notify-only. Lists provider models the
+ * Model-updates card (§6.8) - notify-only. Lists provider models the
  * bi-weekly / manual check flagged as plausible newer versions of models
  * in use. Nothing here applies a model: the operator reviews a flagged
  * model, then swaps it on an agent in the Tune tab and prod-swap A/Bs.
  *
  * Mounted in the Studio roster rail. Renders nothing when there are no
- * notifications and the toggle is on — stays out of the way until useful.
+ * notifications and the toggle is on - stays out of the way until useful.
  */
 export function ModelUpdatesCard() {
   const queryClient = useQueryClient()
@@ -43,7 +43,7 @@ export function ModelUpdatesCard() {
   const notifyOn = notify.data ?? true
 
   /* The card always renders: the "check now" button and the notify
-   * toggle must stay reachable even when there are no notifications —
+   * toggle must stay reachable even when there are no notifications -
    * otherwise the operator could never run the first check. The empty
    * state is just terse copy. */
 
@@ -58,7 +58,7 @@ export function ModelUpdatesCard() {
         return
       }
       if (res.checked === false) {
-        toast.message("Notifications are off — nothing checked")
+        toast.message("Notifications are off - nothing checked")
       } else {
         toast.success(
           res.flagged
@@ -111,7 +111,7 @@ export function ModelUpdatesCard() {
         <p className="text-[12px] text-muted-foreground leading-snug">
           {notifyOn
             ? "No new models flagged."
-            : "Update notifications are off — agents stay pinned."}
+            : "Update notifications are off - agents stay pinned."}
         </p>
       ) : (
         <ul className="flex flex-col gap-1.5">
@@ -152,7 +152,7 @@ export function ModelUpdatesCard() {
         disabled={pending}
         className="text-[11px] text-muted-foreground hover:text-foreground transition-colors text-left disabled:opacity-50"
       >
-        Notifications: {notifyOn ? "on" : "off"} — tap to turn{" "}
+        Notifications: {notifyOn ? "on" : "off"} - tap to turn{" "}
         {notifyOn ? "off" : "on"}
       </button>
     </div>

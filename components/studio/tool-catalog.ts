@@ -1,5 +1,5 @@
 /*
- * Static catalog of agent tools — keyed by the `name` declared on each
+ * Static catalog of agent tools - keyed by the `name` declared on each
  * `FunctionTool` / `LongRunningFunctionTool` instance under
  * `lib/agents/tools/`. The agent runtime owns the source of truth; this
  * map is a UI-only mirror so the playground's Tools tab and the
@@ -22,7 +22,7 @@ export const TOOL_CATALOG: Record<string, ToolCatalogEntry> = {
     key: "listUpcomingDays",
     title: "List awareness days",
     description:
-      "List awareness days in a date window — the ideation starting point.",
+      "List awareness days in a date window - the ideation starting point.",
     group: "awareness",
   },
   listEvents: {
@@ -57,7 +57,7 @@ export const TOOL_CATALOG: Record<string, ToolCatalogEntry> = {
     key: "writeBrandConfig",
     title: "Write brand config",
     description:
-      "Persist a partial brand configuration — existing fields are preserved.",
+      "Persist a partial brand configuration - existing fields are preserved.",
     group: "brand",
   },
   createDraftPost: {
@@ -126,7 +126,7 @@ export const TOOL_CATALOG: Record<string, ToolCatalogEntry> = {
     key: "proposeAgentConfigChange",
     title: "Propose config change",
     description:
-      "Queue a partial agent-config patch for human approval — never applied silently.",
+      "Queue a partial agent-config patch for human approval - never applied silently.",
     group: "admin",
   },
 }
@@ -136,7 +136,7 @@ export function getTool(key: string): ToolCatalogEntry {
     TOOL_CATALOG[key] ?? {
       key,
       title: humanize(key),
-      description: "Tool — no description available.",
+      description: "Tool - no description available.",
       group: "admin",
     }
   )

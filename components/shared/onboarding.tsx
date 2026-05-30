@@ -33,7 +33,7 @@ const STEPS = [
   {
     icon: Calendar,
     title: "Quick add takes 30 seconds",
-    body: "Click any day on the calendar (or hit the Quick add button up top) to drop a post in three taps: date, category, brief. Categories carry your defaults — hashtags, post type, lead — so the rest is autofilled.",
+    body: "Click any day on the calendar (or hit the Quick add button up top) to drop a post in three taps: date, category, brief. Categories carry your defaults - hashtags, post type, lead - so the rest is autofilled.",
   },
   {
     icon: KanbanSquare,

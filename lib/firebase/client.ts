@@ -17,7 +17,7 @@ import {
  *
  * Auto-connects to the Firebase Emulator Suite when NEXT_PUBLIC_USE_EMULATORS=1
  * (set by `pnpm dev`). The placeholders in .env.local are enough for the SDK
- * to initialise — the connect* calls then redirect every request to localhost.
+ * to initialise - the connect* calls then redirect every request to localhost.
  *
  * Phase 7 swaps the placeholders for real Firebase project credentials and
  * NEXT_PUBLIC_USE_EMULATORS is left unset.
@@ -60,7 +60,7 @@ export function getClientDb(): Firestore {
       try {
         connectFirestoreEmulator(firestore, "127.0.0.1", 8080)
       } catch {
-        /* Already connected — safe to ignore. */
+        /* Already connected - safe to ignore. */
       }
     }
   }

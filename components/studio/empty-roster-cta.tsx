@@ -19,7 +19,7 @@ import type { AgentConfig } from "@/lib/schemas/agentConfig"
  */
 
 interface Props {
-  agents: AgentConfig[] // for the picker — usually [] when this renders
+  agents: AgentConfig[] // for the picker - usually [] when this renders
 }
 
 export function EmptyRosterCta({ agents }: Props) {
@@ -82,7 +82,7 @@ export function EmptyRosterCta({ agents }: Props) {
       </div>
 
       <p className="text-[11px] text-muted-foreground/80 max-w-[42ch] text-center">
-        Each install is idempotent — agents you already have stay untouched.
+        Each install is idempotent - agents you already have stay untouched.
         You can edit prompts, models, and budgets anytime from Settings →
         Agents.
       </p>

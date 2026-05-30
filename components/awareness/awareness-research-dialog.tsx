@@ -22,8 +22,8 @@ import { AgentChat, type AgentChatHandle } from "@/components/agents/agent-chat"
 
 /*
  * Triggers the awareness-researcher agent. Two-stage flow:
- *   1. Form — date range + optional region.
- *   2. Run — once submitted, swaps to an embedded AgentChat and
+ *   1. Form - date range + optional region.
+ *   2. Run - once submitted, swaps to an embedded AgentChat and
  *      auto-sends the structured prompt so the agent starts streaming
  *      immediately. When the stream finishes we refresh the parent page
  *      so the new proposals strip is visible.
@@ -87,7 +87,7 @@ export function AwarenessResearchDialog({
   /* Once the user picks a date range, fire the seeded prompt at the
    * awareness-researcher agent automatically. The `intro` was previously
    * only rendered as static help text, so the chat sat empty until the
-   * user retyped it into the composer — making it look like the engine
+   * user retyped it into the composer - making it look like the engine
    * had hung. queueMicrotask defers until the ref is wired post-mount. */
   useEffect(() => {
     if (!running || !intro) return
@@ -182,6 +182,6 @@ function buildIntro(values: FormValues): string {
   const regionClause = region ? ` Focus on ${region}.` : " Focus on global observances."
   return [
     `Find real awareness days, observances, and significant cultural / health / social dates between ${values.from} and ${values.to}.${regionClause}`,
-    "Use Google Search and URL_CONTEXT to verify every date against a reputable source, then call proposeAwarenessDay for each one. Aim for 5–10 high-quality items.",
+    "Use Google Search and URL_CONTEXT to verify every date against a reputable source, then call proposeAwarenessDay for each one. Aim for 5-10 high-quality items.",
   ].join("\n\n")
 }

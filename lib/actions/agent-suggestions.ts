@@ -91,7 +91,7 @@ export async function approveAgentDraft(
  *
  * The Studio surfaces awaiting_human runs as approval cards. Those cards
  * need to act on the run identity (the `runId` is what's in the URL /
- * activity stream), not the postId — the postId is buried in the
+ * activity stream), not the postId - the postId is buried in the
  * requestHumanApproval tool_call args. This action looks up the latest
  * such tool_call from the session event log and dispatches to the
  * existing approveAgentDraft / rejectAgentDraft writers so post state +
@@ -145,7 +145,7 @@ export async function resolveHumanGate(
 }
 
 /* Rejection input. `REJECT_REASONS` / `REJECT_REASON_LABELS` /
- * `RejectReason` now live in lib/schemas/_shared.ts — a "use server" file
+ * `RejectReason` now live in lib/schemas/_shared.ts - a "use server" file
  * may only export async functions. `regenerate` toggles the regenerate
  * flow: sets a flag on the post that downstream agent runs pick up to
  * produce a new draft incorporating the feedback. */
@@ -188,5 +188,5 @@ function composeRationale(
   const parts: string[] = []
   if (reason && reason !== "other") parts.push(REJECT_REASON_LABELS[reason])
   if (note) parts.push(note)
-  return parts.length > 0 ? parts.join(" — ") : undefined
+  return parts.length > 0 ? parts.join(" - ") : undefined
 }

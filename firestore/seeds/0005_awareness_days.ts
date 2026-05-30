@@ -6,7 +6,7 @@ import { awarenessDaysPath } from "@/lib/firebase/paths"
  * an annual day in 2026 and 2027 are distinct rows; the calendar rail filters
  * by date range.
  *
- * Coverage: 36 awareness days spanning 2026 — a mix of high-importance UN /
+ * Coverage: 36 awareness days spanning 2026 - a mix of high-importance UN /
  * national observances, weeks-long campaigns expressed as their start day,
  * and culturally relevant moments for SAFE's audience (mental health,
  * sustainability, charity sector).
@@ -94,7 +94,7 @@ const DAYS_2026: AwarenessSeed[] = [
     slug: "stress-awareness-month-uk-start",
     date: "2026-04-01",
     name: "Stress Awareness Month begins (UK)",
-    description: "Month-long observance — plan a series.",
+    description: "Month-long observance - plan a series.",
     importance: "high",
     suggestedCategorySlug: "mental-health",
   },
@@ -102,7 +102,7 @@ const DAYS_2026: AwarenessSeed[] = [
     slug: "mental-health-awareness-week-uk-start",
     date: "2026-05-11",
     name: "Mental Health Awareness Week begins (UK)",
-    description: "Week-long campaign — Mind Foundation.",
+    description: "Week-long campaign - Mind Foundation.",
     importance: "high",
     suggestedCategorySlug: "mental-health",
   },
@@ -278,7 +278,7 @@ const DAYS_2026: AwarenessSeed[] = [
     slug: "blue-monday",
     date: "2026-01-19",
     name: "Blue Monday",
-    description: "Often cited as the most depressing day — counter-program with mental health support.",
+    description: "Often cited as the most depressing day - counter-program with mental health support.",
     importance: "medium",
     suggestedCategorySlug: "mental-health",
   },

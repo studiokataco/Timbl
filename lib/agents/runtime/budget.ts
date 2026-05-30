@@ -6,13 +6,13 @@ import type {
 import type { AgentBudgets } from "@/lib/schemas/agentConfig"
 
 /*
- * Budget enforcement — strict-mode counters on LLM calls and tool calls.
+ * Budget enforcement - strict-mode counters on LLM calls and tool calls.
  * Hooks BeforeModel / BeforeTool so a misbehaving agent can be cut off
  * before it makes another expensive call rather than after.
  *
  * Cost accounting (usdCost) is computed in route.ts from usage metadata
  * after the run finishes. The "hard cap" honoured here is the per-run
- * call-count ceiling — that's the lever that actually prevents runaways
+ * call-count ceiling - that's the lever that actually prevents runaways
  * during a stuck loop. The dollar cap is best-effort and emitted as a
  * trailing metric.
  */

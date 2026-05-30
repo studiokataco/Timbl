@@ -12,12 +12,12 @@ import {
 } from "./plans"
 
 /*
- * Plan gating. Server-only — the client never calls these. UI affordances
+ * Plan gating. Server-only - the client never calls these. UI affordances
  * (greyed buttons, upgrade badges) read `PlanFeatures` from a separate
  * client-safe payload; enforcement always happens here, server-side.
  *
  * Gates throw `PlanGateError` so callers can either:
- *   1. let it bubble (default — server action returns `{ ok: false, error }`
+ *   1. let it bubble (default - server action returns `{ ok: false, error }`
  *      because actions catch all throws), or
  *   2. wrap in try/catch when they want to surface a richer upsell.
  *
@@ -73,7 +73,7 @@ export async function requireFeature(
 function currentPeriod(date = new Date()): string {
   /* YYYY-MM in UTC. Billing cadence is monthly; we don't slice finer than
    * the calendar month for quota purposes. Stripe meter events are the
-   * authoritative billable record — this counter is for UX. */
+   * authoritative billable record - this counter is for UX. */
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
 }
 
@@ -95,7 +95,7 @@ export async function readUsage(
  *
  * Note: this is a *check*, not an increment. The producer is responsible
  * for calling the Phase-C `emitAgentRun` (or equivalent) after the work
- * succeeds — that's what advances the counter. Splitting check-vs-emit
+ * succeeds - that's what advances the counter. Splitting check-vs-emit
  * means a failed action doesn't burn quota.
  */
 export async function requireQuota(

@@ -1,7 +1,7 @@
 /*
  * Tiny IndexedDB wrapper for persistent agent conversation threads.
  *
- * We don't pull in `idb` / `idb-keyval` — the surface here is small
+ * We don't pull in `idb` / `idb-keyval` - the surface here is small
  * enough that a hand-rolled wrapper is cheaper than a new dep.
  * Single DB `safe-agent-threads`, single object store `threads`,
  * keyed by `id`. All functions are SSR-safe (no-op on the server)

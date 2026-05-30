@@ -14,7 +14,7 @@ import {
 
 /*
  * Lives behind the global agent drawer (Cmd-J). A general-purpose
- * configuration assistant — reads brand config, drafts changes, and can
+ * configuration assistant - reads brand config, drafts changes, and can
  * propose tweaks to other agents' configs (proposals require human
  * approval; the assistant never silently rewrites another agent's prompt).
  */

@@ -12,7 +12,7 @@ import { orgAuditLogPath } from "@/lib/firebase/paths"
  * Behavior is feature-flag gated:
  *   - Plans with `auditLog: true` (agency_v1, scale_v1) WRITE entries.
  *   - Plans without it (free_v1, studio_v1) silently skip the write.
- *   - Either way, the caller doesn't have to wrap in try/catch — failures
+ *   - Either way, the caller doesn't have to wrap in try/catch - failures
  *     are logged-and-swallowed.
  *
  * Design notes:
@@ -51,7 +51,7 @@ export interface AuditEventInput {
     label?: string
   }
   /* Free-form contextual data (e.g. `{ from: "free_v1", to: "agency_v1" }`).
-   * Keep small — this is rendered inline in the audit page. */
+   * Keep small - this is rendered inline in the audit page. */
   meta?: Record<string, unknown>
 }
 

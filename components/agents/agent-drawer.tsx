@@ -27,7 +27,7 @@ import { AgentChat } from "./agent-chat"
 import { AgentThreadRail } from "./agent-thread-rail"
 
 /*
- * Global agent drawer — two-pane surface (history rail + active
+ * Global agent drawer - two-pane surface (history rail + active
  * conversation) at >=1024px, collapsing to a single pane with a
  * "History" trigger on narrow widths. Cmd-J toggles; ESC closes;
  * external code can dispatch `agent-drawer:open` to surface it.
@@ -171,7 +171,7 @@ export function AgentDrawer() {
       if (!activeThreadId) return
       await appendMessage(activeThreadId, msg)
       // Keep the rail's relative timestamps and titles fresh, but
-      // don't thrash queries — invalidate at a low rate.
+      // don't thrash queries - invalidate at a low rate.
       qc.invalidateQueries({ queryKey: THREADS_QUERY_KEY })
     },
     [activeThreadId, qc],
@@ -192,7 +192,7 @@ export function AgentDrawer() {
           side="right"
           className="!w-full sm:!max-w-xl lg:!max-w-3xl flex flex-row p-0"
         >
-          {/* Desktop rail — hidden on narrow widths */}
+          {/* Desktop rail - hidden on narrow widths */}
           <div className="hidden lg:flex">
             <AgentThreadRail
               activeId={activeThreadId}
@@ -274,7 +274,7 @@ export function AgentDrawer() {
                   agentName={activeAgentName}
                   threadId={activeThreadId}
                   onMessage={handlePersist}
-                  intro="Hi — I can edit your brand config, look up other agents' settings, or propose changes to them. What do you need?"
+                  intro="Hi - I can edit your brand config, look up other agents' settings, or propose changes to them. What do you need?"
                   placeholder="Ask anything…"
                 />
               ) : (

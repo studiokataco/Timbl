@@ -8,7 +8,7 @@ import { isoDate } from "@/lib/schemas/_shared"
 
 import { getRuntimeCtx } from "../runtime/context"
 
-/* Persist a single ideation item — the ideator emits one of these per
+/* Persist a single ideation item - the ideator emits one of these per
  * candidate idea after grounding its claims via GOOGLE_SEARCH /
  * URL_CONTEXT. The shape mirrors lib/schemas/ideationItem.ts. */
 

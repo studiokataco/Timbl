@@ -11,7 +11,7 @@ import { getRuntimeCtx } from "../runtime/context"
 
 /*
  * Post-manipulation tools. Each writes through the same /organizations/
- * {orgId}/posts collection the UI uses — no parallel store. Drafts the
+ * {orgId}/posts collection the UI uses - no parallel store. Drafts the
  * agent creates carry an `agentMeta` field so the UI can render the
  * "AI-assisted" badge and the review-state pill.
  */
@@ -42,13 +42,13 @@ const createInput = z.object({
   rationale: z.string().max(4_000).optional(),
   reviewState: z.enum(["pending", "approved", "rejected"]).default("pending"),
   /* What should happen when a human approves this draft. Default is
-   * `schedule_post` — drafter output is ready content awaiting only a
+   * `schedule_post` - drafter output is ready content awaiting only a
    * human OK to move into the schedule. Producers that want a different
    * outcome (e.g. a strategist proposing a draft that still needs
    * editorial review) can override. */
   nextActionKind: nextActionKind.default("schedule_post"),
   nextActionChannel: z.string().optional(),
-  /* ISO timestamp or "auto" — `auto` lets the resolver/category cadence
+  /* ISO timestamp or "auto" - `auto` lets the resolver/category cadence
    * pick the slot. */
   nextActionTime: z.string().optional(),
 })
@@ -56,7 +56,7 @@ const createInput = z.object({
 export const createDraftPostTool = new FunctionTool({
   name: "createDraftPost",
   description:
-    "Create a new draft post in the org's calendar. Fields not provided will be left empty for human authors to fill in. Always include `brief` — a 1–2 sentence summary of what the post is about — and `rationale` describing why this idea fits the brand.",
+    "Create a new draft post in the org's calendar. Fields not provided will be left empty for human authors to fill in. Always include `brief` - a 1-2 sentence summary of what the post is about - and `rationale` describing why this idea fits the brand.",
   parameters: createInput,
   execute: async (input, ctx) => {
     const { orgId, runId, agentName } = getRuntimeCtx(ctx)

@@ -11,14 +11,14 @@ import {
 } from "../../tools/calendar"
 
 /*
- * Scheduler — picks a slot for an already-approved draft. Reads:
+ * Scheduler - picks a slot for an already-approved draft. Reads:
  *   - the brand's targetCadence (for preferred days/times)
  *   - upcoming events (to avoid double-booking)
  *   - existing posts in the window (via findOpenSlots' excludeAlreadyScheduled)
  *
  * Then calls scheduleDraft on the post in session state's `lastDraftPostId`.
  *
- * Never invent dates by hand — only pick from findOpenSlots' return value.
+ * Never invent dates by hand - only pick from findOpenSlots' return value.
  */
 export function buildSchedulerAgent(config: AgentConfig): LlmAgent {
   return buildLlmAgentFromConfig({
@@ -39,7 +39,7 @@ const SCHEDULER_INSTRUCTION = [
   "  - Use readBrandConfig to read targetCadence (preferred days / times / perWeek).",
   "  - Use listEvents over the next 30 days to identify conflicts.",
   "  - Call findOpenSlots once with the cadence preferences, then PICK ONE slot from its results.",
-  "  - Never invent dates of your own — pick from findOpenSlots only.",
+  "  - Never invent dates of your own - pick from findOpenSlots only.",
   "  - Call scheduleDraft with the chosen postId, date, and (optional) time.",
-  "  - Be terse — one short message explaining the chosen slot is enough.",
+  "  - Be terse - one short message explaining the chosen slot is enough.",
 ].join("\n")

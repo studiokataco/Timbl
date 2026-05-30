@@ -2,7 +2,7 @@ import { AGENT_DEFAULTS, type AgentDefault } from "./defaults"
 
 /*
  * Client-safe summary of the agent template registry. Excludes the
- * full systemPrompt so the page bundle stays small — the prompt is
+ * full systemPrompt so the page bundle stays small - the prompt is
  * fetched on demand by the `getAgentTemplate` server action when the
  * user opens the "Customize" panel in the Add-agent sheet.
  */
@@ -14,7 +14,7 @@ export interface AgentTemplate {
   provider: AgentDefault["provider"]
   model: string
   temperature: number
-  /** Truncated preview — the full prompt loads when the user customizes. */
+  /** Truncated preview - the full prompt loads when the user customizes. */
   promptPreview: string
   schedule?: string
   allowedTools: string[]

@@ -10,7 +10,7 @@ import { seed0009EmbeddingsBackfill } from "./0009_embeddings_backfill"
 import { seed0010TenantOrg } from "./0010_tenant_org"
 
 /*
- * Seed runner. Each seed is independently idempotent — safe to re-run.
+ * Seed runner. Each seed is independently idempotent - safe to re-run.
  *
  * Usage:
  *   1. Start emulators in another terminal:  pnpm emulators
@@ -26,7 +26,7 @@ async function main() {
   await seed0007AgentConfigs()
   await seed0008AwarenessResearcher()
   await seed0009EmbeddingsBackfill()
-  /* Second org — clean tenant for the onboarding wizard. Independent of
+  /* Second org - clean tenant for the onboarding wizard. Independent of
    * the SAFE seeds above; safe to run last. */
   await seed0010TenantOrg()
   console.log("\nseed complete.")

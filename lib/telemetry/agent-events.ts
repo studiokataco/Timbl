@@ -18,7 +18,7 @@ import { orgUsageDocPath } from "@/lib/firebase/paths"
  *
  * Cancelled runs do not count.
  *
- * Counter writes are best-effort (try/catch around the call site) — a
+ * Counter writes are best-effort (try/catch around the call site) - a
  * usage-write failure must not break the user's UI. The Stripe push (when
  * it lands) is async-reconciled and never blocks either.
  */

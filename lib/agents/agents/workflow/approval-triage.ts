@@ -6,7 +6,7 @@ import { buildLlmAgentFromConfig } from "../../runtime/build-agent"
 import { listPostsTool, updateDraftPostTool } from "../../tools/posts"
 
 /*
- * Approval-triage — periodically scans posts with agentMeta.reviewState=
+ * Approval-triage - periodically scans posts with agentMeta.reviewState=
  * 'pending' and surfaces ones stuck > 48h. Doesn't auto-approve; just
  * leaves a short note in agentMeta.rationale prefixed "[triage] …" so
  * humans see it and can react.

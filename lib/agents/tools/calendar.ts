@@ -60,7 +60,7 @@ const findSlotsInput = z.object({
 /*
  * Mechanically pick candidate slots that honour the brand's cadence
  * preferences. The cadence-planner reads these and then asks the LLM to
- * fill each slot — deterministic slot-finding keeps the LLM focused on
+ * fill each slot - deterministic slot-finding keeps the LLM focused on
  * creative work instead of date arithmetic, which it's bad at.
  */
 export const findOpenSlotsTool = new FunctionTool({

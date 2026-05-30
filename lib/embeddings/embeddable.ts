@@ -14,7 +14,7 @@ import { embed, currentEmbeddingModel } from "./provider"
 /*
  * Single source of truth for "what text drives similarity for this kind"
  * and "where do its docs live." The retrieve API and embedIfChanged both
- * consume this — no other module knows the field-to-text mapping.
+ * consume this - no other module knows the field-to-text mapping.
  */
 
 export type Kind = "post" | "campaign" | "template" | "awarenessDay" | "agentMemory"
@@ -74,7 +74,7 @@ export type EmbedStatus = "wrote" | "skipped-empty" | "skipped-hash" | "soft-fai
 
 /*
  * Embed iff the source text changed since last write. Soft-fails: any
- * provider error is logged but doesn't throw — embedding is a derived
+ * provider error is logged but doesn't throw - embedding is a derived
  * convenience, never load-bearing for the write that triggered it. The
  * returned status lets the backfill seed log per-doc without re-deriving.
  */
@@ -93,7 +93,7 @@ export async function embedIfChanged(
     | undefined
   /* Skip only when BOTH the source text AND the embedding model are
    * unchanged. A model switch (§6.7) leaves the hash identical but must
-   * still trigger a re-embed — otherwise stale-model vectors linger and
+   * still trigger a re-embed - otherwise stale-model vectors linger and
    * retrieve() silently filters them out. */
   if (
     existing?.sourceHash === hash &&
@@ -107,7 +107,7 @@ export async function embedIfChanged(
     result = await embed(text)
   } catch (err) {
     console.warn(
-      `[embed] soft-fail kind=${kind} id=${id} — ${err instanceof Error ? err.message : String(err)}`,
+      `[embed] soft-fail kind=${kind} id=${id} - ${err instanceof Error ? err.message : String(err)}`,
     )
     return "soft-failed"
   }

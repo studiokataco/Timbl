@@ -16,7 +16,7 @@ import { makeBudgetCallbacks } from "./budget"
  *
  * Factories only need to provide the *agent-specific* bits: name,
  * description, tools, and any extra LlmAgent options. Reduces drift
- * between agents — if we change how budgets are enforced, one edit
+ * between agents - if we change how budgets are enforced, one edit
  * propagates everywhere.
  */
 
@@ -25,7 +25,7 @@ export interface BuildLlmAgentInput
   name: string
   description?: string
   config: AgentConfig
-  /** Extra system text appended after agentConfig.systemPrompt — useful for
+  /** Extra system text appended after agentConfig.systemPrompt - useful for
    * sub-agents in a pipeline whose role-specific instructions live in code. */
   instructionSuffix?: string
 }

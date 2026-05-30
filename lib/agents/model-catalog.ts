@@ -5,7 +5,7 @@ import type { AgentProvider } from "@/lib/schemas/agentConfig"
  *
  * Fetches each provider's live model list and diffs it against the models
  * we already know about (the §4 shortlist + whatever is configured on
- * agentConfigs). "Newer" detection is deliberately SIMPLE — version-string
+ * agentConfigs). "Newer" detection is deliberately SIMPLE - version-string
  * parsing is brittle, so we never auto-rank or claim "this is the newest".
  * We only flag a live model when:
  *   1. it isn't already known, AND
@@ -13,7 +13,7 @@ import type { AgentProvider } from "@/lib/schemas/agentConfig"
  * That surfaces "a newer GLM exists" without drowning the operator in the
  * 300+ unrelated models OpenRouter lists. A human decides what to do.
  *
- * Server-only — reads provider API keys from env.
+ * Server-only - reads provider API keys from env.
  */
 
 export interface CatalogModel {
@@ -21,7 +21,7 @@ export interface CatalogModel {
   id: string
 }
 
-/** Vendor + non-numeric stem of a model id — the "family" used to decide
+/** Vendor + non-numeric stem of a model id - the "family" used to decide
  *  whether an unknown model is a newer relative of one we use.
  *  `z-ai/glm-5.1` → `z-ai/glm`; `gemini-3.5-flash` → `gemini`. */
 export function familyOf(id: string): string {
@@ -106,7 +106,7 @@ export async function fetchProviderModels(): Promise<CatalogModel[]> {
 
 /**
  * Diff a live model list against the known set. Returns the live models
- * that are NOT known but DO belong to a known family — i.e. plausible
+ * that are NOT known but DO belong to a known family - i.e. plausible
  * newer versions of something we care about. Never ranked.
  */
 export function diffNewModels(

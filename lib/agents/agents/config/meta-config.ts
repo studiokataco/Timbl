@@ -9,7 +9,7 @@ import {
 } from "../../tools/agent-admin"
 
 /*
- * Meta-config agent — proposes prompt / model / temperature / budget
+ * Meta-config agent - proposes prompt / model / temperature / budget
  * changes to other agents based on a human's brief. Outputs proposals into
  * /agentConfigProposals; nothing is applied until a human approves in
  * /settings/agents.

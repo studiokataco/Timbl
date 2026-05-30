@@ -81,7 +81,7 @@ export function DayView({
   return (
     <div className="rounded-lg border border-border bg-background" data-cal-reveal>
       <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 14rem)" }}>
-        {/* Day header — sticky inside the scroll container */}
+        {/* Day header - sticky inside the scroll container */}
         <div
           className="grid border-b border-border bg-background sticky top-0 z-10"
           style={{ gridTemplateColumns: "4rem 1fr" }}
@@ -124,7 +124,7 @@ export function DayView({
           </div>
         )}
 
-        {/* Hourly rows — same container as header, no drift */}
+        {/* Hourly rows - same container as header, no drift */}
         {HOURS.map((hour) => {
           const slotPosts = timedMap.get(hour) ?? []
           return (

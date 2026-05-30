@@ -47,7 +47,7 @@ export function EventPill({ post, category, onClick }: Props) {
           "block w-full text-left rounded-sm px-1.5 py-0.5 text-[11px] leading-tight truncate",
           "cursor-pointer hover:brightness-95 transition-[filter]",
         )}
-        aria-label={`${category?.name ?? "Uncategorised"} — ${post.brief ?? "Untitled"}`}
+        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"}`}
       >
         {time && <span className="font-semibold mr-1">{time}</span>}
         <span className="truncate">{post.brief ?? "Untitled"}</span>

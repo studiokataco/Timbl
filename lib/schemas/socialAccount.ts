@@ -7,7 +7,7 @@ export type SocialAccountStatus = z.infer<typeof socialAccountStatus>
 /*
  * Token vault doc. id = `${channel}:${externalId}`. Tokens are stored
  * encrypted (AES-256-GCM via lib/publishing/crypto) and decrypted only
- * in-memory inside the publish worker — never returned to the client.
+ * in-memory inside the publish worker - never returned to the client.
  */
 export const socialAccountSchema = audit.extend({
   id: z.string(),
@@ -23,7 +23,7 @@ export const socialAccountSchema = audit.extend({
 })
 export type SocialAccount = z.infer<typeof socialAccountSchema>
 
-/* Client-safe projection — strips every token field. */
+/* Client-safe projection - strips every token field. */
 export const socialAccountPublicSchema = socialAccountSchema.omit({
   accessTokenEnc: true,
   refreshTokenEnc: true,

@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 
 /*
- * Persistent left-rail navigation for the (app) tree. Cal-voiced — generous
+ * Persistent left-rail navigation for the (app) tree. Cal-voiced - generous
  * breathing room, soft pill rounding, an inset section heading separating
  * the working surfaces (Calendar/Posts/Kanban/Campaigns) from the
  * reference resources (Library/Awareness).

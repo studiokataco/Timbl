@@ -6,7 +6,7 @@ import { audit, isoTimestamp } from "./_shared"
  * FirestoreSessionService can rehydrate sessions across requests.
  *
  * Events are stored in a subcollection (`agentSessions/{id}/events`), not on
- * the parent doc — Firestore caps a single doc at 1 MiB and long agent
+ * the parent doc - Firestore caps a single doc at 1 MiB and long agent
  * conversations would blow through that quickly.
  */
 
@@ -32,7 +32,7 @@ export type AgentSessionDoc = z.infer<typeof agentSessionSchema>
 
 /* One row per Event, written append-only with a monotonically increasing
  * `seq` so replays are deterministic regardless of clock skew. The Event
- * payload itself is stored opaquely under `event` — the adk-js Event type
+ * payload itself is stored opaquely under `event` - the adk-js Event type
  * shifts often and validating its full shape with zod would chase upstream
  * churn for no real protection. */
 export const agentSessionEventSchema = z.object({

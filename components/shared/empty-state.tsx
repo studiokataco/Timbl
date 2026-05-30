@@ -11,7 +11,7 @@ type Props = {
 }
 
 /*
- * Designed empty state — used across every data view. Lucide icon, headline,
+ * Designed empty state - used across every data view. Lucide icon, headline,
  * sub-line, and optional primary action. Replaces ad-hoc "No data" strings
  * with one consistent shape (see DESIGN.md §empty-states).
  */

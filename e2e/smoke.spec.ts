@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test"
  *
  * For the real prod login flow, set PLAYWRIGHT_BASE_URL to the App Hosting
  * URL and remove the dev-shim early return. That run is gated on a real
- * Google account — it cannot run unattended in CI.
+ * Google account - it cannot run unattended in CI.
  */
 
 test("app shell renders and the calendar route loads", async ({ page }) => {

@@ -6,7 +6,7 @@ import { audit, channelKey, isoTime } from "./_shared"
  * cadence, audience description, and explicit do/don'ts so the drafter,
  * reviewer, scheduler, and ideator can all read one source of truth.
  *
- * Stored at /organizations/{orgId}/brandConfig/default — keyed by a fixed
+ * Stored at /organizations/{orgId}/brandConfig/default - keyed by a fixed
  * doc id because there is exactly one brand per org. If we ever support
  * multi-brand orgs, switch to /brandConfig/{brandId} without changing the
  * schema shape.
@@ -52,7 +52,7 @@ export const brandConfigSchema = audit.extend({
 })
 export type BrandConfig = z.infer<typeof brandConfigSchema>
 
-/* Patch shape — every field optional so the wizard can write incrementally
+/* Patch shape - every field optional so the wizard can write incrementally
  * as it converges through the interview. */
 export const brandConfigPatchSchema = brandConfigSchema
   .partial()

@@ -22,7 +22,7 @@ export async function DevBanner() {
     >
       <span aria-hidden>🛠</span>
       <span>
-        Emulator mode — auto-signed in as <strong>{user.name}</strong> @{" "}
+        Emulator mode - auto-signed in as <strong>{user.name}</strong> @{" "}
         {org.name}
       </span>
     </div>

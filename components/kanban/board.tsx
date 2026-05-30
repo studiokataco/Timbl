@@ -42,7 +42,7 @@ export function KanbanBoard({ posts, categories, users }: Props) {
   const campaigns = data.campaigns
   const columns = data.kanbanColumns
   const [, startTransition] = useTransition()
-  /* Optimistic post layer — drag/drop and status-select mutate this
+  /* Optimistic post layer - drag/drop and status-select mutate this
    * instantly. Server result reconciles on router.refresh() unless a
    * mutation is in-flight (to avoid flicker). */
   const [optimisticPosts, setOptimisticPosts] = useState(posts)

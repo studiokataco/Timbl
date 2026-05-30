@@ -36,7 +36,7 @@ export async function fetchPostsInRangeAction(
  *   2. Validates input through a Zod schema.
  *   3. Writes under /organizations/{orgId}/posts.
  *
- * Until Phase 7 the Admin SDK bypasses Firestore Security Rules — the
+ * Until Phase 7 the Admin SDK bypasses Firestore Security Rules - the
  * org-scoped write paths above are the only thing keeping tenants isolated.
  * Phase 7's auth swap moves these calls to a user-scoped client; the rules
  * then engage as a second defense layer.
@@ -155,7 +155,7 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
   await batch.commit()
 
   /* Bump the scheduledPosts counter AFTER the write succeeds so a failed
-   * batch doesn't waste quota. Best-effort — never blocks the user. */
+   * batch doesn't waste quota. Best-effort - never blocks the user. */
   if (statusChanged && nextStatus === "scheduled") {
     try {
       await incrementUsage(orgId, "scheduledPosts")
@@ -217,7 +217,7 @@ const getPostsByIdsInput = z.object({
 
 /*
  * Batched read for publish-state surfacing in /studio. The activity stream
- * dedupes postIds across visible runs and pulls them all here in one call —
+ * dedupes postIds across visible runs and pulls them all here in one call -
  * the cap at 30 keeps Firestore reads bounded since each id is its own
  * `doc().get()`. Returns only the projection used by `<PublishChip />`.
  */

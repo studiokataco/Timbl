@@ -11,14 +11,14 @@ import type { AgentMemory } from "@/lib/schemas"
 import { getRuntimeCtx } from "../runtime/context"
 
 /*
- * Agent-side memory tools. Bypass lib/actions/agent-memory.ts on purpose —
+ * Agent-side memory tools. Bypass lib/actions/agent-memory.ts on purpose -
  * we already have orgId from session state, so going through getCurrentOrgId()
  * would re-resolve from cookies (and fail under cron triggers which have no
  * cookie). Mirrors the brand.ts pattern.
  *
  * `remember` is typically invoked by human-gate when a reviewer or admin
  * provides rationale alongside an approval/edit. `recall` is what drafter +
- * reviewer call before producing or critiquing a draft — past corrections
+ * reviewer call before producing or critiquing a draft - past corrections
  * should not be re-asked.
  */
 
@@ -26,7 +26,7 @@ const rememberInput = z.object({
   topic: z.string().min(1).max(120).describe(
     "Short topic key. Free-form, but stay consistent: 'voice', 'campaign:20th-anniversary', a category slug.",
   ),
-  body: z.string().min(1).max(4_000).describe("The fact or correction to remember, in 1–4 sentences."),
+  body: z.string().min(1).max(4_000).describe("The fact or correction to remember, in 1-4 sentences."),
 })
 
 export const rememberTool = new FunctionTool({
@@ -57,14 +57,14 @@ export const rememberTool = new FunctionTool({
 
 const recallInput = z.object({
   query: z.string().min(1).describe("Natural-language description of what you're about to do, so similar past memories surface."),
-  topic: z.string().optional().describe("Optional — narrow to a single topic key."),
+  topic: z.string().optional().describe("Optional - narrow to a single topic key."),
   k: z.number().int().min(1).max(20).default(5),
 })
 
 export const recallTool = new FunctionTool({
   name: "recall",
   description:
-    "Semantic recall over agentMemory. Returns up to k prior memories most relevant to the query. Inspect these BEFORE producing a draft or critique — applying a remembered correction is cheaper than re-asking the human.",
+    "Semantic recall over agentMemory. Returns up to k prior memories most relevant to the query. Inspect these BEFORE producing a draft or critique - applying a remembered correction is cheaper than re-asking the human.",
   parameters: recallInput,
   execute: async (input, ctx) => {
     const { orgId } = getRuntimeCtx(ctx)

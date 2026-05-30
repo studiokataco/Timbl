@@ -38,7 +38,7 @@ export const agentRunSchema = audit.extend({
   userId: z.string().min(1),
   trigger: agentRunTrigger,
   status: agentRunStatus.default("queued"),
-  /* The provider + exact model the run actually used — captured at run
+  /* The provider + exact model the run actually used - captured at run
    * start so a prod-swap A/B (§6.6 of the pluggable-providers plan) can
    * compare a swapped model against the prior model's runs. Optional +
    * nullable: runs written before this field existed have neither. */
@@ -64,7 +64,7 @@ export const agentRunSchema = audit.extend({
   }),
   /* Stored as `null` by triggers/manual.ts when absent (Firestore can't
    * persist `undefined`). Zod v4's .optional() rejects null, so allow both
-   * — otherwise every agentRun fails safeParse silently in listAgentRuns
+   * - otherwise every agentRun fails safeParse silently in listAgentRuns
    * and /studio renders "No agent runs yet" despite real runs existing. */
   parentRunId: z.string().nullable().optional(),
   dedupKey: z.string().nullable().optional(),

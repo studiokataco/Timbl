@@ -15,7 +15,7 @@ import type { ServerActionResult } from "@/lib/schemas"
 /*
  * Dev-only org switch. The Settings → Workspace "SAFE demo mode" toggle
  * calls `setDevOrg`; `server-helpers` reads the same cookie on every
- * request to decide which dev session the emulator shim returns —
+ * request to decide which dev session the emulator shim returns -
  * SAFE Foundation (demo) or your wizard-built tenant.
  *
  * No-ops outside emulator mode: production identity comes from the
@@ -47,7 +47,7 @@ export async function setDevOrg(input: unknown): Promise<ServerActionResult> {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
   })
-  /* The active org just changed for the whole app — revalidate the root
+  /* The active org just changed for the whole app - revalidate the root
    * layout so every cached segment re-resolves against the new tenant. */
   revalidatePath("/", "layout")
   return { ok: true, id: parsed.data.mode }

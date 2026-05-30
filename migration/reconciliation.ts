@@ -2,7 +2,7 @@ import { compareTwoStrings } from "string-similarity"
 
 /*
  * Reconciliation rules for the legacy 9-tab planner spreadsheet → Firestore
- * migration. These are deliberately data, not code — keep them shallow and
+ * migration. These are deliberately data, not code - keep them shallow and
  * readable so re-runs after CSV cleanup are predictable.
  *
  * The canonical staff list reflects who actually appears in the spreadsheet's
@@ -84,7 +84,7 @@ export function staffSlug(name: CanonicalStaff): string {
  */
 export const CATEGORY_MAP: Record<string, string> = {
   "ethical boutique - pick of week": "ethical-boutique-pick",
-  "ethical boutique – pick of week": "ethical-boutique-pick",
+  "ethical boutique - pick of week": "ethical-boutique-pick",
   "ethical boutique pick of week": "ethical-boutique-pick",
   "pick of the week": "ethical-boutique-pick",
   "ethical boutique - general": "ethical-boutique-general",
@@ -184,7 +184,7 @@ export function collapseStatus(
 }
 
 /*
- * Date parser: the spreadsheet uses informal forms — `23-Feb`, `22 Mar`,
+ * Date parser: the spreadsheet uses informal forms - `23-Feb`, `22 Mar`,
  * `1-Apr`, `Feb 23`, `01/04`. Year is supplied externally because tabs
  * cover known periods (2025/2026). Returns `YYYY-MM-DD` or null.
  */

@@ -31,7 +31,7 @@ const SNIPPET_LEN = 240
 const SCAN_LIMIT = 2000
 
 /* Length mismatch means the two vectors came from different embedding
- * models — scoring them against each other is meaningless. Return 0
+ * models - scoring them against each other is meaningless. Return 0
  * instead of the old Math.min() truncation, which silently produced a
  * plausible-but-wrong similarity. The model filter in retrieve() should
  * prevent this from ever being reached; this is the backstop. */
@@ -56,7 +56,7 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
   const path = collectionPathFor(opts.kind, opts.orgId)
 
   /* Embed the query and pin retrieval to that exact model. Only stored
-   * vectors stamped with the same `embedding.model` are scored — a
+   * vectors stamped with the same `embedding.model` are scored - a
    * collection mid-migration (mixed models) yields sparse-but-correct
    * results, never cross-model garbage (§6.7). */
   const { vector, model } = await embed(opts.query)
@@ -65,7 +65,7 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
     /* Over-fetch, then post-filter by model. findNearest can't prefilter
      * on embedding.model without a composite vector index; fetching a
      * wider window and filtering in-process is correct and index-free.
-     * During a re-embed migration this can still return < k — that's the
+     * During a re-embed migration this can still return < k - that's the
      * accepted sparse-but-correct behaviour. */
     const knnQuery = db.collection(path).findNearest({
       vectorField: "embedding.vector",

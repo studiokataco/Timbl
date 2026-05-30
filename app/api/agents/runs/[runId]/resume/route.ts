@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic"
  * LongRunningFunctionTool that paused it (typically human-gate's
  * requestHumanApproval). The body carries the human's decision; we shape
  * it into a Content with a functionResponse part keyed by the persisted
- * toolCallId, and stream the runner's continuation as SSE — the same way
+ * toolCallId, and stream the runner's continuation as SSE - the same way
  * the original /run endpoint does.
  */
 

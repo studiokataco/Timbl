@@ -23,20 +23,20 @@ import type {
  *
  * Scope of this implementation:
  *   ✓ Text streaming (content_block_delta → ContentEvent chunks)
- *   ✓ Tool use roundtrip — function call → Anthropic tool_use, then ADK
+ *   ✓ Tool use roundtrip - function call → Anthropic tool_use, then ADK
  *     functionResponse → Anthropic tool_result
  *   ✓ System instruction extracted from llmRequest.config.systemInstruction
  *   ✓ usage metadata aggregated into the final LlmResponse
  *   ✗ Extended thinking / cache_control / images / citations / web search
- *     — Phase 4 stays focused; extend as workflows need it.
+ *     - Phase 4 stays focused; extend as workflows need it.
  *
- * Tools: ADK supplies LlmRequest.toolsDict — a map of name → BaseTool with
+ * Tools: ADK supplies LlmRequest.toolsDict - a map of name → BaseTool with
  * a `_getDeclaration()` that returns a Gemini FunctionDeclaration. The
  * declaration's `parameters` is a JSON-schema-ish object compatible with
  * Anthropic's input_schema. We pass it straight through.
  */
 
-/* Haiku 4.5 — ~3× cheaper than Sonnet 4.6 on both input and output tokens,
+/* Haiku 4.5 - ~3× cheaper than Sonnet 4.6 on both input and output tokens,
  * and handles parallel tool calls + medium-length drafts well. If you need
  * the heavier reasoning of Sonnet, set `model` on the AgentConfig directly
  * rather than flipping this default. */
@@ -68,11 +68,11 @@ export class AnthropicLlm extends BaseLlm {
     const messages = buildAnthropicMessages(llmRequest.contents)
     const modelName = (llmRequest.model || this.model).replace(/^anthropic\//, "")
 
-    /* Prompt caching — Anthropic ephemeral cache (5-min TTL). Mark the
+    /* Prompt caching - Anthropic ephemeral cache (5-min TTL). Mark the
      * system prompt and the last tool with cache_control so the system
      * block + the entire tools array get cached. On repeat turns in a
      * review loop (drafter + reviewer), the cache hit drops input cost
-     * on those segments by ~90%. Messages are not cached — they change
+     * on those segments by ~90%. Messages are not cached - they change
      * every turn and caching them yields nothing. */
     const system = withSystemCache(systemText)
     const toolsWithCache = withToolsCache(tools)
@@ -164,8 +164,8 @@ export class AnthropicLlm extends BaseLlm {
 
   /* Non-streaming path. ADK runs this when runConfig.streamingMode !== SSE,
    * which is the default for /api/agents/{agent}/run since the route handler
-   * doesn't set a streamingMode. Use the SDK's messages.stream() helper —
-   * the same one the streaming path uses — so tool_use blocks come back with
+   * doesn't set a streamingMode. Use the SDK's messages.stream() helper -
+   * the same one the streaming path uses - so tool_use blocks come back with
    * fully-aggregated `input`. The previous implementation read
    * content_block.input at content_block_start time when it's still empty,
    * which is exactly why every agent call landed at ADK with args={}. */
@@ -182,7 +182,7 @@ export class AnthropicLlm extends BaseLlm {
       signal: abortSignal,
     })
 
-    // Drain the stream — we don't yield partials in the non-streaming path.
+    // Drain the stream - we don't yield partials in the non-streaming path.
     for await (const _event of msgStream) {
       if (abortSignal?.aborted) break
     }
@@ -257,7 +257,7 @@ function buildAnthropicTools(req: LlmRequest): AnthropicTool[] {
  * 2020-12 (what Anthropic's tools API requires). Two problems to fix:
  *
  *   1. `type` values are GenAI enum strings ("OBJECT", "STRING", "ARRAY",
- *      "INTEGER", "NUMBER", "BOOLEAN") — must be lowercased.
+ *      "INTEGER", "NUMBER", "BOOLEAN") - must be lowercased.
  *   2. GenAI adds non-standard fields (`nullable`, `propertyOrdering`,
  *      Google-flavoured `format` values like "int32") that fail
  *      Anthropic's strict 2020-12 validation.
@@ -337,7 +337,7 @@ function normalizeSchemaTypes(node: unknown): unknown {
   }
 
   /* If the original had `nullable: true`, model it as `type: [t, "null"]`
-   * — JSON Schema 2020-12 allows array of types. */
+   * - JSON Schema 2020-12 allows array of types. */
   if ((obj as { nullable?: boolean }).nullable === true && typeof out.type === "string") {
     out.type = [out.type, "null"]
   }
@@ -361,7 +361,7 @@ const STANDARD_FORMATS = new Set([
   "json-pointer",
 ])
 
-/* Anthropic cache-control marker — minimum cacheable size is ~1024 tokens
+/* Anthropic cache-control marker - minimum cacheable size is ~1024 tokens
  * (~4000 chars), so skip the marker on tiny inputs to avoid the API
  * rejecting the request or charging cache-write cost with no payoff. */
 const CACHE_MIN_CHARS = 4_000
@@ -376,7 +376,7 @@ function withSystemCache(
 
 function withToolsCache(tools: AnthropicTool[]): AnthropicTool[] | undefined {
   if (tools.length === 0) return undefined
-  /* Cache boundary applies to all items up to and including the marker —
+  /* Cache boundary applies to all items up to and including the marker -
    * marking the LAST tool caches the entire tools array as one block. */
   const totalChars = tools.reduce(
     (n, t) =>

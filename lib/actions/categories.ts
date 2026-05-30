@@ -24,7 +24,7 @@ import {
  *     more.
  *   - `delete` cannot remove `system: true` rows (seeded defaults).
  *   - `delete` requires a reassignTo target if any posts still point at
- *     the category — protects against orphan FKs.
+ *     the category - protects against orphan FKs.
  */
 
 const createInput = categorySchema
@@ -58,7 +58,7 @@ const reorderInput = z.object({
 const deleteInput = z.object({
   id: z.string().min(1),
   /* Required when the category has posts. Validated against the org's
-   * categories — must not be the same id, must exist. */
+   * categories - must not be the same id, must exist. */
   reassignTo: z.string().optional(),
 })
 

@@ -1,15 +1,15 @@
 import { getAdminDb } from "@/lib/firebase/admin"
 
 /*
- * Migration 0012 — swap every `gemini`-provider agentConfig to Gemini 3.5
+ * Migration 0012 - swap every `gemini`-provider agentConfig to Gemini 3.5
  * Flash (`gemini-3.5-flash`, GA, released 2026-05-19).
  *
  * Why a migration: lib/agents/defaults.ts is the source of truth only for
- * NEW installs — installDefaultAgents() skips agentConfigs that already
+ * NEW installs - installDefaultAgents() skips agentConfigs that already
  * exist. Existing orgs' agents keep whatever model is on their Firestore
  * doc, so they need this explicit update.
  *
- * Standalone — NOT wired into firestore/seeds/run.ts. Idempotent: a second
+ * Standalone - NOT wired into firestore/seeds/run.ts. Idempotent: a second
  * run reports everything already on target. `anthropic` agents (drafter)
  * are deliberately left untouched.
  *
@@ -29,7 +29,7 @@ export async function migrate0012GeminiFlash(): Promise<void> {
   const emulator = process.env.FIRESTORE_EMULATOR_HOST
   if (!emulator && process.env.CONFIRM_PROD_MIGRATION !== "1") {
     throw new Error(
-      "FIRESTORE_EMULATOR_HOST is not set — this run would write to " +
+      "FIRESTORE_EMULATOR_HOST is not set - this run would write to " +
         "PRODUCTION Firestore. Re-run with CONFIRM_PROD_MIGRATION=1 if that " +
         "is intended.",
     )

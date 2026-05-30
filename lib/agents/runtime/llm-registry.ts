@@ -24,7 +24,7 @@ import { OpenAiCompatibleLlm } from "./openai-compatible-llm"
 
 let registered = false
 
-/* One-time warn dedupe — keyed so each distinct fallback message logs once
+/* One-time warn dedupe - keyed so each distinct fallback message logs once
  * per process. Avoids spamming the console on hot reload + repeated calls. */
 const warnedKeys = new Set<string>()
 function warnOnce(key: string, message: string) {
@@ -90,7 +90,7 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
       if (anthropicKey) return new AnthropicLlm({ model: input.model })
       warnOnce(
         "anthropic-missing-mock",
-        "[llm-registry] No Anthropic key set — using MockLlm",
+        "[llm-registry] No Anthropic key set - using MockLlm",
       )
       return new MockLlm({ model: input.model })
     }
@@ -105,12 +105,12 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
       }
       warnOnce(
         "openrouter-missing-mock",
-        "[llm-registry] No OPENROUTER_API_KEY set — using MockLlm",
+        "[llm-registry] No OPENROUTER_API_KEY set - using MockLlm",
       )
       return new MockLlm({ model: input.model })
     }
     case "ollama": {
-      // Ollama is a local server — no API key. On Cloud Run localhost is
+      // Ollama is a local server - no API key. On Cloud Run localhost is
       // unreachable; the UI gates this provider to dev/desktop (§6.5).
       return new OpenAiCompatibleLlm({
         model: input.model,
@@ -126,13 +126,13 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
       if (anthropicKey) {
         warnOnce(
           "gemini-missing-anthropic-fallback",
-          "[llm-registry] No Gemini key — falling back to Anthropic for agent provider=gemini",
+          "[llm-registry] No Gemini key - falling back to Anthropic for agent provider=gemini",
         )
         return new AnthropicLlm({ model: "claude-sonnet-4-6" })
       }
       warnOnce(
         "gemini-missing-mock",
-        "[llm-registry] No LLM keys set — using MockLlm",
+        "[llm-registry] No LLM keys set - using MockLlm",
       )
       return new MockLlm({ model: input.model })
     }
@@ -146,7 +146,7 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
  *
  * `effective` describes the LLM the registry would actually instantiate
  * for the most common (Gemini-default) agent. `fallback` is true when
- * Gemini isn't available — most agents in the seeds default to Gemini,
+ * Gemini isn't available - most agents in the seeds default to Gemini,
  * so any non-Gemini effective provider is treated as a degraded state.
  *
  * The per-provider booleans (`gemini`/`anthropic`/`openrouter`) report

@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 /*
- * Approval card — rendered in the activity stream when a run is in
+ * Approval card - rendered in the activity stream when a run is in
  * `awaiting_human`. Pulls the requestHumanApproval tool_call's args out
  * of the session event log so it can show the actual question the gate
  * is blocking on, plus the postId for context.
@@ -134,7 +134,7 @@ export function ApprovalCard({ run, active, onSelect }: Props) {
         active && "ring-1 ring-foreground/20",
       )}
     >
-      {/* Left accent strip — badge-orange, 3px */}
+      {/* Left accent strip - badge-orange, 3px */}
       <span
         aria-hidden
         className="absolute left-0 top-0 h-full w-[3px] bg-badge-orange"
@@ -271,9 +271,9 @@ function approvedTitle(kind: string | undefined): string {
     case "add_to_calendar":
       return "Approved & added to calendar"
     case "create_draft":
-      return "Approved — draft created"
+      return "Approved - draft created"
     case "instantiate_template":
-      return "Approved — template applied"
+      return "Approved - template applied"
     case "assign_review":
       return "Approved & assigned"
     default:
@@ -282,7 +282,7 @@ function approvedTitle(kind: string | undefined): string {
 }
 
 function relTime(iso: string | undefined): string {
-  if (!iso) return "—"
+  if (!iso) return "-"
   try {
     return formatDistanceToNow(parseISO(iso), { addSuffix: true }).replace(
       /^about /,

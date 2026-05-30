@@ -456,7 +456,7 @@ function DeleteCategoryDialog({
         if (!result.ok) {
           if (result.error?.toLowerCase().includes("has posts") && !reassign) {
             toast.error("Pick a category to reassign posts to.", {
-              description: "Reopening the category — try again with a target.",
+              description: "Reopening the category - try again with a target.",
             })
           } else {
             toast.error(result.error ?? "Could not delete")
@@ -492,7 +492,7 @@ function DeleteCategoryDialog({
           <Label htmlFor="reassign">Reassign posts to</Label>
           <Select value={reassignTo} onValueChange={(v) => setReassignTo(v ?? "")}>
             <SelectTrigger id="reassign">
-              <SelectValue placeholder="Optional — pick a target" />
+              <SelectValue placeholder="Optional - pick a target" />
             </SelectTrigger>
             <SelectContent>
               {options.map((c) => (
@@ -601,7 +601,7 @@ function BulkDeleteDialog({
           <Label htmlFor="bulk-reassign">Reassign posts to</Label>
           <Select value={reassignTo} onValueChange={(v) => setReassignTo(v ?? "")}>
             <SelectTrigger id="bulk-reassign">
-              <SelectValue placeholder="Optional — pick a target" />
+              <SelectValue placeholder="Optional - pick a target" />
             </SelectTrigger>
             <SelectContent>
               {options.map((c) => (
@@ -713,7 +713,7 @@ function BulkAddDialog({
           <DialogTitle>Bulk add categories</DialogTitle>
           <DialogDescription>
             Enter one category name per line. All will get the same default
-            color and post type — edit individually after.
+            color and post type - edit individually after.
           </DialogDescription>
         </DialogHeader>
 

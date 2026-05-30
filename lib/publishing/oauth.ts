@@ -6,7 +6,7 @@ import type { ChannelKey } from "@/lib/schemas/_shared"
 
 import { decrypt } from "./crypto"
 
-/* Public origin of the Next app — OAuth redirect URIs must match the value
+/* Public origin of the Next app - OAuth redirect URIs must match the value
  * registered with each provider. Falls back to localhost for dev. */
 export function appBaseUrl(): string {
   return (
@@ -21,7 +21,7 @@ export function redirectUri(channel: ChannelKey): string {
 }
 
 /* Build a public-origin URL for in-app redirects. On Cloud Run, NextRequest.url
- * resolves to the internal listener (http://0.0.0.0:8080) — using it as the
+ * resolves to the internal listener (http://0.0.0.0:8080) - using it as the
  * base for redirects leaks that address to the browser. Always anchor to
  * APP_BASE_URL instead. */
 export function settingsRedirect(path: string, params?: Record<string, string>): URL {
@@ -40,7 +40,7 @@ export function expiresAtIso(expiresInSeconds: number | undefined): string | und
 /*
  * Per-org OAuth app credentials, loaded from Firestore and decrypted with
  * SOCIAL_TOKEN_KEY. Replaces the older env-var path so admins can set
- * platform credentials from the UI without redeploying — see
+ * platform credentials from the UI without redeploying - see
  * lib/actions/oauth-apps.ts.
  *
  * Cached in-process for 5 minutes per (orgId, channel) so the publish

@@ -97,7 +97,7 @@ export const postSchema = audit.extend({
   /* Multi-step approval. On plans with the `multiStepApproval` feature
    * enabled, posts cannot transition to `scheduled` until at least
    * `requiredApprovers` distinct user ids appear in `approvedBy`. Plans
-   * without the feature ignore this entirely — single approval flips the
+   * without the feature ignore this entirely - single approval flips the
    * status as before.
    *
    * Optional so legacy/quick-add posts don't need to set them. The

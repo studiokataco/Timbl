@@ -5,7 +5,7 @@ import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
 import { CampaignsBoard } from "@/components/campaigns/campaigns-board"
 
 /*
- * Campaigns — the single campaigns surface: browse grid + create / edit /
+ * Campaigns - the single campaigns surface: browse grid + create / edit /
  * delete in one place. The old read-only split (this page bounced every
  * action to a near-duplicate /settings/campaigns) is gone.
  */

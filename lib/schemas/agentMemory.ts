@@ -4,7 +4,7 @@ import { embeddingSchema } from "./embedding"
 
 /*
  * Lightweight memory facts an agent writes (typically via human-gate) and
- * any other agent recalls. Intentionally minimal — no `kind`, `confidence`,
+ * any other agent recalls. Intentionally minimal - no `kind`, `confidence`,
  * or `supersedes` yet. Add fields back when signal earns them.
  */
 export const agentMemorySchema = z.object({

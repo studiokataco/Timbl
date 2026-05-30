@@ -29,7 +29,7 @@ import { getThread, type ThreadMessage } from "@/lib/storage/agent-threads"
 import { LlmStatusBanner } from "./llm-status-banner"
 
 /*
- * Generic agent chat surface — Phase C redesign.
+ * Generic agent chat surface - Phase C redesign.
  *
  * Visual shifts from the bubbles-and-details Phase 0 version:
  *   - No avatars, no bubbles. User messages render as a small right-
@@ -114,7 +114,7 @@ export interface AgentChatProps {
   intro?: string
   /** Optional banner (e.g. "Running with unsaved edits"). */
   banner?: string
-  /** Called after each stream finishes — used to refetch dependent queries. */
+  /** Called after each stream finishes - used to refetch dependent queries. */
   onFinish?: () => void
   /** Optional placeholder shown in the composer. */
   placeholder?: string
@@ -125,7 +125,7 @@ export interface AgentChatProps {
   /**
    * Optional run identity used to wire the human-gate sidecar. When the
    * chat is in the Studio playground there is no pre-existing runId
-   * until the first turn — we capture it from the `X-Run-Id` response
+   * until the first turn - we capture it from the `X-Run-Id` response
    * header. Brand-wizard and ad-hoc chats can leave this unset, in
    * which case the sidecar renders but its CTAs are disabled.
    */
@@ -347,7 +347,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
             const event = JSON.parse(payload) as StructuredEvent
             applyEvent(event, intoLatestAssistant, setHumanGate)
           } catch {
-            /* malformed frame — keep stream alive */
+            /* malformed frame - keep stream alive */
           }
         }
       }
@@ -397,12 +397,12 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     onStreamingChange?.(streaming)
   }, [streaming, onStreamingChange])
 
-  /* Auto-scroll only when a NEW transcript item is added — not on every
+  /* Auto-scroll only when a NEW transcript item is added - not on every
    * streaming text mutation. Depending on `[transcript]` (whole array)
    * fired on every SSE chunk and queued multiple concurrent smooth-scroll
    * animations, so the viewport ended up positioned above the final
    * answer ("thinking scrolls down + result appears above it"). Length-
-   * based dep fires once per new bubble — streamed text updates the
+   * based dep fires once per new bubble - streamed text updates the
    * existing bubble in place. */
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -547,7 +547,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
       </form>
       )}
 
-      {/* Suppress unused — kept for trailingAssistant tracking */}
+      {/* Suppress unused - kept for trailingAssistant tracking */}
       <span hidden aria-hidden>{trailingAssistant ? "1" : "0"}</span>
     </div>
   )
@@ -714,7 +714,7 @@ function HumanGateSidecar({
   async function act(decision: "approve" | "reject") {
     if (!runId) {
       toast.error(
-        "No run identity yet — start a turn so the gate can be resolved.",
+        "No run identity yet - start a turn so the gate can be resolved.",
       )
       return
     }
@@ -880,6 +880,6 @@ function applyEvent(
         item.text = (item.text ?? "") + `\n\n⚠ ${message}`
       })
       break
-    /* thought / finished / tool_confirmation — not rendered here */
+    /* thought / finished / tool_confirmation - not rendered here */
   }
 }

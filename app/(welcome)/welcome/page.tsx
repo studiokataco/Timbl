@@ -15,7 +15,7 @@ export const metadata = { title: "Choose a workspace" }
 
 /*
  * Dev-only opening chooser. In production the org comes from the verified
- * Firebase session, so there is nothing to choose — bounce to the app.
+ * Firebase session, so there is nothing to choose - bounce to the app.
  *
  * `currentMode` is null until the developer has picked once; the chooser
  * uses it only to badge the workspace they're currently in on a revisit.

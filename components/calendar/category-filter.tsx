@@ -13,7 +13,7 @@ type Props = {
 }
 
 /*
- * Sidebar filter — toggle which categories' events render on the grid.
+ * Sidebar filter - toggle which categories' events render on the grid.
  * `visibleIds` size === categories.length means all are visible.
  */
 export function CategoryFilter({

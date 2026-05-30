@@ -5,7 +5,7 @@ import {
 } from "@/lib/agents/defaults"
 
 /*
- * Seeds default agent configurations. Idempotent — re-running merges over
+ * Seeds default agent configurations. Idempotent - re-running merges over
  * existing docs without clobbering user edits made through /settings/agents.
  *
  * Source of truth for the template list is `lib/agents/defaults.ts`, shared
@@ -20,7 +20,7 @@ export async function seed0007AgentConfigs() {
     .doc(SAFE_ORG_ID)
     .collection("agentConfigs")
 
-  // Skip awareness-researcher here — 0008 owns it (preserves prior log order).
+  // Skip awareness-researcher here - 0008 owns it (preserves prior log order).
   const seeds = AGENT_DEFAULTS.filter((d) => d.name !== "awareness-researcher")
 
   for (const cfg of seeds) {

@@ -8,7 +8,7 @@ import { getRuntimeCtx } from "../runtime/context"
 
 /*
  * Human approval gate. When this tool is invoked, adk-js pauses the run
- * awaiting a tool result — that result is supplied later through the
+ * awaiting a tool result - that result is supplied later through the
  * /resume endpoint when the human clicks Approve or Reject in the UI.
  *
  * The tool's `execute` writes the pause into the post's agentMeta so the
@@ -28,7 +28,7 @@ export const requestHumanApprovalTool = new LongRunningFunctionTool({
   parameters: input,
   execute: async (req, ctx) => {
     const { orgId, runId } = getRuntimeCtx(ctx)
-    /* adk-js gives us the function-call id on Context.functionCallId — it
+    /* adk-js gives us the function-call id on Context.functionCallId - it
      * survives the pause/resume cycle and is the key the resume endpoint
      * uses when calling runner.submitToolResult(). */
     const toolCallId = ctx?.functionCallId ?? ""
@@ -44,7 +44,7 @@ export const requestHumanApprovalTool = new LongRunningFunctionTool({
         },
         { merge: true },
       )
-    /* Returning nothing keeps the runner in `awaiting_human` — that's the
+    /* Returning nothing keeps the runner in `awaiting_human` - that's the
      * whole point of LongRunningFunctionTool. */
     return undefined
   },

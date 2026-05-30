@@ -43,7 +43,7 @@ const moveInput = z.object({
 export const moveKanbanCardTool = new FunctionTool({
   name: "moveCard",
   description:
-    "Alias of movePostToColumn — present for agents that think in kanban terms rather than posts.",
+    "Alias of movePostToColumn - present for agents that think in kanban terms rather than posts.",
   parameters: moveInput,
   execute: async (input, ctx) => {
     const { orgId } = getRuntimeCtx(ctx)

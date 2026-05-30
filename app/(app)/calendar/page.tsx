@@ -1,4 +1,4 @@
-// Calendar reads from Firestore on every request — never pre-render at build
+// Calendar reads from Firestore on every request - never pre-render at build
 // time, otherwise the build tries to hit production Firestore.
 export const dynamic = "force-dynamic"
 

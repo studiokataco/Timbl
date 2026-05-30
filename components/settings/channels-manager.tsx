@@ -27,7 +27,7 @@ import type { SocialAccountPublic } from "@/lib/schemas"
 type ChannelDef = {
   key: ChannelKey
   label: string
-  /* Friendly name shown inside the setup dialog — Meta shares one app
+  /* Friendly name shown inside the setup dialog - Meta shares one app
    * pair across Facebook + Instagram, so the dialog labels it accordingly. */
   appLabel: string
   /* https://...console URL surfaced as a help link in the setup dialog. */

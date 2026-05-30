@@ -8,7 +8,7 @@ import { rememberTool } from "../../tools/memory"
 import { listPostsTool } from "../../tools/posts"
 
 /*
- * Human-gate sub-agent — sole job is to invoke the long-running
+ * Human-gate sub-agent - sole job is to invoke the long-running
  * requestHumanApproval tool on the current draft. The pipeline pauses
  * here until the human acts via /api/agents/runs/{runId}/resume.
  *
@@ -29,7 +29,7 @@ const HUMAN_GATE_INSTRUCTION = [
   "Workflow context:",
   "  - The session state contains `lastDraftPostId`.",
   "  - If the session also contains a `humanEdit` or `humanRationale` field (the reviewer or admin altered the draft before approving), call remember({topic: <campaignId or 'voice'>, body: <one-paragraph rationale of what they changed and why>}) BEFORE requesting approval. Future drafter/reviewer runs will recall this.",
-  "  - Briefly summarise the draft (one sentence: who, what, when) — read it via listPosts if you need details.",
+  "  - Briefly summarise the draft (one sentence: who, what, when) - read it via listPosts if you need details.",
   "  - Then call requestHumanApproval with the postId and that one-sentence summary.",
   "  - That tool intentionally never returns. The run pauses here; do not say anything else after the tool call.",
 ].join("\n")

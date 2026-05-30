@@ -10,7 +10,7 @@ import type { ServerActionResult } from "@/lib/schemas"
 /*
  * Server actions for the notify-only model-update feature (§6.8).
  * Surfaced in the Studio model-updates card. Nothing here applies a
- * model — a human reviews a flagged model and swaps it in the agent
+ * model - a human reviews a flagged model and swaps it in the agent
  * playground, then prod-swap A/Bs.
  */
 
