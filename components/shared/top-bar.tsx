@@ -2,7 +2,6 @@
 
 import { LogOut, Plus, Search, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,17 +85,11 @@ export function TopBar({ userName }: { userName: string }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={
-              <button
-                type="button"
-                aria-label="Account menu"
-                className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            }
+            type="button"
+            aria-label="Account menu"
+            className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:after:mix-blend-lighten"
           >
-            <Avatar className="size-9">
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            </Avatar>
+            {initials}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuLabel className="text-xs text-muted-foreground">
