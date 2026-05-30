@@ -11,6 +11,7 @@ import { QueryProvider } from "@/components/shared/query-provider"
 import { ShortcutsDialog } from "@/components/shared/shortcuts-dialog"
 import { Sidebar } from "@/components/shared/sidebar"
 import { TopBar } from "@/components/shared/top-bar"
+import { WorkspaceProvider } from "@/components/shared/workspace-provider"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
 import {
   getCurrentOrgId,
@@ -46,23 +47,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ])
   return (
     <QueryProvider>
-      <PlanFeaturesProvider value={planFeatures}>
-        <DialogsProvider data={referenceData}>
-          <div className="flex flex-1 min-h-0">
-            <Sidebar />
-            <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
-              <TopBar userName={user.name} workspaceName={org.name} />
-              {children}
+      <WorkspaceProvider orgId={orgId}>
+        <PlanFeaturesProvider value={planFeatures}>
+          <DialogsProvider data={referenceData}>
+            <div className="flex flex-1 min-h-0">
+              <Sidebar />
+              <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
+                <TopBar userName={user.name} workspaceName={org.name} />
+                {children}
+              </div>
             </div>
-          </div>
-          <CommandPalette />
-          <ShortcutsDialog />
-          <Onboarding />
-          <AgentDrawer />
-          <AgentCommandModal />
-          <AskAiButton />
-        </DialogsProvider>
-      </PlanFeaturesProvider>
+            <CommandPalette />
+            <ShortcutsDialog />
+            <Onboarding />
+            <AgentDrawer key={orgId} />
+            <AgentCommandModal key={orgId} />
+            <AskAiButton />
+          </DialogsProvider>
+        </PlanFeaturesProvider>
+      </WorkspaceProvider>
     </QueryProvider>
   )
 }

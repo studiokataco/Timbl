@@ -11,9 +11,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { listAgentConfigs } from "@/lib/actions/agent-configs"
+import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 import {
   appendMessage,
   createThread,
@@ -25,6 +24,7 @@ import {
 
 import { AgentChat } from "./agent-chat"
 import { AgentThreadRail } from "./agent-thread-rail"
+import { useRosterAgents } from "./use-roster-agents"
 
 /*
  * Global agent drawer - two-pane surface (history rail + active
@@ -37,23 +37,30 @@ import { AgentThreadRail } from "./agent-thread-rail"
  */
 
 const FLOATING_HOTKEY = "j"
-const DEFAULT_AGENT = "settings-assistant"
-const THREADS_QUERY_KEY = ["agent-threads"] as const
 
-let lastActiveThreadId: string | null = null
+const lastActiveThreadByOrg = new Map<string, string | null>()
+
+function threadsQueryKey(orgId: string) {
+  return ["agent-threads", orgId] as const
+}
+
+function threadQueryKey(orgId: string, threadId: string) {
+  return ["agent-thread", orgId, threadId] as const
+}
 
 export function AgentDrawer() {
+  const orgId = useWorkspaceOrgId()
   const [open, setOpen] = useState(false)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(
-    lastActiveThreadId,
+    () => lastActiveThreadByOrg.get(orgId) ?? null,
   )
   const [showRailMobile, setShowRailMobile] = useState(false)
   const qc = useQueryClient()
   const bootstrappedRef = useRef(false)
 
   useEffect(() => {
-    lastActiveThreadId = activeThreadId
-  }, [activeThreadId])
+    lastActiveThreadByOrg.set(orgId, activeThreadId)
+  }, [orgId, activeThreadId])
 
   // Cmd-Shift-J / Ctrl-Shift-J toggle. (Cmd-J is owned by the modal.)
   useEffect(() => {
@@ -95,17 +102,14 @@ export function AgentDrawer() {
       )
   }, [])
 
-  // Agent configs for the top pill rail.
-  const { data: agentConfigs = [] } = useQuery({
-    queryKey: ["agent-configs"],
-    queryFn: listAgentConfigs,
-    staleTime: 30_000,
-  })
+  // Agent configs for the top pill rail (same roster filter as Studio).
+  const { agentNames, defaultAgent } = useRosterAgents()
 
   // Active thread record (used for agent identity on the right pane).
   const { data: activeThread = null } = useQuery({
-    queryKey: ["agent-thread", activeThreadId],
-    queryFn: () => (activeThreadId ? getThread(activeThreadId) : null),
+    queryKey: threadQueryKey(orgId, activeThreadId ?? ""),
+    queryFn: () =>
+      activeThreadId ? getThread(activeThreadId, orgId) : null,
     enabled: !!activeThreadId,
   })
 
@@ -122,25 +126,25 @@ export function AgentDrawer() {
     }
     bootstrappedRef.current = true
     void (async () => {
-      const threads = await listThreads()
+      const threads = await listThreads(orgId)
       if (threads.length > 0) {
         setActiveThreadId(threads[0].id)
         return
       }
-      const fresh = await createThread(DEFAULT_AGENT)
-      await qc.invalidateQueries({ queryKey: THREADS_QUERY_KEY })
+      const fresh = await createThread(defaultAgent, orgId)
+      await qc.invalidateQueries({ queryKey: threadsQueryKey(orgId) })
       setActiveThreadId(fresh.id)
     })()
-  }, [open, activeThreadId, qc])
+  }, [open, activeThreadId, qc, defaultAgent, orgId])
 
   const handleNewChat = useCallback(
     async (agentName: string) => {
-      const fresh = await createThread(agentName)
-      await qc.invalidateQueries({ queryKey: THREADS_QUERY_KEY })
+      const fresh = await createThread(agentName, orgId)
+      await qc.invalidateQueries({ queryKey: threadsQueryKey(orgId) })
       setActiveThreadId(fresh.id)
       setShowRailMobile(false)
     },
-    [qc],
+    [qc, orgId],
   )
 
   const activeAgentNameForCb = useRef<string>("")
@@ -155,10 +159,12 @@ export function AgentDrawer() {
       }
       if (name === activeAgentNameForCb.current) return
       await updateThreadAgent(activeThreadId, name)
-      await qc.invalidateQueries({ queryKey: ["agent-thread", activeThreadId] })
-      await qc.invalidateQueries({ queryKey: THREADS_QUERY_KEY })
+      await qc.invalidateQueries({
+        queryKey: threadQueryKey(orgId, activeThreadId),
+      })
+      await qc.invalidateQueries({ queryKey: threadsQueryKey(orgId) })
     },
-    [activeThreadId, handleNewChat, qc],
+    [activeThreadId, handleNewChat, qc, orgId],
   )
 
   const handlePickThread = useCallback((id: string) => {
@@ -172,18 +178,17 @@ export function AgentDrawer() {
       await appendMessage(activeThreadId, msg)
       // Keep the rail's relative timestamps and titles fresh, but
       // don't thrash queries - invalidate at a low rate.
-      qc.invalidateQueries({ queryKey: THREADS_QUERY_KEY })
+      qc.invalidateQueries({ queryKey: threadsQueryKey(orgId) })
     },
-    [activeThreadId, qc],
+    [activeThreadId, qc, orgId],
   )
 
-  const activeAgentName = activeThread?.agentName ?? DEFAULT_AGENT
+  const activeAgentName = activeThread?.agentName ?? defaultAgent
   useEffect(() => {
     activeAgentNameForCb.current = activeAgentName
   }, [activeAgentName])
-  const agentNames = (agentConfigs.length > 0
-    ? agentConfigs.map((c) => c.name)
-    : [DEFAULT_AGENT])
+  const pickerAgentNames =
+    agentNames.length > 0 ? agentNames : [defaultAgent]
 
   return (
     <>
@@ -247,7 +252,7 @@ export function AgentDrawer() {
               </SheetDescription>
               {/* Agent pill rail */}
               <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
-                {agentNames.map((name) => {
+                {pickerAgentNames.map((name) => {
                   const isActive = name === activeAgentName
                   return (
                     <button
@@ -273,8 +278,11 @@ export function AgentDrawer() {
                   key={activeThreadId}
                   agentName={activeAgentName}
                   threadId={activeThreadId}
+                  agentCatalog={pickerAgentNames}
+                  onAgentSwitch={switchAgent}
+                  organizationId={orgId}
                   onMessage={handlePersist}
-                  intro="Hi - I can edit your brand config, look up other agents' settings, or propose changes to them. What do you need?"
+                  intro={`Ask the ${activeAgentName} agent about this workspace.`}
                   placeholder="Ask anything…"
                 />
               ) : (

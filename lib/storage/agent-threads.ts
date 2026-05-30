@@ -6,6 +6,8 @@
  * Single DB `safe-agent-threads`, single object store `threads`,
  * keyed by `id`. All functions are SSR-safe (no-op on the server)
  * and swallow errors so a flaky IDB never crashes the drawer.
+ * Threads are scoped by `organizationId` so switching workspaces
+ * never mixes chat history.
  */
 
 const DB_NAME = "safe-agent-threads"
@@ -28,6 +30,7 @@ export type ThreadMessage = {
 
 export type Thread = {
   id: string
+  organizationId: string
   agentName: string
   title?: string
   createdAt: number
@@ -80,11 +83,12 @@ function tx<T>(
   )
 }
 
-export async function listThreads(): Promise<Thread[]> {
+export async function listThreads(organizationId: string): Promise<Thread[]> {
   if (!isBrowser()) return []
   try {
     const all = await tx<Thread[]>("readonly", (store) => store.getAll() as IDBRequest<Thread[]>)
     return (all ?? [])
+      .filter((t) => t.organizationId === organizationId)
       .slice()
       .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
   } catch (err) {
@@ -93,26 +97,35 @@ export async function listThreads(): Promise<Thread[]> {
   }
 }
 
-export async function getThread(id: string): Promise<Thread | null> {
+export async function getThread(
+  id: string,
+  organizationId?: string,
+): Promise<Thread | null> {
   if (!isBrowser()) return null
   try {
     const got = await tx<Thread | undefined>("readonly", (store) =>
       store.get(id) as IDBRequest<Thread | undefined>,
     )
-    return got ?? null
+    if (!got) return null
+    if (organizationId && got.organizationId !== organizationId) return null
+    return got
   } catch (err) {
     console.warn("[agent-threads] getThread failed", err)
     return null
   }
 }
 
-export async function createThread(agentName: string): Promise<Thread> {
+export async function createThread(
+  agentName: string,
+  organizationId: string,
+): Promise<Thread> {
   const now = Date.now()
   const thread: Thread = {
     id:
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `t_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    organizationId,
     agentName,
     createdAt: now,
     lastMessageAt: now,
@@ -186,6 +199,7 @@ export async function renameThread(id: string, title: string): Promise<void> {
 
 export async function importThread(
   agentName: string,
+  organizationId: string,
   transcript: ThreadMessage[],
 ): Promise<Thread> {
   const now = Date.now()
@@ -203,6 +217,7 @@ export async function importThread(
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `t_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    organizationId,
     agentName,
     title: deriveTitle(filtered),
     createdAt: now,

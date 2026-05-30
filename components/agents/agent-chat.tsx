@@ -148,6 +148,8 @@ export interface AgentChatProps {
    * to persist mutations back.
    */
   threadId?: string
+  /** Org scope for persisted thread hydration. */
+  organizationId?: string
   /**
    * Fires whenever a transcript item is added or mutated (user send,
    * assistant content stream, tool call). The drawer uses this to
@@ -175,6 +177,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   compact = false,
   onStreamingChange,
   threadId,
+  organizationId,
   onMessage,
 }: AgentChatProps, ref) {
   const [transcript, setTranscript] = useState<TranscriptItem[]>([])
@@ -211,7 +214,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     if (hydratedThreadRef.current === threadId) return
     hydratedThreadRef.current = threadId
     let cancelled = false
-    void getThread(threadId).then((thread) => {
+    void getThread(threadId, organizationId).then((thread) => {
       if (cancelled) return
       if (!thread) {
         setTranscript([])
@@ -242,7 +245,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     return () => {
       cancelled = true
     }
-  }, [threadId])
+  }, [threadId, organizationId])
 
   // Emit transcript mutations as ThreadMessage events so the parent
   // can persist them. Compares serialized forms to avoid duplicate

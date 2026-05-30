@@ -77,3 +77,17 @@ export function agentsForStudioRoster<T extends { name: string; enabled: boolean
 ): T[] {
   return agents.filter((a) => a.enabled && !isStudioHiddenAgent(a.name))
 }
+
+export const DEFAULT_CHAT_AGENT_ID = "drafter"
+
+export function rosterAgentNames<T extends { name: string; enabled: boolean }>(
+  agents: T[],
+): string[] {
+  return agentsForStudioRoster(agents).map((a) => a.name)
+}
+
+export function defaultChatAgentId<T extends { name: string; enabled: boolean }>(
+  agents: T[],
+): string {
+  return rosterAgentNames(agents)[0] ?? DEFAULT_CHAT_AGENT_ID
+}
