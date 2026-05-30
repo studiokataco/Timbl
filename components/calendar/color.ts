@@ -4,7 +4,12 @@
  * for the event-pill background so titles stay legible. We do a simple
  * RGB-blend with white at 80%, which is close enough to the shadcnuikit
  * aesthetic without pulling in a colour library.
+ *
+ * Pastel backgrounds stay light in dark mode - pill text must always use
+ * dark ink, never var(--color-foreground).
  */
+export const PASTEL_PILL_TEXT = "#181d26"
+
 export function lightenForBg(hex: string | null | undefined, amount = 0.8): string {
   if (!hex) return "var(--color-secondary)"
   const m = hex.replace("#", "")
@@ -17,4 +22,11 @@ export function lightenForBg(hex: string | null | undefined, amount = 0.8): stri
   const gg = blend(g).toString(16).padStart(2, "0")
   const bb = blend(b).toString(16).padStart(2, "0")
   return `#${rr}${gg}${bb}`
+}
+
+export function categoryPillColors(hex: string | null | undefined) {
+  return {
+    backgroundColor: lightenForBg(hex),
+    color: PASTEL_PILL_TEXT,
+  }
 }

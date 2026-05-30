@@ -3,15 +3,7 @@
 import { differenceInCalendarDays } from "date-fns"
 import { cn } from "@/lib/utils"
 import type { Category, Post, User } from "@/lib/schemas"
-
-/*
- * Compact post chip shown inside calendar cells. Status indicator uses
- * shape + color so colour-blind users still get the signal:
- *   ● ready / posted
- *   ◐ in progress (designing/researching/review/scheduled)
- *   ○ idea / brief
- *   ⨯ missed
- */
+import { categoryPillColors } from "./color"
 
 const STATUS_GLYPH: Record<string, string> = {
   idea: "○",
@@ -45,8 +37,7 @@ export function PostChip({
         .toUpperCase()
     : null
 
-  const bg = category?.color ?? "var(--color-secondary)"
-  const fg = "#181d26"
+  const pillStyle = categoryPillColors(category?.color)
 
   return (
     <span
@@ -57,7 +48,7 @@ export function PostChip({
         "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-tight cursor-pointer truncate w-full",
         isPast && "opacity-50",
       )}
-      style={{ backgroundColor: bg, color: fg }}
+      style={pillStyle}
     >
       <span aria-hidden className="font-bold">
         {STATUS_GLYPH[post.status] ?? "·"}

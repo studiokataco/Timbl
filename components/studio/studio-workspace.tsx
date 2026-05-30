@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { X } from "lucide-react"
 
@@ -15,6 +16,7 @@ import { PipelineGraph } from "./pipeline-graph"
 import { ActivityStream } from "./activity-stream"
 import { Inspector } from "./inspector"
 import { EmptyRosterCta } from "./empty-roster-cta"
+import { agentsForStudioRoster } from "@/lib/onboarding/agent-catalog"
 
 /*
  * Three-column workspace for /studio.
@@ -56,6 +58,7 @@ export function StudioWorkspace({
   // sibling element and ignores that class).
   const isWide = useMediaQuery("(min-width: 1280px)")
   const showSheet = hasFocus && !isWide
+  const rosterAgents = useMemo(() => agentsForStudioRoster(agents), [agents])
 
   // Inspector sheet (tablet/mobile) is open iff the URL carries `?focus=`.
   // The persistent right rail (≥1280px) renders the same Inspector inline.
@@ -70,23 +73,23 @@ export function StudioWorkspace({
     <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_380px] divide-x divide-border">
       {/* Roster (left rail) */}
       <aside className="hidden md:block min-h-0 overflow-hidden">
-        <Roster agents={agents} />
+        <Roster rosterAgents={rosterAgents} installedAgents={agents} />
       </aside>
 
       {/* Mobile roster - horizontal scroll strip */}
       <div className="md:hidden border-b border-border bg-background overflow-x-auto">
-        <MobileRosterStrip agents={agents} />
+        <MobileRosterStrip agents={rosterAgents} />
       </div>
 
       {/* Center column */}
       <main className="min-h-0 overflow-y-auto flex flex-col">
         <PageHero />
-        {agents.length === 0 ? (
+        {rosterAgents.length === 0 ? (
           <EmptyRosterCta agents={agents} />
         ) : (
           <>
             <PipelineGraph
-              agents={agents}
+              agents={rosterAgents}
               runs={runs}
               initialPublishCounts={publishCounts}
             />
@@ -101,7 +104,7 @@ export function StudioWorkspace({
 
       {/* Inspector - persistent on wide screens (≥1280px) */}
       <aside className="hidden xl:block min-h-0 overflow-hidden bg-background">
-        <Inspector agents={agents} runs={runs} ideation={ideation} />
+        <Inspector agents={rosterAgents} runs={runs} ideation={ideation} />
       </aside>
 
       {/* Inspector - slide-over on tablet/mobile. Gated by JS media query
@@ -130,7 +133,7 @@ export function StudioWorkspace({
               </button>
             </SheetHeader>
             <div className="flex-1 min-h-0">
-              <Inspector agents={agents} runs={runs} ideation={ideation} />
+              <Inspector agents={rosterAgents} runs={runs} ideation={ideation} />
             </div>
           </SheetContent>
         </Sheet>

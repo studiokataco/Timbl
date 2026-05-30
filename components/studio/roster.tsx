@@ -20,10 +20,11 @@ import { ModelUpdatesCard } from "./model-updates-card"
  * navigation.
  */
 type Props = {
-  agents: AgentConfig[]
+  rosterAgents: AgentConfig[]
+  installedAgents: AgentConfig[]
 }
 
-export function Roster({ agents }: Props) {
+export function Roster({ rosterAgents, installedAgents }: Props) {
   const router = useRouter()
   const params = useSearchParams()
   const focus = params.get("focus") ?? ""
@@ -40,9 +41,9 @@ export function Roster({ agents }: Props) {
       CONFIG: [],
       OTHER: [],
     }
-    for (const a of agents) out[stageForAgent(a.name)].push(a)
+    for (const a of rosterAgents) out[stageForAgent(a.name)].push(a)
     return out
-  }, [agents])
+  }, [rosterAgents])
 
   function select(name: string) {
     const next = new URLSearchParams(params.toString())
@@ -131,7 +132,7 @@ export function Roster({ agents }: Props) {
       <AddAgentSheet
         open={addOpen}
         onOpenChange={setAddOpen}
-        installedAgents={agents}
+        installedAgents={installedAgents}
       />
     </nav>
   )

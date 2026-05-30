@@ -7,6 +7,7 @@ import {
   ChevronsUpDown,
   Loader2,
   MoreHorizontal,
+  Plus,
   Trash2,
   X,
 } from "lucide-react"
@@ -59,6 +60,7 @@ import type { WithId } from "@/lib/firebase/serialize"
 import type {
   Campaign,
   Category,
+  ChannelKey,
   ChannelStatus,
   Cta,
   KanbanColumn,
@@ -70,9 +72,12 @@ import type {
 } from "@/lib/schemas"
 import { LEGACY_POST_STATUSES } from "@/lib/schemas"
 import { deletePost, updatePost } from "@/lib/actions/posts"
+import { createCampaign } from "@/lib/actions/campaigns"
 import { fetchOgImage } from "@/lib/actions/assets"
 import { saveAsTemplate } from "@/lib/actions/templates"
 import { getNextStatuses } from "@/lib/post-status"
+import { getPostTypes, withSyncedPostTypes } from "@/lib/post-types"
+import { channelsForComposer } from "@/lib/channels"
 import { recordRecentPost } from "@/components/shared/command-palette"
 import { HashtagInput } from "./hashtag-input"
 
@@ -82,15 +87,6 @@ const POST_TYPE_OPTIONS: PostType[] = [
   "reel",
   "story",
   "video",
-]
-
-const CHANNELS: { key: string; label: string }[] = [
-  { key: "instagram", label: "Instagram" },
-  { key: "facebook", label: "Facebook" },
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "website", label: "Website" },
-  { key: "fb_groups", label: "FB Groups" },
-  { key: "x", label: "X" },
 ]
 
 const CHANNEL_STATUS_OPTIONS: ChannelStatus[] = [
@@ -110,6 +106,7 @@ type Props = {
   users: WithId<User>[]
   kanbanColumns?: WithId<KanbanColumn>[]
   hashtagSuggestions?: string[]
+  orgChannels: ChannelKey[]
   onChanged?: () => void
 }
 
@@ -133,6 +130,7 @@ export function PostComposerSheet({
   users,
   kanbanColumns,
   hashtagSuggestions = [],
+  orgChannels,
   onChanged,
 }: Props) {
   const [draft, setDraft] = useState<Partial<Post>>({})
@@ -140,6 +138,8 @@ export function PostComposerSheet({
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false)
   const [campaignPickerOpen, setCampaignPickerOpen] = useState(false)
+  const [campaignSearch, setCampaignSearch] = useState("")
+  const [extraCampaigns, setExtraCampaigns] = useState<WithId<Campaign>[]>([])
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const [thumbnail, setThumbnail] = useState<string | null>(null)
   const [thumbnailLoading, setThumbnailLoading] = useState(false)
@@ -163,13 +163,27 @@ export function PostComposerSheet({
   const setField = <K extends keyof Post>(key: K, value: Post[K] | undefined) =>
     setDraft((prev) => ({ ...prev, [key]: value }))
 
+  const allCampaigns = useMemo(() => {
+    const seen = new Set(campaigns.map((c) => c.id))
+    return [...campaigns, ...extraCampaigns.filter((c) => !seen.has(c.id))]
+  }, [campaigns, extraCampaigns])
+
   const selectedCategory = useMemo(
     () => categories.find((c) => c.id === draft.categoryId) ?? null,
     [categories, draft.categoryId],
   )
   const selectedCampaign = useMemo(
-    () => campaigns.find((c) => c.id === draft.campaignId) ?? null,
-    [campaigns, draft.campaignId],
+    () => allCampaigns.find((c) => c.id === draft.campaignId) ?? null,
+    [allCampaigns, draft.campaignId],
+  )
+
+  const userNameById = useMemo(
+    () => new Map(users.map((u) => [u.id, u.name])),
+    [users],
+  )
+  const ctaLabelById = useMemo(
+    () => new Map(ctas.map((c) => [c.id, c.label])),
+    [ctas],
   )
 
   const date = useMemo(
@@ -280,10 +294,15 @@ export function PostComposerSheet({
         : (LEGACY_POST_STATUSES as readonly string[]),
     [kanbanColumns],
   )
-  const statusLabelById = useMemo(
-    () => new Map((kanbanColumns ?? []).map((c) => [c.id, c.label])),
-    [kanbanColumns],
-  )
+  const statusLabelById = useMemo(() => {
+    const map = new Map((kanbanColumns ?? []).map((c) => [c.id, c.label]))
+    if (map.size === 0) {
+      for (const s of LEGACY_POST_STATUSES) {
+        map.set(s, s.charAt(0).toUpperCase() + s.slice(1))
+      }
+    }
+    return map
+  }, [kanbanColumns])
   const validStatuses = useMemo(
     () => getNextStatuses(currentStatus, columnIds),
     [currentStatus, columnIds],
@@ -292,6 +311,47 @@ export function PostComposerSheet({
     const cat = categories.find((c) => c.id === draft.categoryId)
     return Array.from(new Set([...(cat?.defaultHashtags ?? []), ...hashtagSuggestions]))
   }, [draft.categoryId, categories, hashtagSuggestions])
+
+  const composerChannels = useMemo(
+    () => channelsForComposer(orgChannels),
+    [orgChannels],
+  )
+
+  const trimmedCampaignSearch = campaignSearch.trim()
+  const showCreateCampaign =
+    trimmedCampaignSearch.length > 0 &&
+    !allCampaigns.some(
+      (c) => c.name.toLowerCase() === trimmedCampaignSearch.toLowerCase(),
+    )
+
+  const createCampaignFromSearch = (name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    startTransition(async () => {
+      const res = await createCampaign({ name: trimmed, status: "active" })
+      if (!res.ok || !res.id) {
+        toast.error(res.error ?? "Could not create campaign")
+        return
+      }
+      const newId = res.id
+      const now = new Date().toISOString()
+      const created: WithId<Campaign> = {
+        id: newId,
+        organizationId: "",
+        name: trimmed,
+        slug: newId,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      }
+      setExtraCampaigns((prev) => [...prev, created])
+      setField("campaignId", newId)
+      setCampaignPickerOpen(false)
+      setCampaignSearch("")
+      toast.success(`Campaign "${trimmed}" created`)
+      onChanged?.()
+    })
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -467,7 +527,13 @@ export function PostComposerSheet({
 
               <div className="flex flex-col gap-1.5">
                 <Label>Campaign</Label>
-                <Popover open={campaignPickerOpen} onOpenChange={setCampaignPickerOpen}>
+                <Popover
+                  open={campaignPickerOpen}
+                  onOpenChange={(open) => {
+                    setCampaignPickerOpen(open)
+                    if (!open) setCampaignSearch("")
+                  }}
+                >
                   <PopoverTrigger
                     render={
                       <Button variant="outline" className="justify-between font-normal" />
@@ -480,12 +546,27 @@ export function PostComposerSheet({
                   </PopoverTrigger>
                   <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
                     <Command>
-                      <CommandInput placeholder="Search campaigns..." />
+                      <CommandInput
+                        placeholder="Search campaigns..."
+                        value={campaignSearch}
+                        onValueChange={setCampaignSearch}
+                      />
                       <CommandList>
-                        <CommandEmpty>No campaign.</CommandEmpty>
+                        <CommandEmpty>No campaigns found.</CommandEmpty>
+                        {showCreateCampaign ? (
+                          <CommandGroup>
+                            <CommandItem
+                              value={`create-${trimmedCampaignSearch}`}
+                              onSelect={() => createCampaignFromSearch(trimmedCampaignSearch)}
+                            >
+                              <Plus />
+                              Create &quot;{trimmedCampaignSearch}&quot;
+                            </CommandItem>
+                          </CommandGroup>
+                        ) : null}
                         <CommandGroup>
                           <CommandItem
-                            value=""
+                            value="none"
                             onSelect={() => {
                               setField("campaignId", undefined)
                               setCampaignPickerOpen(false)
@@ -493,7 +574,7 @@ export function PostComposerSheet({
                           >
                             None
                           </CommandItem>
-                          {campaigns.map((c) => (
+                          {allCampaigns.map((c) => (
                             <CommandItem
                               key={c.id}
                               value={c.name}
@@ -520,7 +601,9 @@ export function PostComposerSheet({
                     onValueChange={(v) => setField("leadUserId", v || undefined)}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pick lead" />
+                      <SelectValue placeholder="Pick lead">
+                        {(v) => userNameById.get(v) ?? v}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {users.map((u) => (
@@ -538,7 +621,9 @@ export function PostComposerSheet({
                     onValueChange={(v) => setField("assigneeId", v || undefined)}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pick assignee" />
+                      <SelectValue placeholder="Pick assignee">
+                        {(v) => userNameById.get(v) ?? v}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {users.map((u) => (
@@ -568,7 +653,9 @@ export function PostComposerSheet({
                   onValueChange={(v) => setField("status", v as PostStatus)}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>
+                      {(v) => statusLabelById.get(v) ?? v}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {validStatuses.map((s) => (
@@ -613,7 +700,7 @@ export function PostComposerSheet({
                 <Input
                   value={draft.pagesToTag ?? ""}
                   onChange={(e) => setField("pagesToTag", e.target.value)}
-                  placeholder="@safefoundation @ethicalboutique"
+                  placeholder="@brand @partner"
                 />
               </div>
 
@@ -624,7 +711,9 @@ export function PostComposerSheet({
                   onValueChange={(v) => setField("ctaId", v || undefined)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Pick CTA" />
+                    <SelectValue placeholder="Pick CTA">
+                      {(v) => ctaLabelById.get(v) ?? v}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {ctas.map((c) => (
@@ -644,18 +733,29 @@ export function PostComposerSheet({
             >
               <div className="flex flex-col gap-1.5">
                 <Label>Post type</Label>
-                <div role="radiogroup" className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {POST_TYPE_OPTIONS.map((t) => {
-                    const active = (draft.postType ?? "grid") === t
+                    const selected = getPostTypes(draft).includes(t)
                     return (
                       <Button
                         key={t}
                         type="button"
                         size="sm"
-                        variant={active ? "default" : "outline"}
-                        onClick={() => setField("postType", t)}
+                        variant={selected ? "default" : "outline"}
+                        onClick={() => {
+                          const current = getPostTypes(draft)
+                          const next = selected
+                            ? current.length > 1
+                              ? current.filter((x) => x !== t)
+                              : current
+                            : [...current, t]
+                          setDraft((prev) => ({
+                            ...prev,
+                            ...withSyncedPostTypes(next),
+                          }))
+                        }}
                         className="capitalize rounded-full"
-                        aria-pressed={active}
+                        aria-pressed={selected}
                       >
                         {t}
                       </Button>
@@ -698,7 +798,12 @@ export function PostComposerSheet({
               value="channels"
               className="px-6 py-5 flex flex-col gap-3"
             >
-              {CHANNELS.map((ch) => {
+              {composerChannels.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No channels selected yet. Pick channels in onboarding or Settings → Brand.
+                </p>
+              ) : (
+                composerChannels.map((ch) => {
                 const current = draft.channelStatuses?.[ch.key]
                 const value =
                   typeof current === "string" ? current : current ? "scheduled" : "n/a"
@@ -719,19 +824,22 @@ export function PostComposerSheet({
                       }}
                     >
                       <SelectTrigger className="w-40">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v) => (v === "n/a" ? "N/A" : v.charAt(0).toUpperCase() + v.slice(1))}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {CHANNEL_STATUS_OPTIONS.map((s) => (
                           <SelectItem key={s} value={s}>
-                            {s}
+                            {s === "n/a" ? "N/A" : s.charAt(0).toUpperCase() + s.slice(1)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 )
-              })}
+              })
+              )}
             </TabsContent>
 
             {/* --- Notes --- */}

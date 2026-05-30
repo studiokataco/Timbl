@@ -10,6 +10,7 @@ import {
   getAgentDefaultBudgets,
 } from "@/lib/agents/defaults"
 import { WIZARD_AGENT_IDS } from "@/lib/onboarding/agent-catalog"
+import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
 
 /*
  * Seeds the second dev org - a clean tenant for exercising the onboarding
@@ -103,6 +104,13 @@ export async function seed0010TenantOrg() {
     console.log(`✓ kanban columns: ${DEFAULT_KANBAN_COLUMNS.length}`)
   } else {
     console.log("✓ kanban columns: already seeded, skipping")
+  }
+
+  const installedCtas = await seedDefaultCtasIfEmpty(db(), TENANT_ORG_ID)
+  if (installedCtas.length > 0) {
+    console.log(`✓ ctas: ${installedCtas.length}`)
+  } else {
+    console.log("✓ ctas: already seeded, skipping")
   }
 
   /* 4. Agent catalog. Per-doc existence check so a re-seed never resets

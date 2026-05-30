@@ -10,6 +10,7 @@ import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
 import { orgCampaignsPath, orgPostsPath, orgUsersPath, orgCategoriesPath } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
 import { CampaignTimeline } from "@/components/campaigns/campaign-timeline"
+import { fetchOrgChannels } from "@/lib/queries/reference-data.server"
 import type { Campaign, Category, Post, User } from "@/lib/schemas"
 
 type Props = { params: Promise<{ slug: string }> }
@@ -19,7 +20,7 @@ export default async function CampaignDetailPage({ params }: Props) {
   const orgId = await getCurrentOrgId()
   const db = getDb()
 
-  const [campaignSnap, postsSnap, categoriesSnap, usersSnap] = await Promise.all([
+  const [campaignSnap, postsSnap, categoriesSnap, usersSnap, orgChannels] = await Promise.all([
     db.doc(`${orgCampaignsPath(orgId)}/${slug}`).get(),
     db
       .collection(orgPostsPath(orgId))
@@ -28,6 +29,7 @@ export default async function CampaignDetailPage({ params }: Props) {
       .get(),
     db.collection(orgCategoriesPath(orgId)).get(),
     db.collection(orgUsersPath(orgId)).get(),
+    fetchOrgChannels(),
   ])
 
   if (!campaignSnap.exists) notFound()
@@ -116,6 +118,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             posts={posts}
             categories={categories}
             users={users}
+            orgChannels={orgChannels}
           />
         </div>
       </div>

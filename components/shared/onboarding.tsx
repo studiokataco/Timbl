@@ -27,18 +27,18 @@ import {
 const STEPS = [
   {
     icon: Sparkles,
-    title: "Welcome to your social planner",
-    body: "This replaces the old 9-tab spreadsheet with one calendar-first view of every post in flight. Your data syncs in real time across devices.",
+    title: "Welcome to SAFE Planner",
+    body: "Calendar is your home base: scheduled and in-progress posts in one place. Edits save instantly for everyone in this workspace.",
   },
   {
     icon: Calendar,
-    title: "Quick add takes 30 seconds",
-    body: "Click any day on the calendar (or hit the Quick add button up top) to drop a post in three taps: date, category, brief. Categories carry your defaults - hashtags, post type, lead - so the rest is autofilled.",
+    title: "Capture a post in seconds",
+    body: "Click a day on Calendar or Quick add in the top bar, then pick date, category, and a brief. Category defaults fill hashtags, post type, and lead so you can save now and open the composer when you need more detail.",
   },
   {
     icon: KanbanSquare,
-    title: "Track work the way you think",
-    body: "Switch to Kanban to drag posts through idea → designing → scheduled. Use the Library for templates and Awareness days for never missing an observance again. Press ⌘K from anywhere to jump.",
+    title: "Switch views when you need them",
+    body: "Drag posts on Kanban through your workflow columns. Use Library for templates, Awareness days for observances, and Campaigns to group related posts. Open Studio for AI agents, or press ⌘K to search and jump anywhere.",
   },
 ]
 

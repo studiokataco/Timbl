@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { Campaign, Category, Post, User } from "@/lib/schemas"
+import type { Campaign, Category, ChannelKey, Post, User } from "@/lib/schemas"
 import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
 import { fetchPostAction } from "@/lib/actions/posts"
 import { cn } from "@/lib/utils"
@@ -18,11 +18,12 @@ type Props = {
   posts: WithId<Post>[]
   categories: WithId<Category>[]
   users: WithId<User>[]
+  orgChannels: ChannelKey[]
 }
 
 type WeekGroup = { weekLabel: string; posts: WithId<Post>[] }
 
-export function CampaignTimeline({ campaign, posts, categories, users }: Props) {
+export function CampaignTimeline({ campaign, posts, categories, users, orgChannels }: Props) {
   const router = useRouter()
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerPost, setComposerPost] = useState<WithId<Post> | null>(null)
@@ -145,6 +146,7 @@ export function CampaignTimeline({ campaign, posts, categories, users }: Props) 
         campaigns={[campaign]}
         ctas={[]}
         users={users}
+        orgChannels={orgChannels}
         onChanged={() => router.refresh()}
       />
     </>

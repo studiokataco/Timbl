@@ -10,8 +10,8 @@
  * Deliberately excluded: the config agents (hello, brand-wizard,
  * settings-assistant, meta-config) and the pipeline machinery (pipeline,
  * reviewer, scheduler, human-gate). Those are always-on infrastructure -
- * seeded `enabled: true` and never surfaced as a user toggle, because
- * disabling a pipeline sub-agent would silently break the review loop.
+ * seeded `enabled: true` and hidden from the Studio roster (see
+ * `agentsForStudioRoster`) because disabling them would break the pipeline.
  */
 
 export interface WizardAgent {
@@ -53,4 +53,27 @@ export const WIZARD_AGENT_IDS: string[] = WIZARD_AGENT_CATALOG.map((a) => a.id)
 
 export function isWizardSelectableAgent(id: string): boolean {
   return WIZARD_AGENT_IDS.includes(id)
+}
+
+/* Installed for every org but not shown in Studio - settings drawer, cron,
+ * and pipeline orchestration depend on these staying enabled. */
+export const STUDIO_HIDDEN_AGENT_IDS = new Set([
+  "hello",
+  "brand-wizard",
+  "settings-assistant",
+  "meta-config",
+  "pipeline",
+  "reviewer",
+  "scheduler",
+  "human-gate",
+])
+
+export function isStudioHiddenAgent(id: string): boolean {
+  return STUDIO_HIDDEN_AGENT_IDS.has(id)
+}
+
+export function agentsForStudioRoster<T extends { name: string; enabled: boolean }>(
+  agents: T[],
+): T[] {
+  return agents.filter((a) => a.enabled && !isStudioHiddenAgent(a.name))
 }

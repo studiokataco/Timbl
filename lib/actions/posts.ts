@@ -14,6 +14,7 @@ import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
 import { incrementUsage } from "@/lib/telemetry/agent-events"
 import { fetchPostsInRange } from "@/lib/queries/posts.server"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
+import { withSyncedPostTypes } from "@/lib/post-types"
 
 /* Client-callable wrapper around the server-only fetchPostsInRange. Used by
  * the calendar's client useQuery to refetch when the user navigates months
@@ -73,13 +74,16 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
   const postsRef = db.collection(orgPostsPath(orgId)).doc()
   const now = new Date().toISOString()
 
+  const defaultType = category.defaultPostType ?? "grid"
+  const typeFields = withSyncedPostTypes([defaultType])
+
   const doc: Post = {
     id: postsRef.id,
     organizationId: orgId,
     scheduledDate: parsed.data.scheduledDate,
     status: "idea",
     categoryId: parsed.data.categoryId,
-    postType: category.defaultPostType ?? "grid",
+    ...typeFields,
     brief: parsed.data.brief,
     hashtags: category.defaultHashtags ?? [],
     ctaId: category.defaultCtaId,
@@ -111,6 +115,11 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
   const user = await getCurrentUser()
   const db = getDb()
   const { id, ...patch } = parsed.data
+  if (patch.postTypes?.length) {
+    Object.assign(patch, withSyncedPostTypes(patch.postTypes))
+  } else if (patch.postType) {
+    Object.assign(patch, withSyncedPostTypes([patch.postType]))
+  }
   const ref = db.doc(`${orgPostsPath(orgId)}/${id}`)
   const existing = await ref.get()
   if (!existing.exists) return { ok: false, error: "Post not found" }

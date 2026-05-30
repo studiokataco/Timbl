@@ -2,6 +2,7 @@ import "server-only"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
 import { orgCategoriesPath, orgCtasPath, orgPostsPath, orgUsersPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
+import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
 import type { Category, Cta, Post, User } from "@/lib/schemas"
 
 /*
@@ -42,7 +43,9 @@ export async function fetchCategories(): Promise<WithId<Category>[]> {
 
 export async function fetchCtas(): Promise<WithId<Cta>[]> {
   const orgId = await getCurrentOrgId()
-  const snap = await getDb().collection(orgCtasPath(orgId)).limit(500).get()
+  const db = getDb()
+  await seedDefaultCtasIfEmpty(db, orgId)
+  const snap = await db.collection(orgCtasPath(orgId)).limit(500).get()
   return snap.docs.map((d) => snapToData<Cta>(d))
 }
 

@@ -6,7 +6,7 @@ import { useMemo } from "react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post } from "@/lib/schemas"
 import { groupAwarenessRanges } from "@/lib/calendar/awareness-grouping"
-import { lightenForBg } from "@/components/calendar/color"
+import { categoryPillColors } from "@/components/calendar/color"
 import { cn } from "@/lib/utils"
 import { EventPill } from "./event-pill"
 
@@ -186,12 +186,12 @@ function AllDayCell({
     >
       {awarenessRanges.map((r) => {
         const color = IMPORTANCE_COLOR[r.importance] ?? "#94a3b8"
-        const bg = lightenForBg(color)
+        const pillStyle = categoryPillColors(color)
         return (
           <div
             key={r.id}
             className="rounded-sm px-1.5 py-0.5 text-[10px] leading-tight truncate font-medium"
-            style={{ backgroundColor: bg, borderLeft: `2px solid ${color}` }}
+            style={{ ...pillStyle, borderLeft: `2px solid ${color}` }}
             title={r.name}
           >
             {r.name}

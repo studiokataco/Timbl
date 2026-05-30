@@ -21,6 +21,7 @@ import { bulkSetStatus } from "@/lib/actions/posts-bulk"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
+import { formatPostTypes } from "@/lib/post-types"
 
 const ALL_STATUSES: PostStatus[] = [
   "idea",
@@ -154,7 +155,7 @@ export function PostsTable({ posts, categories, users }: Props) {
         (p.brief ?? "").replaceAll('"', '""'),
         userById.get(p.leadUserId ?? "")?.name ?? "",
         userById.get(p.assigneeId ?? "")?.name ?? "",
-        p.postType,
+        formatPostTypes(p),
       ]
         .map((c) => `"${c}"`)
         .join(",")
@@ -343,7 +344,7 @@ export function PostsTable({ posts, categories, users }: Props) {
                     <td className="p-2 max-w-[280px] truncate">{p.brief ?? "-"}</td>
                     <td className="p-2 text-xs">{lead?.name ?? "-"}</td>
                     <td className="p-2 text-xs">{assg?.name ?? "-"}</td>
-                    <td className="p-2 text-xs capitalize">{p.postType}</td>
+                    <td className="p-2 text-xs capitalize">{formatPostTypes(p)}</td>
                     <td className="p-2 text-right">
                       <Button
                         size="sm"

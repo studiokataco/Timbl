@@ -2,7 +2,7 @@
 
 import type { AwarenessRange } from "@/lib/calendar/awareness-grouping"
 import { cn } from "@/lib/utils"
-import { lightenForBg } from "./color"
+import { categoryPillColors } from "./color"
 
 const IMPORTANCE_COLOR: Record<AwarenessRange["importance"], string> = {
   high: "#fb923c", // orange-400
@@ -32,13 +32,13 @@ export function EventBar({
   continuesLeft,
 }: Props) {
   const baseColor = IMPORTANCE_COLOR[range.importance]
-  const bg = lightenForBg(baseColor)
+  const pillStyle = categoryPillColors(baseColor)
 
   return (
     <div
       style={{
         gridColumn: `${startCol + 1} / ${endCol + 2}`,
-        backgroundColor: bg,
+        ...pillStyle,
         borderLeft: continuesLeft ? "none" : `2px solid ${baseColor}`,
       }}
       className={cn(

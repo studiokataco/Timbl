@@ -16,6 +16,7 @@ import type { WithId } from "@/lib/firebase/serialize"
 import type {
   Campaign,
   Category,
+  ChannelKey,
   Cta,
   KanbanColumn,
   Post,
@@ -31,6 +32,7 @@ type Data = {
   campaigns: WithId<Campaign>[]
   kanbanColumns: WithId<KanbanColumn>[]
   hashtagSuggestions: string[]
+  orgChannels: ChannelKey[]
 }
 
 type DialogsApi = {
@@ -143,6 +145,7 @@ export function DialogsProvider({
         users={data.users}
         kanbanColumns={data.kanbanColumns}
         hashtagSuggestions={data.hashtagSuggestions}
+        orgChannels={data.orgChannels}
         onChanged={onCreated}
       />
     </DialogsContext.Provider>

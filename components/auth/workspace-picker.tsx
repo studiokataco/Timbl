@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Building2, Plus } from "lucide-react"
 import { toast } from "sonner"
 
@@ -50,9 +50,9 @@ export function WorkspacePicker({
   return (
     <div className="space-y-6">
       <header className="space-y-1.5 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Choose a workspace</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Create a workspace</h1>
         <p className="text-sm text-muted-foreground">
-          Open one you already have, or create a new workspace to start fresh.
+          Get ready to level up your social media management in seconds.
         </p>
       </header>
 
@@ -102,7 +102,7 @@ export function WorkspacePicker({
           <h2 className="text-sm font-medium">Create a new workspace</h2>
         </div>
         <p className="text-xs text-muted-foreground">
-          Clean slate - your own org and setup wizard. No demo data.
+          Set up your organization workspace with the wizard.
         </p>
         <Button
           className="w-full"

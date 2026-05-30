@@ -21,8 +21,10 @@ import {
   type StarterTemplate,
 } from "@/lib/onboarding/template-library"
 import { WIZARD_AGENT_IDS } from "@/lib/onboarding/agent-catalog"
-import { getAgentDefault } from "@/lib/agents/defaults"
+import { getAgentDefault, getAgentDefaultBudgets } from "@/lib/agents/defaults"
+import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
 import { writeAuditEvent } from "@/lib/telemetry/audit-events"
+import { channelKey, type ChannelKey } from "@/lib/schemas/_shared"
 import type { ServerActionResult } from "@/lib/schemas"
 
 /*
@@ -99,6 +101,8 @@ export async function applyOnboardingSelections(
   const orgId = await getCurrentOrgId()
   const db = getAdminDb()
 
+  await seedDefaultCtasIfEmpty(db, orgId)
+
   /* 1. Categories: upsert from the industry defaults, filtered by what
    * the user picked. Existing slugs are merged (no displaceOrder reset). */
   const orgSnap = await db.doc(orgPath(orgId)).get()
@@ -159,18 +163,41 @@ export async function applyOnboardingSelections(
   const batch = db.batch()
   for (const agentId of WIZARD_AGENT_IDS) {
     const ref = agentCol.doc(agentId)
-    if (!(await ref.get()).exists) continue
+    const snap = await ref.get()
     const enabled = parsed.data.agentIds.includes(agentId)
-    const patch: Record<string, unknown> = { enabled, updatedAt: now }
-    if (enabled) {
-      const tailored = tailorAgentPrompt(agentId, {
-        orgName,
-        industryLabel: defaults.label,
-        audience: profile.audience,
-        tone: profile.tone,
+    const tailored = enabled
+      ? tailorAgentPrompt(agentId, {
+          orgName,
+          industryLabel: defaults.label,
+          audience: profile.audience,
+          tone: profile.tone,
+        })
+      : null
+    if (!snap.exists) {
+      const def = getAgentDefault(agentId)
+      if (!def) continue
+      batch.set(ref, {
+        id: def.name,
+        organizationId: orgId,
+        name: def.name,
+        role: def.role,
+        description: def.description,
+        provider: def.provider,
+        model: def.model,
+        temperature: def.temperature,
+        systemPrompt: tailored ?? def.systemPrompt,
+        enabled,
+        schedule: def.schedule ?? null,
+        allowedTools: def.allowedTools,
+        triggers: def.triggers,
+        budgets: getAgentDefaultBudgets(def),
+        createdAt: now,
+        updatedAt: now,
       })
-      if (tailored) patch.systemPrompt = tailored
+      continue
     }
+    const patch: Record<string, unknown> = { enabled, updatedAt: now }
+    if (tailored) patch.systemPrompt = tailored
     batch.set(ref, patch, { merge: true })
   }
   await batch.commit()
@@ -229,10 +256,10 @@ export async function applyOnboardingSelections(
    * the niche reaches agents even beyond the spliced prompts. Cadence is
    * written only on first create - a wizard re-run must not reset a
    * cadence the user has since tuned in /settings/brand. */
-  const VALID_BRAND_CHANNELS = ["instagram", "facebook", "linkedin", "website", "fb_groups"]
-  const brandChannels = parsed.data.channels.filter((c) =>
-    VALID_BRAND_CHANNELS.includes(c),
-  )
+  const brandChannels: ChannelKey[] = parsed.data.channels.flatMap((c) => {
+    const parsedChannel = channelKey.safeParse(c)
+    return parsedChannel.success ? [parsedChannel.data] : []
+  })
   const wizardProfile = (orgSnap.data()?.onboarding?.profile ?? {}) as {
     audience?: string
     tone?: string
@@ -259,8 +286,10 @@ export async function applyOnboardingSelections(
   await brandRef.set(brandPatch, { merge: true })
 
   revalidatePath("/calendar")
+  revalidatePath("/studio")
   revalidatePath("/settings/categories")
   revalidatePath("/settings/brand")
+  revalidatePath("/settings/agents")
   revalidatePath("/library")
   revalidatePath("/", "layout")
   return { ok: true, id: orgId }
