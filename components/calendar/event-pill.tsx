@@ -6,7 +6,7 @@ import { format, parseISO } from "date-fns"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
-import { lightenForBg } from "./color"
+import { categoryPillColors } from "./color"
 
 type Props = {
   post: WithId<Post>
@@ -27,7 +27,7 @@ export function EventPill({ post, category, onClick }: Props) {
         .replace(":00", "")
     : null
 
-  const bg = lightenForBg(category?.color)
+  const pillStyle = categoryPillColors(category?.color)
 
   return (
     <div className="relative group/pill">
@@ -38,8 +38,7 @@ export function EventPill({ post, category, onClick }: Props) {
         {...attributes}
         onClick={onClick}
         style={{
-          backgroundColor: bg,
-          color: "var(--color-foreground)",
+          ...pillStyle,
           transform: CSS.Translate.toString(transform),
           opacity: isDragging ? 0.4 : undefined,
         }}

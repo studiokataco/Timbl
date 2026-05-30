@@ -152,7 +152,7 @@ export function QuickAddDialog({
                 <CalendarIcon aria-hidden className="size-4" />
                 {format(date, "EEE d MMM yyyy")}
               </PopoverTrigger>
-              <PopoverContent className="p-0" align="start">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={date}

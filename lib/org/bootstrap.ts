@@ -7,6 +7,7 @@ import {
   getAgentDefaultBudgets,
   type AgentDefault,
 } from "@/lib/agents/defaults"
+import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
 
 /*
  * One-shot bootstrap for a freshly-created org. Called by:
@@ -23,6 +24,8 @@ import {
  *                                              has rows to toggle
  *   - /organizations/{orgId}/kanbanColumns/* - 9 default columns matching
  *                                               LEGACY_POST_STATUSES
+ *   - /organizations/{orgId}/ctas/*         - default CTA picklist for
+ *                                               composer / quick add
  *
  * Intentionally does NOT write:
  *   - categories - handed off to the onboarding wizard's industry-defaults
@@ -73,6 +76,7 @@ export interface BootstrapNewOrgResult {
   installedAgents: string[]
   skippedAgents: string[]
   installedColumns: string[]
+  installedCtas: string[]
 }
 
 export async function bootstrapNewOrg(
@@ -139,7 +143,9 @@ export async function bootstrapNewOrg(
     }
   }
 
-  return { orgId: input.orgId, installedAgents, skippedAgents, installedColumns }
+  const installedCtas = await seedDefaultCtasIfEmpty(db, input.orgId)
+
+  return { orgId: input.orgId, installedAgents, skippedAgents, installedColumns, installedCtas }
 }
 
 function agentConfigDocFromDefault(

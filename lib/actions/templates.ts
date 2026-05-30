@@ -10,6 +10,7 @@ import {
 } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
+import { getPostTypes } from "@/lib/post-types"
 import { gateErrorToResult, requireFeature } from "@/lib/plans/gate"
 import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import {
@@ -241,7 +242,7 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
     organizationId: orgId,
     name: parsed.data.name,
     categoryId: post.categoryId,
-    defaultPostType: post.postType ?? "grid",
+    defaultPostType: getPostTypes(post)[0] ?? "grid",
     defaultHashtags: post.hashtags ?? [],
     defaultCtaId: post.ctaId,
     blurbTemplate: post.blurb,

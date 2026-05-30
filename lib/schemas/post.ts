@@ -72,6 +72,7 @@ export const postSchema = audit.extend({
   eventId: z.string().optional(),
 
   postType: postType.default("grid"),
+  postTypes: z.array(postType).min(1).optional(),
 
   brief: z.string().optional(),
   detailedBrief: z.string().optional(),

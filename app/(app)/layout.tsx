@@ -12,7 +12,11 @@ import { ShortcutsDialog } from "@/components/shared/shortcuts-dialog"
 import { Sidebar } from "@/components/shared/sidebar"
 import { TopBar } from "@/components/shared/top-bar"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
-import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
+import {
+  getCurrentOrgId,
+  getCurrentOrganisation,
+  getCurrentUser,
+} from "@/lib/auth/server-helpers"
 import { isOnboardingComplete } from "@/lib/onboarding/state"
 import { getOrgPlanFeatures } from "@/lib/plans/gate"
 
@@ -34,9 +38,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!(await isOnboardingComplete(orgId))) {
     redirect("/onboarding")
   }
-  const [referenceData, user, planFeatures] = await Promise.all([
+  const [referenceData, user, org, planFeatures] = await Promise.all([
     fetchReferenceData(),
     getCurrentUser(),
+    getCurrentOrganisation(),
     getOrgPlanFeatures(orgId),
   ])
   return (
@@ -46,7 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex flex-1 min-h-0">
             <Sidebar />
             <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
-              <TopBar userName={user.name} />
+              <TopBar userName={user.name} workspaceName={org.name} />
               {children}
             </div>
           </div>

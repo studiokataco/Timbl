@@ -13,7 +13,13 @@ import {
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 
-export function TopBar({ userName }: { userName: string }) {
+export function TopBar({
+  userName,
+  workspaceName,
+}: {
+  userName: string
+  workspaceName: string
+}) {
   const { openQuickAdd } = useDialogs()
   const initials = userName
     .split(/[\s_-]+/)
@@ -39,7 +45,7 @@ export function TopBar({ userName }: { userName: string }) {
             className="size-1 rounded-full bg-foreground translate-y-[-3px] group-hover:bg-[var(--color-brand-accent)] transition-colors"
           />
           <span className="text-caption text-muted-foreground leading-none tracking-tight">
-            SAFE
+            {workspaceName}
           </span>
         </a>
 

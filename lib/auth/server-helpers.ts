@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { getAdminDb } from "@/lib/firebase/admin"
+import { orgPath } from "@/lib/firebase/paths"
 import { readSessionAuth, readSessionClaims } from "@/lib/auth/session"
 import {
   DEV_ORG_COOKIE,
@@ -62,21 +63,29 @@ export async function getCurrentOrgId(): Promise<string> {
 }
 
 export async function getCurrentOrganisation(): Promise<DevOrganisation> {
-  if (useDevShim) return (await resolveDevSession()).organisation
-  const auth = await readSessionAuth()
-  if (!auth?.workspace) redirect("/workspaces")
-  const claims = auth.workspace
-  /* Membership doc carries display name + slug for the org. The slug
-   * matches the doc id in /organizations. */
-  const snap = await getAdminDb()
-    .collection("organizations")
-    .doc(claims.organizationId)
-    .get()
+  let orgId: string
+  let fallback: DevOrganisation
+  if (useDevShim) {
+    fallback = (await resolveDevSession()).organisation
+    orgId = fallback.id
+  } else {
+    const auth = await readSessionAuth()
+    if (!auth?.workspace) redirect("/workspaces")
+    orgId = auth.workspace.organizationId
+    fallback = {
+      id: orgId,
+      slug: orgId,
+      name: orgId,
+    }
+  }
+
+  const snap = await getAdminDb().doc(orgPath(orgId)).get()
   const data = snap.data() ?? {}
+  const name = (data.name as string | undefined)?.trim()
   return {
-    id: claims.organizationId,
-    slug: (data.slug as string) ?? claims.organizationId,
-    name: (data.name as string) ?? claims.organizationId,
+    id: orgId,
+    slug: (data.slug as string) ?? fallback.slug,
+    name: name || fallback.name,
   }
 }
 
