@@ -75,3 +75,4 @@ functions/node_modules/
 
 # App Hosting local overrides
 apphosting.local.yaml
+scripts/rotate-secret.sh
