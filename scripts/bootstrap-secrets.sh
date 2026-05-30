@@ -8,7 +8,10 @@ set -euo pipefail
 # Required gcloud auth:  gcloud auth login && gcloud config set project sm-dashboard-e7641
 
 PROJECT="${GCP_PROJECT:-sm-dashboard-e7641}"
-APPHOSTING_SA="firebase-app-hosting-compute@${PROJECT}.iam.gserviceaccount.com"
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
+COMPUTE_SA="firebase-app-hosting-compute@${PROJECT}.iam.gserviceaccount.com"
+# Cloud Build "preparer" resolves secrets as this agent (not the compute SA).
+HOSTING_AGENT_SA="service-${PROJECT_NUMBER}@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
 
 SECRETS=(
   "AGENT_CRON_SECRET"
@@ -22,7 +25,7 @@ SECRETS=(
 )
 
 echo "==> Bootstrapping secrets for project ${PROJECT}"
-echo "==> Granting access to ${APPHOSTING_SA}"
+echo "==> Granting access to ${COMPUTE_SA} and ${HOSTING_AGENT_SA}"
 
 ensure_secret() {
   local name="$1"
@@ -52,16 +55,23 @@ prompt_and_add_version() {
 
 grant_access() {
   local name="$1"
+  local member="$2"
   gcloud secrets add-iam-policy-binding "$name" \
     --project="$PROJECT" \
-    --member="serviceAccount:${APPHOSTING_SA}" \
+    --member="serviceAccount:${member}" \
     --role="roles/secretmanager.secretAccessor" \
     --quiet >/dev/null
 }
 
+grant_both() {
+  local name="$1"
+  grant_access "$name" "$COMPUTE_SA"
+  grant_access "$name" "$HOSTING_AGENT_SA"
+}
+
 for secret in "${SECRETS[@]}"; do
   ensure_secret "$secret"
-  grant_access "$secret"
+  grant_both "$secret"
 done
 
 echo
