@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { AgentCommandModal } from "@/components/agents/agent-command-modal"
 import { AgentDrawer } from "@/components/agents/agent-drawer"
 import { AskAiButton } from "@/components/agents/ask-ai-button"
+import { AppHotkeys } from "@/components/shared/app-hotkeys"
 import { CommandPalette } from "@/components/shared/command-palette"
 import { DialogsProvider } from "@/components/shared/dialogs-provider"
 import { Onboarding } from "@/components/shared/onboarding"
@@ -57,6 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 {children}
               </div>
             </div>
+            <AppHotkeys />
             <CommandPalette />
             <ShortcutsDialog />
             <Onboarding />
