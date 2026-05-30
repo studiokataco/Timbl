@@ -34,8 +34,12 @@ export function ChannelsClient({
 
   useEffect(() => {
     const error = params.get("error")
-    if (error) toast.error(ERRORS[error] ?? "Something went wrong.")
-    else if (params.get("connected")) toast.success("Channel connected")
+    if (error) {
+      const detail = params.get("detail")
+      toast.error(ERRORS[error] ?? "Something went wrong.", {
+        description: detail ?? undefined,
+      })
+    } else if (params.get("connected")) toast.success("Channel connected")
   }, [params])
 
   return (

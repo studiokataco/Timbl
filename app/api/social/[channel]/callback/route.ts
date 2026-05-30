@@ -10,8 +10,13 @@ import { verifyState } from "@/lib/publishing/state"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-function back(error?: string) {
+function back(error?: string, detail?: string) {
   const params: Record<string, string> = error ? { error } : { connected: "1" }
+  /* Surface the adapter's own message (e.g. "no Instagram Business account
+   * linked") so a failed connect is debuggable instead of a generic code.
+   * Truncated; these messages never contain secrets (the app secret is only
+   * ever sent in the request, never echoed by Graph). */
+  if (error && detail) params.detail = detail.slice(0, 200)
   return NextResponse.redirect(settingsRedirect("/settings/channels", params))
 }
 
@@ -36,7 +41,7 @@ export async function GET(
       .doc(`${orgSocialAccountsPath(orgId)}/${account.id}`)
       .set(account, { merge: true })
     return back()
-  } catch {
-    return back("callback")
+  } catch (err) {
+    return back("callback", err instanceof Error ? err.message : String(err))
   }
 }
