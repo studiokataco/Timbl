@@ -34,6 +34,9 @@ type ChannelDef = {
   consoleUrl: string
   /* One-line setup hint describing what to enable in the console. */
   consoleHint: string
+  /* Optional note shown on the card explaining how the connect flow behaves
+   * (e.g. Instagram authenticates through Facebook). */
+  connectHint?: string
 }
 
 const CHANNELS: ChannelDef[] = [
@@ -64,6 +67,8 @@ const CHANNELS: ChannelDef[] = [
     appLabel: "Meta app (Facebook + Instagram)",
     consoleUrl: "https://developers.facebook.com/apps",
     consoleHint: "Create a Business app; the same credentials power Facebook + Instagram.",
+    connectHint:
+      "Connects via Facebook — needs an Instagram Business account linked to your Facebook Page.",
   },
 ]
 
@@ -145,6 +150,10 @@ export function ChannelsManager({
 
             {isConfigured && linked.length === 0 && (
               <p className="mt-3 text-xs text-muted-foreground">Not connected.</p>
+            )}
+
+            {ch.connectHint && linked.length === 0 && (
+              <p className="mt-2 text-[11px] text-muted-foreground/80">{ch.connectHint}</p>
             )}
 
             {linked.length > 0 && (
@@ -237,6 +246,8 @@ function SetupDialog({
     })
   }
 
+  const formId = `${channel.key}-oauth-setup`
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button
@@ -254,16 +265,22 @@ function SetupDialog({
             One-time setup. Once saved, anyone in your org can click Connect.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
+        <form id={formId} onSubmit={onSubmit} className="grid gap-4">
           <div className="grid gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">
               Redirect URI
             </Label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-[11px]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+              <code className="block min-w-0 flex-1 break-all rounded bg-background px-2 py-1.5 text-[11px]">
                 {redirectUri}
               </code>
-              <Button type="button" variant="outline" size="sm" onClick={onCopyRedirect}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 sm:self-start"
+                onClick={onCopyRedirect}
+              >
                 {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
                 {copied ? "Copied" : "Copy"}
               </Button>
@@ -309,16 +326,15 @@ function SetupDialog({
               Stored AES-256-GCM encrypted in Firestore. Never logged or returned to the browser.
             </p>
           </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
         </form>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
