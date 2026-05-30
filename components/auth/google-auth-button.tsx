@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 
+import { BrandGlowButton } from "@/components/ui/brand-glow-button"
 import { Button } from "@/components/ui/button"
 import type { AuthIntent } from "@/lib/auth/intent"
 import { signInWithGoogleAccount } from "@/lib/auth/google-sign-in"
@@ -14,11 +15,13 @@ export function GoogleAuthButton({
   label,
   pendingLabel,
   variant = "default",
+  glow = false,
 }: {
   intent: AuthIntent
   label: string
   pendingLabel: string
   variant?: "default" | "outline"
+  glow?: boolean
 }) {
   const router = useRouter()
   const search = useSearchParams()
@@ -77,6 +80,18 @@ export function GoogleAuthButton({
     } finally {
       setPending(false)
     }
+  }
+
+  if (glow) {
+    return (
+      <BrandGlowButton
+        onClick={onClick}
+        disabled={pending}
+        className="h-11 w-full text-base"
+      >
+        {pending ? pendingLabel : label}
+      </BrandGlowButton>
+    )
   }
 
   return (

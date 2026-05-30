@@ -110,6 +110,7 @@ export async function POST(
     toolCalls: 0,
     promptTokens: 0,
     completionTokens: 0,
+    cachedTokens: 0,
   }
 
   const eventStream = runner.runAsync({
@@ -158,15 +159,21 @@ function collectMetrics(
     toolCalls: number
     promptTokens: number
     completionTokens: number
+    cachedTokens: number
   },
 ): void {
   const usage = (event as {
-    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number }
+    usageMetadata?: {
+      promptTokenCount?: number
+      candidatesTokenCount?: number
+      cachedContentTokenCount?: number
+    }
   }).usageMetadata
   if (usage) {
     m.llmCalls += 1
     m.promptTokens += usage.promptTokenCount ?? 0
     m.completionTokens += usage.candidatesTokenCount ?? 0
+    m.cachedTokens += usage.cachedContentTokenCount ?? 0
   }
   const parts =
     (event as { content?: { parts?: Array<{ functionCall?: unknown }> } })

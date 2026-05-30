@@ -20,6 +20,9 @@ export const agentRunMetricsSchema = z.object({
   toolCalls: z.number().int().nonnegative().default(0),
   promptTokens: z.number().int().nonnegative().default(0),
   completionTokens: z.number().int().nonnegative().default(0),
+  /** Slice of promptTokens served from the prompt cache (read hits). Lets the
+   * UI show cache effectiveness and feeds the cache discount in usdCost. */
+  cachedTokens: z.number().int().nonnegative().default(0),
   usdCost: z.number().nonnegative().default(0),
 })
 export type AgentRunMetrics = z.infer<typeof agentRunMetricsSchema>
@@ -60,6 +63,7 @@ export const agentRunSchema = audit.extend({
     toolCalls: 0,
     promptTokens: 0,
     completionTokens: 0,
+    cachedTokens: 0,
     usdCost: 0,
   }),
   /* Stored as `null` by triggers/manual.ts when absent (Firestore can't

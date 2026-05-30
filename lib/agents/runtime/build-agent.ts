@@ -6,6 +6,7 @@ import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import { resolveLlm } from "./llm-registry"
 import { makePermissionsCallback } from "./permissions"
 import { makeBudgetCallbacks } from "./budget"
+import { makeContextCompactors } from "./compaction"
 
 /*
  * Single helper every agent factory uses to instantiate its LlmAgent.
@@ -47,6 +48,7 @@ export function buildLlmAgentFromConfig(
     description: description ?? config.description,
     model: resolveLlm({ provider: config.provider, model: config.model }),
     instruction,
+    contextCompactors: makeContextCompactors(config),
     beforeModelCallback: [budget.beforeModel],
     beforeToolCallback: [budget.beforeTool, perm],
   })
