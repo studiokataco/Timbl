@@ -1,18 +1,21 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
+import { StartPage } from "@/components/auth/start-page"
 import { DEV_ORG_COOKIE, IS_DEV_SHIM } from "@/lib/auth/dev-session"
+import { readSessionAuth } from "@/lib/auth/session"
 
-/*
- * App entry. In emulator dev mode, a developer who hasn't yet picked a
- * workspace (no safe_dev_org cookie) lands on the /welcome chooser first.
- * Once a choice is made - or in production, where the org comes from the
- * verified session - `/` goes straight to the calendar.
- */
+export const dynamic = "force-dynamic"
+
 export default async function Home() {
-  if (IS_DEV_SHIM) {
-    const hasChoice = (await cookies()).has(DEV_ORG_COOKIE)
-    if (!hasChoice) redirect("/welcome")
+  if (!IS_DEV_SHIM) {
+    const auth = await readSessionAuth()
+    if (auth?.workspace) redirect("/calendar")
+    if (auth) redirect("/workspaces")
+    return <StartPage devShim={false} />
   }
-  redirect("/calendar")
+
+  const store = await cookies()
+  if (store.has(DEV_ORG_COOKIE)) redirect("/calendar")
+  return <StartPage devShim />
 }

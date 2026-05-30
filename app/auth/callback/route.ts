@@ -2,18 +2,21 @@ import type { NextRequest } from "next/server"
 import { z } from "zod"
 
 import { getAdminAuth } from "@/lib/firebase/admin"
-import { createSessionFromIdToken, setSessionCookie } from "@/lib/auth/session"
+import { authIntentSchema } from "@/lib/auth/intent-schema"
 import {
-  ALLOWED_DOMAINS,
-  isAllowedDomain,
+  listMembershipsForEmail,
   MembershipError,
-  resolveOrProvisionMembership,
+  resolveSignInMembership,
 } from "@/lib/auth/membership"
+import { createSessionFromIdToken, setSessionCookie } from "@/lib/auth/session"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const bodySchema = z.object({ idToken: z.string().min(20) })
+const bodySchema = z.object({
+  idToken: z.string().min(20),
+  intent: authIntentSchema.default("signin"),
+})
 
 export async function POST(req: NextRequest) {
   let payload: z.infer<typeof bodySchema>
@@ -38,23 +41,33 @@ export async function POST(req: NextRequest) {
   }
 
   const email = (decoded.email ?? "").toLowerCase()
-  if (!email || !isAllowedDomain(email)) {
-    return Response.json(
-      {
-        ok: false,
-        error: `This account isn't authorised. Allowed domains: ${ALLOWED_DOMAINS.join(", ")}.`,
-      },
-      { status: 403 },
-    )
+  if (!email) {
+    return Response.json({ ok: false, error: "Google account must include an email." }, { status: 403 })
   }
 
-  let claims: Awaited<ReturnType<typeof resolveOrProvisionMembership>>
+  if (payload.intent === "signup") {
+    await auth.setCustomUserClaims(decoded.uid, {})
+    try {
+      const cookie = await createSessionFromIdToken(payload.idToken)
+      await setSessionCookie(cookie)
+    } catch (err) {
+      return Response.json(
+        { ok: false, error: err instanceof Error ? err.message : "Session failed" },
+        { status: 401 },
+      )
+    }
+    const memberships = await listMembershipsForEmail(email)
+    return Response.json({
+      ok: true,
+      next: memberships.length > 0 ? "/workspaces" : "/workspaces?new=1",
+    })
+  }
+
+  let claims: Awaited<ReturnType<typeof resolveSignInMembership>>
   try {
-    claims = await resolveOrProvisionMembership({
+    claims = await resolveSignInMembership({
       email,
       displayName: decoded.name as string | undefined,
-      googleUid: decoded.uid,
-      photoURL: (decoded.picture as string | undefined) ?? null,
     })
   } catch (err) {
     if (err instanceof MembershipError) {
@@ -64,11 +77,29 @@ export async function POST(req: NextRequest) {
       if (err.code === "member_inactive") {
         return Response.json({ ok: false, error: err.message }, { status: 403 })
       }
+      if (err.code === "no_workspace") {
+        return Response.json({ ok: false, error: err.message }, { status: 403 })
+      }
     }
     return Response.json(
       { ok: false, error: err instanceof Error ? err.message : "Membership failed" },
       { status: 403 },
     )
+  }
+
+  const memberships = await listMembershipsForEmail(email)
+  if (memberships.length > 1) {
+    await auth.setCustomUserClaims(decoded.uid, {})
+    try {
+      const cookie = await createSessionFromIdToken(payload.idToken)
+      await setSessionCookie(cookie)
+    } catch (err) {
+      return Response.json(
+        { ok: false, error: err instanceof Error ? err.message : "Session failed" },
+        { status: 401 },
+      )
+    }
+    return Response.json({ ok: true, next: "/workspaces" })
   }
 
   const hasClaims =
@@ -84,7 +115,7 @@ export async function POST(req: NextRequest) {
   try {
     const cookie = await createSessionFromIdToken(payload.idToken)
     await setSessionCookie(cookie)
-    return Response.json({ ok: true })
+    return Response.json({ ok: true, next: "/calendar" })
   } catch (err) {
     return Response.json(
       { ok: false, error: err instanceof Error ? err.message : "Session failed" },

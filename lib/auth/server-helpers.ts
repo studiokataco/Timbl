@@ -2,7 +2,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { readSessionClaims } from "@/lib/auth/session"
+import { readSessionAuth, readSessionClaims } from "@/lib/auth/session"
 import {
   DEV_ORG_COOKIE,
   getDevSession,
@@ -42,27 +42,30 @@ async function resolveDevSession(): Promise<DevSession> {
 
 export async function getCurrentUser(): Promise<DevUser> {
   if (useDevShim) return (await resolveDevSession()).user
-  const claims = await readSessionClaims()
-  if (!claims) redirect("/login")
+  const auth = await readSessionAuth()
+  if (!auth) redirect("/")
+  if (!auth.workspace) redirect("/workspaces")
   return {
-    id: claims.userId,
-    email: claims.email,
-    name: claims.email.split("@")[0],
-    role: claims.role,
+    id: auth.workspace.userId,
+    email: auth.email,
+    name: auth.email.split("@")[0],
+    role: auth.workspace.role,
   }
 }
 
 export async function getCurrentOrgId(): Promise<string> {
   if (useDevShim) return (await resolveDevSession()).organisation.id
-  const claims = await readSessionClaims()
-  if (!claims) redirect("/login")
-  return claims.organizationId
+  const auth = await readSessionAuth()
+  if (!auth) redirect("/")
+  if (!auth.workspace) redirect("/workspaces")
+  return auth.workspace.organizationId
 }
 
 export async function getCurrentOrganisation(): Promise<DevOrganisation> {
   if (useDevShim) return (await resolveDevSession()).organisation
-  const claims = await readSessionClaims()
-  if (!claims) redirect("/login")
+  const auth = await readSessionAuth()
+  if (!auth?.workspace) redirect("/workspaces")
+  const claims = auth.workspace
   /* Membership doc carries display name + slug for the org. The slug
    * matches the doc id in /organizations. */
   const snap = await getAdminDb()
@@ -83,6 +86,6 @@ export function getDb() {
 
 export async function requireRole(allowed: ReadonlyArray<DevUser["role"]>): Promise<DevUser> {
   const user = await getCurrentUser()
-  if (!allowed.includes(user.role)) redirect("/login")
+  if (!allowed.includes(user.role)) redirect("/")
   return user
 }
