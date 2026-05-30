@@ -54,10 +54,6 @@ export function AgentCommandModal() {
   const chatRef = useRef<AgentChatHandle | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
-  useEffect(() => {
-    modalActiveAgent = activeAgent
-  }, [activeAgent])
-
   // Cmd-J / Ctrl-J toggle (not shift - Cmd-Shift-J is the drawer).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -78,19 +74,18 @@ export function AgentCommandModal() {
     return () => window.removeEventListener("agent-modal:open", onOpen)
   }, [])
 
-  const pickerAgentNames =
-    agentNames.length > 0 ? agentNames : [defaultAgent]
+  const pickerAgentNames = useMemo(
+    () => (agentNames.length > 0 ? agentNames : [defaultAgent]),
+    [agentNames, defaultAgent],
+  )
   const resolvedActiveAgent = useMemo(() => {
     if (pickerAgentNames.includes(activeAgent)) return activeAgent
     return defaultAgent
   }, [activeAgent, pickerAgentNames, defaultAgent])
 
   useEffect(() => {
-    if (pickerAgentNames.length === 0) return
-    if (!pickerAgentNames.includes(activeAgent)) {
-      setActiveAgent(defaultAgent)
-    }
-  }, [pickerAgentNames, defaultAgent, activeAgent])
+    modalActiveAgent = resolvedActiveAgent
+  }, [resolvedActiveAgent])
 
   // Auto-resize the composer textarea.
   useEffect(() => {
