@@ -68,7 +68,7 @@ const CHANNELS: ChannelDef[] = [
     consoleUrl: "https://developers.facebook.com/apps",
     consoleHint: "Create a Business app; the same credentials power Facebook + Instagram.",
     connectHint:
-      "Connects via Facebook — needs an Instagram Business account linked to your Facebook Page.",
+      "Connects via Facebook - Use Instagram Business account linked to your Facebook Page.",
   },
 ]
 
