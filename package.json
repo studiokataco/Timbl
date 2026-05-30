@@ -16,7 +16,8 @@
     "test:rules": "firebase emulators:exec --only firestore --project social-media-planner-rules-test \"vitest run\"",
     "test:smoke": "playwright test",
     "functions:build": "pnpm --dir functions build",
-    "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh"
+    "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh",
+    "secrets:rotate-resend": "bash scripts/rotate-secret.sh RESEND_API_KEY --env-local"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
