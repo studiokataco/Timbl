@@ -21,7 +21,17 @@ const PUBLIC_PATHS = [
   "/auth/session",
   "/auth/activate-workspace",
 ]
-const PUBLIC_PREFIXES = ["/_next/", "/api/agents/cron/", "/api/social/", "/api/publish/"]
+// "/ingest/" is the PostHog reverse-proxy path (next.config rewrites it to the
+// PostHog US hosts). It must bypass the auth gate - middleware runs before
+// rewrites, so without this the analytics calls get redirected to /?next=...
+// and never reach PostHog.
+const PUBLIC_PREFIXES = [
+  "/_next/",
+  "/ingest/",
+  "/api/agents/cron/",
+  "/api/social/",
+  "/api/publish/",
+]
 const SESSION_COOKIE = "__session"
 
 export default function proxy(req: NextRequest) {
