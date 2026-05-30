@@ -5,6 +5,7 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
 import { requireQuota } from "@/lib/plans/gate"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
+import { estimateUsdCost } from "@/lib/agents/pricing"
 
 import { resolveAgent } from ".."
 import { AGENT_APP_NAME, buildRunner } from "../runtime/runner"
@@ -104,6 +105,7 @@ export async function startAgentRun(
         toolCalls: 0,
         promptTokens: 0,
         completionTokens: 0,
+        cachedTokens: 0,
         usdCost: 0,
       },
       parentRunId: input.parentRunId ?? null,
@@ -170,14 +172,30 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
     try {
       const snap = await ref.get()
       const data = snap.data() ?? {}
+      const m = (data.metrics ?? {}) as Record<string, number | undefined>
+      const promptTokens = m.promptTokens ?? 0
+      const completionTokens = m.completionTokens ?? 0
+      const cachedTokens = m.cachedTokens ?? 0
+      /* usdCost is derived here (not during streaming) - it's the only place
+       * the model id and the final token counts are both known. Cache reads
+       * are discounted inside estimateUsdCost. Written back so the run doc
+       * carries a real cost, not the 0 placeholder seeded at start. */
+      const usdCost = estimateUsdCost(
+        (data.model as string | undefined) ?? null,
+        promptTokens,
+        completionTokens,
+        cachedTokens,
+      )
+      await ref.set({ "metrics.usdCost": usdCost }, { merge: true })
       await emitAgentRun({
         orgId: input.orgId,
         runId: input.runId,
         agentName: (data.agentName as string) ?? "unknown",
         outcome: input.status,
-        promptTokens: (data.metrics?.promptTokens as number) ?? 0,
-        completionTokens: (data.metrics?.completionTokens as number) ?? 0,
-        usdCost: (data.metrics?.usdCost as number) ?? 0,
+        promptTokens,
+        completionTokens,
+        cachedTokens,
+        usdCost,
       })
     } catch (err) {
       console.warn(

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import type {
   ContentBlockParam,
+  Message as AnthropicMessage,
   MessageCreateParamsStreaming,
   MessageParam,
   TextBlockParam,
@@ -26,8 +27,11 @@ import type {
  *   ✓ Tool use roundtrip - function call → Anthropic tool_use, then ADK
  *     functionResponse → Anthropic tool_result
  *   ✓ System instruction extracted from llmRequest.config.systemInstruction
- *   ✓ usage metadata aggregated into the final LlmResponse
- *   ✗ Extended thinking / cache_control / images / citations / web search
+ *   ✓ usage metadata aggregated into the final LlmResponse (incl. cache
+ *     read/write token counts, surfaced as cachedContentTokenCount)
+ *   ✓ Prompt caching - system + tools + a rolling conversation-prefix
+ *     breakpoint so loop iterations re-read prior turns from cache
+ *   ✗ Extended thinking / images / citations / web search
  *     - Phase 4 stays focused; extend as workflows need it.
  *
  * Tools: ADK supplies LlmRequest.toolsDict - a map of name → BaseTool with
@@ -65,15 +69,19 @@ export class AnthropicLlm extends BaseLlm {
   ): AsyncGenerator<LlmResponse, void> {
     const systemText = extractSystemPrompt(llmRequest)
     const tools = buildAnthropicTools(llmRequest)
-    const messages = buildAnthropicMessages(llmRequest.contents)
+    const messages = withMessagesCache(buildAnthropicMessages(llmRequest.contents))
     const modelName = (llmRequest.model || this.model).replace(/^anthropic\//, "")
 
-    /* Prompt caching - Anthropic ephemeral cache (5-min TTL). Mark the
-     * system prompt and the last tool with cache_control so the system
-     * block + the entire tools array get cached. On repeat turns in a
-     * review loop (drafter + reviewer), the cache hit drops input cost
-     * on those segments by ~90%. Messages are not cached - they change
-     * every turn and caching them yields nothing. */
+    /* Prompt caching - Anthropic ephemeral cache (5-min TTL). Three cache
+     * segments, within the 4-breakpoint limit:
+     *   1. system block        (withSystemCache)
+     *   2. the tools array      (withToolsCache - marks the last tool)
+     *   3. the conversation prefix (withMessagesCache - rolling breakpoints)
+     * The third is the important one for the draft->review LoopAgent: the
+     * message history grows every iteration, so without a breakpoint there
+     * the whole (growing) prefix is re-billed at full input price each turn.
+     * With it, prior turns - including every prior tool_use/tool_result -
+     * come back as a cache READ (~0.1x input). */
     const system = withSystemCache(systemText)
     const toolsWithCache = withToolsCache(tools)
 
@@ -125,35 +133,7 @@ export class AnthropicLlm extends BaseLlm {
     }
 
     const finalMessage = await msgStream.finalMessage()
-
-    const parts: Part[] = []
-    for (const block of finalMessage.content) {
-      if (block.type === "text") {
-        if (block.text) parts.push({ text: block.text })
-      } else if (block.type === "tool_use") {
-        parts.push({
-          functionCall: {
-            id: block.id,
-            name: block.name,
-            args: (block.input ?? {}) as Record<string, unknown>,
-          } as FunctionCall,
-        })
-      }
-    }
-
-    const inTok = finalMessage.usage?.input_tokens ?? 0
-    const outTok = finalMessage.usage?.output_tokens ?? 0
-    yield {
-      content: parts.length ? { role: "model", parts } : undefined,
-      partial: false,
-      turnComplete: true,
-      finishReason: mapFinishReason(finalMessage.stop_reason ?? undefined) as never,
-      usageMetadata: {
-        promptTokenCount: inTok,
-        candidatesTokenCount: outTok,
-        totalTokenCount: inTok + outTok,
-      } as never,
-    } satisfies LlmResponse
+    yield { ...finalMessageToResponse(finalMessage), partial: false } satisfies LlmResponse
   }
 
   override async connect(): Promise<BaseLlmConnection> {
@@ -188,34 +168,52 @@ export class AnthropicLlm extends BaseLlm {
     }
 
     const finalMessage = await msgStream.finalMessage()
+    return finalMessageToResponse(finalMessage)
+  }
+}
 
-    const parts: Part[] = []
-    for (const block of finalMessage.content) {
-      if (block.type === "text") {
-        if (block.text) parts.push({ text: block.text })
-      } else if (block.type === "tool_use") {
-        parts.push({
-          functionCall: {
-            id: block.id,
-            name: block.name,
-            args: (block.input ?? {}) as Record<string, unknown>,
-          } as FunctionCall,
-        })
-      }
+/* Build the single non-partial LlmResponse from Anthropic's final message.
+ * Shared by the streaming and non-streaming paths so token accounting can't
+ * drift between them.
+ *
+ * Token accounting: Anthropic reports input_tokens EXCLUDING cached tokens;
+ * cache reads/writes are separate counters. We roll them into a single
+ * promptTokenCount (the true context size billed this turn) and expose the
+ * cache-read portion as cachedContentTokenCount so cost estimation can apply
+ * the cache discount and so the run UI can show whether caching is working. */
+function finalMessageToResponse(finalMessage: AnthropicMessage): LlmResponse {
+  const parts: Part[] = []
+  for (const block of finalMessage.content) {
+    if (block.type === "text") {
+      if (block.text) parts.push({ text: block.text })
+    } else if (block.type === "tool_use") {
+      parts.push({
+        functionCall: {
+          id: block.id,
+          name: block.name,
+          args: (block.input ?? {}) as Record<string, unknown>,
+        } as FunctionCall,
+      })
     }
+  }
 
-    const inTok = finalMessage.usage?.input_tokens ?? 0
-    const outTok = finalMessage.usage?.output_tokens ?? 0
-    return {
-      content: parts.length ? { role: "model", parts } : undefined,
-      turnComplete: true,
-      finishReason: mapFinishReason(finalMessage.stop_reason ?? undefined) as never,
-      usageMetadata: {
-        promptTokenCount: inTok,
-        candidatesTokenCount: outTok,
-        totalTokenCount: inTok + outTok,
-      } as never,
-    }
+  const usage = finalMessage.usage
+  const inTok = usage?.input_tokens ?? 0
+  const outTok = usage?.output_tokens ?? 0
+  const cacheRead = usage?.cache_read_input_tokens ?? 0
+  const cacheWrite = usage?.cache_creation_input_tokens ?? 0
+  const promptTokens = inTok + cacheRead + cacheWrite
+
+  return {
+    content: parts.length ? { role: "model", parts } : undefined,
+    turnComplete: true,
+    finishReason: mapFinishReason(finalMessage.stop_reason ?? undefined) as never,
+    usageMetadata: {
+      promptTokenCount: promptTokens,
+      candidatesTokenCount: outTok,
+      cachedContentTokenCount: cacheRead,
+      totalTokenCount: promptTokens + outTok,
+    } as never,
   }
 }
 
@@ -392,6 +390,45 @@ function withToolsCache(tools: AnthropicTool[]): AnthropicTool[] | undefined {
       ? ({ ...t, cache_control: { type: "ephemeral" } } as AnthropicTool)
       : t,
   )
+}
+
+/* Mark the conversation prefix as cacheable. The history grows every loop
+ * iteration, so we place breakpoints on the last block of the final two
+ * messages: Anthropic matches the longest previously-cached prefix, so two
+ * rolling markers near the tail keep the hit-rate high as the prefix advances
+ * turn to turn. system + tools use up to 2 of the 4 allowed breakpoints,
+ * leaving exactly the 2 we use here. Skip entirely on small histories where a
+ * cache write would cost more than it saves. */
+function withMessagesCache(messages: MessageParam[]): MessageParam[] {
+  if (messages.length === 0) return messages
+  const totalChars = messages.reduce((n, m) => n + messageChars(m), 0)
+  if (totalChars < CACHE_MIN_CHARS) return messages
+
+  const marks = new Set<number>([messages.length - 1])
+  if (messages.length >= 3) marks.add(messages.length - 2)
+
+  return messages.map((m, i) => (marks.has(i) ? markLastBlock(m) : m))
+}
+
+function messageChars(m: MessageParam): number {
+  if (typeof m.content === "string") return m.content.length
+  return m.content.reduce((n, b) => n + JSON.stringify(b).length, 0)
+}
+
+function markLastBlock(m: MessageParam): MessageParam {
+  if (typeof m.content === "string") {
+    return {
+      ...m,
+      content: [
+        { type: "text", text: m.content, cache_control: { type: "ephemeral" } },
+      ],
+    }
+  }
+  if (m.content.length === 0) return m
+  const head = m.content.slice(0, -1)
+  const last = m.content[m.content.length - 1]
+  const marked = { ...last, cache_control: { type: "ephemeral" } } as ContentBlockParam
+  return { ...m, content: [...head, marked] }
 }
 
 function buildAnthropicMessages(contents: Content[]): MessageParam[] {

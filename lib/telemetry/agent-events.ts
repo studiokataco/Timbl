@@ -32,6 +32,7 @@ export interface AgentRunEvent {
   outcome: AgentRunOutcome
   promptTokens?: number
   completionTokens?: number
+  cachedTokens?: number
   usdCost?: number
 }
 
@@ -54,6 +55,7 @@ export async function emitAgentRun(event: AgentRunEvent): Promise<void> {
       [`agentRunsByOutcome.${event.outcome}`]: FieldValue.increment(1),
       promptTokens: FieldValue.increment(event.promptTokens ?? 0),
       completionTokens: FieldValue.increment(event.completionTokens ?? 0),
+      cachedTokens: FieldValue.increment(event.cachedTokens ?? 0),
       usdCost: FieldValue.increment(event.usdCost ?? 0),
       updatedAt: new Date().toISOString(),
     },
@@ -90,6 +92,7 @@ export interface UsageSnapshot {
   scheduledPosts: number
   promptTokens: number
   completionTokens: number
+  cachedTokens: number
   usdCost: number
   agentRunsByAgent: Record<string, number>
   agentRunsByOutcome: Record<string, number>
@@ -107,6 +110,7 @@ export async function readUsageSnapshot(
     scheduledPosts: (data.scheduledPosts as number) ?? 0,
     promptTokens: (data.promptTokens as number) ?? 0,
     completionTokens: (data.completionTokens as number) ?? 0,
+    cachedTokens: (data.cachedTokens as number) ?? 0,
     usdCost: (data.usdCost as number) ?? 0,
     agentRunsByAgent: (data.agentRunsByAgent as Record<string, number>) ?? {},
     agentRunsByOutcome: (data.agentRunsByOutcome as Record<string, number>) ?? {},

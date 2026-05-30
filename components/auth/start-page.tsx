@@ -35,6 +35,7 @@ export function StartPage({ devShim }: { devShim: boolean }) {
                 intent="signin"
                 label="Sign in with Google"
                 pendingLabel="Signing in…"
+                glow
               />
             </Suspense>
           ) : (
@@ -43,6 +44,7 @@ export function StartPage({ devShim }: { devShim: boolean }) {
                 intent="signin"
                 label="Sign in with Google"
                 pendingLabel="Signing in…"
+                glow
               />
             </Suspense>
           )}
@@ -55,8 +57,7 @@ export function StartPage({ devShim }: { devShim: boolean }) {
             </>
           ) : (
             <>
-              New here? Use sign up. Returning? Use sign in to open your existing
-              workspace.
+              New here? Use sign up to create a new workspace.
             </>
           )}
         </p>

@@ -43,6 +43,13 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   // deepseek/deepseek-v4-flash: slug + price unconfirmed - omitted.
 }
 
+/* Prompt-cache reads are billed at ~0.1x the input rate across providers
+ * (Anthropic ephemeral, Gemini implicit). `cachedTokens` is the slice of
+ * `promptTokens` that was served from cache; we bill it at the discounted
+ * rate and the remainder at full rate. Cache WRITES (~1.25x) are folded into
+ * full-rate prompt tokens - close enough for a non-billing estimate. */
+const CACHE_READ_DISCOUNT = 0.1
+
 /**
  * Estimate the USD cost of a run from its token counts. Returns 0 for any
  * model not in the table (local Ollama models, or a model whose price
@@ -53,12 +60,16 @@ export function estimateUsdCost(
   model: string | null | undefined,
   promptTokens: number,
   completionTokens: number,
+  cachedTokens = 0,
 ): number {
   if (!model) return 0
   const price = MODEL_PRICES[model]
   if (!price) return 0
+  const cached = Math.min(Math.max(cachedTokens, 0), promptTokens)
+  const fullRateInput = promptTokens - cached
   return (
-    (promptTokens / 1_000_000) * price.inputPer1M +
+    (fullRateInput / 1_000_000) * price.inputPer1M +
+    (cached / 1_000_000) * price.inputPer1M * CACHE_READ_DISCOUNT +
     (completionTokens / 1_000_000) * price.outputPer1M
   )
 }

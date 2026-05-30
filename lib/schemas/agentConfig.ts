@@ -13,6 +13,20 @@ export type AgentProvider = z.infer<typeof agentProvider>
 export const agentRole = z.enum(["config", "workflow"])
 export type AgentRole = z.infer<typeof agentRole>
 
+/* Context compaction (ADK contextCompactors). When a session's event
+ * history crosses `tokenThreshold`, the oldest events are summarised into a
+ * single compacted event before the next model call - so a long run (or a
+ * draft->review loop) stops re-sending the whole transcript every turn.
+ * Defaults are tuned high enough that short runs never trigger it. */
+export const agentCompactionSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    tokenThreshold: z.number().int().min(2_000).max(500_000).default(16_000),
+    eventRetentionSize: z.number().int().min(1).max(50).default(6),
+  })
+  .default({ enabled: true, tokenThreshold: 16_000, eventRetentionSize: 6 })
+export type AgentCompaction = z.infer<typeof agentCompactionSchema>
+
 export const agentBudgetsSchema = z.object({
   maxLlmCalls: z.number().int().min(1).max(500).default(40),
   maxToolCalls: z.number().int().min(0).max(500).default(60),
@@ -55,6 +69,7 @@ export const agentConfigSchema = audit.extend({
       systemUserId: z.string().default("system"),
     })
     .default({ manual: true, cron: false, systemUserId: "system" }),
+  compaction: agentCompactionSchema,
 })
 export type AgentConfig = z.infer<typeof agentConfigSchema>
 
