@@ -27,7 +27,7 @@ export function GoogleAuthButton({
   const search = useSearchParams()
   const [pending, setPending] = useState(false)
 
-  async function onClick() {
+  async function runAuth() {
     if (pending) return
     setPending(true)
     try {
@@ -82,10 +82,14 @@ export function GoogleAuthButton({
     }
   }
 
+  const handleClick = () => {
+    void runAuth()
+  }
+
   if (glow) {
     return (
       <BrandGlowButton
-        onClick={onClick}
+        onClick={handleClick}
         disabled={pending}
         className="h-11 w-full text-base"
       >
@@ -96,7 +100,7 @@ export function GoogleAuthButton({
 
   return (
     <Button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={pending}
       variant={variant}
       className="w-full"

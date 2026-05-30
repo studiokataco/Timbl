@@ -25,9 +25,16 @@ const PUBLIC_PATHS = [
 // PostHog US hosts). It must bypass the auth gate - middleware runs before
 // rewrites, so without this the analytics calls get redirected to /?next=...
 // and never reach PostHog.
+//
+// "/__/auth/" and "/__/firebase/" are Firebase Auth same-origin handlers
+// (next.config rewrites them to *.firebaseapp.com). Blocking them breaks
+// Google sign-in/sign-up on production - the popup redirect lands on
+// /__/auth/handler and must not be sent back to /.
 const PUBLIC_PREFIXES = [
   "/_next/",
   "/ingest/",
+  "/__/auth/",
+  "/__/firebase/",
   "/api/agents/cron/",
   "/api/social/",
   "/api/publish/",

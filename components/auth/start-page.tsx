@@ -3,6 +3,7 @@
 import { Suspense, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
+import { BrandGlowButton } from "@/components/ui/brand-glow-button"
 import { Button } from "@/components/ui/button"
 
 export function StartPage({ devShim }: { devShim: boolean }) {
@@ -30,14 +31,7 @@ export function StartPage({ devShim }: { devShim: boolean }) {
           )}
 
           {devShim ? (
-            <Suspense fallback={null}>
-              <GoogleAuthButton
-                intent="signin"
-                label="Sign in with Google"
-                pendingLabel="Signing in…"
-                glow
-              />
-            </Suspense>
+            <DevSignInButton />
           ) : (
             <Suspense fallback={null}>
               <GoogleAuthButton
@@ -63,6 +57,26 @@ export function StartPage({ devShim }: { devShim: boolean }) {
         </p>
       </div>
     </main>
+  )
+}
+
+function DevSignInButton() {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+
+  return (
+    <BrandGlowButton
+      flashOnClick={false}
+      disabled={pending}
+      className="h-11 w-full text-base"
+      onClick={() => {
+        startTransition(() => {
+          router.replace("/workspaces")
+        })
+      }}
+    >
+      {pending ? "Signing in…" : "Sign in (emulator)"}
+    </BrandGlowButton>
   )
 }
 
