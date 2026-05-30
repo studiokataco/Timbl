@@ -11,6 +11,7 @@ import {
 } from "date-fns"
 
 import { cn } from "@/lib/utils"
+import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 import {
   deleteThread,
   listThreads,
@@ -24,10 +25,12 @@ interface AgentThreadRailProps {
   defaultAgentName: string
 }
 
-const THREADS_QUERY_KEY = ["agent-threads"] as const
-
 type Bucket = "Today" | "Yesterday" | "This week" | "Older"
 const BUCKET_ORDER: Bucket[] = ["Today", "Yesterday", "This week", "Older"]
+
+function threadsQueryKey(orgId: string) {
+  return ["agent-threads", orgId] as const
+}
 
 function bucketFor(ms: number): Bucket {
   const d = new Date(ms)
@@ -55,17 +58,19 @@ export function AgentThreadRail({
   onNewChat,
   defaultAgentName,
 }: AgentThreadRailProps) {
+  const orgId = useWorkspaceOrgId()
   const qc = useQueryClient()
+  const queryKey = threadsQueryKey(orgId)
   const { data: threads = [] } = useQuery({
-    queryKey: THREADS_QUERY_KEY,
-    queryFn: listThreads,
+    queryKey,
+    queryFn: () => listThreads(orgId),
     refetchOnWindowFocus: true,
     staleTime: 0,
   })
 
   const deleteMut = useMutation({
     mutationFn: deleteThread,
-    onSuccess: () => qc.invalidateQueries({ queryKey: THREADS_QUERY_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey }),
   })
 
   const grouped = useMemo(() => {

@@ -3,11 +3,11 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react"
 import { ArrowRight, Send, Sparkles, Square } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import {
@@ -18,10 +18,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { listAgentConfigs } from "@/lib/actions/agent-configs"
 import { importThread } from "@/lib/storage/agent-threads"
+import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 
 import { AgentChat, type AgentChatHandle } from "./agent-chat"
+import { useRosterAgents } from "./use-roster-agents"
 
 /*
  * Centered popup modal - the lightweight, ephemeral AI surface.
@@ -37,10 +38,12 @@ import { AgentChat, type AgentChatHandle } from "./agent-chat"
  * that thread, and closes the modal.
  */
 
-const DEFAULT_AGENT = "settings-assistant"
+const DEFAULT_AGENT = "drafter"
 let modalActiveAgent: string | null = null
 
 export function AgentCommandModal() {
+  const orgId = useWorkspaceOrgId()
+  const { agentNames, defaultAgent } = useRosterAgents()
   const [open, setOpen] = useState(false)
   const [activeAgent, setActiveAgent] = useState<string>(
     () => modalActiveAgent ?? DEFAULT_AGENT,
@@ -75,14 +78,19 @@ export function AgentCommandModal() {
     return () => window.removeEventListener("agent-modal:open", onOpen)
   }, [])
 
-  const { data: agentConfigs = [] } = useQuery({
-    queryKey: ["agent-configs"],
-    queryFn: listAgentConfigs,
-    staleTime: 30_000,
-  })
+  const pickerAgentNames =
+    agentNames.length > 0 ? agentNames : [defaultAgent]
+  const resolvedActiveAgent = useMemo(() => {
+    if (pickerAgentNames.includes(activeAgent)) return activeAgent
+    return defaultAgent
+  }, [activeAgent, pickerAgentNames, defaultAgent])
 
-  const agentNames =
-    agentConfigs.length > 0 ? agentConfigs.map((c) => c.name) : [DEFAULT_AGENT]
+  useEffect(() => {
+    if (pickerAgentNames.length === 0) return
+    if (!pickerAgentNames.includes(activeAgent)) {
+      setActiveAgent(defaultAgent)
+    }
+  }, [pickerAgentNames, defaultAgent, activeAgent])
 
   // Auto-resize the composer textarea.
   useEffect(() => {
@@ -120,7 +128,7 @@ export function AgentCommandModal() {
       return
     }
     try {
-      const thread = await importThread(activeAgent, transcript)
+      const thread = await importThread(resolvedActiveAgent, orgId, transcript)
       window.dispatchEvent(
         new CustomEvent("agent-drawer:open-thread", {
           detail: { threadId: thread.id },
@@ -131,7 +139,7 @@ export function AgentCommandModal() {
       const message = err instanceof Error ? err.message : "Unknown error"
       toast.error("Could not migrate", { description: message })
     }
-  }, [activeAgent])
+  }, [resolvedActiveAgent, orgId])
 
   const canMigrate = transcriptLength > 0 && !streaming
 
@@ -160,8 +168,8 @@ export function AgentCommandModal() {
             </Button>
           </div>
           <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
-            {agentNames.map((name) => {
-              const isActive = name === activeAgent
+            {pickerAgentNames.map((name) => {
+              const isActive = name === resolvedActiveAgent
               return (
                 <button
                   key={name}
@@ -185,12 +193,14 @@ export function AgentCommandModal() {
         <div className="flex-1 min-h-0 overflow-hidden">
           <AgentChat
             ref={chatRef}
-            key={activeAgent}
-            agentName={activeAgent}
+            key={resolvedActiveAgent}
+            agentName={resolvedActiveAgent}
+            agentCatalog={pickerAgentNames}
+            onAgentSwitch={handleAgentSwitch}
             compact
             onStreamingChange={setStreaming}
             onMessage={onMessage}
-            intro={`Ephemeral chat with ${activeAgent}. Click "View in sidebar" to keep this conversation.`}
+            intro={`Ephemeral chat with ${resolvedActiveAgent}. Click "View in sidebar" to keep this conversation.`}
             className="h-full"
           />
         </div>
