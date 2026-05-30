@@ -72,6 +72,26 @@ env:
       - BUILD
       - RUNTIME
 
+  # PostHog product analytics. Host is a non-secret US-region URL (plaintext,
+  # like the auth domain above). The project key is client-safe (phc_, ships in
+  # the browser bundle), but we route it through Secret Manager to match the
+  # firebase NEXT_PUBLIC_* convention. Both must be BUILD-available so Next
+  # inlines them into the client chunks. The client posts to /ingest, which
+  # next.config reverse-proxies to PostHog. Create + grant the secret once:
+  #   gcloud secrets create NEXT_PUBLIC_POSTHOG_KEY --replication-policy=automatic
+  #   printf '%s' "phc_..." | gcloud secrets versions add NEXT_PUBLIC_POSTHOG_KEY --data-file=-
+  - variable: NEXT_PUBLIC_POSTHOG_HOST
+    value: https://us.i.posthog.com
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_POSTHOG_KEY
+    secret: NEXT_PUBLIC_POSTHOG_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
   # ---------------------------------------------------------------------------
   # Server-only secrets - runtime only. Resolved from Google Secret Manager.
   # The App Hosting service account needs roles/secretmanager.secretAccessor
