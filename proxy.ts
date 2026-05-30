@@ -11,7 +11,16 @@ import { NextResponse, type NextRequest } from "next/server"
  * entirely - the dev shim in `lib/auth/dev-session.ts` provides identity.
  */
 
-const PUBLIC_PATHS = ["/login", "/access-pending", "/auth/callback", "/auth/logout"]
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/welcome",
+  "/access-pending",
+  "/auth/callback",
+  "/auth/logout",
+  "/auth/session",
+  "/auth/activate-workspace",
+]
 const PUBLIC_PREFIXES = ["/_next/", "/api/agents/cron/", "/api/social/", "/api/publish/"]
 const SESSION_COOKIE = "__session"
 
@@ -26,7 +35,7 @@ export default function proxy(req: NextRequest) {
   if (hasSession) return NextResponse.next()
 
   const url = req.nextUrl.clone()
-  url.pathname = "/login"
+  url.pathname = "/"
   url.searchParams.set("next", pathname + req.nextUrl.search)
   return NextResponse.redirect(url)
 }

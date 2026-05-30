@@ -3,25 +3,19 @@ import { cookies } from "next/headers"
 
 import { getAdminAuth } from "@/lib/firebase/admin"
 
-/*
- * Server-only session-cookie helpers. The cookie is signed by Firebase Auth
- * via `createSessionCookie`, set on `/auth/callback` after a successful
- * Google sign-in, and verified on every server-side identity read in
- * `lib/auth/server-helpers.ts`.
- *
- * Middleware (Edge runtime) only checks cookie presence - full verification
- * happens here, in Node, where firebase-admin is available.
- */
-
 export const SESSION_COOKIE_NAME = "__session"
 const SESSION_DURATION_MS = 14 * 24 * 60 * 60 * 1000
 
-type Claims = {
-  uid: string
-  email: string
+export type WorkspaceClaims = {
   organizationId: string
   role: "admin" | "editor" | "contributor"
   userId: string
+}
+
+export type SessionAuth = {
+  uid: string
+  email: string
+  workspace: WorkspaceClaims | null
 }
 
 export async function createSessionFromIdToken(idToken: string): Promise<string> {
@@ -46,25 +40,36 @@ export async function clearSessionCookie() {
   store.delete(SESSION_COOKIE_NAME)
 }
 
-export async function readSessionClaims(): Promise<Claims | null> {
+export async function readSessionAuth(): Promise<SessionAuth | null> {
   const store = await cookies()
   const cookie = store.get(SESSION_COOKIE_NAME)
   if (!cookie?.value) return null
 
   try {
     const decoded = await getAdminAuth().verifySessionCookie(cookie.value, true)
+    const email = decoded.email ?? ""
+    if (!email) return null
+
     const organizationId = decoded.organizationId as string | undefined
-    const role = decoded.role as Claims["role"] | undefined
+    const role = decoded.role as WorkspaceClaims["role"] | undefined
     const userId = decoded.userId as string | undefined
-    if (!organizationId || !role || !userId) return null
-    return {
-      uid: decoded.uid,
-      email: decoded.email ?? "",
-      organizationId,
-      role,
-      userId,
-    }
+
+    const workspace =
+      organizationId && role && userId
+        ? { organizationId, role, userId }
+        : null
+
+    return { uid: decoded.uid, email, workspace }
   } catch {
     return null
   }
+}
+
+/** Full workspace session only - null when signed in but no workspace picked yet. */
+export async function readSessionClaims(): Promise<
+  (SessionAuth & { workspace: WorkspaceClaims }) | null
+> {
+  const auth = await readSessionAuth()
+  if (!auth?.workspace) return null
+  return { ...auth, workspace: auth.workspace }
 }

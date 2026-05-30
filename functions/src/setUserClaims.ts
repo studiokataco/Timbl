@@ -129,10 +129,17 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
     }
   }
 
-  /* 3. New domain → new org. Bootstrap agentConfigs + kanban + plan
-   * inline (functions/ can't import @/lib/*). Idempotent: a second user
-   * from the same domain joins the existing org rather than creating a
-   * duplicate. */
+  /* Consumer mail (gmail.com, etc.) - do not map one domain → one org.
+   * Workspace creation runs in the app after sign up (unique org per
+   * business). Keep in sync with lib/auth/domains.ts CONSUMER_EMAIL_DOMAINS. */
+  if (isConsumerEmailDomain(domain)) {
+    logger.info("[claims] consumer email - workspace deferred to app", { email })
+    return { customClaims: {} }
+  }
+
+  /* 3. Business domain → shared org. Bootstrap inline (functions/ can't
+   * import @/lib/*). A second user from the same domain joins the existing
+   * org rather than creating a duplicate. */
   if (process.env.NEW_ORG_SIGNUP === "off") {
     logger.warn("[claims] new-org signup disabled, denying", { email })
     throw new HttpsError(
@@ -271,6 +278,28 @@ async function ensureOrgBootstrap(
       updatedAt: now,
     })
   }
+}
+
+const CONSUMER_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "yahoo.co.uk",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "icloud.com",
+  "me.com",
+  "mac.com",
+  "aol.com",
+  "proton.me",
+  "protonmail.com",
+  "msn.com",
+  "pm.me",
+])
+
+function isConsumerEmailDomain(domain: string): boolean {
+  return CONSUMER_EMAIL_DOMAINS.has(domain.toLowerCase())
 }
 
 function domainToOrgId(domain: string): string {
