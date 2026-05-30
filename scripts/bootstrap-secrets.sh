@@ -1,16 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Bootstraps Google Secret Manager for the SAFE social planner. Idempotent:
-# safe to re-run. Reads the secret values from the existing local .env.local
-# when present, or prompts interactively.
-#
-# Required gcloud auth:  gcloud auth login && gcloud config set project sm-dashboard-e7641
-
 PROJECT="${GCP_PROJECT:-sm-dashboard-e7641}"
 PROJECT_NUMBER="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
 COMPUTE_SA="firebase-app-hosting-compute@${PROJECT}.iam.gserviceaccount.com"
-# Cloud Build "preparer" resolves secrets as this agent (not the compute SA).
+COMPUTE_DEV_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 HOSTING_AGENT_SA="service-${PROJECT_NUMBER}@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
 
 SECRETS=(
@@ -25,7 +19,7 @@ SECRETS=(
 )
 
 echo "==> Bootstrapping secrets for project ${PROJECT}"
-echo "==> Granting access to ${COMPUTE_SA} and ${HOSTING_AGENT_SA}"
+echo "==> Granting access to ${COMPUTE_SA}, ${COMPUTE_DEV_SA}, and ${HOSTING_AGENT_SA}"
 
 ensure_secret() {
   local name="$1"
@@ -63,15 +57,26 @@ grant_access() {
     --quiet >/dev/null
 }
 
-grant_both() {
+grant_apphosting_secret() {
   local name="$1"
   grant_access "$name" "$COMPUTE_SA"
+  grant_access "$name" "$COMPUTE_DEV_SA"
   grant_access "$name" "$HOSTING_AGENT_SA"
+  gcloud secrets add-iam-policy-binding "$name" \
+    --project="$PROJECT" \
+    --member="serviceAccount:${HOSTING_AGENT_SA}" \
+    --role="roles/secretmanager.secretVersionManager" \
+    --quiet >/dev/null 2>&1 || true
+  gcloud secrets add-iam-policy-binding "$name" \
+    --project="$PROJECT" \
+    --member="serviceAccount:${COMPUTE_SA}" \
+    --role="roles/secretmanager.viewer" \
+    --quiet >/dev/null 2>&1 || true
 }
 
 for secret in "${SECRETS[@]}"; do
   ensure_secret "$secret"
-  grant_both "$secret"
+  grant_apphosting_secret "$secret"
 done
 
 echo
