@@ -35,7 +35,7 @@ import {
 
 /*
  * Global ⌘K command palette. Mounted once in the (app) layout. Provides:
- *   - Navigation jumps (Calendar, Posts, Kanban, Library, Awareness, Campaigns)
+ *   - Navigation jumps (⌘1-6, ⌘, for settings - wired in app-hotkeys.tsx)
  *   - Quick add (deep-links to /calendar?quickAdd=1; the calendar page reads
  *     the param and opens its dialog - keeps the trigger one component)
  *   - Recent posts (last 5 viewed, persisted to localStorage)
@@ -174,7 +174,7 @@ export function CommandPalette() {
           >
             <Plus />
             <span>Quick add post</span>
-            <CommandShortcut>N</CommandShortcut>
+            <CommandShortcut>⌘N</CommandShortcut>
           </CommandItem>
           <CommandItem
             onSelect={() => {
@@ -193,29 +193,32 @@ export function CommandPalette() {
           <CommandItem onSelect={() => go("/calendar")} value="calendar">
             <CalendarIcon />
             <span>Calendar</span>
-            <CommandShortcut>G C</CommandShortcut>
+            <CommandShortcut>⌘1</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => go("/posts")} value="all posts list">
             <LayoutList />
             <span>All posts</span>
-            <CommandShortcut>G P</CommandShortcut>
+            <CommandShortcut>⌘2</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => go("/kanban")} value="kanban board">
             <KanbanSquare />
             <span>Kanban</span>
-            <CommandShortcut>G K</CommandShortcut>
+            <CommandShortcut>⌘3</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => go("/library")} value="library templates">
             <BookOpen />
             <span>Library</span>
+            <CommandShortcut>⌘4</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => go("/awareness")} value="awareness days">
             <Globe />
             <span>Awareness days</span>
+            <CommandShortcut>⌘5</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => go("/campaigns")} value="campaigns">
             <Megaphone />
             <span>Campaigns</span>
+            <CommandShortcut>⌘6</CommandShortcut>
           </CommandItem>
           <CommandItem
             onSelect={() => go("/settings")}
@@ -223,6 +226,7 @@ export function CommandPalette() {
           >
             <Settings />
             <span>Settings</span>
+            <CommandShortcut>⌘,</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
