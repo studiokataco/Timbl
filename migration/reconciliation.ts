@@ -84,7 +84,6 @@ export function staffSlug(name: CanonicalStaff): string {
  */
 export const CATEGORY_MAP: Record<string, string> = {
   "ethical boutique - pick of week": "ethical-boutique-pick",
-  "ethical boutique - pick of week": "ethical-boutique-pick",
   "ethical boutique pick of week": "ethical-boutique-pick",
   "pick of the week": "ethical-boutique-pick",
   "ethical boutique - general": "ethical-boutique-general",
