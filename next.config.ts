@@ -15,12 +15,27 @@ const authProxyHost =
   (firebaseProjectId ? `${firebaseProjectId}.firebaseapp.com` : null)
 
 const nextConfig: NextConfig = {
+  // PostHog ingestion proxy: keeps analytics same-origin so ad-blockers can't
+  // drop events. The client posts to /ingest (see instrumentation-client.ts),
+  // which we forward to the PostHog US ingestion + static-asset hosts. Applies
+  // in every mode; analytics itself stays disabled under emulators, so these
+  // are simply unused there. skipTrailingSlashRedirect keeps Next from 308ing
+  // PostHog's trailing-slash-sensitive API paths.
+  skipTrailingSlashRedirect: true,
   async rewrites() {
+    const posthogRewrites = [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      { source: "/ingest/:path*", destination: "https://us.i.posthog.com/:path*" },
+    ]
     if (process.env.NEXT_PUBLIC_USE_EMULATORS === "1" || !authProxyHost) {
-      return []
+      return posthogRewrites
     }
     const base = `https://${authProxyHost}`
     return [
+      ...posthogRewrites,
       { source: "/__/auth/:path*", destination: `${base}/__/auth/:path*` },
       { source: "/__/firebase/:path*", destination: `${base}/__/firebase/:path*` },
     ]
