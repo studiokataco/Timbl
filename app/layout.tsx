@@ -4,6 +4,7 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { DevBanner } from "@/components/shared/dev-banner"
 import { ThemeProvider, ThemeNoFlashScript } from "@/components/shared/theme-provider"
+import { PostHogProvider } from "@/components/shared/posthog-provider"
 
 /*
  * Cal.com's brand voice splits into Cal Sans (custom display) + Inter (everything
@@ -43,11 +44,13 @@ export default function RootLayout({
         <ThemeNoFlashScript />
       </head>
       <body className="h-screen overflow-hidden flex flex-col bg-background text-foreground">
-        <ThemeProvider defaultTheme="system">
-          <DevBanner />
-          {children}
-          <Toaster richColors position="bottom-right" />
-        </ThemeProvider>
+        <PostHogProvider>
+          <ThemeProvider defaultTheme="system">
+            <DevBanner />
+            {children}
+            <Toaster richColors position="bottom-right" />
+          </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   )
