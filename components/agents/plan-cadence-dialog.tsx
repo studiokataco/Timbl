@@ -16,7 +16,7 @@ import { AgentChat } from "./agent-chat"
 
 /*
  * Wraps the cadence-planner agent. The default brief covers the next 14
- * days starting from the calendar's currently-visible date — the user can
+ * days starting from the calendar's currently-visible date - the user can
  * rewrite freely before sending.
  */
 

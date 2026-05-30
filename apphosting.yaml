@@ -20,7 +20,7 @@ env:
     availability:
       - BUILD
 
-  # Public origin — used by OAuth redirect_uri registration and by the
+  # Public origin - used by OAuth redirect_uri registration and by the
   # connect/callback routes to build user-facing redirects. Without this,
   # appBaseUrl() falls back to localhost and redirects leak Cloud Run's
   # internal 0.0.0.0:8080 listener address.
@@ -31,7 +31,7 @@ env:
       - RUNTIME
 
   # ---------------------------------------------------------------------------
-  # Public (NEXT_PUBLIC_*) — exposed to the browser bundle.
+  # Public (NEXT_PUBLIC_*) - exposed to the browser bundle.
   # Available at BUILD time so Next inlines them into the client chunks.
   # ---------------------------------------------------------------------------
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
@@ -71,10 +71,10 @@ env:
       - RUNTIME
 
   # ---------------------------------------------------------------------------
-  # Server-only secrets — runtime only. Resolved from Google Secret Manager.
+  # Server-only secrets - runtime only. Resolved from Google Secret Manager.
   # The App Hosting service account needs roles/secretmanager.secretAccessor
   # on each secret. Admin SDK credentials are inherited from the App Hosting
-  # compute SA via ADC — no FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON binding
+  # compute SA via ADC - no FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON binding
   # required.
   # ---------------------------------------------------------------------------
   - variable: AGENT_CRON_SECRET
@@ -97,7 +97,7 @@ env:
     availability:
       - RUNTIME
 
-  # Single PLATFORM OpenRouter key — SAFE owns it, cost folded into the
+  # Single PLATFORM OpenRouter key - SAFE owns it, cost folded into the
   # subscription. Used by the openai-compatible adapter for provider=openrouter.
   # Create the secret + grant the App Hosting SA secretAccessor before deploy:
   #   gcloud secrets create OPENROUTER_API_KEY --replication-policy=automatic
@@ -108,7 +108,7 @@ env:
       - RUNTIME
 
   # ---------------------------------------------------------------------------
-  # Publishing layer — token vault key, worker HMAC, and per-platform OAuth
+  # Publishing layer - token vault key, worker HMAC, and per-platform OAuth
   # apps. Create each secret + grant the App Hosting SA secretAccessor once:
   #   gcloud secrets create SOCIAL_TOKEN_KEY --replication-policy=automatic
   #   printf '%s' "$(openssl rand -hex 32)" | gcloud secrets versions add SOCIAL_TOKEN_KEY --data-file=-
@@ -125,12 +125,24 @@ env:
     availability:
       - RUNTIME
 
+  - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY
+    availability:
+      - RUNTIME
+
+  # Until you verify a product domain in Resend, keep test mode on (no DNS).
+  # Later: set RESEND_TEST_MODE=0 and bind RESEND_INVITE_FROM from Secret Manager.
+  - variable: RESEND_TEST_MODE
+    value: "1"
+    availability:
+      - RUNTIME
+
   # Platform OAuth app credentials (LinkedIn / X / Meta) are stored in
   # Firestore, AES-256-GCM-encrypted with SOCIAL_TOKEN_KEY, and managed
   # from /settings/channels by an org admin. No per-platform secret
-  # bindings needed here — adding a platform = one dialog entry, not a
+  # bindings needed here - adding a platform = one dialog entry, not a
   # redeploy. See lib/publishing/oauth.ts → loadOauthApp().
 
-  # SENTRY_DSN intentionally unbound — Sentry isn't set up. Cloud Logging
+  # SENTRY_DSN intentionally unbound - Sentry isn't set up. Cloud Logging
   # in App Hosting + Functions provides primary error visibility. Re-wire
   # when @sentry/nextjs lands.

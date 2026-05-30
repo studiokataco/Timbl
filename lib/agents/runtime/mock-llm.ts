@@ -3,7 +3,7 @@ import type { BaseLlmConnection, LlmRequest, LlmResponse } from "@google/adk"
 import type { Content } from "@google/genai"
 
 /*
- * MockLlm — a deterministic scripted model that returns a canned reply.
+ * MockLlm - a deterministic scripted model that returns a canned reply.
  * Activated when AGENT_MOCK_LLM=1. Used by /agent-browser smoke tests and
  * CI to exercise the streaming + persistence layers without burning real
  * tokens or requiring network access.

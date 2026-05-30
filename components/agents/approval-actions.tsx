@@ -34,7 +34,7 @@ import {
  * Approve/Reject controls rendered on any kanban card whose
  * agentMeta.reviewState === 'pending'.
  *
- * The Approve button label is contextual — it reflects the post's
+ * The Approve button label is contextual - it reflects the post's
  * declared `nextAction.kind` so the user knows what will happen:
  *   - schedule_post     → "Approve & schedule"
  *   - add_to_calendar   → "Approve & add to calendar"
@@ -265,9 +265,9 @@ function approvedToastTitle(kind: NextActionKind): string {
     case "add_to_calendar":
       return "Approved & added to calendar"
     case "create_draft":
-      return "Approved — draft opened"
+      return "Approved - draft opened"
     case "instantiate_template":
-      return "Approved — template applied"
+      return "Approved - template applied"
     case "assign_review":
       return "Approved & assigned"
     default:
@@ -280,7 +280,7 @@ function composeFeedback(reason: RejectReason | null, note: string): string {
   if (reason && reason !== "other") parts.push(REJECT_REASON_LABELS[reason])
   const trimmed = note.trim()
   if (trimmed) parts.push(trimmed)
-  return parts.join(" — ")
+  return parts.join(" - ")
 }
 
 /* Small dropdown that lets the approver pick "Auto-slot" vs "Pick time"

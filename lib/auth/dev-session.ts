@@ -1,13 +1,13 @@
 /*
  * Development auth shim. Returns a demo workspace identity for every
- * request — but ONLY when NEXT_PUBLIC_USE_EMULATORS=1 (set by `pnpm dev`).
+ * request - but ONLY when NEXT_PUBLIC_USE_EMULATORS=1 (set by `pnpm dev`).
  * In any other environment this module's identity is meaningless;
  * server-helpers routes through `lib/auth/session.ts` instead.
  *
  * Two dev orgs exist, and the shim can resolve to either one:
  *
  *   - "demo"   → SAFE Foundation (`safe-foundation`). Fully seeded by
- *                firestore/seeds/0001–0009 — categories, agents, awareness
+ *                firestore/seeds/0001-0009 - categories, agents, awareness
  *                days. This is the showcase org for demos.
  *   - "tenant" → "Your workspace" (`tenant-workspace`). Seeded near-empty
  *                by firestore/seeds/0010 so the onboarding wizard is the
@@ -83,7 +83,7 @@ export const DEV_SESSIONS: Record<DevOrgMode, DevSession> = {
   tenant: TENANT_SESSION,
 }
 
-/** Back-compat alias — the SAFE demo session. Prefer DEV_SESSIONS[mode]. */
+/** Back-compat alias - the SAFE demo session. Prefer DEV_SESSIONS[mode]. */
 export const DEV_SESSION = DEMO_SESSION
 
 /** Coerce a raw cookie value to a valid mode, falling back to the default. */

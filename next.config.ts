@@ -5,7 +5,7 @@ import type { NextConfig } from "next"
  * full Google Cloud + Vertex + OpenTelemetry tree, firebase-admin uses
  * node:net / node:tls / etc, and the Anthropic SDK shims Node streams.
  * Marking them as server-external keeps Next from trying to bundle them
- * into the client or edge runtime — and prevents the "Module not found:
+ * into the client or edge runtime - and prevents the "Module not found:
  * Can't resolve 'fs'" class of failures when an agent module is reachable
  * through a server import graph.
  */

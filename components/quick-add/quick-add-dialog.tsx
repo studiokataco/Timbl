@@ -48,10 +48,10 @@ type Props = {
 
 /*
  * The killer feature: three taps to create a post.
- *   1. Date — defaults to clicked day or today.
- *   2. Category — Combobox over org categories; selecting one reveals the
+ *   1. Date - defaults to clicked day or today.
+ *   2. Category - Combobox over org categories; selecting one reveals the
  *      defaults that will be inherited (lead, post type, CTA).
- *   3. Brief — single-line summary.
+ *   3. Brief - single-line summary.
  *
  * Save closes the dialog and surfaces an Undo toast that DELETEs the post
  * if pressed within 5 seconds.
@@ -228,10 +228,10 @@ export function QuickAddDialog({
               <p className="text-xs text-muted-foreground">
                 Defaults applied: type {selectedCategory.defaultPostType}
                 {selectedCategory.defaultCtaId
-                  ? `, CTA ${ctasById.get(selectedCategory.defaultCtaId)?.label ?? "—"}`
+                  ? `, CTA ${ctasById.get(selectedCategory.defaultCtaId)?.label ?? "-"}`
                   : ""}
                 {selectedCategory.defaultLeadId
-                  ? `, lead ${usersById.get(selectedCategory.defaultLeadId)?.name ?? "—"}`
+                  ? `, lead ${usersById.get(selectedCategory.defaultLeadId)?.name ?? "-"}`
                   : ""}
               </p>
             ) : null}
@@ -254,7 +254,7 @@ export function QuickAddDialog({
               }}
             />
             <p className="text-xs text-muted-foreground">
-              One line — flesh out later.
+              One line - flesh out later.
             </p>
           </div>
         </div>

@@ -1,0 +1,22 @@
+---
+description: Use ASCII hyphen only; never Unicode en/em dashes in copy or code
+alwaysApply: true
+---
+
+# ASCII hyphens only
+
+Never insert Unicode dash characters in this repo:
+
+- En dash `–` (U+2013)
+- Em dash `—` (U+2014)
+- Minus sign `−`, non-breaking hyphen, figure dash, horizontal bar, fullwidth hyphen
+
+Always use the ASCII hyphen-minus `-` (U+002D) instead.
+
+- Comments, docs, UI strings, prompts, seeds: `-`
+- Numeric ranges: `200-299`, `5-10` (not en dash)
+- Empty / missing table cells: `-` (not em dash)
+
+Exception: only use a Unicode dash when a spec or external API literally requires that exact character (rare). Prefer ASCII everywhere else.
+
+When editing existing text, replace any `–` or `—` you touch with `-`.

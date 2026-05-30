@@ -11,7 +11,7 @@ import {
 import { getRuntimeCtx } from "../runtime/context"
 
 /*
- * Brand-config tools — read + write the same Firestore doc the UI uses
+ * Brand-config tools - read + write the same Firestore doc the UI uses
  * (via lib/actions/brand-config.ts). Tools intentionally bypass the
  * server-action layer because they execute inside the agent runtime, which
  * already runs server-side and already has resolved orgId from the session

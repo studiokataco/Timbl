@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Social Media Planner — Firestore Security Rules.
+// Social Media Planner - Firestore Security Rules.
 //
 // Multi-tenant model: every domain doc lives under
 //   /organizations/{orgId}/...
@@ -8,7 +8,7 @@ rules_version = '2';
 // custom claim, which Phase 7's Cloud Function sets on every Firebase Auth
 // user based on their /organizations/{orgId}/users/{userId} membership.
 //
-// During Phases 0–6 the Admin SDK is used server-side and bypasses these
+// During Phases 0-6 the Admin SDK is used server-side and bypasses these
 // rules entirely. They still exist because:
 //   1. Emulator-based unit tests verify isolation works.
 //   2. Phase 7 simply swaps the server client and the rules engage with
@@ -72,7 +72,7 @@ service cloud.firestore {
         }
       }
 
-      // Publishing layer — token vault. Members may read account metadata
+      // Publishing layer - token vault. Members may read account metadata
       // (the app never exposes the encrypted token fields to the client);
       // writes go through the Admin SDK / OAuth callback only.
       match /socialAccounts/{accountId} {

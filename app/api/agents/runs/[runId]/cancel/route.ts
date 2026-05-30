@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 /*
  * Marks a run as cancelled. The streaming routes honour request.signal
  * via the runner's abortSignal so an active in-flight stream tears down
- * naturally — this endpoint exists for paused (`awaiting_human`) runs
+ * naturally - this endpoint exists for paused (`awaiting_human`) runs
  * where there's no active stream to abort.
  */
 export async function POST(

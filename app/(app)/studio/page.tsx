@@ -9,12 +9,12 @@ import { StudioWorkspace } from "@/components/studio/studio-workspace"
 export const dynamic = "force-dynamic"
 
 /*
- * Studio — AI Command Center (Phase A: read-only).
+ * Studio - AI Command Center (Phase A: read-only).
  *
  * Server component: hydrates agents, recent runs, and the "new" ideation
  * feed in parallel from existing list actions, then hands them to the
  * client-side workspace which owns the three-column shell + URL-driven
- * selection. No mutations yet — purely a visual surface.
+ * selection. No mutations yet - purely a visual surface.
  */
 export default async function StudioPage() {
   const [agents, runs, ideation, approvals, publishCounts] = await Promise.all([

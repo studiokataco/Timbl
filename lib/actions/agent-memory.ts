@@ -12,7 +12,7 @@ import { type AgentMemory, type ServerActionResult } from "@/lib/schemas"
 /*
  * Agent memory CRUD + semantic listing. recordMemory is what human-gate
  * calls (Stage 2) when persisting reviewer rationale. listMemories is what
- * recall() agent-tool will wrap — semantic when `query` is set, exact-topic
+ * recall() agent-tool will wrap - semantic when `query` is set, exact-topic
  * lookup when only `topic`, otherwise the latest 50.
  */
 

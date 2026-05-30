@@ -1,17 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 /*
- * Edge proxy (Next 16's evolution of middleware.ts) — gates the app on
+ * Edge proxy (Next 16's evolution of middleware.ts) - gates the app on
  * session-cookie presence. Real verification happens in
  * `lib/auth/session.ts` on Node-runtime server actions and route
  * handlers; this layer is a UX hint that redirects unauthenticated users
  * to /login instead of letting them see a server error.
  *
  * Local emulator mode (NEXT_PUBLIC_USE_EMULATORS=1) bypasses the gate
- * entirely — the dev shim in `lib/auth/dev-session.ts` provides identity.
+ * entirely - the dev shim in `lib/auth/dev-session.ts` provides identity.
  */
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/logout"]
+const PUBLIC_PATHS = ["/login", "/access-pending", "/auth/callback", "/auth/logout"]
 const PUBLIC_PREFIXES = ["/_next/", "/api/agents/cron/", "/api/social/", "/api/publish/"]
 const SESSION_COOKIE = "__session"
 

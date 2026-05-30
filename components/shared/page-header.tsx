@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 type Props = {
   title: ReactNode
   description?: ReactNode
-  /** Right-aligned slot — typically a button (e.g. "Manage" on /campaigns). */
+  /** Right-aligned slot - typically a button (e.g. "Manage" on /campaigns). */
   action?: ReactNode
   /** Optional override for the title scale. Defaults to display-md (Cal-marketing voice). */
   size?: "md" | "sm"
@@ -17,7 +17,7 @@ type Props = {
 /*
  * Shared page header. Display-scale title + body-md description, with a
  * GSAP-driven enter reveal honoured by `useHeadingReveal`. Used app-wide so
- * every page reads with the same Cal voice — generous breathing room,
+ * every page reads with the same Cal voice - generous breathing room,
  * negative tracking on the heading, optional right-aligned action.
  */
 export function PageHeader({

@@ -34,7 +34,7 @@ const TEMPLATES: TemplateSeed[] = [
     ],
     defaultCtaId: "like",
     blurbTemplate:
-      "Meet {{name}} — {{role}} at SAFE Foundation. {{name}} has been with us for {{duration}} and {{oneLineHighlight}}.\n\nDouble-tap if you've met {{name}} at one of our events!",
+      "Meet {{name}} - {{role}} at SAFE Foundation. {{name}} has been with us for {{duration}} and {{oneLineHighlight}}.\n\nDouble-tap if you've met {{name}} at one of our events!",
     cadence: "biweekly",
   },
   {
@@ -50,7 +50,7 @@ const TEMPLATES: TemplateSeed[] = [
     ],
     defaultCtaId: "visit-shop",
     blurbTemplate:
-      "This week's Pick of the Week: {{itemName}} — {{description}}.\n\nFind it in store at the Ethical Boutique. Every purchase supports SAFE's work in the community.",
+      "This week's Pick of the Week: {{itemName}} - {{description}}.\n\nFind it in store at the Ethical Boutique. Every purchase supports SAFE's work in the community.",
     cadence: "weekly",
   },
   {
@@ -66,12 +66,12 @@ const TEMPLATES: TemplateSeed[] = [
     ],
     defaultCtaId: "attend-an-event",
     blurbTemplate:
-      "Here's what's on at SAFE this {{month}} 💛\n\nSwipe through to see the full line-up — and tap the link in bio to book.",
+      "Here's what's on at SAFE this {{month}} 💛\n\nSwipe through to see the full line-up - and tap the link in bio to book.",
     cadence: "monthly",
   },
   {
     id: "did-you-know",
-    name: "Did You Know — GC Facts",
+    name: "Did You Know - GC Facts",
     categoryId: "did-you-know",
     defaultPostType: "carousel",
     defaultHashtags: [

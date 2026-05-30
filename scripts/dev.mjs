@@ -12,7 +12,7 @@ import net from "node:net"
  *
  * 1. Boots the Firebase Emulator Suite (firestore, auth, storage, ui).
  * 2. Waits for the firestore emulator to start accepting connections.
- * 3. Runs the seed script (idempotent — safe to re-run on every boot).
+ * 3. Runs the seed script (idempotent - safe to re-run on every boot).
  * 4. Starts `next dev`.
  *
  * All four streams interleave in a single terminal. Ctrl-C tears everything
@@ -20,7 +20,7 @@ import net from "node:net"
  *
  * Project-id resolution: `.firebaserc` is the single source of truth. Its
  * `default` is propagated to every subprocess via NEXT_PUBLIC_FIREBASE_PROJECT_ID
- * — which Next prefers over `.env.local` because process.env wins. This avoids
+ * - which Next prefers over `.env.local` because process.env wins. This avoids
  * the trap where the seed and Next read different per-project Firestore stores
  * inside the same emulator (any drift in .env.local would silently route reads
  * to an empty project).
@@ -118,7 +118,7 @@ const EMULATOR_ENV = {
   FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
   FIREBASE_STORAGE_EMULATOR_HOST: "127.0.0.1:9199",
   NEXT_PUBLIC_USE_EMULATORS: "1",
-  // Force every subprocess (seed, next) to agree on the project id —
+  // Force every subprocess (seed, next) to agree on the project id -
   // process.env wins over .env.local in Next, so any stale value there is
   // overridden cleanly.
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: PROJECT_ID,
@@ -158,13 +158,13 @@ async function main() {
 
   if (process.env.AGENTS_CRON === "1") {
     /* The agent-cron script needs Next to be up before it can POST to
-     * /api/agents/cron/tick — wait for the listener before spawning. */
+     * /api/agents/cron/tick - wait for the listener before spawning. */
     try {
       await waitForPort("127.0.0.1", 3000, 90_000)
       console.log("→ starting agent cron (AGENTS_CRON=1)")
       spawnLogged("agents", "node", ["scripts/agent-cron.mjs"], EMULATOR_ENV)
     } catch (err) {
-      console.error("[agents] could not start cron — next dev did not bind to :3000")
+      console.error("[agents] could not start cron - next dev did not bind to :3000")
       console.error(err.message)
     }
   }

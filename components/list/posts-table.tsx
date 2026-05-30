@@ -337,12 +337,12 @@ export function PostsTable({ posts, categories, users }: Props) {
                           {cat.name}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="p-2 max-w-[280px] truncate">{p.brief ?? "—"}</td>
-                    <td className="p-2 text-xs">{lead?.name ?? "—"}</td>
-                    <td className="p-2 text-xs">{assg?.name ?? "—"}</td>
+                    <td className="p-2 max-w-[280px] truncate">{p.brief ?? "-"}</td>
+                    <td className="p-2 text-xs">{lead?.name ?? "-"}</td>
+                    <td className="p-2 text-xs">{assg?.name ?? "-"}</td>
                     <td className="p-2 text-xs capitalize">{p.postType}</td>
                     <td className="p-2 text-right">
                       <Button

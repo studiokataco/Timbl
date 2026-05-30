@@ -37,7 +37,7 @@ import {
  * Global ⌘K command palette. Mounted once in the (app) layout. Provides:
  *   - Navigation jumps (Calendar, Posts, Kanban, Library, Awareness, Campaigns)
  *   - Quick add (deep-links to /calendar?quickAdd=1; the calendar page reads
- *     the param and opens its dialog — keeps the trigger one component)
+ *     the param and opens its dialog - keeps the trigger one component)
  *   - Recent posts (last 5 viewed, persisted to localStorage)
  *   - Search across all posts + campaigns
  *   - Theme toggle
@@ -115,7 +115,7 @@ export function CommandPalette() {
   }, [])
 
   // Listen for the TopBar search-box click (or any UI that wants to open the
-  // palette) — dispatched as a window event so we don't need React context.
+  // palette) - dispatched as a window event so we don't need React context.
   useEffect(() => {
     const onOpen = () => setOpen(true)
     window.addEventListener("palette:open", onOpen)

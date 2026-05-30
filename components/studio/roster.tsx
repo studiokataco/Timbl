@@ -12,7 +12,7 @@ import { AddAgentSheet } from "./add-agent-sheet"
 import { ModelUpdatesCard } from "./model-updates-card"
 
 /*
- * Left rail — agents grouped by pipeline stage.
+ * Left rail - agents grouped by pipeline stage.
  *
  * Selection state lives in the URL as `?focus=agent:<name>` so the
  * Inspector (mounted in `studio-workspace`) can read the same source of

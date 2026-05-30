@@ -3,7 +3,7 @@ import "server-only"
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 
 /*
- * Signed OAuth `state` — CSRF guard + cross-org binding. Format:
+ * Signed OAuth `state` - CSRF guard + cross-org binding. Format:
  *   base64url(`${orgId}.${ts}.${nonce}`) + "." + hmac
  * HMAC keyed off SOCIAL_TOKEN_KEY. verifyState confirms the signature and
  * that the bound org matches the callback's org, within a 15-minute window.

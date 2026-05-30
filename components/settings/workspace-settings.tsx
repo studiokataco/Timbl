@@ -21,7 +21,7 @@ export function WorkspaceSettings({
 }: {
   completedAt?: string
   industry?: string
-  /* True in emulator dev mode — gates the SAFE-demo-mode switch, which is
+  /* True in emulator dev mode - gates the SAFE-demo-mode switch, which is
    * meaningless once real auth (Phase 7) provides the org. */
   devShim: boolean
   devOrgMode: DevOrgMode
@@ -79,8 +79,8 @@ export function WorkspaceSettings({
                 SAFE demo mode
               </Label>
               <p className="text-xs text-muted-foreground">
-                On — load the fully-seeded SAFE Foundation workspace (its
-                agents, categories, and awareness days) for demos. Off — work
+                On - load the fully-seeded SAFE Foundation workspace (its
+                agents, categories, and awareness days) for demos. Off - work
                 in your own wizard-built workspace. Emulator dev only.
               </p>
               <Link

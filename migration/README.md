@@ -25,11 +25,11 @@ The script (`scripts/migrate-from-csv.ts`) expects these filenames:
 | `campaigns.csv` | Campaign reference |
 | `events-list.csv` | Events reference (writes to `/organizations/.../events`) |
 
-Any of these may be omitted — the script logs and skips. Column names are matched case-insensitively across a few common variants (e.g. `Date`/`Scheduled`, `Catagory`/`Category`).
+Any of these may be omitted - the script logs and skips. Column names are matched case-insensitively across a few common variants (e.g. `Date`/`Scheduled`, `Catagory`/`Category`).
 
 ## Run
 
-The script targets whatever Firestore the running env points at — emulator by default during dev. Always boot the emulator and seed the org first:
+The script targets whatever Firestore the running env points at - emulator by default during dev. Always boot the emulator and seed the org first:
 
 ```bash
 pnpm dev    # or: pnpm emulators + pnpm seed
@@ -55,21 +55,21 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
 
 ## Output
 
-- `migration/report.csv` — one row per source row, with status `imported | skipped | manual_review` and a reason. Use this to triage.
-- Console summary — counts per tab + any canonical staff names with no occurrences.
+- `migration/report.csv` - one row per source row, with status `imported | skipped | manual_review` and a reason. Use this to triage.
+- Console summary - counts per tab + any canonical staff names with no occurrences.
 
 ## Idempotency
 
 Every imported doc carries `migratedFrom = { sourceTab, sourceRow, sourceHash }`. Re-running the script skips writes whose hash matches an existing doc, so you can safely:
 
 1. Run `--dry-run`, fix CSV issues, re-run.
-2. Run `--commit`, notice a missed mapping, fix `reconciliation.ts`, re-run `--commit` — only new rows get written.
+2. Run `--commit`, notice a missed mapping, fix `reconciliation.ts`, re-run `--commit` - only new rows get written.
 
 The hash is derived from `(tab, row index, key fields)`. Editing brief or date in the source CSV produces a new hash and therefore a duplicate doc; for those, delete the bad doc in the emulator UI first or rely on the `dedupeAgainstMain` heuristic.
 
 ## Reconciliation rules
 
-`migration/reconciliation.ts` is data, not code — keep it shallow:
+`migration/reconciliation.ts` is data, not code - keep it shallow:
 
 - **Staff fuzzy match**: `string-similarity` ≥ 0.85 auto-applied. Below threshold flagged as `manual_review`. Cells like `Ange/Phil` are split on `/`, `+`, `,`, `&`, `and`.
 - **Category map**: hard-coded CSV → category slug. Misses fall back to `general` and emit a review flag.

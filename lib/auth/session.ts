@@ -9,7 +9,7 @@ import { getAdminAuth } from "@/lib/firebase/admin"
  * Google sign-in, and verified on every server-side identity read in
  * `lib/auth/server-helpers.ts`.
  *
- * Middleware (Edge runtime) only checks cookie presence — full verification
+ * Middleware (Edge runtime) only checks cookie presence - full verification
  * happens here, in Node, where firebase-admin is available.
  */
 

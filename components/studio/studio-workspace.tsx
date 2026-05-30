@@ -20,13 +20,13 @@ import { EmptyRosterCta } from "./empty-roster-cta"
  * Three-column workspace for /studio.
  *
  *   ≥1280px   →  roster (260px) | center (flex) | inspector (380px)
- *   768–1279  →  roster | center; inspector collapses to a slide-over Sheet
+ *   768-1279  →  roster | center; inspector collapses to a slide-over Sheet
  *                triggered automatically whenever `?focus=` is set.
  *   <768px    →  roster becomes a horizontal pill strip across the top of
  *                the center column; pipeline scrolls horizontally; inspector
  *                is a full-screen sheet.
  *
- * URL is the source of truth for selection — `?focus=agent:<name>` /
+ * URL is the source of truth for selection - `?focus=agent:<name>` /
  * `?focus=run:<id>` / `?focus=ideation:<id>`. Components below read it
  * directly via useSearchParams.
  */
@@ -51,7 +51,7 @@ export function StudioWorkspace({
   const hasFocus = focus.length > 0
   // `xl` breakpoint matches Tailwind's default (1280px). At this width and
   // above the inspector is rendered inline as the third column, so the
-  // Sheet must NOT mount — otherwise its backdrop portal dims the whole
+  // Sheet must NOT mount - otherwise its backdrop portal dims the whole
   // page even though SheetContent has `xl:hidden` (the overlay is a
   // sibling element and ignores that class).
   const isWide = useMediaQuery("(min-width: 1280px)")
@@ -73,7 +73,7 @@ export function StudioWorkspace({
         <Roster agents={agents} />
       </aside>
 
-      {/* Mobile roster — horizontal scroll strip */}
+      {/* Mobile roster - horizontal scroll strip */}
       <div className="md:hidden border-b border-border bg-background overflow-x-auto">
         <MobileRosterStrip agents={agents} />
       </div>
@@ -99,12 +99,12 @@ export function StudioWorkspace({
         )}
       </main>
 
-      {/* Inspector — persistent on wide screens (≥1280px) */}
+      {/* Inspector - persistent on wide screens (≥1280px) */}
       <aside className="hidden xl:block min-h-0 overflow-hidden bg-background">
         <Inspector agents={agents} runs={runs} ideation={ideation} />
       </aside>
 
-      {/* Inspector — slide-over on tablet/mobile. Gated by JS media query
+      {/* Inspector - slide-over on tablet/mobile. Gated by JS media query
           so the Sheet (and its backdrop portal) never mount at ≥1280px. */}
       {!isWide && (
         <Sheet

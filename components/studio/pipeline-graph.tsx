@@ -14,13 +14,13 @@ import {
 } from "./stage-map"
 
 /*
- * Horizontal pipeline graph — Plan → Draft → Review → Schedule → Publish.
+ * Horizontal pipeline graph - Plan → Draft → Review → Schedule → Publish.
  *
  * Each stage card is a static `feature-icon-card`-style block (white,
  * hairline border, `rounded-lg`, 24px padding) with the stage name,
  * a tabular-nums count of recent runs that touched the stage, and a
  * small avatar stack of the agents responsible. Cards are linked by
- * 1px SVG hairline arrows drawn between them — pure static SVG, no
+ * 1px SVG hairline arrows drawn between them - pure static SVG, no
  * pulses in Phase A.
  *
  * Phase E: Publish stage shows real counts derived from the Posts

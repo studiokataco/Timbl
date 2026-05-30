@@ -1,7 +1,7 @@
 import type { SingleBeforeToolCallback } from "@google/adk"
 
 /*
- * Permissions — per-agent tool allowlist enforced via the BeforeToolCallback
+ * Permissions - per-agent tool allowlist enforced via the BeforeToolCallback
  * hook on LlmAgent. If a tool is invoked outside its agent's allowedTools,
  * the callback returns a synthetic response with `error: "forbidden"` and
  * adk-js skips the real execution. The agent sees the rejection in the

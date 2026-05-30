@@ -19,7 +19,7 @@ import {
 } from "@/lib/firebase/paths"
 
 /*
- * FirestoreSessionService — per-org persistence of adk-js sessions.
+ * FirestoreSessionService - per-org persistence of adk-js sessions.
  *
  * Each agent run gets a Session doc under
  *   /organizations/{orgId}/agentSessions/{sessionId}
@@ -219,7 +219,7 @@ export class FirestoreSessionService extends BaseSessionService {
       query = query.where("ts", ">", config.afterTimestamp)
     }
     if (config?.numRecentEvents) {
-      // numRecentEvents semantics are "the last N events" — easiest is to
+      // numRecentEvents semantics are "the last N events" - easiest is to
       // grab them desc then reverse client-side.
       const snap = await getAdminDb()
         .collection(orgAgentSessionEventsPath(this.orgId, sessionId))

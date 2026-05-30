@@ -11,7 +11,7 @@ import {
 import { getRuntimeCtx } from "../runtime/context"
 
 /*
- * Meta-config tools — read agent configurations and *propose* changes for
+ * Meta-config tools - read agent configurations and *propose* changes for
  * a human to review. Direct edits go through /settings/agents; agents
  * never silently rewrite their own (or another agent's) prompt. Proposals
  * land in /organizations/{orgId}/agentConfigProposals/{id}.

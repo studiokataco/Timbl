@@ -97,7 +97,7 @@ export function AgentThreadRail({
       <div className="flex-1 min-h-0 overflow-y-auto py-1">
         {threads.length === 0 && (
           <p className="px-3 py-4 text-[11px] text-muted-foreground leading-relaxed">
-            No conversations yet — start by typing in the chat.
+            No conversations yet - start by typing in the chat.
           </p>
         )}
         {BUCKET_ORDER.map((bucket) => {

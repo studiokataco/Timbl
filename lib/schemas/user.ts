@@ -7,6 +7,8 @@ export const userSchema = audit.extend({
   email: z.string().email(),
   name: z.string().min(1),
   role: userRole.default("contributor"),
+  active: z.boolean().default(true),
+  googleUid: z.string().optional(),
   avatarUrl: z.string().url().optional(),
   defaultCategories: z.array(z.string()).default([]),
   googleId: z.string().optional(),

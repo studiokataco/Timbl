@@ -3,12 +3,12 @@ import { defineSecret, defineString } from "firebase-functions/params"
 import { logger } from "firebase-functions"
 
 /*
- * Model-update check — notify-only (§6.8 of the pluggable-providers phase).
+ * Model-update check - notify-only (§6.8 of the pluggable-providers phase).
  *
  * Fires on the 1st and 15th of each month (≈ bi-weekly) and POSTs to the
  * Next app's /api/agents/model-update-check route, which diffs each
  * provider's live model list against the models in use + the §4 shortlist
- * and writes modelUpdates notifications. Nothing is auto-applied — a human
+ * and writes modelUpdates notifications. Nothing is auto-applied - a human
  * reviews flagged models in Studio.
  *
  * Sibling of agentSweep.ts; reuses the same shared-secret auth and the

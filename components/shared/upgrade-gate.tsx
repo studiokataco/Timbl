@@ -7,7 +7,7 @@ import type { PlanFeatureFlag } from "@/lib/plans/plans"
 /*
  * Inline upsell wrapper. Renders children when the current plan unlocks
  * `feature`; otherwise renders `fallback` (or nothing). The server still
- * enforces — this just hides surface area so users don't click into a
+ * enforces - this just hides surface area so users don't click into a
  * dead-end action.
  *
  *   <UpgradeGate feature="customCategories" fallback={<UpgradeBadge/>}>

@@ -7,7 +7,7 @@ import { BrandPreviewPanel } from "@/components/agents/brand-preview-panel"
 
 /*
  * Two-pane layout: wizard chat on the left, live brandConfig preview on
- * the right. Collapses to single column on narrow viewports — the chat is
+ * the right. Collapses to single column on narrow viewports - the chat is
  * the primary surface; the preview is supporting context.
  *
  * After every stream finishes (any tool call may have written), we
@@ -25,7 +25,7 @@ export function BrandWizardClient() {
       >
         <AgentChat
           agentName="brand-wizard"
-          intro="Hi — I'll capture your brand setup with a short interview. I'll ask one question at a time and save your answers as we go."
+          intro="Hi - I'll capture your brand setup with a short interview. I'll ask one question at a time and save your answers as we go."
           placeholder="Reply to the wizard…"
           onFinish={() =>
             queryClient.invalidateQueries({ queryKey: ["brand-config"] })

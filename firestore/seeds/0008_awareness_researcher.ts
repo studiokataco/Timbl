@@ -2,7 +2,7 @@ import { db, ensureEmulator, SAFE_ORG_ID, withAudit } from "./_helpers"
 import { getAgentDefault, getAgentDefaultBudgets } from "@/lib/agents/defaults"
 
 /*
- * Seeds the awareness-researcher agent. Idempotent — `set({ merge: true })`
+ * Seeds the awareness-researcher agent. Idempotent - `set({ merge: true })`
  * preserves user edits made through /settings/agents. Definition lives in
  * `lib/agents/defaults.ts`, shared with the prod installer.
  */

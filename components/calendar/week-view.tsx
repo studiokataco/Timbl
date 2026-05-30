@@ -89,12 +89,12 @@ export function WeekView({
     weekDays.some((d) => allDayMap.has(format(d, "yyyy-MM-dd")))
 
   return (
-    // Single scroll container — header and rows share the same width so scrollbar
+    // Single scroll container - header and rows share the same width so scrollbar
     // doesn't cause column misalignment. No overflow-hidden on the outer so
     // position:sticky on the header row works correctly.
     <div className="rounded-lg border border-border bg-background" data-cal-reveal>
       <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 14rem)" }}>
-        {/* Day headers — sticky inside the scroll container */}
+        {/* Day headers - sticky inside the scroll container */}
         <div
           className="grid border-b border-border bg-background sticky top-0 z-10"
           style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}
@@ -155,7 +155,7 @@ export function WeekView({
           </div>
         )}
 
-        {/* Hourly rows — same container, same width, no alignment drift */}
+        {/* Hourly rows - same container, same width, no alignment drift */}
         {HOURS.map((hour) => (
           <div
             key={hour}

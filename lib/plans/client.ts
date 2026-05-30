@@ -6,7 +6,7 @@ import type { PlanFeatures } from "./plans"
 /*
  * Client-side accessor for the current org's plan + features. Hydrated
  * once at the (app) layout by `<PlanFeaturesProvider>` from a server
- * fetch — the client NEVER hits Firestore for this.
+ * fetch - the client NEVER hits Firestore for this.
  *
  * UI affordances only:
  *   - Grey/disable buttons for gated features

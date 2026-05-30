@@ -79,7 +79,7 @@ export const audit = z.object({
  * suggestion, a template proposal). The producing agent sets it at creation
  * time; the approveItem dispatcher reads it and runs the matching resolver.
  *
- * `noop` is the legacy default — existing rows without a next_action are
+ * `noop` is the legacy default - existing rows without a next_action are
  * treated as "approve = status change only", preserving today's behavior.
  *
  * Producers are responsible for populating the payload fields they need; the
@@ -117,7 +117,7 @@ export type NextAction = z.infer<typeof nextActionSchema>
  * Canned rejection reasons surfaced when a reviewer rejects an agent draft.
  * Free-text notes fall into `reasonNote`; `REJECT_REASON_LABELS` maps each
  * key to its display string. These live here rather than in the
- * agent-suggestions "use server" action file — a "use server" module may
+ * agent-suggestions "use server" action file - a "use server" module may
  * only export async functions, so runtime consts have to live elsewhere.
  */
 export const REJECT_REASONS = [

@@ -60,7 +60,7 @@ export function stageForAgent(name: string): Stage {
 /**
  * Pipeline-graph counts come from runs, not the agent roster. A run's
  * agent maps onto a pipeline-stage card. GATE/CONFIG don't get their own
- * card on the 5-stage flow — gate folds into REVIEW conceptually, config
+ * card on the 5-stage flow - gate folds into REVIEW conceptually, config
  * is invisible to the pipeline graph.
  */
 export function pipelineStageForAgent(name: string): PipelineStageKey | null {

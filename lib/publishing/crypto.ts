@@ -6,7 +6,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
  * AES-256-GCM token encryption. The key is derived (sha256 → 32 bytes) from
  * SOCIAL_TOKEN_KEY (a Secret-Manager value). Ciphertext is stored as
  * `iv:tag:ct`, all base64. Plaintext tokens never get logged or returned to
- * the client — they live only in-memory inside the publish worker.
+ * the client - they live only in-memory inside the publish worker.
  */
 
 const ALGO = "aes-256-gcm"

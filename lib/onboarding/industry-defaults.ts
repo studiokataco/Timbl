@@ -1,14 +1,14 @@
 /*
  * Industry → starter content lookup. Used by the onboarding wizard to
  * pre-populate categories, suggested agents, and template hints based on
- * what the user picked at step one. Pure data — no Firestore access.
+ * what the user picked at step one. Pure data - no Firestore access.
  *
  * Adding a new industry: append the constant below + a key in
  * INDUSTRY_DEFAULTS. The wizard renders the union of `industries` as
  * radio options; an industry without an entry here falls through to
  * GENERIC_DEFAULTS.
  *
- * Categories/templates here are *suggestions* — the wizard lets the user
+ * Categories/templates here are *suggestions* - the wizard lets the user
  * deselect / customize before persisting via seeds/defaults.ts.
  */
 
@@ -35,7 +35,7 @@ export interface IndustryDefaults {
   /* Agent ids the wizard pre-checks. The user can toggle them on step 2. */
   suggestedAgents: string[]
   categories: CategorySuggestion[]
-  /* Template slugs that exist in `firestore/seeds/defaults.ts` library —
+  /* Template slugs that exist in `firestore/seeds/defaults.ts` library -
    * the wizard renders these on step 4 with copy preview. */
   templateSlugs: string[]
   /* Default tone hint that prefills the step-one textarea. */

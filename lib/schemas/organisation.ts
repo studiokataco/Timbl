@@ -17,7 +17,7 @@ export const organisationSchema = audit.extend({
   /* Onboarding state. `completedAt` set on wizard finish OR backfilled
    * for legacy orgs. Layout uses `completedAt` to decide whether to
    * redirect to /onboarding. `profile` is what the user typed at step
-   * one — surfaces back into agent prompts for tone/audience grounding. */
+   * one - surfaces back into agent prompts for tone/audience grounding. */
   onboarding: z
     .object({
       completedAt: z.string().optional(),
@@ -37,14 +37,14 @@ export const organisationSchema = audit.extend({
     .optional(),
   /* Org-level AI settings (pluggable-providers phase).
    *  - embeddingModel: which 768-dim embedding model this org's vectors
-   *    are produced with. Closed enum — Firestore's vector index is
+   *    are produced with. Closed enum - Firestore's vector index is
    *    dimension-fixed, so only vetted 768-dim models may appear here.
    *    Today only `gemini-embedding-001` has a wired adapter;
    *    `google/embeddinggemma-300m` is the next candidate (§4.3) and gets
    *    added once its adapter + licence vetting land.
    *  - notifyModelUpdates: when true, the model-update check (§6.8) writes
    *    notifications for newer provider models. Off = agents stay pinned,
-   *    no notifications — full stability. */
+   *    no notifications - full stability. */
   aiConfig: z
     .object({
       embeddingModel: z

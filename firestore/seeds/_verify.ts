@@ -1,6 +1,6 @@
 import { db, ensureEmulator, SAFE_ORG_ID } from "./_helpers"
 
-/* One-shot verifier — counts seeded docs to confirm Phase 1 acceptance. */
+/* One-shot verifier - counts seeded docs to confirm Phase 1 acceptance. */
 async function main() {
   ensureEmulator()
   const orgRef = db().doc(`organizations/${SAFE_ORG_ID}`)

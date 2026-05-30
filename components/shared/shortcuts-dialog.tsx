@@ -12,7 +12,7 @@ import {
 
 /*
  * Global `?` cheatsheet. Listens for `?` (and `Shift+/`) anywhere the
- * user isn't actively typing into a form field — same guard as the
+ * user isn't actively typing into a form field - same guard as the
  * command palette so the two don't conflict.
  *
  * Shortcuts here are mirrors of the actual bindings, not the source of

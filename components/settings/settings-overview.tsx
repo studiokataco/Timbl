@@ -6,11 +6,12 @@ import {
   Megaphone,
   Bot,
   Share2,
+  Users,
   ChevronRight,
 } from "lucide-react"
 
 /*
- * Settings landing page — a map of every settings surface in one place,
+ * Settings landing page - a map of every settings surface in one place,
  * so "Settings" lands somewhere that looks like settings rather than
  * redirecting straight into one sub-page.
  *
@@ -59,10 +60,17 @@ const SECTIONS: Section[] = [
     icon: Share2,
   },
   {
+    href: "/settings/team",
+    title: "Team",
+    description:
+      "Invite teammates, approve access requests, and manage roles.",
+    icon: Users,
+  },
+  {
     href: "/campaigns",
     title: "Campaigns",
     description:
-      "Browse, create, edit, and archive campaigns — content series with a shared timeline.",
+      "Browse, create, edit, and archive campaigns - content series with a shared timeline.",
     icon: Megaphone,
   },
   {

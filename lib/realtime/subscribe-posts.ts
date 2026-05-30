@@ -20,7 +20,7 @@ import type { QueryClient } from "@tanstack/react-query"
  *
  * Pre-Phase 7 (no real Firebase Auth user) the security rules reject
  * unauthenticated reads. We attempt anonymous sign-in to get past the
- * rule — works only if Anonymous provider is enabled in the console.
+ * rule - works only if Anonymous provider is enabled in the console.
  * If sign-in or the snapshot fails we log and bail; mutations still
  * reconcile through router.refresh() + queryClient invalidation.
  */

@@ -1,5 +1,5 @@
 /*
- * Welcome shell — the dev-only workspace chooser at /welcome. Lives in its
+ * Welcome shell - the dev-only workspace chooser at /welcome. Lives in its
  * own route group, OUTSIDE (app), so it carries no sidebar / top bar and
  * the first-launch onboarding redirect can't reach it. Mirrors the
  * centered card layout of (auth).

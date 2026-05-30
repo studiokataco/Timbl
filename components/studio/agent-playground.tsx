@@ -46,7 +46,7 @@ import {
 import { STATUS_TONE, PROVIDER_TONE } from "./status-tone"
 
 /*
- * Agent playground — the 4-tab inspector panel that opens when the
+ * Agent playground - the 4-tab inspector panel that opens when the
  * Studio roster selects an agent via `?focus=agent:<name>`.
  *
  * Replaces the read-only Phase A `AgentPanel`. Carries the full
@@ -54,7 +54,7 @@ import { STATUS_TONE, PROVIDER_TONE } from "./status-tone"
  * dirty-field indicators + budgets), Tools (allowedTools cards + adder)
  * and History (runs filtered to this agent + a small stats strip).
  *
- * Mutations go through the existing `updateAgentConfig` server action —
+ * Mutations go through the existing `updateAgentConfig` server action -
  * no signature changes.
  */
 
@@ -66,7 +66,7 @@ type Props = {
 type TabKey = "chat" | "tune" | "tools" | "history"
 
 /*
- * Agents that have meaningful behavior even with no user input — they read
+ * Agents that have meaningful behavior even with no user input - they read
  * from Firestore state, scan awareness windows, or sweep pending work. For
  * these the "Run now" button can fire safely with an empty input. Everything
  * else (drafter, reviewer, ideator, the config wizards, human-gate) needs
@@ -193,7 +193,7 @@ export function AgentPlayground({ agent, allAgentNames }: Props) {
             banner={unsavedNotice ?? undefined}
             agentCatalog={allAgentNames}
             onAgentSwitch={(name) => {
-              // pivot via URL — parent (inspector) re-renders to the new agent
+              // pivot via URL - parent (inspector) re-renders to the new agent
               if (typeof window !== "undefined") {
                 const url = new URL(window.location.href)
                 url.searchParams.set("focus", `agent:${name}`)
@@ -347,7 +347,7 @@ function TuneTab({
   const scheduleHuman = useMemo<{ text: string; error: boolean }>(() => {
     const expr = schedule.trim()
     if (!expr) {
-      return { text: "No schedule — runs only when triggered manually.", error: false }
+      return { text: "No schedule - runs only when triggered manually.", error: false }
     }
     try {
       const human = cronstrue.toString(expr, {
@@ -433,7 +433,7 @@ function TuneTab({
             <SelectItem value="gemini">Gemini</SelectItem>
             <SelectItem value="anthropic">Anthropic</SelectItem>
             <SelectItem value="openrouter">OpenRouter</SelectItem>
-            {/* Ollama hits a localhost model server — unreachable from
+            {/* Ollama hits a localhost model server - unreachable from
                 Cloud Run, so it's hidden on the hosted web build. */}
             {isLocalAiAvailable() && (
               <SelectItem value="ollama">Ollama (local)</SelectItem>
@@ -476,7 +476,7 @@ function TuneTab({
           placeholder="0 6 * * *"
           className="font-mono"
         />
-        {/* Plain-English read-out of the cron expression — nobody should
+        {/* Plain-English read-out of the cron expression - nobody should
          * have to decode "0 9-18 * * 1-5" by eye. */}
         <p
           className={cn(
@@ -587,7 +587,7 @@ function TuneTab({
             disabled={!anyDirty}
             onClick={() =>
               onTestWithEdits(
-                "Running with unsaved edits — save to persist these changes.",
+                "Running with unsaved edits - save to persist these changes.",
               )
             }
           >
@@ -890,7 +890,7 @@ function HistoryTab({ agent }: { agent: AgentConfig }) {
           value={
             stats.total > 0
               ? `${Math.round((stats.success / stats.total) * 100)}%`
-              : "—"
+              : "-"
           }
         />
         <Stat
@@ -898,7 +898,7 @@ function HistoryTab({ agent }: { agent: AgentConfig }) {
           value={
             stats.avgDurMs != null
               ? `${(stats.avgDurMs / 1000).toFixed(1)}s`
-              : "—"
+              : "-"
           }
         />
         <Stat label="USD" value={`$${stats.totalUsd.toFixed(2)}`} />
@@ -966,7 +966,7 @@ function RunRow({
         <span className="text-[11px] font-mono text-muted-foreground truncate">
           {run.id.slice(0, 12)}
         </span>
-        {/* Model the run used — the axis of a prod-swap A/B comparison. */}
+        {/* Model the run used - the axis of a prod-swap A/B comparison. */}
         {run.model ? (
           <span className="text-[10px] font-mono text-foreground/70 truncate">
             {run.model}
@@ -976,12 +976,12 @@ function RunRow({
       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
         {run.metrics.promptTokens + run.metrics.completionTokens > 0
           ? `${run.metrics.promptTokens}/${run.metrics.completionTokens} tok`
-          : "—"}
+          : "-"}
       </span>
       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
         {run.durationMs != null
           ? `${(run.durationMs / 1000).toFixed(1)}s`
-          : "—"}
+          : "-"}
       </span>
       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
         ${runCost(run).toFixed(3)}
@@ -1016,6 +1016,6 @@ function computeStats(runs: AgentRunDoc[]) {
   return { total, success, avgDurMs, totalUsd }
 }
 
-/* Keep these symbols referenced — small lint guard. */
+/* Keep these symbols referenced - small lint guard. */
 void TOOL_CATALOG
 void Check

@@ -112,7 +112,7 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
                       {cat.name}
                     </span>
                   ) : (
-                    "—"
+                    "-"
                   )}
                 </td>
                 <td className="p-2.5 text-right">

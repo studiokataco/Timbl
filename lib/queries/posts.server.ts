@@ -9,7 +9,7 @@ import type { Category, Cta, Post, User } from "@/lib/schemas"
  * Client Components keep the same data fresh through TanStack Query +
  * Firestore onSnapshot.
  *
- * Every helper takes `orgId` from getCurrentOrgId() — never trust implicit
+ * Every helper takes `orgId` from getCurrentOrgId() - never trust implicit
  * scoping, even with the dev shim.
  */
 

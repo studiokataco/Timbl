@@ -102,7 +102,7 @@ async function fireTick(agentName) {
 async function main() {
   const schedules = await fetchSchedules()
   if (schedules.length === 0) {
-    console.log("[agents] no scheduled agents — exiting (set a schedule in /settings/agents to enable)")
+    console.log("[agents] no scheduled agents - exiting (set a schedule in /settings/agents to enable)")
     return
   }
   console.log(`[agents] scheduling ${schedules.length} agent(s):`)
@@ -110,7 +110,7 @@ async function main() {
     console.log(`[agents]   - ${s.name}  ${s.schedule}`)
     cron.schedule(s.schedule, () => fireTick(s.name))
   }
-  /* keep the process alive — node-cron doesn't pin the event loop on
+  /* keep the process alive - node-cron doesn't pin the event loop on
    * its own. */
   setInterval(() => undefined, 1 << 30)
 }

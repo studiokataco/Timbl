@@ -17,21 +17,21 @@ import {
  *     button)
  *
  * What it writes:
- *   - /organizations/{orgId}                — root doc with name, slug, plan
- *   - /organizations/{orgId}/agentConfigs/* — full AGENT_DEFAULTS catalog
+ *   - /organizations/{orgId}                - root doc with name, slug, plan
+ *   - /organizations/{orgId}/agentConfigs/* - full AGENT_DEFAULTS catalog
  *                                              so the wizard's "Agents" step
  *                                              has rows to toggle
- *   - /organizations/{orgId}/kanbanColumns/* — 9 default columns matching
+ *   - /organizations/{orgId}/kanbanColumns/* - 9 default columns matching
  *                                               LEGACY_POST_STATUSES
  *
  * Intentionally does NOT write:
- *   - categories — handed off to the onboarding wizard's industry-defaults
+ *   - categories - handed off to the onboarding wizard's industry-defaults
  *     so the user picks what they want
- *   - users — handed off to the caller (the blocking function writes the
+ *   - users - handed off to the caller (the blocking function writes the
  *     admin user doc with its own role/email/uid info)
- *   - brandConfig — left empty until the wizard or brand wizard agent
+ *   - brandConfig - left empty until the wizard or brand wizard agent
  *     fills it in
- *   - templates — handed off to wizard step 4
+ *   - templates - handed off to wizard step 4
  *
  * Idempotent: every write uses merge: true and checks for existing rows
  * before overwriting catalog entries. Safe to call twice.
@@ -41,7 +41,7 @@ const DEFAULT_PLAN_FOR_NEW_ORG = "agency_v1"
 /* Why agency_v1 and not free_v1?
  *
  * Per the productization plan + user direction: we want a "free hand" until
- * launch — no plan-gates firing during pilot or dev. agency_v1 has a 5000
+ * launch - no plan-gates firing during pilot or dev. agency_v1 has a 5000
  * agentRuns/mo cap and unlimited scheduled posts, which covers any pilot
  * workload. When Stripe ships (Phase H) and self-serve signup goes live,
  * this constant flips to free_v1 and existing orgs grandfather. */
@@ -90,7 +90,7 @@ export async function bootstrapNewOrg(
       name: input.name,
       slug,
       plan: DEFAULT_PLAN_FOR_NEW_ORG,
-      /* No completedAt — the (app) layout will redirect to /onboarding
+      /* No completedAt - the (app) layout will redirect to /onboarding
        * on first sign-in so the new admin walks the wizard. */
       onboarding: {},
       createdAt: now,
@@ -99,7 +99,7 @@ export async function bootstrapNewOrg(
     { merge: true },
   )
 
-  /* 2. Agent catalog — write every AGENT_DEFAULTS entry the org doesn't
+  /* 2. Agent catalog - write every AGENT_DEFAULTS entry the org doesn't
    * already have. Mirrors the logic in lib/actions/agent-configs.ts
    * `installDefaultAgents` so the bootstrap path and the manual-install
    * path produce identical shapes. */
@@ -117,7 +117,7 @@ export async function bootstrapNewOrg(
     installedAgents.push(def.name)
   }
 
-  /* 3. Kanban columns. Only seed when the collection is empty — once the
+  /* 3. Kanban columns. Only seed when the collection is empty - once the
    * user starts customising we never overwrite. */
   const colsCol = orgRef.collection("kanbanColumns")
   const installedColumns: string[] = []

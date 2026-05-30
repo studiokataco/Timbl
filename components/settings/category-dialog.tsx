@@ -29,7 +29,7 @@ import type { WithId } from "@/lib/firebase/serialize"
  *
  * Color picker is intentionally swatch-only (no free hex input) so every
  * category stays inside the DESIGN.md signature palette. If a future
- * design pass wants more colors, add the token here and to globals.css —
+ * design pass wants more colors, add the token here and to globals.css -
  * never let users paste an arbitrary hex.
  *
  * Slug is auto-derived from name on create; locked on edit (changing a
@@ -75,7 +75,7 @@ export type CategoryDialogProps = {
   onOpenChange: (v: boolean) => void
   mode: "create" | "edit"
   category?: WithId<Category>
-  /* Optional optimistic hook — parent updates local state before the
+  /* Optional optimistic hook - parent updates local state before the
    * server confirms so the UI feels instant. */
   onOptimisticUpsert?: (cat: WithId<Category>) => void
   nextDisplayOrder?: number
@@ -126,7 +126,7 @@ export function CategoryDialog({
 
   /* Auto-derive slug from name until the user types into the slug field.
    * Watching via the field-level subscription (NOT form.watch with a
-   * callback) keeps React Compiler happy — form.watch's callback can't
+   * callback) keeps React Compiler happy - form.watch's callback can't
    * be safely memoized. */
   const watchedName = form.watch("name")
   useEffect(() => {

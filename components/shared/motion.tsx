@@ -6,7 +6,7 @@ import type { ReactNode } from "react"
 /*
  * Tiny motion primitives. We don't need a kitchen-sink animation library, just
  * a couple of polished entrance behaviours that honour `prefers-reduced-motion`
- * automatically. Duration sits in the 150–250ms range per DESIGN.md.
+ * automatically. Duration sits in the 150-250ms range per DESIGN.md.
  */
 
 type FadeInProps = {

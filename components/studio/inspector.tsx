@@ -11,7 +11,7 @@ import { AgentPlayground } from "./agent-playground"
 import { IdeationTriage, IdeationTriageEmpty } from "./ideation-triage"
 
 /*
- * Inspector — right rail switching by `?focus=` URL param.
+ * Inspector - right rail switching by `?focus=` URL param.
  *
  * Read-only in Phase A. Phase B replaces the JSON event dump with a
  * stepped run-timeline; Phase C upgrades the agent panel to the full
@@ -31,7 +31,7 @@ export function Inspector({ agents, runs, ideation }: Props) {
   return (
     // Explicit surface + height context so the inspector renders correctly
     // whether it's the inline third column or mounted inside a Sheet portal
-    // (portals don't inherit the parent's height — `h-full` would collapse
+    // (portals don't inherit the parent's height - `h-full` would collapse
     // to 0 without this wrapper guaranteeing a flex-column scaffold).
     <div className="h-full min-h-0 flex flex-col bg-background text-foreground">
       <InspectorContent
@@ -73,7 +73,7 @@ function InspectorContent({
     const item = ideation.find((i) => i.id === id)
     if (!item) {
       // Item may have been promoted/dismissed since hydrate; either way
-      // there's nothing pending matching this id — celebrate inbox-zero
+      // there's nothing pending matching this id - celebrate inbox-zero
       // if the rest of the queue is empty, else show generic miss.
       return ideation.length === 0 ? (
         <IdeationTriageEmpty />

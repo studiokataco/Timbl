@@ -25,7 +25,7 @@ import {
  *   2. Production (no emulator env):
  *      Reads the verified Firebase session cookie and returns the
  *      claims-derived identity. Server actions still scope by
- *      `organizationId` explicitly — defense in depth alongside Rules.
+ *      `organizationId` explicitly - defense in depth alongside Rules.
  *
  * Server actions and page loaders MUST call these helpers; never read the
  * session cookie directly.

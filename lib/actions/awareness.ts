@@ -13,7 +13,7 @@ import type { AwarenessDay, Post, ServerActionResult } from "@/lib/schemas"
 
 const promoteSchema = z.object({
   awarenessDayId: z.string().min(1),
-  /** Optional override — defaults to the awareness day's own date. */
+  /** Optional override - defaults to the awareness day's own date. */
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 

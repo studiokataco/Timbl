@@ -1,5 +1,5 @@
 /*
- * Plans config — the single source of truth for what each subscription tier
+ * Plans config - the single source of truth for what each subscription tier
  * unlocks. Lives in code (not Firestore) so:
  *
  *   - It's versioned in git, reviewable in PRs.
@@ -10,7 +10,7 @@
  *
  * Gating happens in `lib/plans/gate.ts`. Server actions call
  * `requireFeature` / `requireQuota` before any side-effect; the client
- * never enforces — it only reads `planFeatures` to grey out buttons.
+ * never enforces - it only reads `planFeatures` to grey out buttons.
  */
 
 export type PlanTier = "free" | "studio" | "agency" | "scale"
@@ -34,7 +34,7 @@ export type PlanConfig = {
   id: string
   tier: PlanTier
   /* Display name and price for the upgrade UI. Stripe price IDs live in
-   * env, not here — this config stays env-agnostic. */
+   * env, not here - this config stays env-agnostic. */
   label: string
   monthlyPriceUsd: number | null
   perBrandPriceUsd?: number
@@ -113,7 +113,7 @@ export const PLANS: Record<string, PlanConfig> = {
     id: "scale_v1",
     tier: "scale",
     label: "Scale",
-    /* Custom pricing — not self-serve. */
+    /* Custom pricing - not self-serve. */
     monthlyPriceUsd: null,
     quotas: { agentRuns: null, scheduledPosts: null, brands: null, seats: null },
     features: {

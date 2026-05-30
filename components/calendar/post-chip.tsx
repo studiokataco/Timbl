@@ -52,7 +52,7 @@ export function PostChip({
     <span
       role="button"
       tabIndex={0}
-      aria-label={`${category?.name ?? "Uncategorised"} — ${post.brief ?? "Untitled"} — ${post.status}`}
+      aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${post.status}`}
       className={cn(
         "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-tight cursor-pointer truncate w-full",
         isPast && "opacity-50",

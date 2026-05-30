@@ -129,7 +129,7 @@ async function publishOne(
   }
   if (result.kind === "ok") return { status: "published", reauth: false }
   if (result.kind === "bad_body") return { status: "failed", reauth: false }
-  return { status: null, reauth: false } // retry — leave scheduled
+  return { status: null, reauth: false } // retry - leave scheduled
 }
 
 async function processPost(orgId: string, post: Post, now: Date, summary: PublishSweepSummary): Promise<void> {

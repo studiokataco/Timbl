@@ -40,7 +40,7 @@ import type {
 const approveItemInput = z.object({
   itemType: z.enum(["post", "ideation"]),
   itemId: z.string().min(1),
-  /* Caller overrides for inline picker — channel/time chosen at click time. */
+  /* Caller overrides for inline picker - channel/time chosen at click time. */
   override: z
     .object({
       targetChannel: z.string().optional(),
@@ -124,7 +124,7 @@ export async function approveItem(input: unknown): Promise<ApproveItemResult> {
   }
   if (!resolved.ok) return { ok: false, error: resolved.error }
 
-  /* Write the approval log entry — single source of truth for activity
+  /* Write the approval log entry - single source of truth for activity
    * feed + revert. */
   const now = new Date().toISOString()
   const logId = randomUUID()
@@ -165,7 +165,7 @@ type ResolverInput = {
   orgId: string
   itemType: "post" | "ideation"
   itemId: string
-  /* User clicking approve — used by multiStepApproval to track distinct
+  /* User clicking approve - used by multiStepApproval to track distinct
    * reviewers across multiple approval clicks. */
   actorUserId?: string
   sourceData: Record<string, unknown> & {
@@ -265,7 +265,7 @@ async function resolveSchedulePost(i: ResolverInput): Promise<ResolverOutcome> {
       patch[`channelStatuses.${i.nextAction.targetChannel}`] = "scheduled"
     }
   } else {
-    /* Partial approval — record reviewer count but keep status in review. */
+    /* Partial approval - record reviewer count but keep status in review. */
     patch.status = "review"
   }
 
@@ -407,7 +407,7 @@ async function resolveRegenerate(i: ResolverInput): Promise<ResolverOutcome> {
   return { ok: true, artifactId: i.itemId, artifactType: "post" }
 }
 
-/* Legacy fallback for items without a declared next_action — just flips
+/* Legacy fallback for items without a declared next_action - just flips
  * the review state. Preserves today's behavior for any in-flight drafts. */
 async function resolveNoop(i: ResolverInput): Promise<ResolverOutcome> {
   const db = getAdminDb()
@@ -460,7 +460,7 @@ export async function revertApproval(
     before?: Record<string, unknown>
   }
 
-  /* Reverse the side-effect — best-effort, idempotent. */
+  /* Reverse the side-effect - best-effort, idempotent. */
   if (log.itemType === "post") {
     const ref = db.collection(orgPostsPath(orgId)).doc(log.itemId)
     const patch: Record<string, unknown> = {
@@ -576,7 +576,7 @@ function todayISO(): string {
 
 /* ------------------------- Activity feed query ------------------------- */
 
-/* Row shape returned to the UI. Stable across schema changes — the doc
+/* Row shape returned to the UI. Stable across schema changes - the doc
  * stores extra forensic fields (`before` snapshot for revert) that the
  * activity panel doesn't need to render. */
 export type ApprovalLogRow = {
@@ -627,6 +627,6 @@ export async function listApprovalsLog(
   })
 }
 
-/* nextActionKind enum stays in lib/schemas/_shared.ts — re-exporting a
+/* nextActionKind enum stays in lib/schemas/_shared.ts - re-exporting a
  * Zod object from a "use server" file trips Next's invalid-use-server-value
  * check. Callers import it directly from @/lib/schemas. */

@@ -8,8 +8,8 @@ import type { BrandConfig } from "@/lib/schemas/brandConfig"
 
 /*
  * Live preview of the brandConfig doc. Wired to TanStack Query under the
- * key ['brand-config'] so any tool — or the wizard's own writeBrandConfig
- * tool — can invalidate it through queryClient.invalidateQueries.
+ * key ['brand-config'] so any tool - or the wizard's own writeBrandConfig
+ * tool - can invalidate it through queryClient.invalidateQueries.
  */
 
 const QUERY_KEY = ["brand-config"] as const
@@ -34,7 +34,7 @@ export function BrandPreviewPanel() {
   if (!data) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-secondary/20 p-4 text-xs text-muted-foreground">
-        Nothing saved yet. Chat with the wizard on the left — fields will
+        Nothing saved yet. Chat with the wizard on the left - fields will
         appear here as they&apos;re captured.
       </div>
     )
@@ -45,7 +45,7 @@ export function BrandPreviewPanel() {
       <Field label="Voice">{data.voice}</Field>
       <Field label="Audience">{data.audience}</Field>
       <Field label="Channels">
-        {data.channels.length ? data.channels.join(", ") : "—"}
+        {data.channels.length ? data.channels.join(", ") : "-"}
       </Field>
       <Field label="Cadence">
         {data.targetCadence.perWeek}× / week

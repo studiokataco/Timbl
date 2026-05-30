@@ -13,7 +13,7 @@ import { createHash } from "node:crypto"
  *      gemini; VOYAGE_API_KEY → voyage; OPENAI_API_KEY → openai.
  *   4. Mock (with a one-time warn).
  *
- * Real adapters are ~15 LOC each — one fetch against the provider's
+ * Real adapters are ~15 LOC each - one fetch against the provider's
  * embeddings endpoint. If a call throws, we re-throw so callers can decide;
  * the action-layer wrapper (embedIfChanged) turns it into a soft-fail.
  */
@@ -46,7 +46,7 @@ function resolveProvider(): ProviderName {
   if (readGeminiKey()) return "gemini"
   if (process.env.VOYAGE_API_KEY) return "voyage"
   if (process.env.OPENAI_API_KEY) return "openai"
-  warnOnce("embed-no-key", "[embed] No embedding provider key set — using deterministic mock")
+  warnOnce("embed-no-key", "[embed] No embedding provider key set - using deterministic mock")
   return "mock"
 }
 
@@ -74,7 +74,7 @@ export async function embed(text: string): Promise<EmbedResult> {
  *   - retrieve() filters stored vectors to the current model so a
  *     mixed-model collection never cross-scores (§6.7).
  *
- * Keeping this in lockstep with resolveProvider() is the contract — if a
+ * Keeping this in lockstep with resolveProvider() is the contract - if a
  * new provider branch is added to embed(), add it here too.
  */
 export function currentEmbeddingModel(): string {
@@ -95,8 +95,8 @@ export function currentEmbeddingModel(): string {
 const GEMINI_MODEL = "gemini-embedding-001"
 /*
  * Gemini's default output is 3072d, but Firestore native vector indexes cap
- * at 2048. Request Matryoshka truncation to 768d — Google's recommended
- * storage size — so the same vectors work in the emulator (brute-force
+ * at 2048. Request Matryoshka truncation to 768d - Google's recommended
+ * storage size - so the same vectors work in the emulator (brute-force
  * cosine) and in Phase 7+ (native findNearest).
  *
  * If you change this, also bump `dimension` in firestore.indexes.json for

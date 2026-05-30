@@ -75,7 +75,7 @@ export function rangeLengthDays(r: AwarenessRange): number {
   return differenceInCalendarDays(r.end, r.start) + 1
 }
 
-/** Helper for tests / debugging — render each day in a range. */
+/** Helper for tests / debugging - render each day in a range. */
 export function expandRange(r: AwarenessRange): Date[] {
   const days: Date[] = []
   for (let i = 0; i <= differenceInCalendarDays(r.end, r.start); i++) {

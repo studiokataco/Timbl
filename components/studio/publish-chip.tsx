@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils"
  * Publish-state chip rendered inside Studio run cards and the run-timeline
  * outputs section. Visual palette is keyed off the seeded post-status
  * taxonomy (idea | brief | researching | designing | review | scheduled |
- * posted | missed | archived) — see `firestore/seeds/0006_kanban_columns.ts`
+ * posted | missed | archived) - see `firestore/seeds/0006_kanban_columns.ts`
  * for the source of truth.
  *
  * Variants:
@@ -108,7 +108,7 @@ export function PublishChip({ post, fallbackId }: Props) {
     )
   }
 
-  // draft-ish bucket — idea, brief, researching, designing, review, archived,
+  // draft-ish bucket - idea, brief, researching, designing, review, archived,
   // and anything unrecognised.
   const label = capitalise(status) || "Draft"
   return (

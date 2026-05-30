@@ -15,7 +15,7 @@ import {
  * app, where AGENT_DEFAULTS is canonically available with full prompts and
  * tool lists.
  *
- * Called from the onboarding page render. Safe to call on every load — the
+ * Called from the onboarding page render. Safe to call on every load - the
  * needsHydration:true check makes it a no-op once the org is fully bootstrapped.
  */
 export async function hydrateAgentStubs(orgId: string): Promise<void> {
@@ -28,7 +28,7 @@ export async function hydrateAgentStubs(orgId: string): Promise<void> {
   for (const doc of stubs.docs) {
     const def = getAgentDefault(doc.id)
     if (!def) {
-      /* Unknown stub name — clear the flag so we don't loop on it. The
+      /* Unknown stub name - clear the flag so we don't loop on it. The
        * row stays as-is for the user to delete manually. */
       await doc.ref.set({ needsHydration: false, updatedAt: now }, { merge: true })
       continue

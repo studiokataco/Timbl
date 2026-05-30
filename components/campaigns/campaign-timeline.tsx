@@ -64,7 +64,7 @@ export function CampaignTimeline({ campaign, posts, categories, users }: Props) 
       <EmptyState
         icon={CalendarRange}
         title="No posts linked to this campaign yet"
-        body="Open any post in the composer's Brief tab and assign it to this campaign — it'll appear here grouped by week."
+        body="Open any post in the composer's Brief tab and assign it to this campaign - it'll appear here grouped by week."
         size="lg"
       />
     )

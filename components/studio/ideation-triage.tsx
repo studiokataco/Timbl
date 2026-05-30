@@ -16,13 +16,13 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 /*
- * Ideation triage — the inspector's focused single-item view.
+ * Ideation triage - the inspector's focused single-item view.
  *
  * Replaces the Phase A read-only IdeationPanel stub. Owns its own list
  * query (seeded by props.initialItems) so it can compute prev/next for
  * J/K keyboard navigation without piping a callback through three
  * components. Promote / dismiss delegates to existing
- * `promoteIdeationItem` and `markIdeationStatus` server actions — no
+ * `promoteIdeationItem` and `markIdeationStatus` server actions - no
  * signature changes.
  *
  * Keyboard:
@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils"
  *   K → previous pending
  *
  * The listener is scoped to mount of this component, which is itself
- * gated by `?focus=ideation:<id>` in the inspector — so the shortcuts
+ * gated by `?focus=ideation:<id>` in the inspector - so the shortcuts
  * never fire elsewhere.
  */
 

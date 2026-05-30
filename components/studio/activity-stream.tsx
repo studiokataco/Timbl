@@ -26,7 +26,7 @@ import { ApprovalCard } from "./approval-card"
 import { PublishChip } from "./publish-chip"
 
 /*
- * Activity stream — live polling feed of recent agent runs.
+ * Activity stream - live polling feed of recent agent runs.
  *
  * Phase B replaces the static Phase A render with a TanStack-Query poll
  * (4s cadence). Server hydrates the first page via `initialRuns`, so the
@@ -38,7 +38,7 @@ import { PublishChip } from "./publish-chip"
  *
  * Rows that appear after the initial render fade in (Tailwind animate-in,
  * gated by `motion-safe:`). In-flight runs show a live token ticker, a
- * USD cost ticker, and an indeterminate progress strip — these
+ * USD cost ticker, and an indeterminate progress strip - these
  * auto-update because the underlying query refetches every 4s.
  */
 
@@ -174,7 +174,7 @@ export function ActivityStream({
    * Set during render is safe because the ref is only updated in an
    * effect after commit, and we never branch component identity off it.
    * The eslint rule that flags ref reads during render is a heuristic,
-   * not a correctness rule — and the safer alternative (setState in an
+   * not a correctness rule - and the safer alternative (setState in an
    * effect) trips a different eslint rule. We opt out locally. */
   const seenRef = useRef<Set<string>>(
     new Set<string>([
@@ -199,7 +199,7 @@ export function ActivityStream({
         createdAt: r.startedAt ?? r.createdAt ?? "",
         run: r,
       }))
-    // Ideation + approval entries surface only on the All filter — for the
+    // Ideation + approval entries surface only on the All filter - for the
     // focused filters (live / awaiting / failed / succeeded) the activity is
     // purely run-status oriented and a mixed feed would confuse those views.
     const ideationRows: IdeationRow[] =
@@ -214,7 +214,7 @@ export function ActivityStream({
     const approvalRows: ApprovalRowKind[] =
       filter === "all"
         ? approvals
-            /* Skip reverted entries — the undo restored prior state, so
+            /* Skip reverted entries - the undo restored prior state, so
              * showing the row is just noise. */
             .filter((a) => a.revertedAt === null)
             .map((a) => ({
@@ -296,7 +296,7 @@ export function ActivityStream({
         </p>
       </header>
 
-      {/* Filter chip row — Cal.com category-tab styling */}
+      {/* Filter chip row - Cal.com category-tab styling */}
       <div className="mb-4 inline-flex items-center gap-0.5 rounded-pill bg-secondary p-0.5">
         {FILTERS.map((f) => {
           const active = f.key === filter
@@ -646,7 +646,7 @@ function approvalLabel(entry: ApprovalLogRow): string {
 }
 
 function relTime(iso: string | undefined): string {
-  if (!iso) return "—"
+  if (!iso) return "-"
   try {
     const d = parseISO(iso)
     const distance = formatDistanceToNow(d, { addSuffix: true })

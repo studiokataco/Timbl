@@ -7,7 +7,7 @@ import { isoDate } from "@/lib/schemas/_shared"
 
 import { getRuntimeCtx } from "../runtime/context"
 
-/* Awareness days live in a global (non-org-scoped) collection — they're
+/* Awareness days live in a global (non-org-scoped) collection - they're
  * a shared registry, not tenant data. Tools still read RuntimeCtx so the
  * permissions layer can audit which agent is touching them. */
 

@@ -29,9 +29,9 @@ const IMPORTANCE_VARIANT: Record<
 
 /*
  * Right rail on the calendar surface. Two stacked panels:
- *   1. Awareness this period — upcoming awareness days within the visible
+ *   1. Awareness this period - upcoming awareness days within the visible
  *      calendar window. Promote-to-post inline.
- *   2. Suggestions — silent categories, cadence-due templates, campaigns
+ *   2. Suggestions - silent categories, cadence-due templates, campaigns
  *      ending soon. Computed server-side per render.
  */
 export function CalendarAwarenessRail({

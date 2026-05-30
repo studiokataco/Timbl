@@ -16,7 +16,7 @@ import { AgentChat } from "./agent-chat"
 /*
  * Wraps an AgentChat that drives the full workflow pipeline. Opens from the
  * kanban column's overflow menu. The default brief seeds the run with the
- * column context — the user can edit before sending.
+ * column context - the user can edit before sending.
  *
  * We chose the pipeline (rather than drafter alone) so the same run also
  * goes through review + scheduler. The human-gate inside the pipeline

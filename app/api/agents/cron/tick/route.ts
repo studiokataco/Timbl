@@ -21,14 +21,14 @@ const bodySchema = z.object({
 })
 
 /*
- * Cron entrypoint — fires a single agent's run on the local cron script's
+ * Cron entrypoint - fires a single agent's run on the local cron script's
  * schedule (Phase 8) or on Cloud Scheduler in Phase 7+. Always runs under
  * SYSTEM_USER so the audit trail in agentRuns distinguishes scheduled
  * from human-triggered work.
  *
  * Secret check: X-Agent-Cron-Secret must match AGENT_CRON_SECRET. The
  * shared secret is intentionally a single value rather than a signed
- * token — this endpoint is local-only until Phase 7 and a per-request
+ * token - this endpoint is local-only until Phase 7 and a per-request
  * signature scheme is premature.
  *
  * No streaming response: cron fires and forgets. The run continues in
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     )
   }
   /* Constant-time check. timingSafeEqual throws on unequal lengths, so the
-   * length pre-check guards it. Leaking the secret's length is fine — the
+   * length pre-check guards it. Leaking the secret's length is fine - the
    * secret is service-managed and not user-supplied. */
   const a = Buffer.from(secret ?? "", "utf8")
   const b = Buffer.from(expected, "utf8")
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   /* Refuse to fire if a previous cron run for this agent is still in
-   * progress — prevents pile-up if a slow run overruns its next slot. */
+   * progress - prevents pile-up if a slow run overruns its next slot. */
   const activeSnap = await getAdminDb()
     .collection(orgAgentRunsPath(payload.orgId))
     .where("agentName", "==", payload.agentName)
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     status: "in_progress",
   })
 
-  /* Fire the run async — we don't wait for the events.
+  /* Fire the run async - we don't wait for the events.
    * `runner.runAsync()` returns an AsyncGenerator; iterating it advances
    * the agent. Errors mark the run failed. */
   void (async () => {

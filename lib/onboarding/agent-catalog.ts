@@ -4,12 +4,12 @@
  * The onboarding wizard's "Pick your AI agents" step renders this list, and
  * `applyOnboardingSelections` toggles the matching agentConfig docs. Every
  * id here MUST be a real agent in `lib/agents/defaults.ts` (and therefore
- * registered in `lib/agents/index.ts:FACTORIES`) — otherwise the toggle
+ * registered in `lib/agents/index.ts:FACTORIES`) - otherwise the toggle
  * writes `enabled` onto a doc the ADK runtime has no factory to run.
  *
  * Deliberately excluded: the config agents (hello, brand-wizard,
  * settings-assistant, meta-config) and the pipeline machinery (pipeline,
- * reviewer, scheduler, human-gate). Those are always-on infrastructure —
+ * reviewer, scheduler, human-gate). Those are always-on infrastructure -
  * seeded `enabled: true` and never surfaced as a user toggle, because
  * disabling a pipeline sub-agent would silently break the review loop.
  */
@@ -48,7 +48,7 @@ export const WIZARD_AGENT_CATALOG: WizardAgent[] = [
   },
 ]
 
-/* Ids only — handy for default-selection sets and membership checks. */
+/* Ids only - handy for default-selection sets and membership checks. */
 export const WIZARD_AGENT_IDS: string[] = WIZARD_AGENT_CATALOG.map((a) => a.id)
 
 export function isWizardSelectableAgent(id: string): boolean {

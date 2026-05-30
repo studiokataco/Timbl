@@ -231,7 +231,7 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
   const post = snapToData<Post>(postSnap)
 
   if (!post.categoryId) {
-    return { ok: false, error: "Post has no category — set one before saving" }
+    return { ok: false, error: "Post has no category - set one before saving" }
   }
 
   const id = slugify(parsed.data.name)

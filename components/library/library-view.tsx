@@ -78,7 +78,7 @@ export function LibraryView({ templates, categories, ctas }: Props) {
       <EmptyState
         icon={BookOpen}
         title="No templates yet"
-        body="Save a finished post as a template from the composer kebab — handy for recurring series like Pick of the Week or Meet the Team."
+        body="Save a finished post as a template from the composer kebab - handy for recurring series like Pick of the Week or Meet the Team."
         size="lg"
       />
     )
@@ -164,7 +164,7 @@ export function LibraryView({ templates, categories, ctas }: Props) {
           <DialogHeader>
             <DialogTitle>Use template</DialogTitle>
             <DialogDescription>
-              {pickerFor?.name} — pick a date to schedule the new post.
+              {pickerFor?.name} - pick a date to schedule the new post.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">

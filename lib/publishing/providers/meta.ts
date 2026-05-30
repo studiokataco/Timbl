@@ -50,7 +50,7 @@ type GraphErrorBody = {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-/* blurb + hashtags, blank-line separated — the platform caption/message. */
+/* blurb + hashtags, blank-line separated - the platform caption/message. */
 function caption(post: Post): string {
   return [post.blurb ?? "", (post.hashtags ?? []).map((h) => `#${h}`).join(" ")]
     .map((s) => s.trim())
@@ -78,7 +78,7 @@ function graphPost(path: string, params: Record<string, string>): Promise<Respon
  * sweep reacts correctly: invalid/expired token or missing permission →
  * needs_reauth (flag the account, prompt reconnect); rate-limit / transient →
  * retry (leave scheduled); everything else → bad_body (mark failed).
- * Graph error codes: 190 = invalid token, 200–299 = permission denied,
+ * Graph error codes: 190 = invalid token, 200-299 = permission denied,
  * 4/17/32/613 = throttling, 1/2 = transient platform error.
  */
 async function graphError(prefix: string, res: Response): Promise<PublishResult> {
@@ -87,7 +87,7 @@ async function graphError(prefix: string, res: Response): Promise<PublishResult>
   try {
     body = JSON.parse(text) as GraphErrorBody
   } catch {
-    /* non-JSON body — fall back to raw text below */
+    /* non-JSON body - fall back to raw text below */
   }
   const code = body?.error?.code
   const message = body?.error?.message ?? text.slice(0, 160) ?? `HTTP ${res.status}`
@@ -172,7 +172,7 @@ async function fetchPages(userToken: string): Promise<Page[]> {
 }
 
 /* Wait for an IG media container to finish processing before publishing.
- * Returns "timeout" if still IN_PROGRESS at the cap — the caller turns that
+ * Returns "timeout" if still IN_PROGRESS at the cap - the caller turns that
  * into a retry (media_publish is never called, so nothing is double-posted). */
 async function waitForContainer(
   containerId: string,
@@ -210,7 +210,7 @@ async function publishFacebook(account: SocialAccount, post: Post): Promise<Publ
   })
 
   /* Video post (FB can't mix a video with photos in one Graph publish, so a
-   * video takes precedence — images on the same post are skipped). */
+   * video takes precedence - images on the same post are skipped). */
   if (videos.length > 0) {
     const res = await graphPost(`${page}/videos`, {
       file_url: videos[0],
@@ -378,7 +378,7 @@ function buildMetaPublisher(channel: MetaChannel): Publisher {
 
       /* Resolve the publish target. Single-page orgs (the common case) get the
        * one page deterministically; multi-page orgs currently take the first
-       * eligible page — page selection UI is the only deferred piece. */
+       * eligible page - page selection UI is the only deferred piece. */
       let externalId: string
       let pageToken: string
       let displayName: string
@@ -386,7 +386,7 @@ function buildMetaPublisher(channel: MetaChannel): Publisher {
       if (channel === "facebook") {
         const page = pages[0]
         if (!page) {
-          throw new Error("No Facebook Page found — the connecting account must be an admin of a Page.")
+          throw new Error("No Facebook Page found - the connecting account must be an admin of a Page.")
         }
         externalId = page.id
         pageToken = page.access_token

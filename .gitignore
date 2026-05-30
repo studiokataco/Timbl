@@ -58,9 +58,10 @@ migration/source/
 # Migration audit output (regenerated on every run)
 migration/report.csv
 
-# Local-only walkthroughs / docs (not source of truth — those live in PRD/plan files)
+# Local-only walkthroughs / docs (not source of truth - those live in PRD/plan files)
 docs/AGENTS_WALKTHROUGH.md
 docs/*
+AGENTS.md
 
 # Cloud Functions build output
 functions/lib/

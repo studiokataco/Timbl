@@ -126,7 +126,7 @@ export function CalendarView({
     placeholderData: (prev) => prev ?? initialPosts,
     staleTime: 30_000,
   })
-  /* Real-time stays subscribed to the SSR window — that's the working
+  /* Real-time stays subscribed to the SSR window - that's the working
    * range where users see live edits. Navigating far-future months still
    * refetches via the useQuery above, but doesn't get onSnapshot updates
    * (which would be wasteful for far-future static content anyway). */
@@ -193,7 +193,7 @@ export function CalendarView({
 
       /* Optimistically patch every cached posts query so the chip
        * jumps to the new cell immediately. We patch by id across all
-       * date-range query keys — cheaper than re-fetching, and avoids
+       * date-range query keys - cheaper than re-fetching, and avoids
        * the flicker where the chip snaps back to origin while the
        * server roundtrips. */
       const patchCache = (

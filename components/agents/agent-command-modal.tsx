@@ -24,7 +24,7 @@ import { importThread } from "@/lib/storage/agent-threads"
 import { AgentChat, type AgentChatHandle } from "./agent-chat"
 
 /*
- * Centered popup modal — the lightweight, ephemeral AI surface.
+ * Centered popup modal - the lightweight, ephemeral AI surface.
  *
  * Cmd-J toggles. `agent-modal:open` opens it. Active agent persists
  * across open/close within the page session via a module-level ref;
@@ -55,7 +55,7 @@ export function AgentCommandModal() {
     modalActiveAgent = activeAgent
   }, [activeAgent])
 
-  // Cmd-J / Ctrl-J toggle (not shift — Cmd-Shift-J is the drawer).
+  // Cmd-J / Ctrl-J toggle (not shift - Cmd-Shift-J is the drawer).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey
@@ -116,7 +116,7 @@ export function AgentCommandModal() {
   const migrateToSidebar = useCallback(async () => {
     const transcript = chatRef.current?.getTranscript() ?? []
     if (transcript.length === 0) {
-      toast.info("Nothing to migrate yet — send a message first.")
+      toast.info("Nothing to migrate yet - send a message first.")
       return
     }
     try {

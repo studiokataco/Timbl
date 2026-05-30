@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 
 /*
  * Dev workspace chooser. Each card calls setDevOrg to pin the safe_dev_org
- * cookie, then routes to /calendar — the (app) layout redirects the tenant
+ * cookie, then routes to /calendar - the (app) layout redirects the tenant
  * org on to /onboarding when it isn't onboarded yet, so the chooser itself
  * needs no per-mode routing.
  */
@@ -46,7 +46,7 @@ export function WorkspaceChooser({
           Choose a workspace
         </h1>
         <p className="text-sm text-muted-foreground">
-          Emulator dev mode — pick how you want to open the app. You can switch
+          Emulator dev mode - pick how you want to open the app. You can switch
           any time from Settings → Workspace.
         </p>
       </header>
@@ -55,7 +55,7 @@ export function WorkspaceChooser({
         <ChooserCard
           icon={<Boxes className="size-5" />}
           title="Developer mode"
-          description="The SAFE Foundation demo workspace — fully seeded with agents, categories, and awareness days."
+          description="The SAFE Foundation demo workspace - fully seeded with agents, categories, and awareness days."
           cta="Open demo workspace"
           isCurrent={currentMode === "demo"}
           busy={pending && chosen === "demo"}

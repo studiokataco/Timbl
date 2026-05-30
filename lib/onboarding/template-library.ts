@@ -12,7 +12,7 @@
  * adding a new industry's starter template is a code change, reviewable in
  * a PR.
  *
- * categoryId left blank — the wizard step 3 just created the org's
+ * categoryId left blank - the wizard step 3 just created the org's
  * categories from industry-defaults.ts, but the user might have deselected
  * some. resolveCategoryForTemplate (in lib/actions/onboarding.ts) maps
  * slug → an actually-present category at apply time.
@@ -28,7 +28,7 @@ export type TemplateCadence =
 export type StarterTemplate = {
   slug: string
   name: string
-  /* Hint for the category the template *typically* belongs in — used by
+  /* Hint for the category the template *typically* belongs in - used by
    * the wizard to find a present category for the user's org. Falls back
    * to the first available category if no match. */
   preferredCategorySlug: string
@@ -39,7 +39,7 @@ export type StarterTemplate = {
 }
 
 export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
-  /* Generic — used by GENERIC_DEFAULTS / "other" industry. */
+  /* Generic - used by GENERIC_DEFAULTS / "other" industry. */
   "generic-announcement": {
     slug: "generic-announcement",
     name: "Announcement",
@@ -47,7 +47,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "grid",
     defaultHashtags: ["#News", "#Update"],
     blurbTemplate:
-      "{{headline}}\n\n{{body}}\n\n— Tap the link in bio to learn more.",
+      "{{headline}}\n\n{{body}}\n\n- Tap the link in bio to learn more.",
     cadence: "ad-hoc",
   },
   "generic-tip-carousel": {
@@ -57,7 +57,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "carousel",
     defaultHashtags: ["#Tips", "#HowTo"],
     blurbTemplate:
-      "{{topic}} — {{numberOfTips}} things we wish we'd known sooner.\n\nSwipe through for the full list.",
+      "{{topic}} - {{numberOfTips}} things we wish we'd known sooner.\n\nSwipe through for the full list.",
     cadence: "weekly",
   },
 
@@ -69,7 +69,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "carousel",
     defaultHashtags: ["#CaseStudy", "#ClientWork"],
     blurbTemplate:
-      "How we helped {{clientName}} {{outcome}}.\n\nSwipe through for the full story — link in bio for the deep dive.",
+      "How we helped {{clientName}} {{outcome}}.\n\nSwipe through for the full story - link in bio for the deep dive.",
     cadence: "monthly",
   },
   "agency-client-win": {
@@ -91,7 +91,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "carousel",
     defaultHashtags: ["#NewArrival", "#JustDropped"],
     blurbTemplate:
-      "Meet {{productName}} — {{tagline}}.\n\nAvailable now: {{link}}",
+      "Meet {{productName}} - {{tagline}}.\n\nAvailable now: {{link}}",
     cadence: "ad-hoc",
   },
   "ecom-ugc-roundup": {
@@ -101,7 +101,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "carousel",
     defaultHashtags: ["#Community", "#YourStyle"],
     blurbTemplate:
-      "Our favourite {{productName}} looks from you this month 💛\n\nKeep tagging us — we love seeing them.",
+      "Our favourite {{productName}} looks from you this month 💛\n\nKeep tagging us - we love seeing them.",
     cadence: "monthly",
   },
 
@@ -123,7 +123,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "carousel",
     defaultHashtags: ["#Tutorial", "#HowTo", "#ProductTip"],
     blurbTemplate:
-      "How to {{task}} in {{productName}} — in {{numberOfSteps}} steps.\n\nSwipe through, save for later.",
+      "How to {{task}} in {{productName}} - in {{numberOfSteps}} steps.\n\nSwipe through, save for later.",
     cadence: "biweekly",
   },
 
@@ -135,7 +135,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "grid",
     defaultHashtags: ["#Campaign", "#MakeADifference"],
     blurbTemplate:
-      "{{campaignName}} — we're {{percentOfGoal}}% of the way there.\n\nEvery share helps. Link in bio to donate.",
+      "{{campaignName}} - we're {{percentOfGoal}}% of the way there.\n\nEvery share helps. Link in bio to donate.",
     cadence: "weekly",
   },
   "nonprofit-awareness-day": {
@@ -156,7 +156,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     preferredCategorySlug: "daily-thoughts",
     defaultPostType: "grid",
     defaultHashtags: ["#Thoughts"],
-    blurbTemplate: "{{thought}}\n\n— What's on your mind today?",
+    blurbTemplate: "{{thought}}\n\n- What's on your mind today?",
     cadence: "weekly",
   },
   "creator-tutorial-reel": {
@@ -165,7 +165,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     preferredCategorySlug: "tutorials",
     defaultPostType: "reel",
     defaultHashtags: ["#Tutorial", "#HowTo"],
-    blurbTemplate: "How to {{task}} — in 30 seconds.\n\nSave this for later 🔖",
+    blurbTemplate: "How to {{task}} - in 30 seconds.\n\nSave this for later 🔖",
     cadence: "biweekly",
   },
 
@@ -177,7 +177,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "grid",
     defaultHashtags: ["#LocalEvent", "#ComeJoinUs"],
     blurbTemplate:
-      "{{eventName}} — {{date}} at {{location}}.\n\n{{oneLineHook}}\n\nSee you there 🎉",
+      "{{eventName}} - {{date}} at {{location}}.\n\n{{oneLineHook}}\n\nSee you there 🎉",
     cadence: "ad-hoc",
   },
   "local-menu-special": {

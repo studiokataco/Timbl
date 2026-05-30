@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react"
 import gsap from "gsap"
 
 /**
- * Ask-AI hero button — top-bar trigger for the centered popup modal.
+ * Ask-AI hero button - top-bar trigger for the centered popup modal.
  *
  * Visuals:
  *  - Solid 1.5px brand-accent outline.

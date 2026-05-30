@@ -15,22 +15,22 @@ import type {
 
 /*
  * OpenAI-compatible adapter for adk-js. "OpenAI-compatible" is a wire
- * protocol, not a vendor — OpenRouter and Ollama both expose it. This one
+ * protocol, not a vendor - OpenRouter and Ollama both expose it. This one
  * adapter serves both providers; the difference is purely `baseUrl` + key
  * (see resolveLlm() in llm-registry.ts).
  *
- * Targets the Chat Completions API (/v1/chat/completions) — the broadest
+ * Targets the Chat Completions API (/v1/chat/completions) - the broadest
  * tool-calling surface across OpenRouter + Ollama. Not /v1/responses.
  *
  * Maps ADK's Gemini-shaped LlmRequest / LlmResponse / Content over OpenAI's
  * chat messages API. Structured to mirror anthropic-llm.ts:
  *   ✓ Text streaming (delta.content → partial ContentEvent chunks)
- *   ✓ Tool use roundtrip — functionCall → tool_calls, functionResponse →
+ *   ✓ Tool use roundtrip - functionCall → tool_calls, functionResponse →
  *     role:"tool" message
  *   ✓ System instruction extracted from llmRequest.config.systemInstruction
  *   ✓ usage metadata aggregated into the final LlmResponse
  *
- * No prompt-cache plumbing — OpenRouter/DeepSeek do context caching
+ * No prompt-cache plumbing - OpenRouter/DeepSeek do context caching
  * server-side automatically; Ollama is local.
  */
 
@@ -38,7 +38,7 @@ const DEFAULT_MAX_TOKENS = 4096
 
 export class OpenAiCompatibleLlm extends BaseLlm {
   /* Resolution is by agentConfig.provider in resolveLlm(), not by this
-   * regex — the LLMRegistry registration is belt-and-braces. Keep it
+   * regex - the LLMRegistry registration is belt-and-braces. Keep it
    * permissive: OpenRouter slugs are `vendor/model`, Ollama tags are
    * `model:size`; neither shares a stable prefix. */
   static override readonly supportedModels: Array<string | RegExp> = [
@@ -76,7 +76,7 @@ export class OpenAiCompatibleLlm extends BaseLlm {
       ...(tools.length ? { tools } : {}),
     }
 
-    /* Use the chat.completions.stream() helper — like anthropic-llm.ts it
+    /* Use the chat.completions.stream() helper - like anthropic-llm.ts it
      * correctly aggregates tool_call argument deltas across chunks. We
      * iterate raw chunks to yield partial:true text for the chat UI, then
      * await finalChatCompletion() for the fully-parsed message. */

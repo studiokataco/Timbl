@@ -1,5 +1,5 @@
 /*
- * ⚠️  HAND-MAINTAINED STATIC PRICE TABLE — NOT a live feed. ⚠️
+ * ⚠️  HAND-MAINTAINED STATIC PRICE TABLE - NOT a live feed. ⚠️
  *
  * Used only to put an *estimated* USD cost next to a run in the prod-swap
  * A/B comparison view (§6.6 of safe-pluggable-ai-providers-ab.md). It is
@@ -7,11 +7,11 @@
  *
  * Prices are USD per 1,000,000 tokens, list price, and WILL go stale.
  * When a model is added or a provider changes pricing, edit this file by
- * hand — confirm every number against the provider's pricing page first:
+ * hand - confirm every number against the provider's pricing page first:
  *   - Gemini:     https://ai.google.dev/gemini-api/docs/pricing
  *   - Anthropic:  https://www.anthropic.com/pricing
  *   - OpenRouter: https://openrouter.ai/models  (per-model)
- * A model absent from this table simply shows no cost estimate — that is
+ * A model absent from this table simply shows no cost estimate - that is
  * the intended, safe degradation. Never guess a number to fill a gap.
  *
  * Keys are the exact model IDs from the plan's §4 shortlist.
@@ -24,7 +24,7 @@ export interface ModelPrice {
   outputPer1M: number
 }
 
-/* Ollama (local) models are free to run — no API cost. They are
+/* Ollama (local) models are free to run - no API cost. They are
  * intentionally omitted; estimateUsdCost() returns 0 for an unknown model
  * and that is correct for them. */
 export const MODEL_PRICES: Record<string, ModelPrice> = {
@@ -40,13 +40,13 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   // --- OpenRouter open models (verify per-model on openrouter.ai) ---
   "z-ai/glm-5.1": { inputPer1M: 0.2, outputPer1M: 0.6 },
   "qwen/qwen3.6-plus": { inputPer1M: 0.4, outputPer1M: 1.2 },
-  // deepseek/deepseek-v4-flash: slug + price unconfirmed — omitted.
+  // deepseek/deepseek-v4-flash: slug + price unconfirmed - omitted.
 }
 
 /**
  * Estimate the USD cost of a run from its token counts. Returns 0 for any
  * model not in the table (local Ollama models, or a model whose price
- * hasn't been entered yet) — the UI then shows no estimate rather than a
+ * hasn't been entered yet) - the UI then shows no estimate rather than a
  * wrong one.
  */
 export function estimateUsdCost(
@@ -63,7 +63,7 @@ export function estimateUsdCost(
   )
 }
 
-/** Whether a model has a price entry — lets the UI distinguish "free /
+/** Whether a model has a price entry - lets the UI distinguish "free /
  *  local" from "price not yet recorded". */
 export function hasPrice(model: string | null | undefined): boolean {
   return !!model && model in MODEL_PRICES

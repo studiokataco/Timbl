@@ -120,7 +120,7 @@ type SaveState = "idle" | "saving" | "saved" | "error"
  * styling). Five tabs match the PRD shape: Brief / Copy & Tags / Design /
  * Channels / Notes.
  *
- * Save is explicit for now — Phase 3 swaps in autosave on blur/idle and
+ * Save is explicit for now - Phase 3 swaps in autosave on blur/idle and
  * keeps the Save button as a fallback.
  */
 export function PostComposerSheet({
@@ -304,7 +304,7 @@ export function PostComposerSheet({
             <div className="flex items-center justify-between gap-3">
               <SheetTitle className="min-w-0 flex-1 text-base font-medium">
                 {post
-                  ? `Edit post — ${format(date, "EEE d MMM")}`
+                  ? `Edit post - ${format(date, "EEE d MMM")}`
                   : "Edit post"}
               </SheetTitle>
               <div className="shrink-0 flex items-center gap-3">
@@ -687,7 +687,7 @@ export function PostComposerSheet({
                   </div>
                 ) : draft.canvaUrl ? (
                   <p className="text-xs text-muted-foreground">
-                    No preview available — open in Canva to view.
+                    No preview available - open in Canva to view.
                   </p>
                 ) : null}
               </div>

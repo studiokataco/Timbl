@@ -37,7 +37,7 @@ import type { WithId } from "@/lib/firebase/serialize"
 import type { Campaign, CampaignStatus } from "@/lib/schemas"
 
 /*
- * Single campaigns surface — the browse grid AND create/edit/delete in one
+ * Single campaigns surface - the browse grid AND create/edit/delete in one
  * page. Replaces the old split where /campaigns was read-only and bounced
  * every action to a near-duplicate /settings/campaigns manager. The card
  * grid is the browse view; the New-campaign / per-card edit buttons open
@@ -78,7 +78,7 @@ export function CampaignsBoard({ campaigns }: Props) {
   const [editing, setEditing] = useState<CampaignRow | null>(null)
   const [form, setForm] = useState<FormState>(BLANK)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
-  /* Optimistic grid — create/edit/delete update this instantly. */
+  /* Optimistic grid - create/edit/delete update this instantly. */
   const [items, setItems] = useState(campaigns)
   const inflightRef = useRef(0)
   useEffect(() => {
@@ -243,7 +243,7 @@ export function CampaignsBoard({ campaigns }: Props) {
                   <Link href={href} className="flex-1 min-w-0">
                     <h2 className="font-medium leading-snug">{c.name}</h2>
                   </Link>
-                  {/* Edit / delete — kept outside the Link so the card is
+                  {/* Edit / delete - kept outside the Link so the card is
                       valid HTML (no button nested in an anchor). */}
                   <div className="flex items-center gap-0.5 -mt-1 -mr-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <Button

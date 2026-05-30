@@ -12,7 +12,7 @@ import { OnboardingWizard } from "@/components/onboarding/wizard"
 
 /*
  * Wizard entry. If the org is already onboarded the user can still land
- * here (re-run flow), but we don't auto-bounce them to /(app) — that
+ * here (re-run flow), but we don't auto-bounce them to /(app) - that
  * would clash with the "Re-run setup" affordance from settings.
  *
  * The wizard state is hydrated from existing onboarding.profile so a
@@ -30,7 +30,7 @@ export default async function OnboardingPage() {
     getAdminDb().doc(orgPath(orgId)).get(),
   ])
   const industries = listIndustries()
-  /* Prefill the workspace-name field only on a re-run — on first run the
+  /* Prefill the workspace-name field only on a re-run - on first run the
    * org still carries the seed placeholder, so we let the input's own
    * placeholder show rather than pre-filling a generic value. */
   const orgName = state.completedAt

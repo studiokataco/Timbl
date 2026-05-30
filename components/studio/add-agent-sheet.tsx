@@ -121,7 +121,7 @@ function TemplateRow({
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  // Customize form state — loaded lazily when the panel opens.
+  // Customize form state - loaded lazily when the panel opens.
   const [description, setDescription] = useState(template.description)
   const [model, setModel] = useState(template.model)
   const [temperature, setTemperature] = useState<number>(template.temperature)

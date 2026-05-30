@@ -114,7 +114,7 @@ export function AgentsClient({ initial }: Props) {
             <div className="flex-1 min-h-0">
               <AgentChat
                 agentName={testingAgent}
-                intro={`Try anything — this is a sandboxed manual run of the "${testingAgent}" agent.`}
+                intro={`Try anything - this is a sandboxed manual run of the "${testingAgent}" agent.`}
                 placeholder="Type a test prompt…"
               />
             </div>
@@ -226,7 +226,7 @@ function EditSheet({
 
   /* Re-sync local state when a different config is opened. */
   if (config && config.id !== model + "::" + provider /* sentinel */) {
-    /* noop — values seeded above via initial useState */
+    /* noop - values seeded above via initial useState */
   }
 
   return (

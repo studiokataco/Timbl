@@ -1,4 +1,4 @@
-// Posts list reads live from Firestore — never pre-render.
+// Posts list reads live from Firestore - never pre-render.
 export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"

@@ -6,14 +6,14 @@ import type { RefObject } from "react"
 
 /*
  * Cal-voice marquee motion. Two hooks, both honour `prefers-reduced-motion`
- * via `gsap.matchMedia()` per the GSAP core skill — under reduced-motion the
+ * via `gsap.matchMedia()` per the GSAP core skill - under reduced-motion the
  * elements jump to their final state with no animation, never blocking the
  * paint or any user input.
  *
- * - `useGridReveal(scopeRef)`  — fade-up + stagger across children
+ * - `useGridReveal(scopeRef)`  - fade-up + stagger across children
  *   matching `[data-cal-reveal]`. Used on the calendar grid + the
  *   awareness rail's sections.
- * - `useHeadingReveal(scopeRef)` — fade-up of the page <h1> + immediate
+ * - `useHeadingReveal(scopeRef)` - fade-up of the page <h1> + immediate
  *   sibling description. Used on the shared <PageHeader>.
  *
  * Both clean up automatically via `useGSAP`'s scoped context.
