@@ -9,7 +9,22 @@ import type { NextConfig } from "next"
  * Can't resolve 'fs'" class of failures when an agent module is reachable
  * through a server import graph.
  */
+const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+const authProxyHost =
+  process.env.FIREBASE_AUTH_PROXY_HOST ??
+  (firebaseProjectId ? `${firebaseProjectId}.firebaseapp.com` : null)
+
 const nextConfig: NextConfig = {
+  async rewrites() {
+    if (process.env.NEXT_PUBLIC_USE_EMULATORS === "1" || !authProxyHost) {
+      return []
+    }
+    const base = `https://${authProxyHost}`
+    return [
+      { source: "/__/auth/:path*", destination: `${base}/__/auth/:path*` },
+      { source: "/__/firebase/:path*", destination: `${base}/__/firebase/:path*` },
+    ]
+  },
   serverExternalPackages: [
     "@google/adk",
     "@google/genai",

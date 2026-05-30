@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { signInWithGoogleAccount } from "@/lib/auth/google-sign-in"
 import { getClientAuth } from "@/lib/firebase/client"
 
 const ALLOWED_DOMAINS = ["safefoundation.org.uk", "kataco.in"]
@@ -20,9 +20,7 @@ export function LoginForm() {
     setPending(true)
     try {
       const auth = getClientAuth()
-      const provider = new GoogleAuthProvider()
-      provider.setCustomParameters({ prompt: "select_account" })
-      const result = await signInWithPopup(auth, provider)
+      const result = await signInWithGoogleAccount()
       const email = result.user.email?.toLowerCase() ?? ""
       const domain = email.split("@")[1]
       if (!domain || !ALLOWED_DOMAINS.includes(domain)) {

@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import type { AuthIntent } from "@/lib/auth/intent"
+import { signInWithGoogleAccount } from "@/lib/auth/google-sign-in"
 import { getClientAuth } from "@/lib/firebase/client"
 
 export function GoogleAuthButton({
@@ -29,9 +29,7 @@ export function GoogleAuthButton({
     setPending(true)
     try {
       const auth = getClientAuth()
-      const provider = new GoogleAuthProvider()
-      provider.setCustomParameters({ prompt: "select_account" })
-      const result = await signInWithPopup(auth, provider)
+      const result = await signInWithGoogleAccount()
 
       const post = async (forceRefresh: boolean) => {
         const idToken = await result.user.getIdToken(forceRefresh)
