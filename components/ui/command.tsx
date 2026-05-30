@@ -55,7 +55,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "overflow-hidden rounded-xl! p-0 sm:max-w-lg",
+          "!fixed !inset-0 !m-auto h-fit overflow-hidden rounded-xl! p-0 sm:max-w-lg",
           className
         )}
         showCloseButton={showCloseButton}
