@@ -28,12 +28,6 @@ export const metadata: Metadata = {
   },
   description: "Calendar-first social media planning for agencies and brands.",
   applicationName: "Social planner",
-  icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
-  },
 }
 
 export default function RootLayout({
