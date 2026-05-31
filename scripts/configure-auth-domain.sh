@@ -70,6 +70,3 @@ echo "      Authorized redirect URIs:       ${REDIRECT_URI}"
 echo ""
 echo "    Open: ${CONSOLE_URL}"
 
-if [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
-  open "${CONSOLE_URL}" || true
-fi

@@ -23,16 +23,26 @@ import {
  * NEXT_PUBLIC_USE_EMULATORS is left unset.
  */
 
+const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
+
+function resolveAuthDomain() {
+  const configured = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  if (!configured || !projectId || useEmulators) return configured
+  if (configured.includes("hosted.app")) {
+    return `${projectId}.firebaseapp.com`
+  }
+  return configured
+}
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  authDomain: resolveAuthDomain(),
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
-
-const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
 
 let app: FirebaseApp | undefined
 let firestore: Firestore | undefined

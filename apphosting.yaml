@@ -40,10 +40,10 @@ env:
       - BUILD
       - RUNTIME
 
-  # Same host as APP_BASE_URL (no scheme) so Google sign-in stays same-origin.
-  # /__/auth is reverse-proxied to *.firebaseapp.com in next.config.ts.
+  # OAuth redirect_uri must match the GCP web client allowlist (firebaseapp.com).
+  # App stays on hosted.app; /__/auth rewrites proxy auth assets in next.config.ts.
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: safe-planner--sm-dashboard-e7641.asia-east1.hosted.app
+    value: sm-dashboard-e7641.firebaseapp.com
     availability:
       - BUILD
       - RUNTIME
