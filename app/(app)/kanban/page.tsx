@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"
+import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { PageHeader } from "@/components/shared/page-header"
 import { KanbanBoard } from "@/components/kanban/board"
 import {
@@ -18,7 +19,8 @@ export default async function KanbanPage() {
    * still render. Was +90d which silently hid those drafts. */
   const end = format(addDays(today, 365), "yyyy-MM-dd")
 
-  const [posts, categories, users] = await Promise.all([
+  const [orgId, posts, categories, users] = await Promise.all([
+    getCurrentOrgId(),
     fetchPostsInRange(start, end),
     fetchCategories(),
     fetchUsers(),
@@ -32,7 +34,13 @@ export default async function KanbanPage() {
           description="Drag cards between columns to move posts through the workflow."
           className="mb-8"
         />
-        <KanbanBoard posts={posts} categories={categories} users={users} />
+        <KanbanBoard
+          orgId={orgId}
+          initialPosts={posts}
+          categories={categories}
+          users={users}
+          range={{ start, end }}
+        />
       </div>
     </>
   )

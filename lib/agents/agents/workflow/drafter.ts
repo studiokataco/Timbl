@@ -9,6 +9,7 @@ import {
   createDraftPostTool,
   updateDraftPostTool,
 } from "../../tools/posts"
+import { createTemplateTool } from "../../tools/templates"
 import { retrieveTool } from "../../tools/retrieve"
 
 /*
@@ -33,6 +34,7 @@ export function buildDrafterAgent(config: AgentConfig): LlmAgent {
       recallTool,
       createDraftPostTool,
       updateDraftPostTool,
+      createTemplateTool,
     ],
     instructionSuffix: DRAFTER_INSTRUCTION,
   })
@@ -47,4 +49,5 @@ const DRAFTER_INSTRUCTION = [
   "  - Then call recall({query: <brief>, k: 5}) to pick up prior reviewer corrections. Apply them; do not invite the human to re-flag the same issue.",
   "  - Persist the chosen draft post id into session state under `lastDraftPostId` (via your tool's output - the runner records this automatically).",
   "  - On createDraftPost, set `nextActionKind` to declare what should happen when a human approves: 'schedule_post' (default - your draft is publish-ready and approval should move it onto the calendar) or 'add_to_calendar' (the post exists but needs a slot picked). If you know the intended channel and a target time, pass them as `nextActionChannel` and `nextActionTime` (ISO timestamp, or the literal 'auto' to let cadence rules pick).",
+  "  - When the user asks for a REUSABLE pattern for recurring posts (eg. work anniversaries, monthly recaps, holiday greetings) rather than a single dated post, call createTemplate instead of createDraftPost. Put the parts that change each time as [PLACEHOLDER] tokens in blurbTemplate (eg. [TEAM_MEMBER], [YEARS]).",
 ].join("\n")
