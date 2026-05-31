@@ -4,6 +4,7 @@ set -euo pipefail
 PROJECT="${GCP_PROJECT:-sm-dashboard-e7641}"
 APP_HOST="${APP_HOST:-safe-planner--sm-dashboard-e7641.asia-east1.hosted.app}"
 REDIRECT_URI="https://${APP_HOST}/__/auth/handler"
+ORIGIN_URI="https://${APP_HOST}"
 
 echo "==> Project: ${PROJECT}"
 echo "==> App host (authDomain): ${APP_HOST}"
@@ -12,6 +13,7 @@ echo ""
 
 TOKEN="$(gcloud auth print-access-token --project="${PROJECT}")"
 CONFIG_URL="https://identitytoolkit.googleapis.com/v2/projects/${PROJECT}/config"
+IDP_URL="https://identitytoolkit.googleapis.com/v2/projects/${PROJECT}/defaultSupportedIdpConfigs/google.com"
 
 current="$(curl -sS -H "Authorization: Bearer ${TOKEN}" -H "x-goog-user-project: ${PROJECT}" "${CONFIG_URL}")"
 if echo "${current}" | grep -q '"code":'; then
@@ -48,10 +50,26 @@ print(json.dumps({'authorizedDomains': domains}))
   echo "[done] Authorized domain updated"
 fi
 
+OAUTH_CLIENT_ID="$(curl -sS -H "Authorization: Bearer ${TOKEN}" -H "x-goog-user-project: ${PROJECT}" "${IDP_URL}" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin).get('clientId',''))")"
+
+if [ -z "${OAUTH_CLIENT_ID}" ]; then
+  echo "Could not read Google OAuth client id from Identity Toolkit." >&2
+  exit 1
+fi
+
 echo ""
-echo "==> Manual step (Google Cloud Console)"
-echo "    APIs & Services > Credentials > Web client (Firebase)"
-echo "    Add Authorized redirect URI:"
-echo "      ${REDIRECT_URI}"
+echo "[info] Google OAuth web client: ${OAUTH_CLIENT_ID}"
+CONSOLE_URL="https://console.cloud.google.com/auth/clients/${OAUTH_CLIENT_ID}?project=${PROJECT}"
+
 echo ""
-echo "Then redeploy App Hosting so NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN and rewrites go live."
+echo "==> GCP Console (redirect_uri_mismatch fix)"
+echo "    Add BOTH of these on the OAuth client, then Save:"
+echo "      Authorized JavaScript origins: ${ORIGIN_URI}"
+echo "      Authorized redirect URIs:       ${REDIRECT_URI}"
+echo ""
+echo "    Open: ${CONSOLE_URL}"
+
+if [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
+  open "${CONSOLE_URL}" || true
+fi
