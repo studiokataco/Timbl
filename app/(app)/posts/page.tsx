@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"
+import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { PageHeader } from "@/components/shared/page-header"
 import { PostsTable } from "@/components/list/posts-table"
 import {
@@ -22,7 +23,8 @@ export default async function PostsPage() {
    * days still render. Was +90d which hid drafts beyond 3 months out. */
   const end = format(addDays(today, 365), "yyyy-MM-dd")
 
-  const [posts, categories, users] = await Promise.all([
+  const [orgId, posts, categories, users] = await Promise.all([
+    getCurrentOrgId(),
     fetchPostsInRange(start, end),
     fetchCategories(),
     fetchUsers(),
@@ -36,7 +38,13 @@ export default async function PostsPage() {
             title="All posts"
             description="Filter, sort, export, bulk-update. Select from the dropdowns or search to find a post."
           />
-          <PostsTable posts={posts} categories={categories} users={users} />
+          <PostsTable
+            orgId={orgId}
+            posts={posts}
+            categories={categories}
+            users={users}
+            range={{ start, end }}
+          />
         </div>
       </div>
     </>

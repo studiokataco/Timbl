@@ -57,7 +57,10 @@ export const PLANS: Record<string, PlanConfig> = {
     features: {
       multiStepApproval: false,
       customCategories: false,
-      templates: false,
+      /* Templates are core to the planning workflow and not yet a paid
+       * differentiator (billing is deferred). Gating them blocked admins of
+       * free-tier orgs from creating any template at all. */
+      templates: true,
       whiteLabel: false,
       priorityQueue: false,
       byoKeys: false,

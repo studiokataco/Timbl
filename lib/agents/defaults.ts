@@ -168,6 +168,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
       "recall",
       "createDraftPost",
       "updateDraft",
+      "createTemplate",
     ],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },

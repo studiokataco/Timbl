@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { format, parseISO } from "date-fns"
 import { Download, FilterX, ListChecks } from "lucide-react"
 import { toast } from "sonner"
@@ -17,7 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { fetchPostsInRangeAction } from "@/lib/actions/posts"
 import { bulkSetStatus } from "@/lib/actions/posts-bulk"
+import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
@@ -36,9 +39,11 @@ const ALL_STATUSES: PostStatus[] = [
 ]
 
 type Props = {
+  orgId: string
   posts: WithId<Post>[]
   categories: WithId<Category>[]
   users: WithId<User>[]
+  range: { start: string; end: string }
 }
 
 /*
@@ -46,19 +51,29 @@ type Props = {
  * is just a bookmarkable link. Filtering, sorting, and search all run
  * client-side over the server-supplied set; pagination tops out at 50/page.
  */
-export function PostsTable({ posts, categories, users }: Props) {
+export function PostsTable({
+  orgId,
+  posts: initialPosts,
+  categories,
+  users,
+  range,
+}: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const { openComposer } = useDialogs()
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  /* Optimistic shadow over the server-supplied posts; bulk-status
-   * applies instantly and reconciles when router.refresh() resolves. */
-  const [optimisticPosts, setOptimisticPosts] = useState(posts)
-  const inflightRef = useRef(0)
-  useEffect(() => {
-    if (inflightRef.current === 0) setOptimisticPosts(posts)
-  }, [posts])
+  /* Live posts: seeded from the server render, kept fresh by usePostsRealtime
+   * (Firestore onSnapshot -> invalidate). Status edits elsewhere and design
+   * links now reflect here without a manual refresh. */
+  const { data: posts = initialPosts } = useQuery({
+    queryKey: ["posts", orgId, range.start, range.end],
+    queryFn: () => fetchPostsInRangeAction(range),
+    initialData: initialPosts,
+    staleTime: 30_000,
+  })
+  usePostsRealtime({ orgId, ...range, queryClient })
 
   const status = (searchParams.get("status") ?? "").split(",").filter(Boolean) as PostStatus[]
   const category = (searchParams.get("category") ?? "").split(",").filter(Boolean)
@@ -86,7 +101,7 @@ export function PostsTable({ posts, categories, users }: Props) {
   const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users])
 
   const filtered = useMemo(() => {
-    let rows = optimisticPosts
+    let rows = posts
     if (status.length) rows = rows.filter((p) => status.includes(p.status))
     if (category.length) rows = rows.filter((p) => p.categoryId && category.includes(p.categoryId))
     if (assignee.length) rows = rows.filter((p) => p.assigneeId && assignee.includes(p.assigneeId))
@@ -107,7 +122,7 @@ export function PostsTable({ posts, categories, users }: Props) {
       return sortDir === "asc" ? cmp : -cmp
     })
     return rows
-  }, [optimisticPosts, status, category, assignee, dateFrom, dateTo, q, sortBy, sortDir])
+  }, [posts, status, category, assignee, dateFrom, dateTo, q, sortBy, sortDir])
 
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -173,22 +188,21 @@ export function PostsTable({ posts, categories, users }: Props) {
   const bulkMarkScheduled = () => {
     if (selected.size === 0) return
     const ids = Array.from(selected)
-    const prev = optimisticPosts
-    setOptimisticPosts((curr) =>
-      curr.map((p) => (selected.has(p.id) ? { ...p, status: "scheduled" } : p)),
+    const idSet = new Set(ids)
+    queryClient.setQueriesData<WithId<Post>[]>(
+      { queryKey: ["posts", orgId] },
+      (curr) =>
+        curr?.map((p) => (idSet.has(p.id) ? { ...p, status: "scheduled" } : p)),
     )
     setSelected(new Set())
-    inflightRef.current++
     startTransition(async () => {
       const res = await bulkSetStatus(ids, "scheduled")
-      inflightRef.current--
       if (!res.ok) {
-        setOptimisticPosts(prev)
         toast.error(res.error ?? "Bulk update failed")
-        return
+      } else {
+        toast.success(`Marked ${res.updated} posts as scheduled`)
       }
-      toast.success(`Marked ${res.updated} posts as scheduled`)
-      router.refresh()
+      queryClient.invalidateQueries({ queryKey: ["posts"] })
     })
   }
 
