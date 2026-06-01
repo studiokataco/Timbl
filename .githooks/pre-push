@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#
+# Pre-push gate: run `pnpm typecheck` before any push leaves the machine.
+# `pnpm lint` runs on every Claude-Code Stop hook so it's already enforced
+# locally; the gap that lets prod builds break is `tsc --noEmit`, which is
+# what App Hosting's `next build` runs. Catching it here saves a failed
+# Cloud Build per slip.
+#
+# Skip with `SKIP_PUSH_HOOK=1 git push` for the rare emergency.
+# Skip on branches you intentionally push as WIP by passing --no-verify.
+
+set -e
+
+if [ "${SKIP_PUSH_HOOK:-0}" = "1" ]; then
+  echo "[pre-push] SKIP_PUSH_HOOK=1 set, skipping typecheck"
+  exit 0
+fi
+
+# Bail cleanly if pnpm is missing (CI/install contexts that aren't pushing).
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "[pre-push] pnpm not found, skipping"
+  exit 0
+fi
+
+echo "[pre-push] pnpm typecheck"
+pnpm -s typecheck
