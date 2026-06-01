@@ -50,7 +50,13 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
         toast.error(res.error ?? "Could not create post")
         return
       }
-      toast.success(`Post created for ${day.name}`)
+      toast.success(`Post created for ${day.name}`, {
+        description: "Saved to All posts as a draft.",
+        action: {
+          label: "Open",
+          onClick: () => router.push("/posts?status=draft"),
+        },
+      })
       router.refresh()
     })
   }

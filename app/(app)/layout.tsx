@@ -7,6 +7,7 @@ import { AppHotkeys } from "@/components/shared/app-hotkeys"
 import { CommandPalette } from "@/components/shared/command-palette"
 import { DialogsProvider } from "@/components/shared/dialogs-provider"
 import { Onboarding } from "@/components/shared/onboarding"
+import { ProductTourAutostart } from "@/components/tour/product-tour"
 import { PlanFeaturesProvider } from "@/components/shared/plan-features-provider"
 import { QueryProvider } from "@/components/shared/query-provider"
 import { ShortcutsDialog } from "@/components/shared/shortcuts-dialog"
@@ -65,6 +66,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <AgentDrawer key={orgId} />
             <AgentCommandModal key={orgId} />
             <AskAiButton />
+            <ProductTourAutostart enabled />
           </DialogsProvider>
         </PlanFeaturesProvider>
       </WorkspaceProvider>

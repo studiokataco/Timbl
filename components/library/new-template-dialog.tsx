@@ -210,9 +210,10 @@ export function NewTemplateDialog({
                 <Label htmlFor="template-category">Category</Label>
                 <Select
                   value={watchedCategoryId}
-                  onValueChange={(v) =>
+                  onValueChange={(v) => {
+                    if (v == null) return
                     form.setValue("categoryId", v, { shouldDirty: true })
-                  }
+                  }}
                 >
                   <SelectTrigger id="template-category">
                     <SelectValue placeholder="Select a category" />
@@ -238,11 +239,12 @@ export function NewTemplateDialog({
                 <Label htmlFor="template-post-type">Post type</Label>
                 <Select
                   value={watchedPostType}
-                  onValueChange={(v) =>
+                  onValueChange={(v) => {
+                    if (v == null) return
                     form.setValue("defaultPostType", v as PostType, {
                       shouldDirty: true,
                     })
-                  }
+                  }}
                 >
                   <SelectTrigger id="template-post-type">
                     <SelectValue />
@@ -292,13 +294,14 @@ export function NewTemplateDialog({
                 </Label>
                 <Select
                   value={watchedCtaId ?? "__none"}
-                  onValueChange={(v) =>
+                  onValueChange={(v) => {
+                    if (v == null) return
                     form.setValue(
                       "defaultCtaId",
                       v === "__none" ? undefined : v,
                       { shouldDirty: true },
                     )
-                  }
+                  }}
                 >
                   <SelectTrigger id="template-cta">
                     <SelectValue placeholder="None" />
@@ -318,11 +321,12 @@ export function NewTemplateDialog({
                 <Label htmlFor="template-cadence">Cadence</Label>
                 <Select
                   value={watchedCadence}
-                  onValueChange={(v) =>
+                  onValueChange={(v) => {
+                    if (v == null) return
                     form.setValue("cadence", v as TemplateCadence, {
                       shouldDirty: true,
                     })
-                  }
+                  }}
                 >
                   <SelectTrigger id="template-cadence">
                     <SelectValue />

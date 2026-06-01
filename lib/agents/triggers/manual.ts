@@ -7,7 +7,7 @@ import { requireQuota } from "@/lib/plans/gate"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
 import { estimateUsdCost } from "@/lib/agents/pricing"
 
-import { resolveAgent } from ".."
+import { resolveAgent, type ResolveOverride } from ".."
 import { AGENT_APP_NAME, buildRunner } from "../runtime/runner"
 import { FirestoreSessionService } from "../runtime/session-service"
 import { RUNTIME_STATE_KEY, type RuntimeCtx } from "../runtime/context"
@@ -31,6 +31,9 @@ export interface StartRunInput {
   trigger: "manual" | "cron" | "pipeline"
   dedupKey?: string
   parentRunId?: string
+  /** Per-conversation override of the agent's saved provider/model. Does
+   * not mutate the agentConfig doc - only affects this run. */
+  override?: ResolveOverride
 }
 
 export interface StartRunResult {
@@ -53,7 +56,11 @@ export async function startAgentRun(
    * gate so a runaway schedule can't burn through a billing period. */
   await requireQuota(input.orgId, "agentRuns")
 
-  const resolved = await resolveAgent(input.orgId, input.agentName)
+  const resolved = await resolveAgent(
+    input.orgId,
+    input.agentName,
+    input.override,
+  )
   if (!resolved) {
     throw new Error(
       `Unknown or unconfigured agent: ${input.agentName}. Did you seed agentConfigs?`,
