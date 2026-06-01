@@ -21,6 +21,7 @@ import {
 import { fetchPostsInRangeAction } from "@/lib/actions/posts"
 import { bulkSetStatus } from "@/lib/actions/posts-bulk"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
+import { cn } from "@/lib/utils"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
@@ -206,8 +207,56 @@ export function PostsTable({
     })
   }
 
+  const segmentFor = (segment: string): PostStatus[] => {
+    if (segment === "ideas") return ["idea", "brief"]
+    if (segment === "drafts") return ["researching", "designing", "review"]
+    if (segment === "scheduled") return ["scheduled", "posted"]
+    return []
+  }
+  const activeSegment = (() => {
+    if (status.length === 0) return "all"
+    for (const seg of ["ideas", "drafts", "scheduled"] as const) {
+      const want = segmentFor(seg)
+      if (
+        want.length === status.length &&
+        want.every((s) => status.includes(s))
+      )
+        return seg
+    }
+    return null
+  })()
+  const setSegment = (segment: string) => {
+    const next = segmentFor(segment)
+    setParam("status", next.join(","))
+  }
+
   return (
     <>
+      <div className="flex flex-wrap items-center gap-1 mb-3 rounded-lg border border-border bg-muted/30 p-1 w-fit">
+        {(
+          [
+            { id: "all", label: "All posts" },
+            { id: "ideas", label: "Ideas" },
+            { id: "drafts", label: "Drafts" },
+            { id: "scheduled", label: "Scheduled" },
+          ] as const
+        ).map((seg) => (
+          <button
+            key={seg.id}
+            type="button"
+            onClick={() => setSegment(seg.id)}
+            className={cn(
+              "px-3 py-1 text-xs rounded-md transition-colors",
+              activeSegment === seg.id
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {seg.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap items-end gap-2 mb-4">
         <div className="flex flex-col gap-1 min-w-[180px] flex-1">
           <label className="text-xs text-muted-foreground">Search</label>

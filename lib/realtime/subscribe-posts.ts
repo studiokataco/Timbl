@@ -62,8 +62,12 @@ export function usePostsRealtime(opts: {
         unsub = onSnapshot(
           q,
           () =>
+            /* Prefix invalidation: every ["posts", orgId, ...] query
+             * (calendar 6w, posts-table 1y, kanban ranges) refetches when
+             * any snapshot fires - so cross-view edits propagate without
+             * each surface needing its own listener for its own window. */
             queryClient.invalidateQueries({
-              queryKey: ["posts", orgId, start, end],
+              queryKey: ["posts", orgId],
             }),
           (err) => {
             console.warn("[realtime] posts snapshot error", err)

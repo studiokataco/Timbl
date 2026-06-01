@@ -5,6 +5,7 @@ import { orgAgentConfigsPath } from "@/lib/firebase/paths"
 import {
   agentConfigSchema,
   type AgentConfig,
+  type AgentProvider,
 } from "@/lib/schemas/agentConfig"
 
 import { buildHelloAgent } from "./agents/hello"
@@ -86,14 +87,31 @@ async function fetchConfig(
   return parsed.success ? parsed.data : null
 }
 
+export interface ResolveOverride {
+  provider?: AgentProvider
+  model?: string
+}
+
 export async function resolveAgent(
   orgId: string,
   name: string,
+  override?: ResolveOverride,
 ): Promise<ResolvedAgent | undefined> {
   const factory = FACTORIES[name]
   if (!factory) return undefined
-  const config = await fetchConfig(orgId, name)
-  if (!config) return undefined
+  const fetched = await fetchConfig(orgId, name)
+  if (!fetched) return undefined
+
+  /* Per-conversation override (only applies to the top-level agent the user
+   * picked - sub-agents in a pipeline keep their own configured models). */
+  const config: AgentConfig =
+    override?.provider || override?.model
+      ? {
+          ...fetched,
+          provider: override.provider ?? fetched.provider,
+          model: override.model ?? fetched.model,
+        }
+      : fetched
 
   const helpers: FactoryHelpers = {
     resolveByName: async (childName) => {

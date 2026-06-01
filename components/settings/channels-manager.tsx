@@ -37,6 +37,8 @@ type ChannelDef = {
   /* Optional note shown on the card explaining how the connect flow behaves
    * (e.g. Instagram authenticates through Facebook). */
   connectHint?: string
+  /* Numbered, channel-specific console steps shown in the setup dialog. */
+  setupSteps?: string[]
 }
 
 const CHANNELS: ChannelDef[] = [
@@ -46,6 +48,12 @@ const CHANNELS: ChannelDef[] = [
     appLabel: "LinkedIn app",
     consoleUrl: "https://www.linkedin.com/developers/apps",
     consoleHint: "Create an app, enable Sign In with LinkedIn + Share on LinkedIn.",
+    setupSteps: [
+      "Open the LinkedIn developers console and create a new app linked to a Company Page.",
+      "On the Products tab, request Sign In with LinkedIn using OpenID Connect and Share on LinkedIn.",
+      "On the Auth tab, paste the redirect URI above into Authorized redirect URLs for your app.",
+      "Copy the Client ID and Client Secret from the Auth tab.",
+    ],
   },
   {
     key: "x",
@@ -53,6 +61,14 @@ const CHANNELS: ChannelDef[] = [
     appLabel: "X app",
     consoleUrl: "https://developer.x.com/en/portal/dashboard",
     consoleHint: "Create a project, enable OAuth 2.0 with read+write+offline scopes.",
+    setupSteps: [
+      "Open the developer portal and create a project + app (free tier is fine).",
+      "Under User authentication settings, set App permissions to Read and write.",
+      "Set Type of App to Web App and Confidential client.",
+      "Paste the redirect URI above into Callback URI / Redirect URL.",
+      "Add any website URL into Website URL (X requires this even if unused).",
+      "Save, then on the Keys and tokens tab, copy the OAuth 2.0 Client ID and Client Secret below.",
+    ],
   },
   {
     key: "facebook",
@@ -60,6 +76,13 @@ const CHANNELS: ChannelDef[] = [
     appLabel: "Meta app (Facebook + Instagram)",
     consoleUrl: "https://developers.facebook.com/apps",
     consoleHint: "Create a Business app; the same credentials power Facebook + Instagram.",
+    setupSteps: [
+      "Open the Meta developers console and create a Business-type app.",
+      "Add the Facebook Login for Business product.",
+      "Under Settings > Basic, paste the redirect URI above into Valid OAuth Redirect URIs and App Domains.",
+      "Request pages_show_list, pages_manage_posts, and pages_read_engagement permissions.",
+      "Copy the App ID (Client ID) and App Secret (Client Secret) from Settings > Basic.",
+    ],
   },
   {
     key: "instagram",
@@ -69,6 +92,12 @@ const CHANNELS: ChannelDef[] = [
     consoleHint: "Create a Business app; the same credentials power Facebook + Instagram.",
     connectHint:
       "Connects via Facebook - Use Instagram Business account linked to your Facebook Page.",
+    setupSteps: [
+      "Reuse the Meta app you set up for Facebook (same App ID + Secret).",
+      "Confirm the Instagram Business account is linked to a Facebook Page you admin.",
+      "Add instagram_basic, instagram_content_publish, pages_show_list, and pages_read_engagement permissions.",
+      "Paste the same redirect URI above into Valid OAuth Redirect URIs.",
+    ],
   },
 ]
 
@@ -298,6 +327,19 @@ function SetupDialog({
               as the OAuth redirect URL. {channel.consoleHint}
             </p>
           </div>
+
+          {channel.setupSteps && channel.setupSteps.length > 0 && (
+            <div className="grid gap-2 rounded-lg border border-border bg-muted/20 p-3">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Where to find these
+              </Label>
+              <ol className="ml-4 list-decimal space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+                {channel.setupSteps.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor={`${channel.key}-client-id`}>Client ID</Label>

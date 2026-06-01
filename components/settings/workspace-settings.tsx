@@ -3,7 +3,7 @@
 import { useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { RotateCcw } from "lucide-react"
+import { Compass, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { resetOnboarding } from "@/lib/actions/onboarding"
 import { setDevOrg } from "@/lib/actions/dev-org"
+import {
+  resetProductTourSeen,
+  startProductTour,
+} from "@/components/tour/product-tour"
 import type { DevOrgMode } from "@/lib/auth/dev-session"
 
 export function WorkspaceSettings({
@@ -110,6 +114,35 @@ export function WorkspaceSettings({
           <Button size="sm" variant="outline" onClick={handleRerun} disabled={pending}>
             <RotateCcw className="size-4" />
             {pending ? "Opening…" : "Re-run setup"}
+          </Button>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-border p-4">
+        <h2 className="text-sm font-medium">Product tour</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          A guided walkthrough of the calendar, posts, kanban, studio, library,
+          and settings. New users see it once on first visit; replay it any time
+          to brief teammates.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => startProductTour()}
+          >
+            <Compass className="size-4" />
+            Take the tour
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              resetProductTourSeen()
+              toast.success("Tour will auto-play on next visit")
+            }}
+          >
+            Reset auto-play
           </Button>
         </div>
       </section>

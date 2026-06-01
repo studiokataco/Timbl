@@ -83,7 +83,11 @@ export function IdeationTriage({ item, initialItems }: Props) {
         return
       }
       toast.success("Promoted to draft", {
-        description: "Find it on the calendar and kanban.",
+        description: "Saved to All posts as a draft.",
+        action: {
+          label: "Open",
+          onClick: () => router.push("/posts?status=draft"),
+        },
       })
       queryClient.invalidateQueries({ queryKey: ["ideation"] })
       queryClient.invalidateQueries({ queryKey: ["posts"] })

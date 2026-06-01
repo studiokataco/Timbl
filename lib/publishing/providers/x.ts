@@ -29,10 +29,20 @@ type TokenResponse = {
 }
 
 /* PKCE without server-side storage: the verifier is deterministically
- * derived from the signed state + client_id, so the callback recomputes it.
- * method=plain means challenge === verifier. */
+ * derived from the signed state + client_id, so the callback recomputes
+ * it without needing a per-request store. Confidential clients (which we
+ * are - X gives us a client secret) MUST use S256; "plain" is rejected. */
 function verifierFromState(state: string, clientId: string): string {
   return createHash("sha256").update(`${state}:${clientId}`).digest("hex")
+}
+
+function challengeFromVerifier(verifier: string): string {
+  return createHash("sha256")
+    .update(verifier)
+    .digest("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "")
 }
 
 function basicAuth(app: OauthAppCredentials): string {
@@ -51,7 +61,12 @@ async function exchange(
     },
     body: new URLSearchParams({ ...body, client_id: app.clientId }),
   })
-  if (!res.ok) throw new Error(`x token exchange failed: ${res.status}`)
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "")
+    throw new Error(
+      `x token exchange failed (${res.status}): ${detail.slice(0, 220)}`,
+    )
+  }
   return (await res.json()) as TokenResponse
 }
 
@@ -62,15 +77,15 @@ export const xPublisher: Publisher = {
   async connect(orgId) {
     const app = await loadOauthApp(orgId, "x")
     const state = signState(orgId)
-    const challenge = verifierFromState(state, app.clientId)
+    const verifier = verifierFromState(state, app.clientId)
     const url = `${AUTH_URL}?${new URLSearchParams({
       response_type: "code",
       client_id: app.clientId,
       redirect_uri: redirectUri("x"),
       scope: SCOPES.join(" "),
       state,
-      code_challenge: challenge,
-      code_challenge_method: "plain",
+      code_challenge: challengeFromVerifier(verifier),
+      code_challenge_method: "S256",
     })}`
     return { url, state }
   },

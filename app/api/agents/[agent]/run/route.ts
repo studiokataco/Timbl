@@ -13,6 +13,12 @@ const bodySchema = z.object({
   input: z.string().min(1).max(10_000),
   trigger: z.enum(["manual", "pipeline"]).default("manual"),
   dedupKey: z.string().optional(),
+  /* Per-conversation model override; both fields optional so the saved
+   * agentConfig default applies when omitted. */
+  provider: z
+    .enum(["gemini", "anthropic", "openrouter", "ollama", "mock"])
+    .optional(),
+  model: z.string().min(1).max(200).optional(),
 })
 
 interface RouteContext {
@@ -56,6 +62,10 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       input: payload.input,
       trigger: payload.trigger,
       dedupKey: payload.dedupKey,
+      override:
+        payload.provider || payload.model
+          ? { provider: payload.provider, model: payload.model }
+          : undefined,
     })
   } catch (err) {
     return Response.json(

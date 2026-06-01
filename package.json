@@ -39,6 +39,7 @@
     "cronstrue": "^3.14.0",
     "csv-parse": "^6.2.1",
     "date-fns": "4.1.0",
+    "driver.js": "^1.4.0",
     "firebase": "^12.12.1",
     "firebase-admin": "^13.8.0",
     "framer-motion": "^12.38.0",
