@@ -18,7 +18,8 @@
     "functions:build": "pnpm --dir functions build",
     "auth:configure": "bash scripts/configure-auth-domain.sh",
     "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh",
-    "secrets:rotate-resend": "bash scripts/rotate-secret.sh RESEND_API_KEY --env-local"
+    "secrets:rotate-resend": "bash scripts/rotate-secret.sh RESEND_API_KEY --env-local",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
