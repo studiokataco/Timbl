@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import type { Category, Post, User } from "@/lib/schemas"
 import { categoryPillColors } from "./color"
 
-const STATUS_GLYPH: Record<string, string> = {
+export const STATUS_GLYPH: Record<string, string> = {
   idea: "○",
   brief: "○",
   researching: "◐",
@@ -15,6 +15,11 @@ const STATUS_GLYPH: Record<string, string> = {
   posted: "●",
   missed: "⨯",
   archived: "·",
+}
+
+export function statusGlyph(status: string | null | undefined): string {
+  if (!status) return "·"
+  return STATUS_GLYPH[status] ?? "·"
 }
 
 export function PostChip({
@@ -51,7 +56,7 @@ export function PostChip({
       style={pillStyle}
     >
       <span aria-hidden className="font-bold">
-        {STATUS_GLYPH[post.status] ?? "·"}
+        {statusGlyph(post.status)}
       </span>
       <span className="truncate flex-1">{post.brief ?? "Untitled"}</span>
       {initials ? (

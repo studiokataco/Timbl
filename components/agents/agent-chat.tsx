@@ -27,6 +27,7 @@ import { getTool } from "@/components/studio/tool-catalog"
 import { resolveHumanGate } from "@/lib/actions/agent-suggestions"
 import { getThread, type ThreadMessage } from "@/lib/storage/agent-threads"
 import { LlmStatusBanner } from "./llm-status-banner"
+import { AgentPlanPanel } from "./agent-plan-panel"
 
 /*
  * Generic agent chat surface - Phase C redesign.
@@ -595,9 +596,24 @@ function Message({
       )}
       {item.toolCalls && item.toolCalls.length > 0 && (
         <div className="mt-3 flex flex-col gap-2">
-          {item.toolCalls.map((c) => (
-            <ToolChiclet key={c.id} call={c} />
-          ))}
+          {item.toolCalls.length >= 2 ? (
+            <AgentPlanPanel
+              isStreaming={isStreaming}
+              steps={item.toolCalls.map((c) => ({
+                id: c.id,
+                startedAt: c.startedAt ?? 0,
+                finishedAt: c.finishedAt,
+                error: c.error,
+                result: c.result,
+              }))}
+            >
+              {item.toolCalls.map((c) => (
+                <ToolChiclet key={c.id} call={c} />
+              ))}
+            </AgentPlanPanel>
+          ) : (
+            item.toolCalls.map((c) => <ToolChiclet key={c.id} call={c} />)
+          )}
         </div>
       )}
     </div>

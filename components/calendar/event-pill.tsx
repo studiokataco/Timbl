@@ -2,11 +2,12 @@
 
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
-import { format, parseISO } from "date-fns"
+import { differenceInCalendarDays, format, parseISO } from "date-fns"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 import { categoryPillColors } from "./color"
+import { statusGlyph } from "./post-chip"
 
 type Props = {
   post: WithId<Post>
@@ -46,8 +47,11 @@ export function EventPill({ post, category, onClick }: Props) {
           "block w-full text-left rounded-sm px-1.5 py-0.5 text-[11px] leading-tight truncate",
           "cursor-pointer hover:brightness-95 transition-[filter]",
         )}
-        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"}`}
+        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${post.status}`}
       >
+        <span aria-hidden className="font-bold mr-1">
+          {statusGlyph(post.status)}
+        </span>
         {time && <span className="font-semibold mr-1">{time}</span>}
         <span className="truncate">{post.brief ?? "Untitled"}</span>
       </button>
@@ -71,9 +75,14 @@ export function EventPill({ post, category, onClick }: Props) {
             <span className="text-muted-foreground truncate">{category.name}</span>
           </div>
         )}
-        {time && (
-          <div className="font-semibold text-foreground mb-0.5">{time}</div>
-        )}
+        <div className="flex items-center gap-1.5 mb-0.5">
+          {time && (
+            <span className="font-semibold text-foreground">{time}</span>
+          )}
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {post.status}
+          </span>
+        </div>
         <div className="text-foreground line-clamp-3 leading-snug">
           {post.brief ?? "Untitled"}
         </div>

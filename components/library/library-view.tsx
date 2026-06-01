@@ -7,6 +7,7 @@ import {
   BookOpen,
   Calendar as CalendarIcon,
   Image as ImageIcon,
+  Plus,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTemplate as promoteTemplate } from "@/lib/actions/templates"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Cta, Template } from "@/lib/schemas"
+import { NewTemplateDialog } from "./new-template-dialog"
 
 type Props = {
   templates: WithId<Template>[]
@@ -44,6 +46,11 @@ export function LibraryView({ templates, categories, ctas }: Props) {
   const [, startTransition] = useTransition()
   const [pickerFor, setPickerFor] = useState<WithId<Template> | null>(null)
   const [date, setDate] = useState<Date>(new Date())
+  const [creating, setCreating] = useState(false)
+
+  const hashtagSuggestions = Array.from(
+    new Set(templates.flatMap((t) => t.defaultHashtags ?? [])),
+  )
 
   const categoryById = new Map(categories.map((c) => [c.id, c]))
   const ctaById = new Map(ctas.map((c) => [c.id, c]))
@@ -73,19 +80,45 @@ export function LibraryView({ templates, categories, ctas }: Props) {
     })
   }
 
+  const newTemplateButton = (
+    <Button
+      onClick={() => setCreating(true)}
+      disabled={categories.length === 0}
+      size="sm"
+    >
+      <Plus aria-hidden className="size-4" />
+      New template
+    </Button>
+  )
+
+  const dialogs = (
+    <NewTemplateDialog
+      open={creating}
+      onOpenChange={setCreating}
+      categories={categories}
+      ctas={ctas}
+      hashtagSuggestions={hashtagSuggestions}
+    />
+  )
+
   if (templates.length === 0) {
     return (
-      <EmptyState
-        icon={BookOpen}
-        title="No templates yet"
-        body="Save a finished post as a template from the composer kebab - handy for recurring series like Pick of the Week or Meet the Team."
-        size="lg"
-      />
+      <>
+        <div className="flex justify-end">{newTemplateButton}</div>
+        <EmptyState
+          icon={BookOpen}
+          title="No templates yet"
+          body="Save a finished post as a template from the composer kebab, or click New template above. Handy for recurring series like Pick of the Week or Meet the Team."
+          size="lg"
+        />
+        {dialogs}
+      </>
     )
   }
 
   return (
     <>
+      <div className="flex justify-end">{newTemplateButton}</div>
       <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {templates.map((t) => {
           const cat = t.categoryId ? categoryById.get(t.categoryId) : null
@@ -194,6 +227,8 @@ export function LibraryView({ templates, categories, ctas }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {dialogs}
     </>
   )
 }
