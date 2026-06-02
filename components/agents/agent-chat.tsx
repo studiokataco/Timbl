@@ -27,7 +27,7 @@ import { getTool } from "@/components/studio/tool-catalog"
 import { resolveHumanGate } from "@/lib/actions/agent-suggestions"
 import { getThread, type ThreadMessage } from "@/lib/storage/agent-threads"
 import { LlmStatusBanner } from "./llm-status-banner"
-import { AgentPlanPanel } from "./agent-plan-panel"
+import { Markdown } from "./markdown"
 import {
   MODEL_SUGGESTIONS,
   isLocalAiAvailable,
@@ -77,6 +77,7 @@ interface TranscriptItem {
   role: Role
   text?: string
   toolCalls?: ToolCall[]
+  thoughts?: string[]
   createdAt: number
 }
 
@@ -162,6 +163,14 @@ export interface AgentChatProps {
    * persist into IndexedDB.
    */
   onMessage?: (msg: ThreadMessage) => void
+  /**
+   * Controlled per-conversation provider override. When provided, the
+   * internal ModelSwitcher state is bypassed and the parent owns the
+   * value (e.g. the command modal renders its own switcher in the
+   * composer footer). Pass undefined to fall back to the agent default.
+   */
+  providerOverride?: AgentProvider | ""
+  modelOverride?: string
 }
 
 export interface AgentChatHandle {
@@ -185,6 +194,8 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   threadId,
   organizationId,
   onMessage,
+  providerOverride: providerOverrideProp,
+  modelOverride: modelOverrideProp,
 }: AgentChatProps, ref) {
   const [transcript, setTranscript] = useState<TranscriptItem[]>([])
   const transcriptRef = useRef<TranscriptItem[]>([])
@@ -193,8 +204,16 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   }, [transcript])
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
-  const [overrideProvider, setOverrideProvider] = useState<AgentProvider | "">("")
-  const [overrideModel, setOverrideModel] = useState("")
+  const [localProvider, setLocalProvider] = useState<AgentProvider | "">("")
+  const [localModel, setLocalModel] = useState("")
+  const overrideProvider =
+    providerOverrideProp !== undefined ? providerOverrideProp : localProvider
+  const overrideModel =
+    modelOverrideProp !== undefined ? modelOverrideProp : localModel
+  const setOverrideProvider =
+    providerOverrideProp !== undefined ? () => {} : setLocalProvider
+  const setOverrideModel =
+    modelOverrideProp !== undefined ? () => {} : setLocalModel
   const [humanGate, setHumanGate] = useState<{
     summary?: string
     postId?: string
@@ -601,6 +620,11 @@ function Message({
     )
   }
 
+  const hasActivity =
+    (item.thoughts && item.thoughts.length > 0) ||
+    (item.toolCalls && item.toolCalls.length > 0)
+  const hasAnswer = Boolean(item.text && item.text.trim().length > 0)
+
   return (
     <div
       className={cn(
@@ -608,36 +632,118 @@ function Message({
         isStreaming && "border-l-2 border-foreground motion-reduce:border-none",
       )}
     >
-      {item.text !== undefined && (
-        <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">
-          {item.text}
+      {hasActivity && (
+        <AgentActivity
+          thoughts={item.thoughts ?? []}
+          toolCalls={item.toolCalls ?? []}
+          isStreaming={isStreaming}
+          hasAnswer={hasAnswer}
+        />
+      )}
+      {hasAnswer && (
+        <div className={cn(hasActivity && "mt-3")}>
+          <Markdown>{item.text!}</Markdown>
           {isStreaming && (
             <span
               aria-hidden
               className="ml-0.5 inline-block w-[0.6em] h-[1em] align-text-bottom bg-foreground motion-safe:animate-pulse motion-reduce:opacity-100"
             />
           )}
-        </p>
+        </div>
       )}
-      {item.toolCalls && item.toolCalls.length > 0 && (
-        <div className="mt-3 flex flex-col gap-2">
-          {item.toolCalls.length >= 2 ? (
-            <AgentPlanPanel
-              isStreaming={isStreaming}
-              steps={item.toolCalls.map((c) => ({
-                id: c.id,
-                startedAt: c.startedAt ?? 0,
-                finishedAt: c.finishedAt,
-                error: c.error,
-                result: c.result,
-              }))}
-            >
-              {item.toolCalls.map((c) => (
+      {!hasActivity && !hasAnswer && isStreaming && (
+        <span
+          aria-hidden
+          className="inline-block w-[0.6em] h-[1em] align-text-bottom bg-foreground motion-safe:animate-pulse motion-reduce:opacity-100"
+        />
+      )}
+    </div>
+  )
+}
+
+function AgentActivity({
+  thoughts,
+  toolCalls,
+  isStreaming,
+  hasAnswer,
+}: {
+  thoughts: string[]
+  toolCalls: ToolCall[]
+  isStreaming: boolean
+  hasAnswer: boolean
+}) {
+  const pending = toolCalls.filter((c) => c.result === undefined && !c.error).length
+  const errored = toolCalls.filter((c) => Boolean(c.error)).length
+  const running = isStreaming || pending > 0
+  // Auto-collapse once the final answer starts arriving.
+  const [open, setOpen] = useState(true)
+  const collapsedOnAnswerRef = useRef(false)
+  useEffect(() => {
+    if (hasAnswer && !collapsedOnAnswerRef.current) {
+      collapsedOnAnswerRef.current = true
+      setOpen(false)
+    }
+  }, [hasAnswer])
+
+  const stepCount = toolCalls.length
+  const thoughtCount = thoughts.length
+  const parts: string[] = []
+  if (thoughtCount > 0) parts.push(`${thoughtCount} thought${thoughtCount === 1 ? "" : "s"}`)
+  if (stepCount > 0) parts.push(`${stepCount} step${stepCount === 1 ? "" : "s"}`)
+  const summary = parts.join(" · ") || "Activity"
+  const statusLabel = running
+    ? "Thinking…"
+    : errored > 0
+      ? "Completed with errors"
+      : "Done"
+
+  return (
+    <div className="rounded-lg border border-border bg-secondary/30 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-secondary/60 transition-colors"
+      >
+        <span aria-hidden className="shrink-0">
+          {running ? (
+            <Loader2 className="size-3.5 text-muted-foreground motion-safe:animate-spin" />
+          ) : open ? (
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="size-3.5 text-muted-foreground" />
+          )}
+        </span>
+        <span className="text-[12px] font-semibold text-foreground">
+          Agent activity
+        </span>
+        <span className="text-[11px] text-muted-foreground truncate">
+          {summary}
+        </span>
+        <span className="ml-auto text-[11px] text-muted-foreground">
+          {statusLabel}
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-border bg-background px-3 py-3 space-y-3">
+          {thoughts.length > 0 && (
+            <div className="space-y-2">
+              {thoughts.map((t, i) => (
+                <Markdown
+                  key={i}
+                  className="text-[12px] text-muted-foreground"
+                >
+                  {t}
+                </Markdown>
+              ))}
+            </div>
+          )}
+          {toolCalls.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {toolCalls.map((c) => (
                 <ToolChiclet key={c.id} call={c} />
               ))}
-            </AgentPlanPanel>
-          ) : (
-            item.toolCalls.map((c) => <ToolChiclet key={c.id} call={c} />)
+            </div>
           )}
         </div>
       )}
@@ -870,6 +976,14 @@ function applyEvent(
   setHumanGate: (g: { summary?: string; postId?: string } | null) => void,
 ) {
   switch (event.type) {
+    case "thought":
+      if (typeof event.content === "string" && event.content.trim()) {
+        intoLatestAssistant((item) => {
+          const thoughts = item.thoughts ?? (item.thoughts = [])
+          thoughts.push(event.content!)
+        })
+      }
+      break
     case "content":
       if (typeof event.content === "string") {
         intoLatestAssistant((item) => {

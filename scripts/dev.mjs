@@ -144,7 +144,7 @@ async function main() {
   console.log("→ emulator up; running seed")
 
   await new Promise((resolve, reject) => {
-    const seed = spawnLogged("seed", "pnpm", ["tsx", "firestore/seeds/run.ts"], EMULATOR_ENV)
+    const seed = spawnLogged("seed", "pnpm", ["tsx", "--require", "./scripts/stub-server-only.cjs", "firestore/seeds/run.ts"], EMULATOR_ENV)
     seed.on("exit", (code) =>
       code === 0 ? resolve() : reject(new Error(`seed exited ${code}`)),
     )

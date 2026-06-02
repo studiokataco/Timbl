@@ -7,7 +7,18 @@ import {
   useRef,
   useState,
 } from "react"
-import { ArrowRight, Send, Sparkles, Square } from "lucide-react"
+import {
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
+  Globe,
+  Lightbulb,
+  MoreHorizontal,
+  PenLine,
+  Send,
+  Sparkles,
+  Square,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -20,26 +31,67 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { importThread } from "@/lib/storage/agent-threads"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
+import {
+  MODEL_SUGGESTIONS,
+  isLocalAiAvailable,
+} from "@/lib/agents/provider-catalog"
+import type { AgentProvider } from "@/lib/schemas/agentConfig"
 
 import { AgentChat, type AgentChatHandle } from "./agent-chat"
 import { useRosterAgents } from "./use-roster-agents"
 
-/*
- * Centered popup modal - the lightweight, ephemeral AI surface.
- *
- * Cmd-J toggles. `agent-modal:open` opens it. Active agent persists
- * across open/close within the page session via a module-level ref;
- * the AgentChat is remounted (key={activeAgent}) when switching so
- * transcripts reset cleanly.
- *
- * No threadId is passed → conversations stay in-memory. The header's
- * "View in sidebar →" button migrates the live transcript into a new
- * persistent thread (via importThread), opens the drawer focused on
- * that thread, and closes the modal.
- */
 
 const DEFAULT_AGENT = "drafter"
 let modalActiveAgent: string | null = null
+
+type Suggestion = {
+  label: string
+  prompt: string
+  icon: typeof PenLine
+  tone: "coral" | "forest" | "peach" | "mint" | "yellow" | "muted"
+}
+
+const SUGGESTIONS: Suggestion[] = [
+  {
+    label: "Draft a post",
+    prompt: "Draft a post about ",
+    icon: PenLine,
+    tone: "coral",
+  },
+  {
+    label: "Plan the week",
+    prompt: "Plan this week's posting cadence across our channels.",
+    icon: CalendarClock,
+    tone: "forest",
+  },
+  {
+    label: "Brainstorm ideas",
+    prompt: "Brainstorm five post ideas for ",
+    icon: Lightbulb,
+    tone: "peach",
+  },
+  {
+    label: "Awareness day",
+    prompt: "Find an awareness day worth posting about next month.",
+    icon: Globe,
+    tone: "mint",
+  },
+  {
+    label: "Approve drafts",
+    prompt: "Triage the pending agent drafts and approve the strongest.",
+    icon: CheckCircle2,
+    tone: "yellow",
+  },
+]
+
+const TONE_CLASS: Record<Suggestion["tone"], string> = {
+  coral: "text-[oklch(0.65_0.18_25)]",
+  forest: "text-[oklch(0.45_0.12_150)]",
+  peach: "text-[oklch(0.70_0.13_55)]",
+  mint: "text-[oklch(0.65_0.12_175)]",
+  yellow: "text-[oklch(0.70_0.14_85)]",
+  muted: "text-muted-foreground",
+}
 
 export function AgentCommandModal() {
   const orgId = useWorkspaceOrgId()
@@ -51,10 +103,12 @@ export function AgentCommandModal() {
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
   const [transcriptLength, setTranscriptLength] = useState(0)
+  const [provider, setProvider] = useState<AgentProvider | "">("")
+  const [model, setModel] = useState("")
   const chatRef = useRef<AgentChatHandle | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
-  // Cmd-J / Ctrl-J toggle (not shift - Cmd-Shift-J is the drawer).
+  /* Cmd-J / Ctrl-J toggle (not shift - Cmd-Shift-J is the drawer). */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey
@@ -67,7 +121,7 @@ export function AgentCommandModal() {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
-  // Programmatic open from the Ask-AI button.
+  /* Programmatic open from the Ask-AI button. */
   useEffect(() => {
     const onOpen = () => setOpen(true)
     window.addEventListener("agent-modal:open", onOpen)
@@ -87,7 +141,6 @@ export function AgentCommandModal() {
     modalActiveAgent = resolvedActiveAgent
   }, [resolvedActiveAgent])
 
-  // Auto-resize the composer textarea.
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
@@ -96,25 +149,33 @@ export function AgentCommandModal() {
   }, [input])
 
   const onMessage = useCallback(() => {
-    // AgentChat fires onMessage per transcript item; we use it only
-    // to know whether anything has been sent. Pull current count from
-    // the imperative handle so we count distinct items.
     const t = chatRef.current?.getTranscript() ?? []
     setTranscriptLength(t.length)
   }, [])
 
   const handleAgentSwitch = useCallback((name: string) => {
     setActiveAgent(name)
-    // Chat remounts via key={activeAgent}; clear any previous count.
     setTranscriptLength(0)
   }, [])
 
-  const submit = useCallback(() => {
-    const text = input.trim()
-    if (!text || streaming) return
-    chatRef.current?.submit(text)
-    setInput("")
-  }, [input, streaming])
+  const submit = useCallback(
+    (override?: string) => {
+      const text = (override ?? input).trim()
+      if (!text || streaming) return
+      chatRef.current?.submit(text)
+      if (override === undefined) setInput("")
+    },
+    [input, streaming],
+  )
+
+  const pickSuggestion = useCallback((s: Suggestion) => {
+    setInput(s.prompt)
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus()
+      const len = s.prompt.length
+      textareaRef.current?.setSelectionRange(len, len)
+    })
+  }, [])
 
   const migrateToSidebar = useCallback(async () => {
     const transcript = chatRef.current?.getTranscript() ?? []
@@ -137,6 +198,12 @@ export function AgentCommandModal() {
   }, [resolvedActiveAgent, orgId])
 
   const canMigrate = transcriptLength > 0 && !streaming
+  const isEmpty = transcriptLength === 0
+
+  const providers: AgentProvider[] = ["gemini", "anthropic", "openrouter"]
+  if (isLocalAiAvailable()) providers.push("ollama")
+  const modelSuggestions = provider ? MODEL_SUGGESTIONS[provider] : []
+  const modelDatalistId = "agent-command-modal-models"
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -144,48 +211,24 @@ export function AgentCommandModal() {
         showCloseButton={false}
         className="!max-w-[720px] !w-[92vw] !h-[80vh] !max-h-[80vh] !p-0 !gap-0 flex flex-col overflow-hidden"
       >
-        {/* Header */}
-        <div className="border-b border-border px-5 py-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-              <Sparkles className="size-4" aria-hidden /> Ask AI
-            </DialogTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={migrateToSidebar}
-              disabled={!canMigrate}
-              aria-label="Migrate this conversation into the sidebar history"
-            >
-              View in sidebar
-              <ArrowRight className="size-3.5" aria-hidden />
-            </Button>
-          </div>
-          <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
-            {pickerAgentNames.map((name) => {
-              const isActive = name === resolvedActiveAgent
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => handleAgentSwitch(name)}
-                  className={cn(
-                    "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] transition-colors border",
-                    isActive
-                      ? "bg-foreground text-background border-foreground"
-                      : "bg-secondary text-muted-foreground border-transparent hover:text-foreground",
-                  )}
-                >
-                  {name}
-                </button>
-              )
-            })}
-          </div>
+        <div className="border-b border-border px-5 py-4 flex items-center justify-between gap-3">
+          <DialogTitle className="flex items-center gap-2 text-title-sm">
+            <Sparkles className="size-4" aria-hidden /> Ask AI
+          </DialogTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={migrateToSidebar}
+            disabled={!canMigrate}
+            aria-label="Migrate this conversation into the sidebar history"
+          >
+            View in sidebar
+            <ArrowRight className="size-3.5" aria-hidden />
+          </Button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="relative flex-1 min-h-0 overflow-hidden">
           <AgentChat
             ref={chatRef}
             key={resolvedActiveAgent}
@@ -195,55 +238,187 @@ export function AgentCommandModal() {
             compact
             onStreamingChange={setStreaming}
             onMessage={onMessage}
-            intro={`Ephemeral chat with ${resolvedActiveAgent}. Click "View in sidebar" to keep this conversation.`}
+            providerOverride={provider}
+            modelOverride={model}
             className="h-full"
           />
+          {isEmpty && (
+            <div
+              aria-hidden={!isEmpty}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-background px-6 py-8"
+            >
+              <div className="flex size-12 items-center justify-center rounded-xl bg-foreground text-background shadow-sm">
+                <Sparkles className="size-5" aria-hidden />
+              </div>
+              <div className="mt-6 flex flex-col items-center gap-1 text-center">
+                <h2 className="text-body-md text-muted-foreground">
+                  Hi there,
+                </h2>
+                <h3 className="text-title-md">
+                  What can {resolvedActiveAgent} do for you?
+                </h3>
+                <p className="mt-1 max-w-prose text-body-sm text-muted-foreground">
+                  Pick a prompt below or just describe what you need.
+                </p>
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-1.5">
+                {SUGGESTIONS.map((s) => {
+                  const Icon = s.icon
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => pickSuggestion(s)}
+                      className={cn(
+                        "inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-secondary px-2 text-xs",
+                        "text-foreground transition-colors hover:bg-background hover:shadow-sm",
+                      )}
+                    >
+                      <Icon
+                        aria-hidden
+                        className={cn("size-3.5", TONE_CLASS[s.tone])}
+                      />
+                      {s.label}
+                    </button>
+                  )
+                })}
+                <span className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground">
+                  <MoreHorizontal
+                    aria-hidden
+                    className={cn("size-3.5", TONE_CLASS.muted)}
+                  />
+                  …or type your own
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Composer */}
-        <div className="border-t border-border bg-background px-5 py-3">
+        <div className="border-t border-border bg-background">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               submit()
             }}
-            className="flex items-end gap-2"
           >
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything…"
-              rows={1}
-              disabled={streaming}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                  e.preventDefault()
-                  submit()
-                }
-              }}
-              className="flex-1 resize-none min-h-10 max-h-40"
-              aria-label="Message"
-            />
-            {streaming ? (
-              <Button
-                type="button"
-                onClick={() => chatRef.current?.stop()}
-                aria-label="Stop streaming"
-              >
-                <Square className="size-4" aria-hidden />
-                Stop
-              </Button>
-            ) : (
-              <Button type="submit" disabled={!input.trim()} aria-label="Send">
-                <Send className="size-4" aria-hidden />
-                Send
-              </Button>
-            )}
+            <div className="relative px-5 pt-3 pb-2">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask anything…"
+                rows={1}
+                disabled={streaming}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                    e.preventDefault()
+                    submit()
+                  }
+                }}
+                className="w-full resize-none border-none bg-transparent px-0 py-1 pr-20 shadow-none focus-visible:ring-0 min-h-10 max-h-40 text-body-sm"
+                aria-label="Message"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {streaming ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => chatRef.current?.stop()}
+                    aria-label="Stop streaming"
+                  >
+                    <Square className="size-3.5" aria-hidden />
+                    Stop
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!input.trim()}
+                    aria-label="Send"
+                  >
+                    <Send className="size-3.5" aria-hidden />
+                    Send
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/40 px-5 py-2">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <span className="uppercase tracking-wide">Agent Mode</span>
+                  <select
+                    aria-label="Agent mode"
+                    value={resolvedActiveAgent}
+                    disabled={streaming}
+                    onChange={(e) => handleAgentSwitch(e.target.value)}
+                    className="h-7 rounded-md border border-border bg-background px-2 text-caption text-foreground"
+                  >
+                    {pickerAgentNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="uppercase tracking-wide">Model</span>
+                  <select
+                    aria-label="Provider"
+                    value={provider}
+                    disabled={streaming}
+                    onChange={(e) => {
+                      setProvider(e.target.value as AgentProvider | "")
+                      setModel("")
+                    }}
+                    className="h-7 rounded-md border border-border bg-background px-2 text-caption text-foreground"
+                  >
+                    <option value="">Agent default</option>
+                    {providers.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  {provider && (
+                    <>
+                      <input
+                        aria-label="Model"
+                        list={modelDatalistId}
+                        value={model}
+                        disabled={streaming}
+                        onChange={(e) => setModel(e.target.value)}
+                        placeholder={modelSuggestions[0] ?? "model id"}
+                        className="h-7 w-40 rounded-md border border-border bg-background px-2 text-caption text-foreground"
+                      />
+                      <datalist id={modelDatalistId}>
+                        {modelSuggestions.map((s) => (
+                          <option key={s} value={s} />
+                        ))}
+                      </datalist>
+                    </>
+                  )}
+                </div>
+              </div>
+              <dl className="hidden sm:grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] leading-tight text-muted-foreground/60">
+                <div className="flex items-center gap-1">
+                  <kbd className="font-sans">esc</kbd>
+                  <span>close</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <kbd className="font-sans">⌘↵</kbd>
+                  <span>send</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <kbd className="font-sans">⌘J</kbd>
+                  <span>toggle</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <kbd className="font-sans">⌘⇧J</kbd>
+                  <span>history</span>
+                </div>
+              </dl>
+            </div>
           </form>
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            esc to close · ⌘J to toggle · ⌘↵ to send · ⌘⇧J for full history
-          </p>
         </div>
       </DialogContent>
     </Dialog>
