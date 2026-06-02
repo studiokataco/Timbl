@@ -11,6 +11,7 @@ import {
   orgCategoriesPath,
   orgPath,
   orgTemplatesPath,
+  orgUsersPath,
 } from "@/lib/firebase/paths"
 import {
   getIndustryDefaults,
@@ -368,14 +369,28 @@ export async function completeOnboarding(
  * etc. stay intact - re-running the wizard just augments. */
 export async function resetOnboarding(): Promise<ServerActionResult> {
   const orgId = await getCurrentOrgId()
-  await getAdminDb().doc(orgPath(orgId)).set(
-    {
-      onboarding: {
-        completedAt: null,
+  const user = await getCurrentUser()
+  const db = getAdminDb()
+  /* Wizard reset clears two things:
+   *   - org.onboarding.completedAt   (the (app) layout's redirect gate)
+   *   - users/{userId}.preferences.onboarded   (the welcome flashcards
+   *     gate, so the current user sees the welcome again after re-running)
+   * Other users in the org keep their own onboarded flag - if they re-run
+   * the wizard for themselves, they'll see the welcome too. */
+  await Promise.all([
+    db.doc(orgPath(orgId)).set(
+      {
+        onboarding: { completedAt: null },
+        updatedAt: new Date().toISOString(),
       },
-      updatedAt: new Date().toISOString(),
-    },
-    { merge: true },
-  )
+      { merge: true },
+    ),
+    db
+      .doc(`${orgUsersPath(orgId)}/${user.id}`)
+      .set(
+        { preferences: { onboarded: false }, updatedAt: new Date().toISOString() },
+        { merge: true },
+      ),
+  ])
   return { ok: true, id: orgId }
 }

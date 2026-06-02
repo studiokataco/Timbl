@@ -3,11 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
-import {
-  awarenessDaysPath,
-  orgCategoriesPath,
-  orgPostsPath,
-} from "@/lib/firebase/paths"
+import { awarenessDaysPath, orgPostsPath } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Post, ServerActionResult } from "@/lib/schemas"
 
@@ -39,24 +35,9 @@ export async function promoteAwarenessDay(
   if (!daySnap.exists) return { ok: false, error: "Awareness day not found" }
   const day = snapToData<AwarenessDay>(daySnap)
 
-  // Try to resolve the suggested category by slug (= id).
-  let categoryId: string | undefined
-  let category: {
-    defaultPostType?: Post["postType"]
-    defaultHashtags?: string[]
-    defaultCtaId?: string
-    defaultLeadId?: string
-  } | null = null
-  if (day.suggestedCategorySlug) {
-    const catSnap = await db
-      .doc(`${orgCategoriesPath(orgId)}/${day.suggestedCategorySlug}`)
-      .get()
-    if (catSnap.exists) {
-      categoryId = catSnap.id
-      category = snapToData(catSnap)
-    }
-  }
-
+  /* Category is left undefined - the user picks one explicitly from the
+   * composer after promotion. (Suggested-category auto-link removed per
+   * UX-test round 2.) */
   const ref = db.collection(orgPostsPath(orgId)).doc()
   const now = new Date().toISOString()
 
@@ -65,14 +46,14 @@ export async function promoteAwarenessDay(
     organizationId: orgId,
     scheduledDate: parsed.data.scheduledDate ?? day.date,
     status: "idea",
-    categoryId,
+    categoryId: undefined,
     awarenessDayId: day.id,
-    postType: category?.defaultPostType ?? "grid",
+    postType: "grid",
     brief: day.name,
     detailedBrief: day.description,
-    hashtags: category?.defaultHashtags ?? [],
-    ctaId: category?.defaultCtaId,
-    leadUserId: category?.defaultLeadId,
+    hashtags: [],
+    ctaId: undefined,
+    leadUserId: undefined,
     assigneeId: user.id,
     assetUrls: [],
     channelStatuses: {},

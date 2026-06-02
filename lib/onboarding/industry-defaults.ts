@@ -63,7 +63,12 @@ export const GENERIC_DEFAULTS: IndustryDefaults = {
     { slug: "tips-howto", name: "Tips & how-to", color: SIG.emerald, icon: "lightbulb", defaultPostType: "carousel" },
     { slug: "events", name: "Events", color: SIG.violet, icon: "calendar", defaultPostType: "grid" },
   ],
-  templateSlugs: ["generic-announcement", "generic-tip-carousel"],
+  templateSlugs: [
+    "generic-announcement",
+    "generic-tip-carousel",
+    "generic-weekly-recap",
+    "generic-quote-card",
+  ],
   toneHint: "Warm, clear, professional.",
 }
 
@@ -78,7 +83,13 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
       { slug: "team-culture", name: "Team & culture", color: SIG.peach, icon: "users", defaultPostType: "grid" },
       { slug: "thought-leadership", name: "Thought leadership", color: SIG.coral, icon: "feather", defaultPostType: "grid" },
     ],
-    templateSlugs: ["agency-case-study", "agency-client-win"],
+    templateSlugs: [
+      "agency-case-study",
+      "agency-client-win",
+      "agency-founder-story",
+      "agency-hiring-spotlight",
+      "agency-process-teardown",
+    ],
     toneHint: "Confident, expert, results-driven.",
   },
   ecommerce: {
@@ -91,7 +102,13 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
       { slug: "promotions", name: "Promotions", color: SIG.yellow, icon: "tag", defaultPostType: "grid" },
       { slug: "lookbook", name: "Lookbook", color: SIG.violet, icon: "image", defaultPostType: "carousel" },
     ],
-    templateSlugs: ["ecom-launch", "ecom-ugc-roundup"],
+    templateSlugs: [
+      "ecom-launch",
+      "ecom-ugc-roundup",
+      "ecom-restock-alert",
+      "ecom-education-tip",
+      "ecom-behind-the-product",
+    ],
     toneHint: "Vibrant, visual, on-trend.",
   },
   saas: {
@@ -104,7 +121,13 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
       { slug: "tutorials", name: "Tutorials", color: SIG.coral, icon: "graduation-cap", defaultPostType: "carousel" },
       { slug: "industry-insights", name: "Industry insights", color: SIG.forest, icon: "trending-up", defaultPostType: "grid" },
     ],
-    templateSlugs: ["saas-feature-launch", "saas-tutorial"],
+    templateSlugs: [
+      "saas-feature-launch",
+      "saas-tutorial",
+      "saas-customer-quote",
+      "saas-changelog-recap",
+      "saas-integration-spotlight",
+    ],
     toneHint: "Helpful, technical, slightly playful.",
   },
   nonprofit: {
@@ -117,7 +140,13 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
       { slug: "awareness", name: "Awareness days", color: SIG.yellow, icon: "calendar-days", defaultPostType: "grid" },
       { slug: "volunteer-stories", name: "Volunteer stories", color: SIG.emerald, icon: "users", defaultPostType: "carousel" },
     ],
-    templateSlugs: ["nonprofit-campaign", "nonprofit-awareness-day"],
+    templateSlugs: [
+      "nonprofit-campaign",
+      "nonprofit-awareness-day",
+      "nonprofit-donor-impact",
+      "nonprofit-volunteer-spotlight",
+      "nonprofit-mission-story",
+    ],
     toneHint: "Empathetic, urgent, hopeful.",
   },
   creator: {
@@ -130,7 +159,13 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
       { slug: "behind-the-scenes", name: "Behind the scenes", color: SIG.violet, icon: "camera", defaultPostType: "story" },
       { slug: "collabs", name: "Collabs", color: SIG.emerald, icon: "handshake", defaultPostType: "carousel" },
     ],
-    templateSlugs: ["creator-daily", "creator-tutorial-reel"],
+    templateSlugs: [
+      "creator-daily",
+      "creator-tutorial-reel",
+      "creator-weekly-recap",
+      "creator-ama",
+      "creator-audience-question",
+    ],
     toneHint: "Personal, candid, conversational.",
   },
   "local-business": {
@@ -143,7 +178,13 @@ export const INDUSTRY_DEFAULTS: Record<IndustryId, IndustryDefaults> = {
       { slug: "community", name: "Community", color: SIG.emerald, icon: "map-pin", defaultPostType: "carousel" },
       { slug: "behind-the-scenes", name: "Behind the scenes", color: SIG.peach, icon: "camera", defaultPostType: "story" },
     ],
-    templateSlugs: ["local-event", "local-menu-special"],
+    templateSlugs: [
+      "local-event",
+      "local-menu-special",
+      "local-weekly-hours",
+      "local-customer-spotlight",
+      "local-behind-the-counter",
+    ],
     toneHint: "Friendly, neighborhood, welcoming.",
   },
   other: GENERIC_DEFAULTS,

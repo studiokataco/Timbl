@@ -31,7 +31,6 @@ export interface AwarenessProposal {
   sourceUrls: string[]
   importance: "low" | "medium" | "high"
   recurringPattern: "annual" | "weekly" | "fixed-date" | "custom"
-  suggestedCategorySlug: string | null
   proposed: boolean
   status: AwarenessProposalStatus
   agentRunId?: string | null
@@ -99,7 +98,6 @@ export async function acceptProposal(
     sourceUrl: data.sourceUrls?.[0] ?? undefined,
     importance: data.importance ?? "medium",
     recurringPattern: data.recurringPattern ?? "annual",
-    suggestedCategorySlug: data.suggestedCategorySlug ?? undefined,
     createdAt: now,
     updatedAt: now,
   })

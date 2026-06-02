@@ -36,6 +36,11 @@ import {
   type PostType,
   type TemplateCadence,
 } from "@/lib/schemas"
+import {
+  CADENCE_LABELS,
+  POST_TYPE_LABELS,
+  labelOr,
+} from "@/lib/labels/enums"
 
 /*
  * Manual "New template" form. Server-side validation lives in
@@ -62,22 +67,6 @@ const formSchema = z.object({
   cadence: templateCadence,
 })
 type FormValues = z.infer<typeof formSchema>
-
-const cadenceLabel: Record<TemplateCadence, string> = {
-  weekly: "Weekly",
-  biweekly: "Biweekly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  "ad-hoc": "Ad-hoc",
-}
-
-const postTypeLabel: Record<PostType, string> = {
-  grid: "Grid",
-  carousel: "Carousel",
-  reel: "Reel",
-  story: "Story",
-  video: "Video",
-}
 
 type Props = {
   open: boolean
@@ -216,7 +205,11 @@ export function NewTemplateDialog({
                   }}
                 >
                   <SelectTrigger id="template-category">
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder="Select a category">
+                      {(v) =>
+                        categories.find((c) => c.id === v)?.name ?? "Select a category"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => (
@@ -247,12 +240,14 @@ export function NewTemplateDialog({
                   }}
                 >
                   <SelectTrigger id="template-post-type">
-                    <SelectValue />
+                    <SelectValue>
+                      {(v) => labelOr(POST_TYPE_LABELS, v)}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {POST_TYPES.map((p) => (
                       <SelectItem key={p} value={p}>
-                        {postTypeLabel[p]}
+                        {POST_TYPE_LABELS[p]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -304,7 +299,13 @@ export function NewTemplateDialog({
                   }}
                 >
                   <SelectTrigger id="template-cta">
-                    <SelectValue placeholder="None" />
+                    <SelectValue placeholder="None">
+                      {(v) =>
+                        v === "__none" || !v
+                          ? "None"
+                          : ctas.find((c) => c.id === v)?.label ?? "None"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none">None</SelectItem>
@@ -329,12 +330,14 @@ export function NewTemplateDialog({
                   }}
                 >
                   <SelectTrigger id="template-cadence">
-                    <SelectValue />
+                    <SelectValue>
+                      {(v) => labelOr(CADENCE_LABELS, v)}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {CADENCES.map((c) => (
                       <SelectItem key={c} value={c}>
-                        {cadenceLabel[c]}
+                        {CADENCE_LABELS[c]}
                       </SelectItem>
                     ))}
                   </SelectContent>

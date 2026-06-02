@@ -111,7 +111,9 @@ export function CalendarToolbar({
           onValueChange={(v) => onViewChange((v ?? "month") as CalendarView)}
         >
           <SelectTrigger className="w-32" size="sm">
-            <SelectValue />
+            <SelectValue>
+              {(v) => VIEWS.find((view) => view.value === v)?.label ?? v}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {VIEWS.map((v) => (

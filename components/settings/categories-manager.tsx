@@ -480,7 +480,9 @@ function DeleteCategoryDialog({
           <Label htmlFor="reassign">Reassign posts to</Label>
           <Select value={reassignTo} onValueChange={(v) => setReassignTo(v ?? "")}>
             <SelectTrigger id="reassign">
-              <SelectValue placeholder="Optional - pick a target" />
+              <SelectValue placeholder="Optional - pick a target">
+                {(v) => options.find((c) => c.id === v)?.name ?? "Optional - pick a target"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {options.map((c) => (
@@ -589,7 +591,9 @@ function BulkDeleteDialog({
           <Label htmlFor="bulk-reassign">Reassign posts to</Label>
           <Select value={reassignTo} onValueChange={(v) => setReassignTo(v ?? "")}>
             <SelectTrigger id="bulk-reassign">
-              <SelectValue placeholder="Optional - pick a target" />
+              <SelectValue placeholder="Optional - pick a target">
+                {(v) => options.find((c) => c.id === v)?.name ?? "Optional - pick a target"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {options.map((c) => (

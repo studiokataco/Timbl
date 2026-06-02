@@ -21,8 +21,6 @@ export const awarenessDaySchema = audit.extend({
   sourceUrl: z.string().url().optional(),
   importance: awarenessImportance.default("medium"),
   recurringPattern: awarenessRecurrence.default("annual"),
-  /** Default category slug to suggest when promoting this day to a post. */
-  suggestedCategorySlug: z.string().optional(),
   embedding: embeddingSchema.optional(),
 })
 export type AwarenessDay = z.infer<typeof awarenessDaySchema>

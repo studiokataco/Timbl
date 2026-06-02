@@ -13,7 +13,6 @@ export const ideationItemSchema = audit.extend({
   sourceUrls: z.array(z.string().url()).default([]),
 
   suggestedDate: isoDate.optional(),
-  suggestedCategorySlug: z.string().optional(),
   awarenessDayId: z.string().optional(),
 
   status: ideationStatus.default("new"),

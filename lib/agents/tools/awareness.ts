@@ -41,7 +41,6 @@ export const listUpcomingAwarenessDaysTool = new FunctionTool({
           name: data.name,
           description: data.description ?? null,
           importance: data.importance ?? "medium",
-          suggestedCategorySlug: data.suggestedCategorySlug ?? null,
         }
       }),
     }

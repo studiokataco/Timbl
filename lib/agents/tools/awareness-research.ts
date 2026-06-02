@@ -33,7 +33,6 @@ const input = z.object({
     .min(1, "Each proposal needs at least one source URL from your Google Search grounding"),
   importance: awarenessImportance.default("medium"),
   recurringPattern: awarenessRecurrence.default("annual"),
-  suggestedCategorySlug: z.string().optional(),
 })
 
 export const proposeAwarenessDayTool = new FunctionTool({
@@ -67,7 +66,6 @@ export const proposeAwarenessDayTool = new FunctionTool({
         sourceUrls: item.sourceUrls,
         importance: item.importance,
         recurringPattern: item.recurringPattern,
-        suggestedCategorySlug: item.suggestedCategorySlug ?? null,
         proposed: true,
         status: "proposed",
         agentRunId: runId,

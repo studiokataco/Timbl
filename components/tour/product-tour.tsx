@@ -47,7 +47,7 @@ const STEPS = [
     popover: {
       title: "Studio",
       description:
-        "Where your AI agents live. Ideate, draft, review, and schedule. Switch the model per conversation from the composer.",
+        "Where your AI agents live. Ideate, draft, review, and schedule.",
     },
   },
   {
