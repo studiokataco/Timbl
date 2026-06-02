@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   PenLine,
   Send,
+  ChevronDown,
   Sparkles,
   Square,
 } from "lucide-react"
@@ -83,6 +84,9 @@ const SUGGESTIONS: Suggestion[] = [
     tone: "yellow",
   },
 ]
+
+const FOOTER_SELECT =
+  "h-7 appearance-none rounded-md border border-border bg-background pl-2.5 pr-8 text-caption text-foreground"
 
 const TONE_CLASS: Record<Suggestion["tone"], string> = {
   coral: "text-[oklch(0.65_0.18_25)]",
@@ -301,28 +305,29 @@ export function AgentCommandModal() {
               submit()
             }}
           >
-            <div className="relative px-5 pt-3 pb-2">
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask anything…"
-                rows={1}
-                disabled={streaming}
-                onKeyDown={(e) => {
-                  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                    e.preventDefault()
-                    submit()
-                  }
-                }}
-                className="w-full resize-none border-none bg-transparent px-0 py-1 pr-20 shadow-none focus-visible:ring-0 min-h-10 max-h-40 text-body-sm"
-                aria-label="Message"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="px-5 py-3">
+              <div className="flex items-end gap-2 rounded-lg border border-border bg-secondary px-3 py-2.5">
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask anything…"
+                  rows={1}
+                  disabled={streaming}
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      e.preventDefault()
+                      submit()
+                    }
+                  }}
+                  className="min-h-6 max-h-40 flex-1 resize-none rounded-none border-0 bg-transparent px-0 py-0 shadow-none outline-none focus-visible:ring-0 disabled:opacity-50 dark:bg-transparent dark:disabled:bg-transparent text-body-sm"
+                  aria-label="Message"
+                />
                 {streaming ? (
                   <Button
                     type="button"
                     size="sm"
+                    className="mb-0.5 shrink-0"
                     onClick={() => chatRef.current?.stop()}
                     aria-label="Stop streaming"
                   >
@@ -333,6 +338,7 @@ export function AgentCommandModal() {
                   <Button
                     type="submit"
                     size="sm"
+                    className="mb-0.5 shrink-0"
                     disabled={!input.trim()}
                     aria-label="Send"
                   >
@@ -342,43 +348,57 @@ export function AgentCommandModal() {
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/40 px-5 py-2">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <span className="uppercase tracking-wide">Agent Mode</span>
-                  <select
-                    aria-label="Agent mode"
-                    value={resolvedActiveAgent}
-                    disabled={streaming}
-                    onChange={(e) => handleAgentSwitch(e.target.value)}
-                    className="h-7 rounded-md border border-border bg-background px-2 text-caption text-foreground"
-                  >
-                    {pickerAgentNames.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-muted/40 px-5 py-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-caption text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 uppercase tracking-wide">
+                    Agent Mode
+                  </span>
+                  <div className="relative">
+                    <select
+                      aria-label="Agent mode"
+                      value={resolvedActiveAgent}
+                      disabled={streaming}
+                      onChange={(e) => handleAgentSwitch(e.target.value)}
+                      className={FOOTER_SELECT}
+                    >
+                      {pickerAgentNames.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      aria-hidden
+                      className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="uppercase tracking-wide">Model</span>
-                  <select
-                    aria-label="Provider"
-                    value={provider}
-                    disabled={streaming}
-                    onChange={(e) => {
-                      setProvider(e.target.value as AgentProvider | "")
-                      setModel("")
-                    }}
-                    className="h-7 rounded-md border border-border bg-background px-2 text-caption text-foreground"
-                  >
-                    <option value="">Agent default</option>
-                    {providers.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 uppercase tracking-wide">Model</span>
+                  <div className="relative">
+                    <select
+                      aria-label="Provider"
+                      value={provider}
+                      disabled={streaming}
+                      onChange={(e) => {
+                        setProvider(e.target.value as AgentProvider | "")
+                        setModel("")
+                      }}
+                      className={FOOTER_SELECT}
+                    >
+                      <option value="">Agent default</option>
+                      {providers.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      aria-hidden
+                      className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                    />
+                  </div>
                   {provider && (
                     <>
                       <input
@@ -388,7 +408,7 @@ export function AgentCommandModal() {
                         disabled={streaming}
                         onChange={(e) => setModel(e.target.value)}
                         placeholder={modelSuggestions[0] ?? "model id"}
-                        className="h-7 w-40 rounded-md border border-border bg-background px-2 text-caption text-foreground"
+                        className="h-7 w-40 rounded-md border border-border bg-background px-2.5 text-caption text-foreground"
                       />
                       <datalist id={modelDatalistId}>
                         {modelSuggestions.map((s) => (
