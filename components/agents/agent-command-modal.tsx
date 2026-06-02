@@ -32,6 +32,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { importThread } from "@/lib/storage/agent-threads"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
+import {
+  MODEL_SUGGESTIONS,
+  isLocalAiAvailable,
+} from "@/lib/agents/provider-catalog"
+import type { AgentProvider } from "@/lib/schemas/agentConfig"
 
 import { AgentChat, type AgentChatHandle } from "./agent-chat"
 import { useRosterAgents } from "./use-roster-agents"
@@ -102,6 +107,8 @@ export function AgentCommandModal() {
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
   const [transcriptLength, setTranscriptLength] = useState(0)
+  const [provider, setProvider] = useState<AgentProvider | "">("")
+  const [model, setModel] = useState("")
   const chatRef = useRef<AgentChatHandle | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
@@ -197,6 +204,11 @@ export function AgentCommandModal() {
   const canMigrate = transcriptLength > 0 && !streaming
   const isEmpty = transcriptLength === 0
 
+  const providers: AgentProvider[] = ["gemini", "anthropic", "openrouter"]
+  if (isLocalAiAvailable()) providers.push("ollama")
+  const modelSuggestions = provider ? MODEL_SUGGESTIONS[provider] : []
+  const modelDatalistId = "agent-command-modal-models"
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -231,6 +243,8 @@ export function AgentCommandModal() {
             compact
             onStreamingChange={setStreaming}
             onMessage={onMessage}
+            providerOverride={provider}
+            modelOverride={model}
             className="h-full"
           />
           {isEmpty && (
@@ -360,6 +374,50 @@ export function AgentCommandModal() {
                       className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
                     />
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 uppercase tracking-wide">Model</span>
+                  <div className="relative">
+                    <select
+                      aria-label="Provider"
+                      value={provider}
+                      disabled={streaming}
+                      onChange={(e) => {
+                        setProvider(e.target.value as AgentProvider | "")
+                        setModel("")
+                      }}
+                      className={FOOTER_SELECT}
+                    >
+                      <option value="">Agent default</option>
+                      {providers.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      aria-hidden
+                      className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                    />
+                  </div>
+                  {provider && (
+                    <>
+                      <input
+                        aria-label="Model"
+                        list={modelDatalistId}
+                        value={model}
+                        disabled={streaming}
+                        onChange={(e) => setModel(e.target.value)}
+                        placeholder={modelSuggestions[0] ?? "model id"}
+                        className="h-7 w-40 rounded-md border border-border bg-background px-2.5 text-caption text-foreground"
+                      />
+                      <datalist id={modelDatalistId}>
+                        {modelSuggestions.map((s) => (
+                          <option key={s} value={s} />
+                        ))}
+                      </datalist>
+                    </>
+                  )}
                 </div>
               </div>
               <dl className="hidden sm:grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] leading-tight text-muted-foreground/60">
