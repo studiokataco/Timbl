@@ -102,6 +102,9 @@ interface StructuredEvent {
   detail?: unknown
 }
 
+const FOOTER_SELECT =
+  "h-7 appearance-none rounded-md border border-border bg-background pl-2.5 pr-8 text-caption text-foreground"
+
 const FALLBACK_AGENTS = [
   "brand-wizard",
   "ideator",
@@ -491,12 +494,12 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
       >
         <LlmStatusBanner />
         {banner && (
-          <div className="rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-[12px] text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-caption text-muted-foreground">
             {banner}
           </div>
         )}
         {intro && transcript.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border bg-secondary/20 text-muted-foreground p-3 text-[13px]">
+          <div className="rounded-lg border border-dashed border-border bg-secondary/20 text-muted-foreground p-3 text-body-sm">
             {intro}
           </div>
         )}
@@ -543,9 +546,9 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
                 role="option"
                 aria-selected={false}
                 onClick={() => pickAgent(name)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-secondary/60 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-left text-body-sm hover:bg-secondary/60 transition-colors"
               >
-                <span className="text-muted-foreground font-mono text-[11px]">
+                <span className="text-caption text-muted-foreground">
                   /
                 </span>
                 <span className="text-foreground">{name}</span>
@@ -613,7 +616,7 @@ function Message({
   if (item.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-prose rounded-lg bg-secondary px-3 py-2 text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">
+        <div className="max-w-prose rounded-lg bg-secondary px-3 py-2 text-body-sm text-foreground whitespace-pre-wrap leading-relaxed">
           {item.text}
         </div>
       </div>
@@ -714,13 +717,13 @@ function AgentActivity({
             <ChevronRight className="size-3.5 text-muted-foreground" />
           )}
         </span>
-        <span className="text-[12px] font-semibold text-foreground">
+        <span className="text-caption font-semibold text-foreground">
           Agent activity
         </span>
-        <span className="text-[11px] text-muted-foreground truncate">
+        <span className="text-caption text-muted-foreground truncate">
           {summary}
         </span>
-        <span className="ml-auto text-[11px] text-muted-foreground">
+        <span className="ml-auto text-caption text-muted-foreground">
           {statusLabel}
         </span>
       </button>
@@ -1061,25 +1064,27 @@ function ModelSwitcher({
   const datalistId = "agent-chat-model-suggestions"
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-      <span className="font-mono uppercase tracking-wide">Model</span>
-      <select
-        aria-label="Provider"
-        value={provider}
-        disabled={disabled}
-        onChange={(e) => {
-          onProviderChange(e.target.value as AgentProvider | "")
-          onModelChange("")
-        }}
-        className="h-7 rounded-md border border-border bg-background px-2 text-[11px] text-foreground"
-      >
+    <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-caption text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 uppercase tracking-wide">Model</span>
+        <select
+          aria-label="Provider"
+          value={provider}
+          disabled={disabled}
+          onChange={(e) => {
+            onProviderChange(e.target.value as AgentProvider | "")
+            onModelChange("")
+          }}
+          className={FOOTER_SELECT}
+        >
         <option value="">Agent default</option>
         {providers.map((p) => (
           <option key={p} value={p}>
             {p}
           </option>
         ))}
-      </select>
+        </select>
+      </div>
       {provider && (
         <>
           <input
@@ -1089,7 +1094,7 @@ function ModelSwitcher({
             disabled={disabled}
             onChange={(e) => onModelChange(e.target.value)}
             placeholder={suggestions[0] ?? "model id"}
-            className="h-7 w-48 rounded-md border border-border bg-background px-2 text-[11px] text-foreground"
+            className="h-7 w-48 rounded-md border border-border bg-background px-2.5 text-caption text-foreground"
           />
           <datalist id={datalistId}>
             {suggestions.map((s) => (

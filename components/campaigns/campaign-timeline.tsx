@@ -12,6 +12,7 @@ import type { WithId } from "@/lib/firebase/serialize"
 import type { Campaign, Category, ChannelKey, Post, User } from "@/lib/schemas"
 import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
 import { fetchPostAction } from "@/lib/actions/posts"
+import { postStatusLabel } from "@/lib/labels/enums"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -119,11 +120,8 @@ export function CampaignTimeline({ campaign, posts, categories, users, orgChanne
                           {lead?.name ?? ""}
                         </td>
                         <td className="p-2.5">
-                          <Badge
-                            variant="secondary"
-                            className="capitalize font-normal text-xs"
-                          >
-                            {p.status}
+                          <Badge variant="secondary" className="font-normal text-xs">
+                            {postStatusLabel(p.status)}
                           </Badge>
                         </td>
                         <td className="p-2.5 text-right">

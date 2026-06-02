@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { AGENT_PROVIDER_LABELS, labelOr } from "@/lib/labels/enums"
 import { Badge } from "@/components/ui/badge"
 import {
   Sheet,
@@ -277,12 +278,20 @@ function EditSheet({
                     onValueChange={(v) => setProvider(v as AgentConfig["provider"])}
                   >
                     <SelectTrigger id="provider">
-                      <SelectValue />
+                      <SelectValue>
+                        {(v) => labelOr(AGENT_PROVIDER_LABELS, v)}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gemini">Gemini</SelectItem>
-                      <SelectItem value="anthropic">Anthropic</SelectItem>
-                      <SelectItem value="mock">Mock (for testing)</SelectItem>
+                      <SelectItem value="gemini">
+                        {AGENT_PROVIDER_LABELS.gemini}
+                      </SelectItem>
+                      <SelectItem value="anthropic">
+                        {AGENT_PROVIDER_LABELS.anthropic}
+                      </SelectItem>
+                      <SelectItem value="mock">
+                        {AGENT_PROVIDER_LABELS.mock}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

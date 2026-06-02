@@ -1,5 +1,6 @@
 import Link from "next/link"
 import {
+  Bell,
   Briefcase,
   Palette,
   Tags,
@@ -58,6 +59,13 @@ const SECTIONS: Section[] = [
     description:
       "Connect social accounts so scheduled posts publish automatically at their slot.",
     icon: Share2,
+  },
+  {
+    href: "/settings/notifications",
+    title: "Notifications",
+    description:
+      "Choose which workspace reminders appear as toasts when you open the app.",
+    icon: Bell,
   },
   {
     href: "/settings/team",

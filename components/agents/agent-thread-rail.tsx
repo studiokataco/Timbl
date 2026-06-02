@@ -85,7 +85,7 @@ export function AgentThreadRail({
   }, [threads])
 
   return (
-    <div className="flex flex-col h-full min-h-0 w-full lg:w-60 lg:shrink-0 border-r border-border bg-secondary/30">
+    <div className="flex flex-col h-full min-h-0 w-full md:w-60 md:shrink-0 border-r border-border bg-secondary/30">
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
           Chats

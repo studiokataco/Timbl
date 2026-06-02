@@ -23,21 +23,15 @@ import { bulkSetStatus } from "@/lib/actions/posts-bulk"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import { cn } from "@/lib/utils"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { Category, Post, PostStatus, User } from "@/lib/schemas"
+import { LEGACY_POST_STATUSES, type Category, type Post, type PostStatus, type User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { formatPostTypes } from "@/lib/post-types"
+import { postStatusLabel } from "@/lib/labels/enums"
 
-const ALL_STATUSES: PostStatus[] = [
-  "idea",
-  "brief",
-  "researching",
-  "designing",
-  "review",
-  "scheduled",
-  "posted",
-  "missed",
-  "archived",
-]
+const STATUS_FILTER_OPTIONS = LEGACY_POST_STATUSES.map((s) => ({
+  value: s,
+  label: postStatusLabel(s),
+}))
 
 type Props = {
   orgId: string
@@ -269,7 +263,7 @@ export function PostsTable({
         <FacetSelect
           label="Status"
           value={status}
-          options={ALL_STATUSES.map((s) => ({ value: s, label: s }))}
+          options={STATUS_FILTER_OPTIONS}
           onChange={(v) => setParam("status", v.join(","))}
         />
         <FacetSelect
@@ -386,8 +380,8 @@ export function PostsTable({
                       {format(parseISO(p.scheduledDate), "EEE d MMM")}
                     </td>
                     <td className="p-2">
-                      <Badge variant="secondary" className="capitalize font-normal">
-                        {p.status}
+                      <Badge variant="secondary" className="font-normal">
+                        {postStatusLabel(p.status)}
                       </Badge>
                     </td>
                     <td className="p-2">
@@ -494,7 +488,12 @@ function FacetSelect({
         onValueChange={(v) => onChange(v ? [v] : [])}
       >
         <SelectTrigger>
-          <SelectValue placeholder="Any" />
+          <SelectValue placeholder="Any">
+            {(v) => {
+              if (!v) return "Any"
+              return options.find((o) => o.value === v)?.label ?? v
+            }}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="">Any</SelectItem>

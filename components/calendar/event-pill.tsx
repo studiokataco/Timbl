@@ -6,6 +6,7 @@ import { differenceInCalendarDays, format, parseISO } from "date-fns"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
+import { postStatusLabel } from "@/lib/labels/enums"
 import { categoryPillColors } from "./color"
 import { statusGlyph } from "./post-chip"
 
@@ -47,7 +48,7 @@ export function EventPill({ post, category, onClick }: Props) {
           "block w-full text-left rounded-sm px-1.5 py-0.5 text-[11px] leading-tight truncate",
           "cursor-pointer hover:brightness-95 transition-[filter]",
         )}
-        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${post.status}`}
+        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}`}
       >
         <span aria-hidden className="font-bold mr-1">
           {statusGlyph(post.status)}
@@ -79,8 +80,8 @@ export function EventPill({ post, category, onClick }: Props) {
           {time && (
             <span className="font-semibold text-foreground">{time}</span>
           )}
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            {post.status}
+          <span className="text-[10px] text-muted-foreground">
+            {postStatusLabel(post.status)}
           </span>
         </div>
         <div className="text-foreground line-clamp-3 leading-snug">

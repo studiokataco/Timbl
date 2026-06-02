@@ -1,12 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { History } from "lucide-react"
+import { History, Sparkles } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -212,7 +213,7 @@ export function AgentDrawer() {
         side="right"
         className="!w-full sm:!max-w-xl lg:!max-w-3xl flex flex-row p-0"
       >
-        <div className="hidden lg:flex">
+        <div className="hidden md:flex shrink-0">
           <AgentThreadRail
             activeId={activeThreadId}
             onPick={handlePickThread}
@@ -222,7 +223,7 @@ export function AgentDrawer() {
         </div>
 
         {showRailMobile && (
-          <div className="lg:hidden absolute inset-0 z-20 bg-background flex flex-col">
+          <div className="md:hidden absolute inset-0 z-20 bg-background flex flex-col">
             <div className="flex items-center justify-between px-3 py-2 border-b border-border">
               <span className="text-[12px] font-semibold">Past chats</span>
               <button
@@ -245,19 +246,26 @@ export function AgentDrawer() {
         )}
 
         <div className="flex-1 min-w-0 flex flex-col">
-          <SheetHeader className="px-4 py-3 border-b border-border">
+          <SheetHeader className="px-4 py-3 border-b border-border space-y-1">
             <div className="flex items-center justify-between gap-2">
-              <SheetTitle className="text-base">Past chats</SheetTitle>
+              <SheetTitle className="text-base flex items-center gap-2">
+                <Sparkles className="size-4" aria-hidden />
+                Agent
+              </SheetTitle>
               <button
                 type="button"
                 onClick={() => setShowRailMobile(true)}
-                aria-label="Show past chats"
-                className="lg:hidden inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                aria-label="Show chat history"
+                className="md:hidden inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
               >
                 <History className="size-3.5" aria-hidden />
                 History
               </button>
             </div>
+            <SheetDescription className="text-xs">
+              Past chats on the left. Agent mode and model sit below the message
+              box, same as Ask AI (⌘J).
+            </SheetDescription>
           </SheetHeader>
 
           {activeThreadId && activeThread ? (

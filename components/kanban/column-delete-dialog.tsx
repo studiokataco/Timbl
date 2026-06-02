@@ -86,7 +86,9 @@ export function ColumnDeleteDialog({
             <Label>Move posts to</Label>
             <Select value={moveTo} onValueChange={(v) => setMoveTo(v ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick column" />
+                <SelectValue placeholder="Pick column">
+                  {(v) => candidates.find((c) => c.id === v)?.label ?? v}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {candidates.map((c) => (

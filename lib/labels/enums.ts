@@ -11,12 +11,16 @@
  * keeps the trigger in lock-step with the SelectItem children.
  */
 
+import type { AgentProvider } from "@/lib/schemas/agentConfig"
 import type {
   ChannelKey,
+  ChannelStatus,
   PostType,
 } from "@/lib/schemas/_shared"
 import type { TemplateCadence } from "@/lib/schemas/template"
 import type { AwarenessDay } from "@/lib/schemas/awarenessDay"
+import type { CampaignStatus } from "@/lib/schemas/campaign"
+import type { ReminderPreferences } from "@/lib/schemas/organisation"
 
 export const POST_TYPE_LABELS: Record<PostType, string> = {
   grid: "Grid",
@@ -34,6 +38,21 @@ export const CADENCE_LABELS: Record<TemplateCadence, string> = {
   "ad-hoc": "Ad-hoc",
 }
 
+export const CHANNEL_STATUS_LABELS: Record<ChannelStatus, string> = {
+  "n/a": "N/A",
+  scheduled: "Scheduled",
+  published: "Published",
+  failed: "Failed",
+}
+
+export const AGENT_PROVIDER_LABELS: Record<AgentProvider, string> = {
+  gemini: "Gemini",
+  anthropic: "Anthropic",
+  openrouter: "OpenRouter",
+  ollama: "Ollama (local)",
+  mock: "Mock (testing)",
+}
+
 export const CHANNEL_LABELS: Record<ChannelKey, string> = {
   linkedin: "LinkedIn",
   x: "X",
@@ -47,6 +66,28 @@ export const IMPORTANCE_LABELS: Record<AwarenessDay["importance"], string> = {
   high: "High",
   medium: "Medium",
   low: "Low",
+}
+
+export const CAMPAIGN_STATUS_LABELS: Record<CampaignStatus, string> = {
+  active: "Active",
+  completed: "Completed",
+  archived: "Archived",
+}
+
+export const REMINDER_FREQUENCY_LABELS: Record<
+  ReminderPreferences["frequency"],
+  string
+> = {
+  "per-session": "Each browser session",
+  "once-per-day": "Once per day",
+}
+
+export const GOES_LIVE_WINDOW_LABELS: Record<
+  ReminderPreferences["goesLiveWindow"],
+  string
+> = {
+  today: "Today only",
+  "today-and-tomorrow": "Today or tomorrow",
 }
 
 /* Generic post-status label - the project carries a free-string `status`

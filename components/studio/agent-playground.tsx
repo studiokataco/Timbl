@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { AGENT_PROVIDER_LABELS, labelOr } from "@/lib/labels/enums"
 import { cn } from "@/lib/utils"
 import { AgentChat } from "@/components/agents/agent-chat"
 import {
@@ -427,18 +428,22 @@ function TuneTab({
           onValueChange={(v) => setProvider(v as AgentConfig["provider"])}
         >
           <SelectTrigger>
-            <SelectValue />
+            <SelectValue>
+              {(v) => labelOr(AGENT_PROVIDER_LABELS, v)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="gemini">Gemini</SelectItem>
-            <SelectItem value="anthropic">Anthropic</SelectItem>
-            <SelectItem value="openrouter">OpenRouter</SelectItem>
-            {/* Ollama hits a localhost model server - unreachable from
-                Cloud Run, so it's hidden on the hosted web build. */}
+            <SelectItem value="gemini">{AGENT_PROVIDER_LABELS.gemini}</SelectItem>
+            <SelectItem value="anthropic">
+              {AGENT_PROVIDER_LABELS.anthropic}
+            </SelectItem>
+            <SelectItem value="openrouter">
+              {AGENT_PROVIDER_LABELS.openrouter}
+            </SelectItem>
             {isLocalAiAvailable() && (
-              <SelectItem value="ollama">Ollama (local)</SelectItem>
+              <SelectItem value="ollama">{AGENT_PROVIDER_LABELS.ollama}</SelectItem>
             )}
-            <SelectItem value="mock">Mock (testing)</SelectItem>
+            <SelectItem value="mock">{AGENT_PROVIDER_LABELS.mock}</SelectItem>
           </SelectContent>
         </Select>
       </Field>
