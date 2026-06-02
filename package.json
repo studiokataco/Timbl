@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "emulators": "firebase emulators:start --only firestore,auth,storage",
     "seed": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} FIREBASE_AUTH_EMULATOR_HOST=${FIREBASE_AUTH_EMULATOR_HOST:-127.0.0.1:9099} tsx --require ./scripts/stub-server-only.cjs firestore/seeds/run.ts",
     "test:rules": "firebase emulators:exec --only firestore --project social-media-planner-rules-test \"vitest run\"",
