@@ -6,16 +6,21 @@
  * Slugs match `templateSlugs` in industry-defaults.ts. The wizard reads
  * industry → slugs → looks up the row here → writes the row to Firestore.
  *
- * Why starter templates here vs. seed: seeds populate the SAFE demo org once at
- * dev-boot. The wizard runs on every NEW org and needs a curated source
- * accessible from server actions. Keeping it as code (not Firestore) means
- * adding a new industry's starter template is a code change, reviewable in
- * a PR.
+ * Why starter templates here vs. seed: seeds populate the SAFE demo org
+ * once at dev-boot. The wizard runs on every NEW org and needs a curated
+ * source accessible from server actions. Keeping it as code (not
+ * Firestore) means adding a new industry's starter template is a code
+ * change, reviewable in a PR.
  *
  * categoryId left blank - the wizard step 3 just created the org's
  * categories from industry-defaults.ts, but the user might have deselected
  * some. resolveCategoryForTemplate (in lib/actions/onboarding.ts) maps
  * slug → an actually-present category at apply time.
+ *
+ * Content rules:
+ *   - Sentence case names.
+ *   - ASCII hyphens only. No emojis.
+ *   - Blurbs use {{placeholder}} tokens so the drafter knows what to fill.
  */
 
 export type TemplateCadence =
@@ -60,6 +65,26 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
       "{{topic}} - {{numberOfTips}} things we wish we'd known sooner.\n\nSwipe through for the full list.",
     cadence: "weekly",
   },
+  "generic-weekly-recap": {
+    slug: "generic-weekly-recap",
+    name: "Weekly recap",
+    preferredCategorySlug: "announcements",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#WeeklyRecap"],
+    blurbTemplate:
+      "Five things from the week of {{weekStart}}:\n\n1. {{itemOne}}\n2. {{itemTwo}}\n3. {{itemThree}}\n4. {{itemFour}}\n5. {{itemFive}}",
+    cadence: "weekly",
+  },
+  "generic-quote-card": {
+    slug: "generic-quote-card",
+    name: "Quote card",
+    preferredCategorySlug: "announcements",
+    defaultPostType: "grid",
+    defaultHashtags: ["#Quote"],
+    blurbTemplate:
+      "\"{{quote}}\"\n\n- {{attribution}}\n\nWhat does this mean to you?",
+    cadence: "biweekly",
+  },
 
   /* Agency. */
   "agency-case-study": {
@@ -77,10 +102,40 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     name: "Client win",
     preferredCategorySlug: "client-wins",
     defaultPostType: "grid",
-    defaultHashtags: ["#ClientWin", "#Proud"],
+    defaultHashtags: ["#ClientWin"],
     blurbTemplate:
-      "Big day for {{clientName}}: {{achievement}} 🎉\n\nProud to play a small part in this one.",
+      "Big day for {{clientName}}: {{achievement}}.\n\nProud to play a part in this one.",
     cadence: "biweekly",
+  },
+  "agency-founder-story": {
+    slug: "agency-founder-story",
+    name: "Founder story",
+    preferredCategorySlug: "team-culture",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#FounderStory", "#BehindTheScenes"],
+    blurbTemplate:
+      "Meet {{founderName}}, who started {{companyName}} after {{origin}}.\n\nHere's what they've learned along the way.",
+    cadence: "monthly",
+  },
+  "agency-hiring-spotlight": {
+    slug: "agency-hiring-spotlight",
+    name: "Hiring spotlight",
+    preferredCategorySlug: "team-culture",
+    defaultPostType: "grid",
+    defaultHashtags: ["#Hiring", "#WeAreHiring"],
+    blurbTemplate:
+      "We're hiring a {{roleName}}.\n\n{{oneLineHook}}\n\nApply or refer someone - link in bio.",
+    cadence: "ad-hoc",
+  },
+  "agency-process-teardown": {
+    slug: "agency-process-teardown",
+    name: "Process teardown",
+    preferredCategorySlug: "thought-leadership",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#ProcessTeardown", "#HowWeWork"],
+    blurbTemplate:
+      "How we approached {{projectType}} for {{clientName}}.\n\n{{numberOfSteps}} steps from brief to launch - swipe through.",
+    cadence: "monthly",
   },
 
   /* E-commerce. */
@@ -101,7 +156,37 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "carousel",
     defaultHashtags: ["#Community", "#YourStyle"],
     blurbTemplate:
-      "Our favourite {{productName}} looks from you this month 💛\n\nKeep tagging us - we love seeing them.",
+      "Our favourite {{productName}} looks from you this month.\n\nKeep tagging us - we love seeing them.",
+    cadence: "monthly",
+  },
+  "ecom-restock-alert": {
+    slug: "ecom-restock-alert",
+    name: "Restock alert",
+    preferredCategorySlug: "product-launches",
+    defaultPostType: "grid",
+    defaultHashtags: ["#BackInStock"],
+    blurbTemplate:
+      "Back in stock: {{productName}}.\n\nWent fast last time - link in bio if you want one.",
+    cadence: "ad-hoc",
+  },
+  "ecom-education-tip": {
+    slug: "ecom-education-tip",
+    name: "Education tip",
+    preferredCategorySlug: "tips-howto",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#Tips", "#KnowYourGear"],
+    blurbTemplate:
+      "How to {{task}} with {{productName}}.\n\nSwipe through - save for later.",
+    cadence: "weekly",
+  },
+  "ecom-behind-the-product": {
+    slug: "ecom-behind-the-product",
+    name: "Behind the product",
+    preferredCategorySlug: "behind-the-scenes",
+    defaultPostType: "reel",
+    defaultHashtags: ["#BehindTheScenes", "#HowItsMade"],
+    blurbTemplate:
+      "What goes into making {{productName}}.\n\nA peek behind the scenes from our {{teamOrLocation}}.",
     cadence: "monthly",
   },
 
@@ -113,7 +198,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultPostType: "carousel",
     defaultHashtags: ["#NewFeature", "#ProductUpdate"],
     blurbTemplate:
-      "New in {{productName}}: {{featureName}}.\n\n{{oneLineBenefit}}\n\nTry it now → {{link}}",
+      "New in {{productName}}: {{featureName}}.\n\n{{oneLineBenefit}}\n\nTry it now: {{link}}",
     cadence: "ad-hoc",
   },
   "saas-tutorial": {
@@ -126,6 +211,36 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
       "How to {{task}} in {{productName}} - in {{numberOfSteps}} steps.\n\nSwipe through, save for later.",
     cadence: "biweekly",
   },
+  "saas-customer-quote": {
+    slug: "saas-customer-quote",
+    name: "Customer quote",
+    preferredCategorySlug: "case-studies",
+    defaultPostType: "grid",
+    defaultHashtags: ["#CustomerLove"],
+    blurbTemplate:
+      "\"{{quote}}\"\n\n- {{customerName}}, {{customerRole}} at {{customerCompany}}",
+    cadence: "biweekly",
+  },
+  "saas-changelog-recap": {
+    slug: "saas-changelog-recap",
+    name: "Monthly changelog",
+    preferredCategorySlug: "announcements",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#ChangelogRecap", "#ProductUpdate"],
+    blurbTemplate:
+      "{{monthName}} in {{productName}} - the five things worth your time.\n\nSwipe through.",
+    cadence: "monthly",
+  },
+  "saas-integration-spotlight": {
+    slug: "saas-integration-spotlight",
+    name: "Integration spotlight",
+    preferredCategorySlug: "feature-launches",
+    defaultPostType: "grid",
+    defaultHashtags: ["#Integration"],
+    blurbTemplate:
+      "{{productName}} now talks to {{partnerName}}.\n\n{{oneLineUseCase}}",
+    cadence: "ad-hoc",
+  },
 
   /* Nonprofit. */
   "nonprofit-campaign": {
@@ -133,7 +248,7 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     name: "Campaign update",
     preferredCategorySlug: "campaigns",
     defaultPostType: "grid",
-    defaultHashtags: ["#Campaign", "#MakeADifference"],
+    defaultHashtags: ["#Campaign"],
     blurbTemplate:
       "{{campaignName}} - we're {{percentOfGoal}}% of the way there.\n\nEvery share helps. Link in bio to donate.",
     cadence: "weekly",
@@ -143,10 +258,40 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     name: "Awareness day",
     preferredCategorySlug: "awareness",
     defaultPostType: "grid",
-    defaultHashtags: ["#AwarenessDay", "#ChangeTheNarrative"],
+    defaultHashtags: ["#AwarenessDay"],
     blurbTemplate:
       "Today is {{awarenessDay}}.\n\n{{factOrCallToAction}}\n\nWhat's one thing you'll do today?",
     cadence: "ad-hoc",
+  },
+  "nonprofit-donor-impact": {
+    slug: "nonprofit-donor-impact",
+    name: "Donor impact",
+    preferredCategorySlug: "campaigns",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#DonorImpact", "#ThankYou"],
+    blurbTemplate:
+      "Because of {{donorOrCommunity}}, we were able to {{outcome}}.\n\nThank you for showing up.",
+    cadence: "monthly",
+  },
+  "nonprofit-volunteer-spotlight": {
+    slug: "nonprofit-volunteer-spotlight",
+    name: "Volunteer spotlight",
+    preferredCategorySlug: "team-culture",
+    defaultPostType: "grid",
+    defaultHashtags: ["#VolunteerSpotlight"],
+    blurbTemplate:
+      "Meet {{volunteerName}}, who has been with us for {{timeSpan}}.\n\n{{whyTheyShowUp}}",
+    cadence: "biweekly",
+  },
+  "nonprofit-mission-story": {
+    slug: "nonprofit-mission-story",
+    name: "Mission story",
+    preferredCategorySlug: "thought-leadership",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#OurMission"],
+    blurbTemplate:
+      "Why {{causeOrProgram}} matters.\n\nA short story about {{personOrCommunity}} and what changed for them.",
+    cadence: "monthly",
   },
 
   /* Creator. */
@@ -165,8 +310,38 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     preferredCategorySlug: "tutorials",
     defaultPostType: "reel",
     defaultHashtags: ["#Tutorial", "#HowTo"],
-    blurbTemplate: "How to {{task}} - in 30 seconds.\n\nSave this for later 🔖",
+    blurbTemplate: "How to {{task}} - in 30 seconds.\n\nSave this for later.",
     cadence: "biweekly",
+  },
+  "creator-weekly-recap": {
+    slug: "creator-weekly-recap",
+    name: "Weekly recap",
+    preferredCategorySlug: "daily-thoughts",
+    defaultPostType: "carousel",
+    defaultHashtags: ["#WeeklyRecap"],
+    blurbTemplate:
+      "Five things from this week:\n\n1. {{itemOne}}\n2. {{itemTwo}}\n3. {{itemThree}}\n4. {{itemFour}}\n5. {{itemFive}}",
+    cadence: "weekly",
+  },
+  "creator-ama": {
+    slug: "creator-ama",
+    name: "AMA prompt",
+    preferredCategorySlug: "daily-thoughts",
+    defaultPostType: "story",
+    defaultHashtags: ["#AMA"],
+    blurbTemplate:
+      "Ask me anything about {{topic}}.\n\nDrop your questions and I'll answer this week.",
+    cadence: "biweekly",
+  },
+  "creator-audience-question": {
+    slug: "creator-audience-question",
+    name: "Audience question",
+    preferredCategorySlug: "daily-thoughts",
+    defaultPostType: "grid",
+    defaultHashtags: ["#TellMeMore"],
+    blurbTemplate:
+      "Quick question for you: {{question}}\n\nDrop your answer in the replies.",
+    cadence: "weekly",
   },
 
   /* Local. */
@@ -175,9 +350,9 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     name: "Event announcement",
     preferredCategorySlug: "events",
     defaultPostType: "grid",
-    defaultHashtags: ["#LocalEvent", "#ComeJoinUs"],
+    defaultHashtags: ["#LocalEvent"],
     blurbTemplate:
-      "{{eventName}} - {{date}} at {{location}}.\n\n{{oneLineHook}}\n\nSee you there 🎉",
+      "{{eventName}} - {{date}} at {{location}}.\n\n{{oneLineHook}}\n\nSee you there.",
     cadence: "ad-hoc",
   },
   "local-menu-special": {
@@ -188,6 +363,36 @@ export const STARTER_TEMPLATES: Record<string, StarterTemplate> = {
     defaultHashtags: ["#Special", "#TodayOnly"],
     blurbTemplate: "Today's special: {{dish}}.\n\n{{description}}",
     cadence: "weekly",
+  },
+  "local-weekly-hours": {
+    slug: "local-weekly-hours",
+    name: "Weekly hours",
+    preferredCategorySlug: "announcements",
+    defaultPostType: "story",
+    defaultHashtags: ["#OpenThisWeek"],
+    blurbTemplate:
+      "Hours this week:\n{{weekHours}}\n\n{{noteOnHoliday}}",
+    cadence: "weekly",
+  },
+  "local-customer-spotlight": {
+    slug: "local-customer-spotlight",
+    name: "Customer spotlight",
+    preferredCategorySlug: "behind-the-scenes",
+    defaultPostType: "grid",
+    defaultHashtags: ["#Regulars"],
+    blurbTemplate:
+      "Spot the regular: {{customerName}}.\n\n{{shortStory}}",
+    cadence: "biweekly",
+  },
+  "local-behind-the-counter": {
+    slug: "local-behind-the-counter",
+    name: "Behind the counter",
+    preferredCategorySlug: "behind-the-scenes",
+    defaultPostType: "reel",
+    defaultHashtags: ["#BehindTheCounter"],
+    blurbTemplate:
+      "A look behind the counter at {{businessName}}.\n\n{{oneLineHook}}",
+    cadence: "monthly",
   },
 }
 

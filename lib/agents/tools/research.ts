@@ -17,7 +17,6 @@ const input = z.object({
   summary: z.string().max(4_000),
   sourceUrls: z.array(z.string().url()).default([]),
   suggestedDate: isoDate.optional(),
-  suggestedCategorySlug: z.string().optional(),
   awarenessDayId: z.string().optional(),
   confidence: z.number().min(0).max(1).default(0.5),
 })
@@ -41,7 +40,6 @@ export const persistIdeationTool = new FunctionTool({
         summary: item.summary,
         sourceUrls: item.sourceUrls,
         suggestedDate: item.suggestedDate ?? null,
-        suggestedCategorySlug: item.suggestedCategorySlug ?? null,
         awarenessDayId: item.awarenessDayId ?? null,
         status: "new",
         confidence: item.confidence,

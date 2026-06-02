@@ -9,6 +9,8 @@ import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { LEGACY_POST_STATUSES } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 import { ApprovalActions } from "@/components/agents/approval-actions"
+import { statusGlyph } from "@/components/calendar/post-chip"
+import { postStatusLabel } from "@/lib/labels/enums"
 
 type Props = {
   post: WithId<Post>
@@ -42,41 +44,54 @@ export function KanbanCard({
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        /* Category tint - mirrors the chip tint on the calendar so a
+         * post reads the same in either view. Falls back to a hairline
+         * neutral when no category is set. */
+        borderLeftColor: category?.color ?? undefined,
+      }}
       {...attributes}
       {...listeners}
       className={cn(
-        "bg-background border border-border rounded-lg p-3 md:cursor-grab md:active:cursor-grabbing",
+        "bg-background border border-border border-l-4 rounded-lg p-3 md:cursor-grab md:active:cursor-grabbing",
         "hover:shadow-sm transition-shadow select-none",
         isDragging && "opacity-40",
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-1 mb-1.5">
-        <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
-          {format(parseISO(post.scheduledDate), "d MMM")}
-          {post.agentMeta && (
-            <Sparkles
-              aria-label="AI-assisted"
-              className="size-3 text-muted-foreground/70"
-            />
-          )}
-        </span>
+      <div className="flex items-center gap-1.5 mb-1.5 text-xs">
         {category && (
           <span
-            className="inline-block size-2 rounded-full mt-0.5 shrink-0"
-            style={{ backgroundColor: category.color }}
             aria-hidden
+            className="size-2 rounded-full shrink-0"
+            style={{ backgroundColor: category.color }}
           />
         )}
+        <span className="truncate text-muted-foreground flex-1">
+          {category?.name ?? "Uncategorised"}
+        </span>
+        {post.agentMeta && (
+          <Sparkles
+            aria-label="AI-assisted"
+            className="size-3 text-muted-foreground/70 shrink-0"
+          />
+        )}
+        <span
+          aria-hidden
+          className="font-bold text-muted-foreground"
+          title={postStatusLabel(post.status)}
+        >
+          {statusGlyph(post.status)}
+        </span>
+        <span className="whitespace-nowrap text-muted-foreground">
+          {format(parseISO(post.scheduledDate), "d MMM")}
+        </span>
       </div>
       <p className="text-sm leading-snug line-clamp-2 mb-2">
         {post.brief ?? <span className="italic text-muted-foreground">No brief</span>}
       </p>
-      <div className="flex items-center justify-between gap-1">
-        {category && (
-          <span className="text-xs text-muted-foreground truncate">{category.name}</span>
-        )}
+      <div className="flex items-center justify-end gap-1">
         {assignee && (
           <span
             className="inline-flex items-center justify-center size-5 rounded-full bg-secondary text-xs font-medium shrink-0"
@@ -115,11 +130,11 @@ export function KanbanCard({
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => onStatusChange(e.target.value as PostStatus)}
-            className="w-full text-xs rounded border border-border bg-background px-2 py-1 capitalize"
+            className="w-full text-xs rounded border border-border bg-background px-2 py-1"
           >
             {statuses.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {postStatusLabel(s)}
               </option>
             ))}
           </select>

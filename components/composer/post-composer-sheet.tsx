@@ -71,6 +71,7 @@ import type {
   User,
 } from "@/lib/schemas"
 import { LEGACY_POST_STATUSES } from "@/lib/schemas"
+import { CADENCE_LABELS, labelOr } from "@/lib/labels/enums"
 import { deletePost, updatePost } from "@/lib/actions/posts"
 import { createCampaign } from "@/lib/actions/campaigns"
 import { fetchOgImage } from "@/lib/actions/assets"
@@ -907,14 +908,16 @@ export function PostComposerSheet({
                 onValueChange={(v) => setTemplateCadence(v as TemplateCadence)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {(v) => labelOr(CADENCE_LABELS, v)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="biweekly">Biweekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="ad-hoc">Ad-hoc</SelectItem>
+                  <SelectItem value="weekly">{CADENCE_LABELS.weekly}</SelectItem>
+                  <SelectItem value="biweekly">{CADENCE_LABELS.biweekly}</SelectItem>
+                  <SelectItem value="monthly">{CADENCE_LABELS.monthly}</SelectItem>
+                  <SelectItem value="quarterly">{CADENCE_LABELS.quarterly}</SelectItem>
+                  <SelectItem value="ad-hoc">{CADENCE_LABELS["ad-hoc"]}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

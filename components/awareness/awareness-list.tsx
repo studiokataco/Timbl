@@ -10,12 +10,11 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
 import { promoteAwarenessDay } from "@/lib/actions/awareness"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { AwarenessDay, Category } from "@/lib/schemas"
+import type { AwarenessDay } from "@/lib/schemas"
 
 type Props = {
   days: WithId<AwarenessDay>[]
   plannedIds: Set<string>
-  categories: WithId<Category>[]
 }
 
 const IMPORTANCE_VARIANT: Record<
@@ -27,10 +26,9 @@ const IMPORTANCE_VARIANT: Record<
   low: "outline",
 }
 
-export function AwarenessList({ days, plannedIds, categories }: Props) {
+export function AwarenessList({ days, plannedIds }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const categoryById = new Map(categories.map((c) => [c.id, c]))
 
   if (days.length === 0) {
     return (
@@ -69,16 +67,12 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
             <th className="p-2.5 text-left font-medium">Date</th>
             <th className="p-2.5 text-left font-medium">Awareness day</th>
             <th className="p-2.5 text-left font-medium">Importance</th>
-            <th className="p-2.5 text-left font-medium">Suggested category</th>
             <th className="p-2.5 text-right font-medium">Action</th>
           </tr>
         </thead>
         <tbody>
           {days.map((d, i) => {
             const planned = plannedIds.has(d.id)
-            const cat = d.suggestedCategorySlug
-              ? categoryById.get(d.suggestedCategorySlug)
-              : null
             return (
               <tr
                 key={d.id}
@@ -106,20 +100,6 @@ export function AwarenessList({ days, plannedIds, categories }: Props) {
                   >
                     {d.importance}
                   </Badge>
-                </td>
-                <td className="p-2.5 text-xs text-muted-foreground">
-                  {cat ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span
-                        aria-hidden
-                        className="size-2 rounded-full"
-                        style={{ backgroundColor: cat.color }}
-                      />
-                      {cat.name}
-                    </span>
-                  ) : (
-                    "-"
-                  )}
                 </td>
                 <td className="p-2.5 text-right">
                   {planned ? (

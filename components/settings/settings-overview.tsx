@@ -77,7 +77,7 @@ const SECTIONS: Section[] = [
     href: "/studio",
     title: "AI agents",
     description:
-      "Agent providers, models, schedules, budgets, and model-update alerts live in Studio.",
+      "Agent providers, models, schedules, and budgets live in Studio.",
     icon: Bot,
     badge: "Studio",
   },

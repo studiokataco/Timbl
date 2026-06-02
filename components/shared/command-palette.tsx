@@ -8,6 +8,7 @@ import {
   BookOpen,
   Calendar as CalendarIcon,
   Clock,
+  Compass,
   Globe,
   KanbanSquare,
   LayoutList,
@@ -17,6 +18,7 @@ import {
   Settings,
   Sun,
 } from "lucide-react"
+import { dispatchWelcomeOpen } from "@/components/shared/onboarding"
 import {
   CommandDialog,
   CommandEmpty,
@@ -184,6 +186,17 @@ export function CommandPalette() {
           >
             {isDark ? <Sun /> : <Moon />}
             <span>{isDark ? "Switch to light mode" : "Switch to dark mode"}</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => {
+              setOpen(false)
+              dispatchWelcomeOpen()
+            }}
+            value="show welcome flashcards tour intro"
+          >
+            <Compass />
+            <span>Show welcome flashcards</span>
+            <CommandShortcut>⇧⌥?</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 

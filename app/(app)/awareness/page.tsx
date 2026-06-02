@@ -6,7 +6,6 @@ import { AwarenessList } from "@/components/awareness/awareness-list"
 import { AwarenessProposalsStrip } from "@/components/awareness/awareness-proposals-strip"
 import { FindAwarenessButton } from "@/components/awareness/find-awareness-button"
 import { fetchAwarenessWithPlannedStatus } from "@/lib/queries/awareness.server"
-import { fetchCategories } from "@/lib/queries/posts.server"
 import { listProposals } from "@/lib/actions/awareness-proposals"
 
 export default async function AwarenessPage() {
@@ -14,9 +13,8 @@ export default async function AwarenessPage() {
   const start = format(today, "yyyy-MM-dd")
   const end = format(addDays(today, 90), "yyyy-MM-dd")
 
-  const [{ days, plannedIds }, categories, proposals] = await Promise.all([
+  const [{ days, plannedIds }, proposals] = await Promise.all([
     fetchAwarenessWithPlannedStatus(start, end),
-    fetchCategories(),
     listProposals({ status: "proposed" }),
   ])
 
@@ -30,11 +28,7 @@ export default async function AwarenessPage() {
             action={<FindAwarenessButton />}
           />
           <AwarenessProposalsStrip proposals={proposals} />
-          <AwarenessList
-            days={days}
-            plannedIds={plannedIds}
-            categories={categories}
-          />
+          <AwarenessList days={days} plannedIds={plannedIds} />
         </div>
       </div>
     </>

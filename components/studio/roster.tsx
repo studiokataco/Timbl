@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils"
 import { STAGES, stageForAgent, type Stage } from "./stage-map"
 import { PROVIDER_TONE } from "./status-tone"
 import { AddAgentSheet } from "./add-agent-sheet"
-import { ModelUpdatesCard } from "./model-updates-card"
 
 /*
  * Left rail - agents grouped by pipeline stage.
@@ -117,8 +116,6 @@ export function Roster({ rosterAgents, installedAgents }: Props) {
           </div>
         )
       })}
-
-      <ModelUpdatesCard />
 
       <button
         type="button"

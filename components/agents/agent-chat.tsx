@@ -28,11 +28,6 @@ import { resolveHumanGate } from "@/lib/actions/agent-suggestions"
 import { getThread, type ThreadMessage } from "@/lib/storage/agent-threads"
 import { LlmStatusBanner } from "./llm-status-banner"
 import { Markdown } from "./markdown"
-import {
-  MODEL_SUGGESTIONS,
-  isLocalAiAvailable,
-} from "@/lib/agents/provider-catalog"
-import type { AgentProvider } from "@/lib/schemas/agentConfig"
 
 /*
  * Generic agent chat surface - Phase C redesign.
@@ -163,14 +158,6 @@ export interface AgentChatProps {
    * persist into IndexedDB.
    */
   onMessage?: (msg: ThreadMessage) => void
-  /**
-   * Controlled per-conversation provider override. When provided, the
-   * internal ModelSwitcher state is bypassed and the parent owns the
-   * value (e.g. the command modal renders its own switcher in the
-   * composer footer). Pass undefined to fall back to the agent default.
-   */
-  providerOverride?: AgentProvider | ""
-  modelOverride?: string
 }
 
 export interface AgentChatHandle {
@@ -194,8 +181,6 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   threadId,
   organizationId,
   onMessage,
-  providerOverride: providerOverrideProp,
-  modelOverride: modelOverrideProp,
 }: AgentChatProps, ref) {
   const [transcript, setTranscript] = useState<TranscriptItem[]>([])
   const transcriptRef = useRef<TranscriptItem[]>([])
@@ -204,16 +189,6 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   }, [transcript])
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
-  const [localProvider, setLocalProvider] = useState<AgentProvider | "">("")
-  const [localModel, setLocalModel] = useState("")
-  const overrideProvider =
-    providerOverrideProp !== undefined ? providerOverrideProp : localProvider
-  const overrideModel =
-    modelOverrideProp !== undefined ? modelOverrideProp : localModel
-  const setOverrideProvider =
-    providerOverrideProp !== undefined ? () => {} : setLocalProvider
-  const setOverrideModel =
-    modelOverrideProp !== undefined ? () => {} : setLocalModel
   const [humanGate, setHumanGate] = useState<{
     summary?: string
     postId?: string
@@ -345,13 +320,10 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     const ctrl = new AbortController()
     abortRef.current = ctrl
     try {
-      const body: Record<string, unknown> = { input: text }
-      if (overrideProvider) body.provider = overrideProvider
-      if (overrideModel.trim()) body.model = overrideModel.trim()
       const res = await fetch(`/api/agents/${agentName}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ input: text }),
         signal: ctrl.signal,
       })
       if (!res.ok || !res.body) {
@@ -396,15 +368,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
       abortRef.current = null
       onFinish?.()
     }
-  }, [
-    agentName,
-    input,
-    streaming,
-    intoLatestAssistant,
-    onFinish,
-    overrideProvider,
-    overrideModel,
-  ])
+  }, [agentName, input, streaming, intoLatestAssistant, onFinish])
 
   const stop = useCallback(() => {
     abortRef.current?.abort()
@@ -553,13 +517,6 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
             ))}
           </div>
         )}
-        <ModelSwitcher
-          provider={overrideProvider}
-          model={overrideModel}
-          onProviderChange={setOverrideProvider}
-          onModelChange={setOverrideModel}
-          disabled={streaming}
-        />
         <div className="flex items-end gap-2">
           <Textarea
             value={input}
@@ -1040,80 +997,4 @@ function applyEvent(
       break
     /* thought / finished / tool_confirmation - not rendered here */
   }
-}
-
-function ModelSwitcher({
-  provider,
-  model,
-  onProviderChange,
-  onModelChange,
-  disabled,
-}: {
-  provider: AgentProvider | ""
-  model: string
-  onProviderChange: (p: AgentProvider | "") => void
-  onModelChange: (m: string) => void
-  disabled?: boolean
-}) {
-  const providers: AgentProvider[] = ["gemini", "anthropic", "openrouter"]
-  if (isLocalAiAvailable()) providers.push("ollama")
-  const suggestions = provider ? MODEL_SUGGESTIONS[provider] : []
-  const datalistId = "agent-chat-model-suggestions"
-
-  return (
-    <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-      <span className="font-mono uppercase tracking-wide">Model</span>
-      <select
-        aria-label="Provider"
-        value={provider}
-        disabled={disabled}
-        onChange={(e) => {
-          onProviderChange(e.target.value as AgentProvider | "")
-          onModelChange("")
-        }}
-        className="h-7 rounded-md border border-border bg-background px-2 text-[11px] text-foreground"
-      >
-        <option value="">Agent default</option>
-        {providers.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
-      {provider && (
-        <>
-          <input
-            aria-label="Model"
-            list={datalistId}
-            value={model}
-            disabled={disabled}
-            onChange={(e) => onModelChange(e.target.value)}
-            placeholder={suggestions[0] ?? "model id"}
-            className="h-7 w-48 rounded-md border border-border bg-background px-2 text-[11px] text-foreground"
-          />
-          <datalist id={datalistId}>
-            {suggestions.map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
-        </>
-      )}
-      {(provider || model) && (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => {
-            onProviderChange("")
-            onModelChange("")
-          }}
-          className="text-muted-foreground hover:text-foreground underline underline-offset-2"
-        >
-          reset
-        </button>
-      )}
-      <span className="ml-auto text-[10px] opacity-70">
-        Per-conversation; does not change the saved agent default.
-      </span>
-    </div>
-  )
 }
