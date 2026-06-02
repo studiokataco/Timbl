@@ -22,10 +22,17 @@ import {
  *     the category - protects against orphan FKs.
  */
 
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+}
+
 const createInput = categorySchema
   .pick({
     name: true,
-    slug: true,
     color: true,
     icon: true,
     description: true,
@@ -38,10 +45,13 @@ const createInput = categorySchema
     displayOrder: z.number().int().nonnegative().optional(),
   })
 
-const updateInput = createInput.partial().extend({
-  id: z.string().min(1),
-  isActive: z.boolean().optional(),
-})
+const updateInput = createInput
+  .omit({ defaultPostType: true })
+  .partial()
+  .extend({
+    id: z.string().min(1),
+    isActive: z.boolean().optional(),
+  })
 
 const reorderInput = z.object({
   /* Ordered list of category ids. The array index becomes the new
@@ -63,7 +73,6 @@ const bulkCreateInput = z.object({
       z.object({
         name: z.string().min(1).max(80),
         color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-        defaultPostType: z.enum(["grid", "carousel", "reel", "story", "video"]),
       }),
     )
     .min(1)
@@ -94,11 +103,21 @@ export async function createCategory(input: unknown): Promise<ServerActionResult
   const db = getDb()
   const col = db.collection(orgCategoriesPath(orgId))
 
-  /* Slug must be unique within the org. */
-  const existing = await col.where("slug", "==", parsed.data.slug).limit(1).get()
-  if (!existing.empty) {
-    return { ok: false, error: "A category with that slug already exists." }
+  const slugsSnap = await col.select("slug").get()
+  const existingSlugs = new Set(slugsSnap.docs.map((d) => d.data().slug as string))
+
+  function uniqueSlug(base: string): string {
+    const slug = slugify(base)
+    let candidate = slug
+    let i = 2
+    while (existingSlugs.has(candidate)) {
+      candidate = `${slug}-${i++}`
+    }
+    existingSlugs.add(candidate)
+    return candidate
   }
+
+  const slug = uniqueSlug(parsed.data.name)
 
   /* Append to the end when displayOrder isn't supplied. */
   let displayOrder = parsed.data.displayOrder ?? 0
@@ -114,7 +133,7 @@ export async function createCategory(input: unknown): Promise<ServerActionResult
     id: ref.id,
     organizationId: orgId,
     name: parsed.data.name,
-    slug: parsed.data.slug,
+    slug,
     color: parsed.data.color,
     icon: parsed.data.icon,
     description: parsed.data.description,
@@ -154,19 +173,10 @@ export async function updateCategory(input: unknown): Promise<ServerActionResult
   const snap = await ref.get()
   if (!snap.exists) return { ok: false, error: "Category not found" }
 
-  /* If slug is changing, enforce uniqueness. */
-  if (patch.slug && patch.slug !== snap.data()?.slug) {
-    const existing = await db
-      .collection(orgCategoriesPath(orgId))
-      .where("slug", "==", patch.slug)
-      .limit(1)
-      .get()
-    if (!existing.empty) {
-      return { ok: false, error: "A category with that slug already exists." }
-    }
-  }
+  const { slug: _slug, ...safePatch } = patch as { slug?: string } & typeof patch
+  void _slug
 
-  await ref.set({ ...patch, updatedAt: new Date().toISOString() }, { merge: true })
+  await ref.set({ ...safePatch, updatedAt: new Date().toISOString() }, { merge: true })
   const actor = await getCurrentUser()
   await writeAuditEvent({
     orgId,
@@ -177,7 +187,7 @@ export async function updateCategory(input: unknown): Promise<ServerActionResult
       id,
       label: (patch.name as string | undefined) ?? (snap.data()?.name as string | undefined) ?? id,
     },
-    meta: { fields: Object.keys(patch) },
+    meta: { fields: Object.keys(safePatch) },
   })
   revalidatePath("/settings/categories")
   revalidatePath("/calendar")
@@ -234,14 +244,6 @@ export async function bulkCreateCategories(input: unknown): Promise<ServerAction
   const slugsSnap = await col.select("slug").get()
   const existingSlugs = new Set(slugsSnap.docs.map((d) => d.data().slug as string))
 
-  function slugify(input: string): string {
-    return input
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60)
-  }
-
   function uniqueSlug(base: string): string {
     const slug = slugify(base)
     let candidate = slug
@@ -266,7 +268,7 @@ export async function bulkCreateCategories(input: unknown): Promise<ServerAction
       name: item.name,
       slug,
       color: item.color,
-      defaultPostType: item.defaultPostType,
+      defaultPostType: "grid",
       defaultHashtags: [],
       isActive: true,
       displayOrder: nextOrder++,

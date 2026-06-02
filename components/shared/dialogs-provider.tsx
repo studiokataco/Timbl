@@ -36,7 +36,11 @@ type Data = {
 }
 
 type DialogsApi = {
-  openQuickAdd: (opts?: { initialDate?: Date | null; source?: QuickAddSource }) => void
+  openQuickAdd: (opts?: {
+    initialDate?: Date | null
+    initialCategoryId?: string | null
+    source?: QuickAddSource
+  }) => void
   openComposer: (postId: string) => void
   openComposerWithPost: (post: WithId<Post>) => void
   closeAll: () => void
@@ -64,6 +68,7 @@ export function DialogsProvider({
 
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddDate, setQuickAddDate] = useState<Date | null>(null)
+  const [quickAddCategoryId, setQuickAddCategoryId] = useState<string | null>(null)
   const [quickAddSource, setQuickAddSource] = useState<QuickAddSource>("other")
 
   const [composerOpen, setComposerOpen] = useState(false)
@@ -71,6 +76,7 @@ export function DialogsProvider({
 
   const openQuickAdd = useCallback<DialogsApi["openQuickAdd"]>((opts) => {
     setQuickAddDate(opts?.initialDate ?? null)
+    setQuickAddCategoryId(opts?.initialCategoryId ?? null)
     setQuickAddSource(opts?.source ?? "other")
     setQuickAddOpen(true)
   }, [])
@@ -128,6 +134,7 @@ export function DialogsProvider({
         open={quickAddOpen}
         onOpenChange={setQuickAddOpen}
         initialDate={quickAddDate}
+        initialCategoryId={quickAddCategoryId}
         categories={data.categories}
         ctas={data.ctas}
         users={data.users}

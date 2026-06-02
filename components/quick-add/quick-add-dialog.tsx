@@ -33,6 +33,7 @@ type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialDate?: Date | null
+  initialCategoryId?: string | null
   categories: WithId<Category>[]
   ctas: WithId<Cta>[]
   users: WithId<User>[]
@@ -60,6 +61,7 @@ export function QuickAddDialog({
   open,
   onOpenChange,
   initialDate,
+  initialCategoryId,
   categories,
   ctas,
   users,
@@ -81,9 +83,9 @@ export function QuickAddDialog({
     if (!open) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDate(initialDate ?? new Date())
-    setCategoryId(null)
+    setCategoryId(initialCategoryId ?? null)
     setBrief("")
-  }, [open, initialDate])
+  }, [open, initialDate, initialCategoryId])
 
   const ctasById = useMemo(() => new Map(ctas.map((c) => [c.id, c])), [ctas])
   const usersById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users])

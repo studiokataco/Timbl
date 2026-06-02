@@ -17,6 +17,7 @@ import {
   Plus,
   Settings,
   Sun,
+  Tags,
 } from "lucide-react"
 import { dispatchWelcomeOpen } from "@/components/shared/onboarding"
 import {
@@ -197,6 +198,13 @@ export function CommandPalette() {
             <Compass />
             <span>Show welcome flashcards</span>
             <CommandShortcut>⇧⌥?</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => go("/settings/categories")}
+            value="manage categories content pillars colors"
+          >
+            <Tags />
+            <span>Manage categories</span>
           </CommandItem>
         </CommandGroup>
 

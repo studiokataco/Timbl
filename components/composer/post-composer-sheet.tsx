@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import {
   Calendar as CalendarIcon,
@@ -81,6 +82,7 @@ import { getPostTypes, withSyncedPostTypes } from "@/lib/post-types"
 import { channelsForComposer } from "@/lib/channels"
 import { recordRecentPost } from "@/components/shared/command-palette"
 import { HashtagInput } from "./hashtag-input"
+import { CategoryDialog } from "@/components/settings/category-dialog"
 
 const POST_TYPE_OPTIONS: PostType[] = [
   "grid",
@@ -134,10 +136,12 @@ export function PostComposerSheet({
   orgChannels,
   onChanged,
 }: Props) {
+  const router = useRouter()
   const [draft, setDraft] = useState<Partial<Post>>({})
   const [pending, startTransition] = useTransition()
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false)
+  const [newCategoryOpen, setNewCategoryOpen] = useState(false)
   const [campaignPickerOpen, setCampaignPickerOpen] = useState(false)
   const [campaignSearch, setCampaignSearch] = useState("")
   const [extraCampaigns, setExtraCampaigns] = useState<WithId<Campaign>[]>([])
@@ -519,6 +523,16 @@ export function PostComposerSheet({
                               {c.name}
                             </CommandItem>
                           ))}
+                          <CommandItem
+                            value="new category"
+                            onSelect={() => {
+                              setCategoryPickerOpen(false)
+                              setNewCategoryOpen(true)
+                            }}
+                          >
+                            <Plus className="size-4" />
+                            New category
+                          </CommandItem>
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -938,6 +952,17 @@ export function PostComposerSheet({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CategoryDialog
+        open={newCategoryOpen}
+        onOpenChange={setNewCategoryOpen}
+        mode="create"
+        nextDisplayOrder={categories.length}
+        onCreated={(id) => {
+          setField("categoryId", id)
+          router.refresh()
+        }}
+      />
     </Sheet>
   )
 }

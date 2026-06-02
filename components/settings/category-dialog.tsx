@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -22,20 +22,6 @@ import { createCategory, updateCategory } from "@/lib/actions/categories"
 import type { Category } from "@/lib/schemas"
 import type { WithId } from "@/lib/firebase/serialize"
 
-/*
- * Create/edit category dialog. Two modes:
- *   - mode="create": empty form, posts createCategory
- *   - mode="edit": prefilled from `category`, posts updateCategory
- *
- * Color picker is intentionally swatch-only (no free hex input) so every
- * category stays inside the DESIGN.md signature palette. If a future
- * design pass wants more colors, add the token here and to globals.css -
- * never let users paste an arbitrary hex.
- *
- * Slug is auto-derived from name on create; locked on edit (changing a
- * slug breaks any external integration referencing it by slug).
- */
-
 const PALETTE: { id: string; hex: string; label: string }[] = [
   { id: "orange", hex: "#fb923c", label: "Coral" },
   { id: "pink", hex: "#ec4899", label: "Pink" },
@@ -47,37 +33,20 @@ const PALETTE: { id: string; hex: string; label: string }[] = [
   { id: "cream", hex: "#fde68a", label: "Cream" },
 ]
 
-const POST_TYPES = ["grid", "carousel", "reel", "story", "video"] as const
-
 const schema = z.object({
   name: z.string().min(1, "Name is required").max(80),
-  slug: z
-    .string()
-    .min(1)
-    .regex(/^[a-z0-9-]+$/, "Lowercase letters, digits, and hyphens only"),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  icon: z.string().max(60).optional(),
   description: z.string().max(280).optional(),
-  defaultPostType: z.enum(POST_TYPES),
 })
 type FormValues = z.infer<typeof schema>
-
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60)
-}
 
 export type CategoryDialogProps = {
   open: boolean
   onOpenChange: (v: boolean) => void
   mode: "create" | "edit"
   category?: WithId<Category>
-  /* Optional optimistic hook - parent updates local state before the
-   * server confirms so the UI feels instant. */
   onOptimisticUpsert?: (cat: WithId<Category>) => void
+  onCreated?: (id: string) => void
   nextDisplayOrder?: number
 }
 
@@ -87,29 +56,23 @@ export function CategoryDialog({
   mode,
   category,
   onOptimisticUpsert,
+  onCreated,
   nextDisplayOrder,
 }: CategoryDialogProps) {
   const [, startTransition] = useTransition()
-  const [slugTouched, setSlugTouched] = useState(false)
 
   const defaults: FormValues = useMemo(
     () =>
       mode === "edit" && category
         ? {
             name: category.name,
-            slug: category.slug,
             color: category.color,
-            icon: category.icon ?? "",
             description: category.description ?? "",
-            defaultPostType: (category.defaultPostType ?? "grid") as (typeof POST_TYPES)[number],
           }
         : {
             name: "",
-            slug: "",
             color: PALETTE[0].hex,
-            icon: "",
             description: "",
-            defaultPostType: "grid" as const,
           },
     [mode, category],
   )
@@ -118,21 +81,8 @@ export function CategoryDialog({
   const watchedColor = form.watch("color")
 
   useEffect(() => {
-    if (open) {
-      form.reset(defaults)
-      setSlugTouched(mode === "edit")
-    }
-  }, [open, defaults, form, mode])
-
-  /* Auto-derive slug from name until the user types into the slug field.
-   * Watching via the field-level subscription (NOT form.watch with a
-   * callback) keeps React Compiler happy - form.watch's callback can't
-   * be safely memoized. */
-  const watchedName = form.watch("name")
-  useEffect(() => {
-    if (mode !== "create" || slugTouched) return
-    form.setValue("slug", slugify(watchedName ?? ""), { shouldDirty: true })
-  }, [form, mode, slugTouched, watchedName])
+    if (open) form.reset(defaults)
+  }, [open, defaults, form])
 
   const onSubmit = form.handleSubmit((values) => {
     const parsed = schema.safeParse(values)
@@ -145,14 +95,11 @@ export function CategoryDialog({
     }
 
     const payload = {
-      ...parsed.data,
-      icon: parsed.data.icon || undefined,
+      name: parsed.data.name,
+      color: parsed.data.color,
       description: parsed.data.description || undefined,
     }
 
-    /* Optimistic local upsert. For create we mint a temp id; the
-     * server reply will replace it after router.refresh(). For edit
-     * we patch the existing record in-place. */
     if (onOptimisticUpsert) {
       const now = new Date().toISOString()
       if (mode === "create") {
@@ -160,11 +107,10 @@ export function CategoryDialog({
           id: `temp-${now}`,
           organizationId: "",
           name: payload.name,
-          slug: payload.slug,
+          slug: payload.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60),
           color: payload.color,
-          icon: payload.icon,
           description: payload.description,
-          defaultPostType: payload.defaultPostType,
+          defaultPostType: "grid",
           defaultHashtags: [],
           isActive: true,
           displayOrder: nextDisplayOrder ?? 0,
@@ -188,6 +134,10 @@ export function CategoryDialog({
       if (!result.ok) {
         toast.dismiss()
         toast.error(result.error ?? "Could not save category")
+        return
+      }
+      if (mode === "create" && "id" in result && result.id) {
+        onCreated?.(result.id)
       }
     })
   })
@@ -200,8 +150,8 @@ export function CategoryDialog({
             {mode === "create" ? "New category" : "Edit category"}
           </DialogTitle>
           <DialogDescription>
-            Categories control color, default post type, and hashtags for posts
-            in this stream.
+            Name your content pillars once. They color the calendar and filters
+            across every campaign.
           </DialogDescription>
         </DialogHeader>
 
@@ -216,26 +166,11 @@ export function CategoryDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="cat-slug">Slug</Label>
-            <Input
-              id="cat-slug"
-              disabled={mode === "edit"}
-              {...form.register("slug", {
-                onChange: () => setSlugTouched(true),
-              })}
-            />
-            <p className="text-xs text-muted-foreground">
-              {mode === "edit"
-                ? "Slugs can't be changed after creation."
-                : "Used in URLs and integrations. Auto-derived from the name."}
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
             <Label>Color</Label>
             <div role="radiogroup" className="flex flex-wrap gap-2">
               {PALETTE.map((swatch) => {
-                const selected = watchedColor.toLowerCase() === swatch.hex.toLowerCase()
+                const selected =
+                  watchedColor.toLowerCase() === swatch.hex.toLowerCase()
                 return (
                   <button
                     key={swatch.id}
@@ -259,34 +194,8 @@ export function CategoryDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="cat-icon">Icon</Label>
-              <Input
-                id="cat-icon"
-                placeholder="shopping-bag"
-                {...form.register("icon")}
-              />
-              <p className="text-xs text-muted-foreground">lucide-react name.</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cat-type">Default post type</Label>
-              <select
-                id="cat-type"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-                {...form.register("defaultPostType")}
-              >
-                {POST_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <div className="space-y-1.5">
-            <Label htmlFor="cat-desc">Description</Label>
+            <Label htmlFor="cat-desc">Description (optional)</Label>
             <Textarea
               id="cat-desc"
               rows={2}

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category } from "@/lib/schemas"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -71,6 +72,12 @@ export function CategoryFilter({
           </li>
         ))}
       </ul>
+      <Link
+        href="/settings/categories"
+        className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+      >
+        Manage categories
+      </Link>
     </div>
   )
 }

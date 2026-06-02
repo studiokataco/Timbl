@@ -49,7 +49,7 @@ const SECTIONS: Section[] = [
     href: "/settings/categories",
     title: "Categories",
     description:
-      "Categories drive post colours, default types, and how the calendar groups work.",
+      "Calendar colors and filters shared across every campaign in this workspace.",
     icon: Tags,
   },
   {
