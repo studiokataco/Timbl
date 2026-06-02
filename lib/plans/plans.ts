@@ -56,7 +56,7 @@ export const PLANS: Record<string, PlanConfig> = {
     quotas: { agentRuns: 100, scheduledPosts: 30, brands: 1, seats: 2 },
     features: {
       multiStepApproval: false,
-      customCategories: false,
+      customCategories: true,
       /* Templates are core to the planning workflow and not yet a paid
        * differentiator (billing is deferred). Gating them blocked admins of
        * free-tier orgs from creating any template at all. */
@@ -135,10 +135,9 @@ export const PLANS: Record<string, PlanConfig> = {
   },
 }
 
-/* Fallback for orgs that don't have a plan id stored yet. Existing SAFE
- * org is backfilled to agency_v1 by the seed; new signups land on
- * free_v1 via the onboarding wizard. */
-export const DEFAULT_PLAN_ID = "free_v1"
+/* Fallback when /organizations/{id}.plan is missing. Pilot/dev uses the
+ * top self-serve tier so gates stay off until Stripe ships. */
+export const DEFAULT_PLAN_ID = "agency_v1"
 
 export function getPlan(planId: string | undefined | null): PlanConfig {
   if (planId && PLANS[planId]) return PLANS[planId]

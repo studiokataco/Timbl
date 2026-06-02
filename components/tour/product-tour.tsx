@@ -51,9 +51,9 @@ const STEPS = [
     },
   },
   {
-    element: 'a[href="/library"]',
+    element: 'a[href="/templates"]',
     popover: {
-      title: "Library",
+      title: "Templates",
       description:
         "Save reusable templates for recurring posts (work anniversaries, weekly recaps). Click New template to build one.",
     },

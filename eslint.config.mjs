@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     ".claude/**",
     // Cloud Functions compiled output - TS-emitted CommonJS, not source
     "functions/lib/**",
+    // Node runtime stubs - CommonJS hooks, not app source
+    "scripts/*.cjs",
   ]),
 ]);
 

@@ -35,7 +35,7 @@ export interface IndustryDefaults {
   /* Agent ids the wizard pre-checks. The user can toggle them on step 2. */
   suggestedAgents: string[]
   categories: CategorySuggestion[]
-  /* Template slugs that exist in `firestore/seeds/defaults.ts` library -
+  /* Template slugs that exist in `firestore/seeds/defaults.ts` -
    * the wizard renders these on step 4 with copy preview. */
   templateSlugs: string[]
   /* Default tone hint that prefills the step-one textarea. */

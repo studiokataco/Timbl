@@ -22,6 +22,9 @@ const nextConfig: NextConfig = {
   // are simply unused there. skipTrailingSlashRedirect keeps Next from 308ing
   // PostHog's trailing-slash-sensitive API paths.
   skipTrailingSlashRedirect: true,
+  async redirects() {
+    return [{ source: "/library", destination: "/templates", permanent: true }]
+  },
   async rewrites() {
     const posthogRewrites = [
       {

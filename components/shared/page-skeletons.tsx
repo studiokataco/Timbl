@@ -93,7 +93,7 @@ export function KanbanSkeleton() {
   )
 }
 
-export function LibrarySkeleton() {
+export function TemplatesSkeleton() {
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
       <div className="mb-4">

@@ -121,7 +121,7 @@ export function WorkspaceSettings({
       <section className="rounded-lg border border-border p-4">
         <h2 className="text-sm font-medium">Product tour</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          A guided walkthrough of the calendar, posts, kanban, studio, library,
+          A guided walkthrough of the calendar, posts, kanban, studio, templates,
           and settings. New users see it once on first visit; replay it any time
           to brief teammates.
         </p>

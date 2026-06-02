@@ -187,14 +187,7 @@ export function CategoryDialog({
 
       if (!result.ok) {
         toast.dismiss()
-        if (result.gate?.kind === "feature") {
-          toast.error("Upgrade required", {
-            description:
-              "Custom categories are on Studio and Agency plans. Upgrade to add more.",
-          })
-        } else {
-          toast.error(result.error ?? "Could not save category")
-        }
+        toast.error(result.error ?? "Could not save category")
       }
     })
   })

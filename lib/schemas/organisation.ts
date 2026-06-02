@@ -10,8 +10,8 @@ export const organisationSchema = audit.extend({
     .regex(/^[a-z0-9-]+$/, "Lowercase letters, digits, and hyphens only"),
   primaryColor: z.string().optional(),
   logoUrl: z.string().url().optional(),
-  /* Plan id (e.g. "free_v1", "agency_v1"). Missing = free_v1 via
-   * getPlan(). Versioned ids let existing customers stay grandfathered
+  /* Plan id (e.g. "free_v1", "agency_v1"). Missing = agency_v1 during pilot.
+   * Versioned ids let existing customers stay grandfathered
    * when we ship the v2 of a tier. See lib/plans/plans.ts. */
   plan: z.string().optional(),
   /* Onboarding state. `completedAt` set on wizard finish OR backfilled

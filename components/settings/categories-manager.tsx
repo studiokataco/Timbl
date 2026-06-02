@@ -41,8 +41,6 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { CategoryDialog } from "@/components/settings/category-dialog"
-import { UpgradePromptFor } from "@/components/shared/upgrade-gate"
-import { usePlanFeatures } from "@/lib/plans/client"
 import {
   bulkCreateCategories,
   bulkDeleteCategories,
@@ -81,7 +79,6 @@ export function CategoriesManager({
   categories: WithId<Category>[]
 }) {
   const router = useRouter()
-  const plan = usePlanFeatures()
   const [items, setItems] = useState(categories)
   const inflightRef = useRef(0)
   useEffect(() => {
@@ -173,21 +170,13 @@ export function CategoriesManager({
     setSelected(new Set())
   }
 
-  const canCreate = plan.features.customCategories
-
   return (
     <>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <UpgradePromptFor feature="customCategories">
-          <p className="text-xs text-muted-foreground">
-            Custom categories are on Studio and Agency plans.
-          </p>
-        </UpgradePromptFor>
-        <div className="ml-auto flex items-center gap-2">
+      <div className="mb-3 flex items-center justify-end gap-2">
           <Button
             size="sm"
             variant="outline"
-            disabled={!canCreate || pending}
+            disabled={pending}
             onClick={() => setBulkAddOpen(true)}
           >
             <Plus className="size-4" />
@@ -195,13 +184,12 @@ export function CategoriesManager({
           </Button>
           <Button
             size="sm"
-            disabled={!canCreate || pending}
+            disabled={pending}
             onClick={() => setDialogState({ mode: "create" })}
           >
             <Plus className="size-4" />
             New category
           </Button>
-        </div>
       </div>
 
       {someSelected ? (

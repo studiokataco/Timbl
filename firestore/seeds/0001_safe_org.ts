@@ -19,9 +19,7 @@ export async function seedSafeOrg() {
       slug: "safe-foundation",
       name: "SAFE Foundation",
       primaryColor: "#111111",
-      /* Existing org gets the top self-serve tier so nothing they use
-       * today gets quota-gated. New signups land on free_v1 via the
-       * onboarding wizard (Phase E). */
+      /* Top self-serve tier during pilot so gates stay off. */
       plan: "agency_v1",
       /* SAFE is the legacy demo org - already has categories, agents,
        * templates from the seed scripts that follow. Marking onboarding

@@ -41,7 +41,7 @@ type Props = {
  * template" opens a date picker, then promotes the template to a new post and
  * deep-links to the calendar (the composer will be openable from there).
  */
-export function LibraryView({ templates, categories, ctas }: Props) {
+export function TemplatesView({ templates, categories, ctas }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [pickerFor, setPickerFor] = useState<WithId<Template> | null>(null)

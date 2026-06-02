@@ -23,7 +23,7 @@ import {
 
 /*
  * Template mutations + the "use template" promote-to-post action that the
- * library page invokes. Every action goes through getCurrentOrgId() and
+ * templates page invokes. Every action goes through getCurrentOrgId() and
  * writes under /organizations/{orgId}/...
  */
 
@@ -89,7 +89,7 @@ export async function createTemplate(input: unknown): Promise<ServerActionResult
   } catch (err) {
     console.warn(`[embed] template create soft-fail: ${err instanceof Error ? err.message : err}`)
   }
-  revalidatePath("/library")
+  revalidatePath("/templates")
   return { ok: true, id }
 }
 
@@ -111,7 +111,7 @@ export async function updateTemplate(input: unknown): Promise<ServerActionResult
   } catch (err) {
     console.warn(`[embed] template update soft-fail: ${err instanceof Error ? err.message : err}`)
   }
-  revalidatePath("/library")
+  revalidatePath("/templates")
   return { ok: true, id }
 }
 
@@ -129,7 +129,7 @@ export async function deleteTemplate(id: string): Promise<ServerActionResult> {
     actorUserId: actor?.id ?? null,
     target: { type: "template", id, label: name },
   })
-  revalidatePath("/library")
+  revalidatePath("/templates")
   return { ok: true, id }
 }
 
@@ -198,7 +198,7 @@ export async function useTemplate(input: unknown): Promise<ServerActionResult> {
 
   await postsRef.set(doc)
   revalidatePath("/calendar")
-  revalidatePath("/library")
+  revalidatePath("/templates")
   return { ok: true, id: postsRef.id }
 }
 
@@ -257,6 +257,6 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
   } catch (err) {
     console.warn(`[embed] saveAsTemplate soft-fail: ${err instanceof Error ? err.message : err}`)
   }
-  revalidatePath("/library")
+  revalidatePath("/templates")
   return { ok: true, id }
 }

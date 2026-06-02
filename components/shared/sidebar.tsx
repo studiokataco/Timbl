@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils"
  * Persistent left-rail navigation for the (app) tree. Cal-voiced - generous
  * breathing room, soft pill rounding, an inset section heading separating
  * the working surfaces (Calendar/Posts/Kanban/Campaigns) from the
- * reference resources (Library/Awareness).
+ * reference resources (Templates/Awareness).
  */
 type NavGroup = {
   heading?: string
@@ -38,7 +38,7 @@ const GROUPS: NavGroup[] = [
   {
     heading: "Resources",
     items: [
-      { href: "/library", label: "Library", icon: BookOpen },
+      { href: "/templates", label: "Templates", icon: BookOpen },
       { href: "/awareness", label: "Awareness days", icon: Globe },
     ],
   },
