@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
 import { promoteAwarenessDay } from "@/lib/actions/awareness"
 import type { WithId } from "@/lib/firebase/serialize"
+import { IMPORTANCE_LABELS } from "@/lib/labels/enums"
 import type { AwarenessDay } from "@/lib/schemas"
 
 type Props = {
@@ -96,9 +97,9 @@ export function AwarenessList({ days, plannedIds }: Props) {
                 <td className="p-2.5">
                   <Badge
                     variant={IMPORTANCE_VARIANT[d.importance]}
-                    className="capitalize font-normal text-xs"
+                    className="font-normal text-xs"
                   >
-                    {d.importance}
+                    {IMPORTANCE_LABELS[d.importance]}
                   </Badge>
                 </td>
                 <td className="p-2.5 text-right">

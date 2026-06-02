@@ -2,15 +2,15 @@
 
 import { addDays, differenceInDays, format, parseISO, subDays } from "date-fns"
 
+import { getReminderSettings } from "@/lib/actions/reminder-settings"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
 import { orgCategoriesPath, orgPostsPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { fetchOrgChannels } from "@/lib/queries/reference-data.server"
 import type { Category, ChannelKey, Post } from "@/lib/schemas"
+import type { ReminderPreferences } from "@/lib/schemas/organisation"
 
-const SILENT_CATEGORY_THRESHOLD_DAYS = 14
 const LOOKBACK_DAYS = 90
-const APPROVAL_HORIZON_DAYS = 3
 
 export type WorkspaceReminder =
   | {
@@ -41,6 +41,22 @@ export type WorkspaceReminder =
       categoryId: string
     }
 
+function reminderKindEnabled(
+  kind: WorkspaceReminder["kind"],
+  prefs: ReminderPreferences,
+): boolean {
+  switch (kind) {
+    case "approval-due":
+      return prefs.approvalDue
+    case "overdue":
+      return prefs.overdue
+    case "goes-live-soon":
+      return prefs.goesLiveSoon
+    case "silent-category":
+      return prefs.silentCategory
+  }
+}
+
 function channelsIncomplete(post: Post, orgChannels: ChannelKey[]): boolean {
   for (const ch of orgChannels) {
     const st = post.channelStatuses?.[ch]
@@ -49,13 +65,22 @@ function channelsIncomplete(post: Post, orgChannels: ChannelKey[]): boolean {
   return false
 }
 
-export async function getWorkspaceReminders(): Promise<WorkspaceReminder[]> {
+export async function getWorkspaceReminders(
+  settings?: ReminderPreferences,
+): Promise<WorkspaceReminder[]> {
+  const prefs = settings ?? (await getReminderSettings())
+  if (!prefs.enabled) return []
+
   const orgId = await getCurrentOrgId()
   const db = getDb()
   const today = new Date()
   const todayIso = format(today, "yyyy-MM-dd")
   const tomorrowIso = format(addDays(today, 1), "yyyy-MM-dd")
-  const horizonIso = format(addDays(today, APPROVAL_HORIZON_DAYS), "yyyy-MM-dd")
+  const horizonIso = format(
+    addDays(today, prefs.approvalHorizonDays),
+    "yyyy-MM-dd",
+  )
+  const silentThreshold = prefs.silentCategoryDays
   const lookbackIso = format(subDays(today, LOOKBACK_DAYS), "yyyy-MM-dd")
 
   const [postsSnap, catSnap, orgChannels] = await Promise.all([
@@ -89,15 +114,15 @@ export async function getWorkspaceReminders(): Promise<WorkspaceReminder[]> {
         approvalDue.length === 1
           ? "1 draft needs review"
           : `${approvalDue.length} drafts need review`,
-      description: "Scheduled in the next 3 days",
+      description: `Scheduled in the next ${prefs.approvalHorizonDays} day${prefs.approvalHorizonDays === 1 ? "" : "s"}`,
     })
   }
 
   for (const p of posts) {
-    if (
-      (p.status === "scheduled" || p.status === "draft") &&
-      p.scheduledDate < todayIso
-    ) {
+    const overdueStatus =
+      (prefs.overdueIncludeDraft && p.status === "draft") ||
+      (prefs.overdueIncludeScheduled && p.status === "scheduled")
+    if (overdueStatus && p.scheduledDate < todayIso) {
       reminders.push({
         id: `overdue-${p.id}`,
         kind: "overdue",
@@ -110,7 +135,11 @@ export async function getWorkspaceReminders(): Promise<WorkspaceReminder[]> {
 
   for (const p of posts) {
     if (p.status !== "scheduled") continue
-    if (p.scheduledDate !== todayIso && p.scheduledDate !== tomorrowIso) continue
+    const inWindow =
+      p.scheduledDate === todayIso ||
+      (prefs.goesLiveWindow === "today-and-tomorrow" &&
+        p.scheduledDate === tomorrowIso)
+    if (!inWindow) continue
     if (!channelsIncomplete(p, orgChannels)) continue
     reminders.push({
       id: `goes-live-${p.id}`,
@@ -136,12 +165,12 @@ export async function getWorkspaceReminders(): Promise<WorkspaceReminder[]> {
     const last = recentByCategory.get(cat.id)
     const daysSilent = last
       ? differenceInDays(today, parseISO(last))
-      : SILENT_CATEGORY_THRESHOLD_DAYS
-    if (daysSilent >= SILENT_CATEGORY_THRESHOLD_DAYS) {
+      : silentThreshold
+    if (daysSilent >= silentThreshold) {
       silentCandidates.push({
         categoryId: cat.id,
         name: cat.name,
-        daysSilent: Number.isFinite(daysSilent) ? daysSilent : SILENT_CATEGORY_THRESHOLD_DAYS,
+        daysSilent: Number.isFinite(daysSilent) ? daysSilent : silentThreshold,
       })
     }
   }
@@ -157,5 +186,7 @@ export async function getWorkspaceReminders(): Promise<WorkspaceReminder[]> {
     })
   }
 
-  return reminders.slice(0, 5)
+  return reminders
+    .filter((r) => reminderKindEnabled(r.kind, prefs))
+    .slice(0, prefs.maxToastsPerSession)
 }

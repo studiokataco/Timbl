@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { promoteAwarenessDay } from "@/lib/actions/awareness"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay } from "@/lib/schemas"
+import { IMPORTANCE_LABELS } from "@/lib/labels/enums"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
 
 type Props = {
@@ -89,9 +90,9 @@ export function CalendarAwarenessRail({
                     </span>
                     <Badge
                       variant={IMPORTANCE_VARIANT[d.importance]}
-                      className="capitalize font-normal text-[10px] px-1.5 py-0"
+                      className="font-normal text-[10px] px-1.5 py-0"
                     >
-                      {d.importance}
+                      {IMPORTANCE_LABELS[d.importance]}
                     </Badge>
                   </div>
                   <div className="font-medium leading-snug">{d.name}</div>

@@ -33,7 +33,7 @@ export function BrandPreviewPanel() {
 
   if (!data) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-secondary/20 p-4 text-xs text-muted-foreground">
+      <div className="rounded-lg border border-dashed border-border bg-secondary/20 p-4 text-body-sm text-muted-foreground">
         Nothing saved yet. Chat with the wizard on the left - fields will
         appear here as they&apos;re captured.
       </div>
@@ -41,7 +41,7 @@ export function BrandPreviewPanel() {
   }
 
   return (
-    <dl className="space-y-3 text-xs">
+    <dl className="space-y-3">
       <Field label="Voice">{data.voice}</Field>
       <Field label="Audience">{data.audience}</Field>
       <Field label="Channels">
@@ -92,10 +92,10 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">
+      <dt className="text-caption uppercase tracking-wider text-muted-foreground">
         {label}
       </dt>
-      <dd className="text-foreground leading-relaxed">{children}</dd>
+      <dd className="text-body-sm text-foreground leading-relaxed">{children}</dd>
     </div>
   )
 }

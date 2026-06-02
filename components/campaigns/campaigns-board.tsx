@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { CAMPAIGN_STATUS_LABELS, labelOr } from "@/lib/labels/enums"
 import {
   Dialog,
   DialogContent,
@@ -301,11 +302,8 @@ export function CampaignsBoard({ campaigns }: Props) {
                         />
                       </div>
                     </div>
-                    <Badge
-                      variant="secondary"
-                      className="text-xs font-normal capitalize"
-                    >
-                      {c.status}
+                    <Badge variant="secondary" className="text-xs font-normal">
+                      {labelOr(CAMPAIGN_STATUS_LABELS, c.status)}
                     </Badge>
                   </div>
                 </Link>
@@ -406,7 +404,9 @@ export function CampaignsBoard({ campaigns }: Props) {
                 onValueChange={(v) => setField("status", v as CampaignStatus)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {(v) => labelOr(CAMPAIGN_STATUS_LABELS, v)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>

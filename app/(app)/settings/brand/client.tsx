@@ -36,7 +36,7 @@ export function BrandWizardClient() {
         aria-label="Brand configuration preview"
         className="border border-border rounded-xl bg-background p-4 h-fit lg:sticky lg:top-4 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto"
       >
-        <h2 className="text-sm font-medium mb-3">Configuration preview</h2>
+        <h2 className="text-title-sm text-foreground mb-3">Configuration preview</h2>
         <BrandPreviewPanel />
       </aside>
     </div>

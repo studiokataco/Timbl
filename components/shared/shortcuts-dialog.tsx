@@ -40,7 +40,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ["⌘", ","], label: "Settings" },
       { keys: ["⌘", "N"], label: "Quick add post" },
       { keys: ["⌘", "J"], label: "Ask AI" },
-      { keys: ["⌘", "⇧", "J"], label: "Agent history drawer" },
+      { keys: ["⌘", "⇧", "J"], label: "Agent sidebar (history + chat)" },
       { keys: ["?"], label: "This cheatsheet" },
     ],
   },

@@ -53,5 +53,40 @@ export const organisationSchema = audit.extend({
       notifyModelUpdates: z.boolean().default(true),
     })
     .optional(),
+  /* Workspace reminder toasts; kinds map to getWorkspaceReminders. */
+  reminderPreferences: z
+    .object({
+      enabled: z.boolean().default(true),
+      approvalDue: z.boolean().default(true),
+      overdue: z.boolean().default(true),
+      goesLiveSoon: z.boolean().default(true),
+      silentCategory: z.boolean().default(true),
+      maxToastsPerSession: z.number().int().min(1).max(5).default(3),
+      frequency: z.enum(["per-session", "once-per-day"]).default("per-session"),
+      approvalHorizonDays: z.number().int().min(1).max(14).default(3),
+      silentCategoryDays: z.number().int().min(7).max(90).default(14),
+      goesLiveWindow: z
+        .enum(["today", "today-and-tomorrow"])
+        .default("today-and-tomorrow"),
+      overdueIncludeDraft: z.boolean().default(true),
+      overdueIncludeScheduled: z.boolean().default(true),
+    })
+    .optional(),
 })
 export type Organisation = z.infer<typeof organisationSchema>
+
+export const reminderPreferencesSchema = z.object({
+  enabled: z.boolean(),
+  approvalDue: z.boolean(),
+  overdue: z.boolean(),
+  goesLiveSoon: z.boolean(),
+  silentCategory: z.boolean(),
+  maxToastsPerSession: z.number().int().min(1).max(5),
+  frequency: z.enum(["per-session", "once-per-day"]),
+  approvalHorizonDays: z.number().int().min(1).max(14),
+  silentCategoryDays: z.number().int().min(7).max(90),
+  goesLiveWindow: z.enum(["today", "today-and-tomorrow"]),
+  overdueIncludeDraft: z.boolean(),
+  overdueIncludeScheduled: z.boolean(),
+})
+export type ReminderPreferences = z.infer<typeof reminderPreferencesSchema>

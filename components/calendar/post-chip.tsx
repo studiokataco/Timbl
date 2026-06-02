@@ -3,6 +3,7 @@
 import { differenceInCalendarDays } from "date-fns"
 import { cn } from "@/lib/utils"
 import type { Category, Post, User } from "@/lib/schemas"
+import { postStatusLabel } from "@/lib/labels/enums"
 import { categoryPillColors } from "./color"
 
 export const STATUS_GLYPH: Record<string, string> = {
@@ -48,7 +49,7 @@ export function PostChip({
     <span
       role="button"
       tabIndex={0}
-      aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${post.status}`}
+      aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}`}
       className={cn(
         "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-tight cursor-pointer truncate w-full",
         isPast && "opacity-50",

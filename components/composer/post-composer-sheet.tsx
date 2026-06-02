@@ -72,7 +72,11 @@ import type {
   User,
 } from "@/lib/schemas"
 import { LEGACY_POST_STATUSES } from "@/lib/schemas"
-import { CADENCE_LABELS, labelOr } from "@/lib/labels/enums"
+import {
+  CADENCE_LABELS,
+  CHANNEL_STATUS_LABELS,
+  labelOr,
+} from "@/lib/labels/enums"
 import { deletePost, updatePost } from "@/lib/actions/posts"
 import { createCampaign } from "@/lib/actions/campaigns"
 import { fetchOgImage } from "@/lib/actions/assets"
@@ -675,9 +679,7 @@ export function PostComposerSheet({
                   <SelectContent>
                     {validStatuses.map((s) => (
                       <SelectItem key={s} value={s}>
-                        <span className="capitalize">
-                          {statusLabelById.get(s) ?? s}
-                        </span>
+                        {statusLabelById.get(s) ?? s}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -840,13 +842,13 @@ export function PostComposerSheet({
                     >
                       <SelectTrigger className="w-40">
                         <SelectValue>
-                          {(v) => (v === "n/a" ? "N/A" : v.charAt(0).toUpperCase() + v.slice(1))}
+                          {(v) => labelOr(CHANNEL_STATUS_LABELS, v)}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {CHANNEL_STATUS_OPTIONS.map((s) => (
                           <SelectItem key={s} value={s}>
-                            {s === "n/a" ? "N/A" : s.charAt(0).toUpperCase() + s.slice(1)}
+                            {CHANNEL_STATUS_LABELS[s]}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -25,6 +25,7 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useTemplate as promoteTemplate } from "@/lib/actions/templates"
+import { CADENCE_LABELS, POST_TYPE_LABELS, labelOr } from "@/lib/labels/enums"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Cta, Template } from "@/lib/schemas"
 import { NewTemplateDialog } from "./new-template-dialog"
@@ -157,11 +158,11 @@ export function TemplatesView({ templates, categories, ctas }: Props) {
                   <h3 className="font-medium leading-snug flex-1">{t.name}</h3>
                 </div>
                 <div className="flex flex-wrap gap-1.5 text-xs">
-                  <Badge variant="secondary" className="font-normal capitalize">
-                    {t.defaultPostType}
+                  <Badge variant="secondary" className="font-normal">
+                    {labelOr(POST_TYPE_LABELS, t.defaultPostType)}
                   </Badge>
-                  <Badge variant="secondary" className="font-normal capitalize">
-                    {t.cadence}
+                  <Badge variant="secondary" className="font-normal">
+                    {labelOr(CADENCE_LABELS, t.cadence)}
                   </Badge>
                   {cta && (
                     <Badge variant="outline" className="font-normal">
