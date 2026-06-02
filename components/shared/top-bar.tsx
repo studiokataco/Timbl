@@ -63,10 +63,10 @@ export function TopBar({
 
         <button
           type="button"
-          onClick={() => window.dispatchEvent(new Event("agent-drawer:open"))}
+          onClick={() => window.dispatchEvent(new Event("agent-modal:open"))}
           className="hidden md:inline-flex items-center justify-center size-9 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
-          aria-label="Open agent drawer (⌘J)"
-          title="Agent · ⌘J"
+          aria-label="Ask AI · ⌘J"
+          title="Ask AI · ⌘J"
         >
           <Sparkles aria-hidden className="size-4" />
         </button>

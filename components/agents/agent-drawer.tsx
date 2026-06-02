@@ -1,18 +1,17 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { History, Sparkles } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { History } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
+import type { AgentProvider } from "@/lib/schemas/agentConfig"
 import {
   appendMessage,
   createThread,
@@ -22,18 +21,15 @@ import {
   type ThreadMessage,
 } from "@/lib/storage/agent-threads"
 
-import { AgentChat } from "./agent-chat"
+import { AgentAskShell } from "./agent-ask-shell"
+import { AgentChat, type AgentChatHandle } from "./agent-chat"
 import { AgentThreadRail } from "./agent-thread-rail"
 import { useRosterAgents } from "./use-roster-agents"
 
 /*
- * Global agent drawer - two-pane surface (history rail + active
- * conversation) at >=1024px, collapsing to a single pane with a
- * "History" trigger on narrow widths. Cmd-J toggles; ESC closes;
- * external code can dispatch `agent-drawer:open` to surface it.
- *
- * Active thread id is kept in module-level state so closing and
- * reopening the drawer restores the last-viewed conversation.
+ * Global agent drawer - history rail + active conversation. Cmd-Shift-J
+ * toggles; ESC closes; `agent-drawer:open` / `agent-drawer:open-thread`
+ * open programmatically.
  */
 
 const FLOATING_HOTKEY = "j"
@@ -55,6 +51,12 @@ export function AgentDrawer() {
     () => lastActiveThreadByOrg.get(orgId) ?? null,
   )
   const [showRailMobile, setShowRailMobile] = useState(false)
+  const [input, setInput] = useState("")
+  const [streaming, setStreaming] = useState(false)
+  const [transcriptLength, setTranscriptLength] = useState(0)
+  const [provider, setProvider] = useState<AgentProvider | "">("")
+  const [model, setModel] = useState("")
+  const chatRef = useRef<AgentChatHandle | null>(null)
   const qc = useQueryClient()
   const bootstrappedRef = useRef(false)
 
@@ -62,7 +64,6 @@ export function AgentDrawer() {
     lastActiveThreadByOrg.set(orgId, activeThreadId)
   }, [orgId, activeThreadId])
 
-  // Cmd-Shift-J / Ctrl-Shift-J toggle. (Cmd-J is owned by the modal.)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey
@@ -75,14 +76,12 @@ export function AgentDrawer() {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
-  // Programmatic open via custom event.
   useEffect(() => {
     const onOpen = () => setOpen(true)
     window.addEventListener("agent-drawer:open", onOpen)
     return () => window.removeEventListener("agent-drawer:open", onOpen)
   }, [])
 
-  // Open a specific thread (used by the modal's "View in sidebar" migration).
   useEffect(() => {
     const onOpenThread = (e: Event) => {
       const ce = e as CustomEvent<{ threadId: string }>
@@ -102,10 +101,8 @@ export function AgentDrawer() {
       )
   }, [])
 
-  // Agent configs for the top pill rail (same roster filter as Studio).
   const { agentNames, defaultAgent } = useRosterAgents()
 
-  // Active thread record (used for agent identity on the right pane).
   const { data: activeThread = null } = useQuery({
     queryKey: threadQueryKey(orgId, activeThreadId ?? ""),
     queryFn: () =>
@@ -113,7 +110,6 @@ export function AgentDrawer() {
     enabled: !!activeThreadId,
   })
 
-  // On open with no active thread, load most recent or auto-create.
   useEffect(() => {
     if (!open) {
       bootstrappedRef.current = false
@@ -143,13 +139,13 @@ export function AgentDrawer() {
       await qc.invalidateQueries({ queryKey: threadsQueryKey(orgId) })
       setActiveThreadId(fresh.id)
       setShowRailMobile(false)
+      setInput("")
+      setTranscriptLength(0)
     },
     [qc, orgId],
   )
 
   const activeAgentNameForCb = useRef<string>("")
-  // We need the current activeAgentName inside switchAgent without
-  // triggering re-creation on every render; mirror it through a ref.
 
   const switchAgent = useCallback(
     async (name: string) => {
@@ -170,14 +166,14 @@ export function AgentDrawer() {
   const handlePickThread = useCallback((id: string) => {
     setActiveThreadId(id)
     setShowRailMobile(false)
+    setInput("")
+    setTranscriptLength(0)
   }, [])
 
   const handlePersist = useCallback(
     async (msg: ThreadMessage) => {
       if (!activeThreadId) return
       await appendMessage(activeThreadId, msg)
-      // Keep the rail's relative timestamps and titles fresh, but
-      // don't thrash queries - invalidate at a low rate.
       qc.invalidateQueries({ queryKey: threadsQueryKey(orgId) })
     },
     [activeThreadId, qc, orgId],
@@ -187,113 +183,128 @@ export function AgentDrawer() {
   useEffect(() => {
     activeAgentNameForCb.current = activeAgentName
   }, [activeAgentName])
-  const pickerAgentNames =
-    agentNames.length > 0 ? agentNames : [defaultAgent]
+
+  const pickerAgentNames = useMemo(
+    () => (agentNames.length > 0 ? agentNames : [defaultAgent]),
+    [agentNames, defaultAgent],
+  )
+
+  const onMessage = useCallback(() => {
+    const t = chatRef.current?.getTranscript() ?? []
+    setTranscriptLength(t.length)
+  }, [])
+
+  const submit = useCallback(
+    (override?: string) => {
+      const text = (override ?? input).trim()
+      if (!text || streaming) return
+      chatRef.current?.submit(text)
+      if (override === undefined) setInput("")
+    },
+    [input, streaming],
+  )
+
+  const isEmpty = transcriptLength === 0
 
   return (
-    <>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="right"
-          className="!w-full sm:!max-w-xl lg:!max-w-3xl flex flex-row p-0"
-        >
-          {/* Desktop rail - hidden on narrow widths */}
-          <div className="hidden lg:flex">
-            <AgentThreadRail
-              activeId={activeThreadId}
-              onPick={handlePickThread}
-              onNewChat={handleNewChat}
-              defaultAgentName={activeAgentName}
-            />
-          </div>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent
+        side="right"
+        className="!w-full sm:!max-w-xl lg:!max-w-3xl flex flex-row p-0"
+      >
+        <div className="hidden lg:flex">
+          <AgentThreadRail
+            activeId={activeThreadId}
+            onPick={handlePickThread}
+            onNewChat={handleNewChat}
+            defaultAgentName={activeAgentName}
+          />
+        </div>
 
-          {/* Mobile rail overlay */}
-          {showRailMobile && (
-            <div className="lg:hidden absolute inset-0 z-20 bg-background flex flex-col">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                <span className="text-[12px] font-semibold">History</span>
-                <button
-                  type="button"
-                  onClick={() => setShowRailMobile(false)}
-                  className="text-[12px] text-muted-foreground hover:text-foreground"
-                >
-                  Close
-                </button>
-              </div>
-              <div className="flex-1 min-h-0">
-                <AgentThreadRail
-                  activeId={activeThreadId}
-                  onPick={handlePickThread}
-                  onNewChat={handleNewChat}
-                  defaultAgentName={activeAgentName}
-                />
-              </div>
+        {showRailMobile && (
+          <div className="lg:hidden absolute inset-0 z-20 bg-background flex flex-col">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+              <span className="text-[12px] font-semibold">Past chats</span>
+              <button
+                type="button"
+                onClick={() => setShowRailMobile(false)}
+                className="text-[12px] text-muted-foreground hover:text-foreground"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <AgentThreadRail
+                activeId={activeThreadId}
+                onPick={handlePickThread}
+                onNewChat={handleNewChat}
+                defaultAgentName={activeAgentName}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0 flex flex-col">
+          <SheetHeader className="px-4 py-3 border-b border-border">
+            <div className="flex items-center justify-between gap-2">
+              <SheetTitle className="text-base">Past chats</SheetTitle>
+              <button
+                type="button"
+                onClick={() => setShowRailMobile(true)}
+                aria-label="Show past chats"
+                className="lg:hidden inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                <History className="size-3.5" aria-hidden />
+                History
+              </button>
+            </div>
+          </SheetHeader>
+
+          {activeThreadId && activeThread ? (
+            <AgentAskShell
+              chatRef={chatRef}
+              resolvedActiveAgent={activeAgentName}
+              pickerAgentNames={pickerAgentNames}
+              onAgentSwitch={(name) => void switchAgent(name)}
+              input={input}
+              onInputChange={setInput}
+              streaming={streaming}
+              onSubmit={submit}
+              isEmpty={isEmpty}
+              provider={provider}
+              onProviderChange={setProvider}
+              model={model}
+              onModelChange={setModel}
+              modelDatalistId="agent-drawer-models"
+              showShortcutHints={false}
+              className="flex-1 min-h-0"
+            >
+              <AgentChat
+                ref={chatRef}
+                key={activeThreadId}
+                agentName={activeAgentName}
+                threadId={activeThreadId}
+                agentCatalog={pickerAgentNames}
+                onAgentSwitch={(name) => void switchAgent(name)}
+                organizationId={orgId}
+                onMessage={(msg) => {
+                  void handlePersist(msg)
+                  onMessage()
+                }}
+                compact
+                onStreamingChange={setStreaming}
+                providerOverride={provider}
+                modelOverride={model}
+                className="h-full"
+              />
+            </AgentAskShell>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-[12px] text-muted-foreground">
+              Loading…
             </div>
           )}
-
-          <div className="flex-1 min-w-0 flex flex-col">
-            <SheetHeader className="px-4 py-3 border-b border-border space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <SheetTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="size-4" aria-hidden /> Agent
-                </SheetTitle>
-                <button
-                  type="button"
-                  onClick={() => setShowRailMobile(true)}
-                  aria-label="Show history"
-                  className="lg:hidden inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
-                >
-                  <History className="size-3.5" aria-hidden />
-                  History
-                </button>
-              </div>
-              <SheetDescription className="text-xs">
-                Ask the {activeAgentName} agent. Pick a different one below or open a past chat.
-              </SheetDescription>
-              {/* Agent pill rail */}
-              <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
-                {pickerAgentNames.map((name) => {
-                  const isActive = name === activeAgentName
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => switchAgent(name)}
-                      className={cn(
-                        "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] transition-colors border",
-                        isActive
-                          ? "bg-foreground text-background border-foreground"
-                          : "bg-secondary text-muted-foreground border-transparent hover:text-foreground",
-                      )}
-                    >
-                      {name}
-                    </button>
-                  )
-                })}
-              </div>
-            </SheetHeader>
-            <div className="flex-1 min-h-0">
-              {activeThreadId && activeThread ? (
-                <AgentChat
-                  key={activeThreadId}
-                  agentName={activeAgentName}
-                  threadId={activeThreadId}
-                  agentCatalog={pickerAgentNames}
-                  onAgentSwitch={switchAgent}
-                  organizationId={orgId}
-                  onMessage={handlePersist}
-                  intro={`Ask the ${activeAgentName} agent about this workspace.`}
-                  placeholder="Ask anything…"
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center text-[12px] text-muted-foreground">
-                  Loading…
-                </div>
-              )}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }

@@ -62,8 +62,6 @@ const PALETTE: { id: string; hex: string; label: string }[] = [
   { id: "cream", hex: "#fde68a", label: "Cream" },
 ]
 
-const POST_TYPES = ["grid", "carousel", "reel", "story", "video"] as const
-
 /*
  * Settings/categories surface. Owns:
  *   - Reorder via @dnd-kit (single drop, posts the full ordered ids list)
@@ -216,7 +214,7 @@ export function CategoriesManager({
       ) : null}
 
       <div className="rounded-lg border border-border bg-card">
-        <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-3 border-b border-border px-3 py-2 text-xs text-muted-foreground">
+        <div className="grid grid-cols-[auto_auto_1fr_auto_auto] items-center gap-3 border-b border-border px-3 py-2 text-xs text-muted-foreground">
           <div className="w-6" aria-hidden />
           <Checkbox
             checked={allSelected}
@@ -225,7 +223,6 @@ export function CategoriesManager({
             className="opacity-60"
           />
           <div>Category</div>
-          <div className="hidden sm:block">Default type</div>
           <div className="hidden sm:block">Order</div>
           <div className="w-24 text-right">Actions</div>
         </div>
@@ -326,7 +323,7 @@ function CategoryRow({
         transition,
       }}
       className={cn(
-        "grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 bg-background",
+        "grid grid-cols-[auto_auto_1fr_auto_auto] items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 bg-background",
         isDragging && "opacity-60 shadow-sm",
         selected && "bg-muted/30",
       )}
@@ -372,9 +369,6 @@ function CategoryRow({
         </div>
       </div>
 
-      <div className="hidden text-xs text-muted-foreground sm:block">
-        {category.defaultPostType}
-      </div>
       <div className="hidden text-xs text-muted-foreground sm:block">
         {index + 1}
       </div>
@@ -636,8 +630,6 @@ function BulkAddDialog({
   const [, startTransition] = useTransition()
   const [names, setNames] = useState("")
   const [color, setColor] = useState(PALETTE[0].hex)
-  const [defaultPostType, setDefaultPostType] =
-    useState<(typeof POST_TYPES)[number]>("grid")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const parsedNames = useMemo(
@@ -654,13 +646,12 @@ function BulkAddDialog({
       onClose()
       setNames("")
       setColor(PALETTE[0].hex)
-      setDefaultPostType("grid")
     }
   }
 
   function onSubmit() {
     if (parsedNames.length === 0) return
-    const items = parsedNames.map((name) => ({ name, color, defaultPostType }))
+    const items = parsedNames.map((name) => ({ name, color }))
 
     /* Optimistic add with temp ids. */
     const now = new Date().toISOString()
@@ -671,7 +662,7 @@ function BulkAddDialog({
         name: item.name,
         slug: item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60),
         color: item.color,
-        defaultPostType: item.defaultPostType,
+        defaultPostType: "grid",
         defaultHashtags: [],
         isActive: true,
         displayOrder: nextDisplayOrder + i,
@@ -683,7 +674,6 @@ function BulkAddDialog({
     onClose()
     setNames("")
     setColor(PALETTE[0].hex)
-    setDefaultPostType("grid")
 
     setIsSubmitting(true)
     startTransition(async () => {
@@ -704,8 +694,8 @@ function BulkAddDialog({
         <DialogHeader>
           <DialogTitle>Bulk add categories</DialogTitle>
           <DialogDescription>
-            Enter one category name per line. All will get the same default
-            color and post type - edit individually after.
+            Enter one category name per line. All will share the same color -
+            edit individually after.
           </DialogDescription>
         </DialogHeader>
 
@@ -751,24 +741,6 @@ function BulkAddDialog({
                 )
               })}
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="bulk-type">Default post type</Label>
-            <select
-              id="bulk-type"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-              value={defaultPostType}
-              onChange={(e) =>
-                setDefaultPostType(e.target.value as (typeof POST_TYPES)[number])
-              }
-            >
-              {POST_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 

@@ -60,3 +60,10 @@ Other scripts:
 - One phase per session. Don't pile two phase prompts on top of each other. You can use agent orchestration to break down the work into smaller chunks.
 - Always start a session with `git status` so we see the current state before proposing changes.
 - Migrations / seeds are append-only. Never edit a committed seed; write a new one to alter.
+
+## Memory & Rules
+File-based memory lives in the Obsidian vault. Read the relevant note only when you need it (don't load preemptively):
+- /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Decisions/  — durable architectural & product decisions
+- /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Mistakes/   — gotchas worth not repeating
+- /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Context/    — infra/setup facts (where things live, how to run them)
+This project: /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Decisions/safe.md

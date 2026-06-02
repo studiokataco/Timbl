@@ -14,6 +14,7 @@ import { ShortcutsDialog } from "@/components/shared/shortcuts-dialog"
 import { Sidebar } from "@/components/shared/sidebar"
 import { TopBar } from "@/components/shared/top-bar"
 import { WorkspaceProvider } from "@/components/shared/workspace-provider"
+import { WorkspaceReminders } from "@/components/shared/workspace-reminders"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
 import {
   getCurrentOrgId,
@@ -67,6 +68,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <AgentCommandModal key={orgId} />
             <AskAiButton />
             <ProductTourAutostart enabled />
+            <WorkspaceReminders />
           </DialogsProvider>
         </PlanFeaturesProvider>
       </WorkspaceProvider>

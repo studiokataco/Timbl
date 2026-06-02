@@ -111,6 +111,16 @@ export default async function CampaignDetailPage({ params }: Props) {
                 ))}
               </div>
             </div>
+
+            <p className="text-xs text-muted-foreground">
+              Posts use workspace categories shared across campaigns.{" "}
+              <Link
+                href="/settings/categories"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                Manage categories
+              </Link>
+            </p>
           </div>
 
           <CampaignTimeline
