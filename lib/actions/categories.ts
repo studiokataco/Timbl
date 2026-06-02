@@ -6,7 +6,6 @@ import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
 import { orgCategoriesPath, orgPostsPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
-import { gateErrorToResult, requireFeature } from "@/lib/plans/gate"
 import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import {
   categorySchema,
@@ -18,10 +17,6 @@ import {
  * Category CRUD. Read path stays in /lib/queries; mutations live here so
  * /settings/categories can invoke them as server actions.
  *
- * Gating:
- *   - `create` requires the `customCategories` feature (Studio+). Existing
- *     seeded categories on a Free plan stay editable; users just can't add
- *     more.
  *   - `delete` cannot remove `system: true` rows (seeded defaults).
  *   - `delete` requires a reassignTo target if any posts still point at
  *     the category - protects against orphan FKs.
@@ -96,14 +91,6 @@ export async function createCategory(input: unknown): Promise<ServerActionResult
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
   const orgId = await getCurrentOrgId()
-  try {
-    await requireFeature(orgId, "customCategories")
-  } catch (err) {
-    const gated = gateErrorToResult(err)
-    if (gated) return gated
-    throw err
-  }
-
   const db = getDb()
   const col = db.collection(orgCategoriesPath(orgId))
 
@@ -236,14 +223,6 @@ export async function bulkCreateCategories(input: unknown): Promise<ServerAction
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
   const orgId = await getCurrentOrgId()
-  try {
-    await requireFeature(orgId, "customCategories")
-  } catch (err) {
-    const gated = gateErrorToResult(err)
-    if (gated) return gated
-    throw err
-  }
-
   const db = getDb()
   const col = db.collection(orgCategoriesPath(orgId))
 

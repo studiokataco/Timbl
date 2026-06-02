@@ -1,12 +1,12 @@
 /*
- * Curated starter-template library. Used by the wizard's step 4 to write
+ * Curated starter templates. Used by the wizard's step 4 to write
  * actual /organizations/{orgId}/templates rows when the user accepts the
  * suggested set.
  *
  * Slugs match `templateSlugs` in industry-defaults.ts. The wizard reads
  * industry → slugs → looks up the row here → writes the row to Firestore.
  *
- * Why a library here vs. seed: seeds populate the SAFE demo org once at
+ * Why starter templates here vs. seed: seeds populate the SAFE demo org once at
  * dev-boot. The wizard runs on every NEW org and needs a curated source
  * accessible from server actions. Keeping it as code (not Firestore) means
  * adding a new industry's starter template is a code change, reviewable in

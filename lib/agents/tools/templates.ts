@@ -10,7 +10,7 @@ import { templateCadence } from "@/lib/schemas/template"
 import { getRuntimeCtx } from "../runtime/context"
 
 /*
- * Library-template tool. Mirrors lib/actions/templates.ts (the UI path) but
+ * Template tool. Mirrors lib/actions/templates.ts (the UI path) but
  * writes through getAdminDb under the agent's runtime org, the same way the
  * post tools do. Lets the drafter turn a recurring idea (work anniversaries,
  * monthly recaps) into a reusable template instead of one-off draft posts.
@@ -52,7 +52,7 @@ const createInput = z.object({
 export const createTemplateTool = new FunctionTool({
   name: "createTemplate",
   description:
-    "Create a reusable library template for recurring posts (eg. work anniversaries, monthly recaps). Use [PLACEHOLDER] tokens in blurbTemplate for the parts that change each time. Always include a name and a blurbTemplate.",
+    "Create a reusable template for recurring posts (eg. work anniversaries, monthly recaps). Use [PLACEHOLDER] tokens in blurbTemplate for the parts that change each time. Always include a name and a blurbTemplate.",
   parameters: createInput,
   execute: async (input, ctx) => {
     const { orgId } = getRuntimeCtx(ctx)

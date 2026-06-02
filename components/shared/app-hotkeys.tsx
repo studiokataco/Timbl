@@ -9,7 +9,7 @@ const NAV_BY_DIGIT: Record<string, string> = {
   "1": "/calendar",
   "2": "/posts",
   "3": "/kanban",
-  "4": "/library",
+  "4": "/templates",
   "5": "/awareness",
   "6": "/campaigns",
 }

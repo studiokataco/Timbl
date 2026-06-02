@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -164,7 +164,7 @@ export function NewTemplateDialog({
         }
         return
       }
-      toast.success(`Template "${payload.name}" saved to library`)
+      toast.success(`Template "${payload.name}" saved`)
       onOpenChange(false)
       router.refresh()
     })

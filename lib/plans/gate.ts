@@ -46,8 +46,7 @@ function formatGateMessage(reason: PlanGateReason): string {
 }
 
 /* Read the org's current plan from /organizations/{orgId}.plan. Falls back
- * to free_v1 when the field is missing (new orgs land here before the
- * onboarding wizard sets a real value). */
+ * to agency_v1 when the field is missing (pilot: no gates until billing). */
 export async function getOrgPlan(orgId: string): Promise<PlanConfig> {
   const snap = await getAdminDb().doc(orgPath(orgId)).get()
   const planId = (snap.data()?.plan as string | undefined) ?? undefined

@@ -34,7 +34,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ["⌘", "1"], label: "Calendar" },
       { keys: ["⌘", "2"], label: "All posts" },
       { keys: ["⌘", "3"], label: "Kanban" },
-      { keys: ["⌘", "4"], label: "Library" },
+      { keys: ["⌘", "4"], label: "Templates" },
       { keys: ["⌘", "5"], label: "Awareness days" },
       { keys: ["⌘", "6"], label: "Campaigns" },
       { keys: ["⌘", ","], label: "Settings" },

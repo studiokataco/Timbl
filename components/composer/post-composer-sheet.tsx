@@ -281,7 +281,7 @@ export function PostComposerSheet({
         toast.error(res.error ?? "Could not save as template")
         return
       }
-      toast.success("Template saved to library")
+      toast.success("Template saved")
       setTemplateDialogOpen(false)
     })
   }

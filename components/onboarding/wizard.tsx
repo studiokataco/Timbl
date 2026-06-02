@@ -571,7 +571,7 @@ function TemplatesStep({
       <header>
         <h1 className="text-xl font-medium">Starter templates</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          We&apos;ll create these as templates in your library. Deselect any
+          We&apos;ll create these as templates in your workspace. Deselect any
           you don&apos;t want; you can always create more later.
         </p>
       </header>

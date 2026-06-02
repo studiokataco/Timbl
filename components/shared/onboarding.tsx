@@ -38,7 +38,7 @@ const STEPS = [
   {
     icon: KanbanSquare,
     title: "Switch views when you need them",
-    body: "Drag posts on Kanban through your workflow columns. Use Library for templates, Awareness days for observances, and Campaigns to group related posts. Open Studio for AI agents, or press ⌘K to search and jump anywhere.",
+    body: "Drag posts on Kanban through your workflow columns. Use Templates for recurring posts, Awareness days for observances, and Campaigns to group related posts. Open Studio for AI agents, or press ⌘K to search and jump anywhere.",
   },
 ]
 

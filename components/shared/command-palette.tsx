@@ -205,9 +205,9 @@ export function CommandPalette() {
             <span>Kanban</span>
             <CommandShortcut>⌘3</CommandShortcut>
           </CommandItem>
-          <CommandItem onSelect={() => go("/library")} value="library templates">
+          <CommandItem onSelect={() => go("/templates")} value="templates">
             <BookOpen />
-            <span>Library</span>
+            <span>Templates</span>
             <CommandShortcut>⌘4</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => go("/awareness")} value="awareness days">

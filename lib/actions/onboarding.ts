@@ -19,7 +19,7 @@ import {
 import {
   getStarterTemplate,
   type StarterTemplate,
-} from "@/lib/onboarding/template-library"
+} from "@/lib/onboarding/starter-templates"
 import { WIZARD_AGENT_IDS } from "@/lib/onboarding/agent-catalog"
 import { getAgentDefault, getAgentDefaultBudgets } from "@/lib/agents/defaults"
 import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
@@ -88,7 +88,7 @@ export async function saveOnboardingProfile(
 /* Persists everything the wizard collected: categories upserted by slug;
  * the wizard-selectable agents toggled via their `enabled` flag and, when
  * enabled, re-tailored with a workspace-context prompt block; templates
- * materialised from the starter library; channels stored on the profile;
+ * materialised from the starter templates; channels stored on the profile;
  * and a brandConfig doc seeded so every workflow agent reads the niche at
  * run time. */
 export async function applyOnboardingSelections(
@@ -202,7 +202,7 @@ export async function applyOnboardingSelections(
   }
   await batch.commit()
 
-  /* 3. Templates: write each picked starter-library row into the org's
+  /* 3. Templates: write each picked starter-template row into the org's
    * /templates collection. Skips rows that already exist (re-running the
    * wizard never clobbers user edits). categoryId is resolved to a
    * present category at write time so a user who deselected the suggested
@@ -290,7 +290,7 @@ export async function applyOnboardingSelections(
   revalidatePath("/settings/categories")
   revalidatePath("/settings/brand")
   revalidatePath("/settings/agents")
-  revalidatePath("/library")
+  revalidatePath("/templates")
   revalidatePath("/", "layout")
   return { ok: true, id: orgId }
 }
