@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic"
 
 import { addDays, format, startOfMonth, subDays } from "date-fns"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
 import { CalendarView } from "@/components/calendar/calendar-view"
 import { fetchAwarenessWithPlannedStatus } from "@/lib/queries/awareness.server"
 import { fetchCategories, fetchPostsInRange, fetchUsers } from "@/lib/queries/posts.server"
@@ -22,20 +23,22 @@ export default async function CalendarPage() {
   const start = format(subDays(startOfMonth(today), 7), "yyyy-MM-dd")
   const end = format(addDays(today, 60), "yyyy-MM-dd")
 
+  const orgId = await getCurrentOrgId()
+
   const [
-    orgId,
     posts,
     categories,
     users,
     { days: awarenessDays, plannedIds },
     suggestions,
+    campaigns,
   ] = await Promise.all([
-    getCurrentOrgId(),
     fetchPostsInRange(start, end),
     fetchCategories(),
     fetchUsers(),
     fetchAwarenessWithPlannedStatus(start, end),
     fetchSuggestions(),
+    fetchCampaignWithPostCount(orgId),
   ])
 
   return (
@@ -47,6 +50,7 @@ export default async function CalendarPage() {
       awarenessDays={awarenessDays}
       plannedAwarenessIds={Array.from(plannedIds)}
       suggestions={suggestions}
+      campaigns={campaigns}
       range={{ start, end }}
     />
   )
