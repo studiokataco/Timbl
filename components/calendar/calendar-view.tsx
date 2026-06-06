@@ -38,6 +38,7 @@ import { CalendarToolbar, type CalendarView as ViewT } from "./calendar-toolbar"
 import { CalendarGrid } from "./calendar-grid"
 import { CategoryFilter } from "./category-filter"
 import { CalendarAwarenessRail } from "./awareness-rail"
+import { CampaignTracker, type CampaignRow } from "./campaign-tracker"
 import { WeekView } from "./week-view"
 import { DayView } from "./day-view"
 
@@ -49,6 +50,7 @@ type Props = {
   awarenessDays: WithId<AwarenessDay>[]
   plannedAwarenessIds: string[]
   suggestions: Suggestion[]
+  campaigns: CampaignRow[]
   range: { start: string; end: string }
 }
 
@@ -59,6 +61,7 @@ export function CalendarView({
   awarenessDays,
   plannedAwarenessIds,
   suggestions,
+  campaigns,
   range,
 }: Props) {
   const queryClient = useQueryClient()
@@ -394,6 +397,7 @@ export function CalendarView({
                   onNone={() => setVisibleCategoryIds(new Set())}
                 />
               </div>
+              <CampaignTracker campaigns={campaigns} />
               <CalendarAwarenessRail
                 awarenessDays={awarenessDays}
                 plannedAwarenessIds={plannedAwarenessIds}
