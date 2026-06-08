@@ -193,7 +193,19 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
         completionTokens,
         cachedTokens,
       )
-      await ref.set({ "metrics.usdCost": usdCost }, { merge: true })
+      /* Wall-clock duration - finishedAt minus startedAt. The field existed
+       * on the schema but was never written; live-ops latency (p50/p95)
+       * reads it. */
+      const startedAt = data.startedAt as string | undefined
+      const durationMs = startedAt
+        ? Math.max(0, Date.parse(now) - Date.parse(startedAt))
+        : undefined
+      await ref.set(
+        durationMs === undefined
+          ? { "metrics.usdCost": usdCost }
+          : { "metrics.usdCost": usdCost, durationMs },
+        { merge: true },
+      )
       await emitAgentRun({
         orgId: input.orgId,
         runId: input.runId,
@@ -203,6 +215,8 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
         completionTokens,
         cachedTokens,
         usdCost,
+        provider: (data.provider as string | null | undefined) ?? null,
+        model: (data.model as string | null | undefined) ?? null,
       })
     } catch (err) {
       console.warn(

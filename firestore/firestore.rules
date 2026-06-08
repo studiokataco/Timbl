@@ -106,5 +106,15 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isPlatformAdmin();
     }
+
+    // --- Global: platform (control centre) -----------------------------
+    // The super-admin tree (allowlist, audit log, rollups, impersonation).
+    // Platform admins may read; all writes go through the Admin SDK only,
+    // so client writes are denied outright. This is the second defense
+    // layer behind requirePlatformAdmin() in the app.
+    match /platform/{document=**} {
+      allow read: if isPlatformAdmin();
+      allow write: if false;
+    }
   }
 }

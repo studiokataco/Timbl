@@ -41,10 +41,50 @@ const PUBLIC_PREFIXES = [
 ]
 const SESSION_COOKIE = "__session"
 
+/* Internals the admin-host rewrite must never touch (framework, auth
+ * handlers, analytics proxy, and the control APIs which are already
+ * correctly pathed). Everything else on the admin host is a page route and
+ * gets rewritten into the (control) group. */
+const ADMIN_PASSTHROUGH_PREFIXES = [
+  "/_next/",
+  "/__/",
+  "/ingest/",
+  "/api/control/",
+  "/control",
+  /* Auth entry/exit must work on the admin host so a platform admin can sign
+   * in and out there - otherwise these rewrite into /control and 404. */
+  "/login",
+  "/auth/",
+]
+
 export default function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl
+  const host = req.headers.get("host") ?? ""
+  const adminHost = process.env.NEXT_PUBLIC_ADMIN_HOST
+
+  /* Host gate (runs before everything, including the emulator bypass, so
+   * admin.localhost works in local dev). The control surface is reachable
+   * ONLY from the admin host; on every other host it 404s. Authorization
+   * is enforced server-side by requirePlatformAdmin() - the edge can't run
+   * the Admin SDK, so this layer only routes. */
+  if (adminHost && host === adminHost) {
+    if (ADMIN_PASSTHROUGH_PREFIXES.some((p) => pathname.startsWith(p))) {
+      return NextResponse.next()
+    }
+    const url = req.nextUrl.clone()
+    url.pathname = `/control${pathname === "/" ? "" : pathname}`
+    return NextResponse.rewrite(url)
+  }
+  if (
+    pathname === "/control" ||
+    pathname.startsWith("/control/") ||
+    pathname.startsWith("/api/control/")
+  ) {
+    return new NextResponse("Not found", { status: 404 })
+  }
+
   if (process.env.NEXT_PUBLIC_USE_EMULATORS === "1") return NextResponse.next()
 
-  const { pathname } = req.nextUrl
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next()
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next()
 

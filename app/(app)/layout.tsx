@@ -15,11 +15,14 @@ import { Sidebar } from "@/components/shared/sidebar"
 import { TopBar } from "@/components/shared/top-bar"
 import { WorkspaceProvider } from "@/components/shared/workspace-provider"
 import { WorkspaceReminders } from "@/components/shared/workspace-reminders"
+import { ImpersonationBanner } from "@/components/control/impersonation-banner"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
+import { resolveImpersonation } from "@/lib/auth/impersonation"
 import {
   getCurrentOrgId,
   getCurrentOrganisation,
   getCurrentUser,
+  requireActiveOrg,
 } from "@/lib/auth/server-helpers"
 import { isOnboardingComplete } from "@/lib/onboarding/state"
 import { getOrgPlanFeatures } from "@/lib/plans/gate"
@@ -36,23 +39,27 @@ import { getOrgPlanFeatures } from "@/lib/plans/gate"
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const orgId = await getCurrentOrgId()
+  /* Suspended orgs (set from the control centre) can't use the app. */
+  await requireActiveOrg(orgId)
   /* First-launch redirect: orgs that never completed the wizard land on
    * /onboarding. /onboarding lives outside this layout group, so the
    * redirect cannot loop. The (onboarding) layout owns its own chrome. */
   if (!(await isOnboardingComplete(orgId))) {
     redirect("/onboarding")
   }
-  const [referenceData, user, org, planFeatures] = await Promise.all([
+  const [referenceData, user, org, planFeatures, impersonation] = await Promise.all([
     fetchReferenceData(),
     getCurrentUser(),
     getCurrentOrganisation(),
     getOrgPlanFeatures(orgId),
+    resolveImpersonation(),
   ])
   return (
     <QueryProvider>
       <WorkspaceProvider orgId={orgId}>
         <PlanFeaturesProvider value={planFeatures}>
           <DialogsProvider data={referenceData}>
+            {impersonation ? <ImpersonationBanner orgName={org.name} /> : null}
             <div className="flex flex-1 min-h-0">
               <Sidebar />
               <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
