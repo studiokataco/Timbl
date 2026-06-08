@@ -13,7 +13,7 @@ import {
 } from "@/components/control/widgets"
 import { getBillingProfile } from "@/lib/actions/platform/billing"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
-import { compact, duration, pct, relativeTime, usd } from "@/lib/platform/format"
+import { compact, duration, inr, pct, relativeTime } from "@/lib/platform/format"
 import { getOrgPeriod, getOrgRow, listOrgRuns } from "@/lib/platform/queries"
 import { tenantFinancials } from "@/lib/platform/revenue"
 import { cn } from "@/lib/utils"
@@ -59,13 +59,13 @@ export default async function TenantDetailPage({
 
       {/* Financials snapshot */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard label="MRR" value={fin.mrrUsd === null ? "custom" : usd(fin.mrrUsd)} sub={fin.planLabel} />
-        <StatCard label="ARR" value={fin.arrUsd === null ? "custom" : usd(fin.arrUsd)} />
-        <StatCard label="Infra (MTD)" value={usd(row.mtdUsdCost)} sub={`${compact(row.mtdAgentRuns)} runs`} />
+        <StatCard label="MRR" value={fin.mrrInr === null ? "custom" : inr(fin.mrrInr)} sub={fin.planLabel} />
+        <StatCard label="ARR" value={fin.arrInr === null ? "custom" : inr(fin.arrInr)} />
+        <StatCard label="Infra (MTD)" value={inr(fin.infraMtdInr)} sub={`${compact(row.mtdAgentRuns)} runs`} />
         <StatCard
           label="Margin"
-          value={fin.marginUsd === null ? "-" : usd(fin.marginUsd)}
-          delta={fin.marginUsd !== null && fin.marginUsd < 0 ? "negative" : undefined}
+          value={fin.marginInr === null ? "-" : inr(fin.marginInr)}
+          delta={fin.marginInr !== null && fin.marginInr < 0 ? "negative" : undefined}
         />
         <StatCard label="Seats" value={`${row.seats} / ${fin.includedSeats}`} sub="used / included" />
       </div>
@@ -95,7 +95,7 @@ export default async function TenantDetailPage({
             </h2>
           </div>
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-10 text-center">
-            <p className="text-sm font-medium">Awaiting Stripe (Phase H)</p>
+            <p className="text-sm font-medium">Awaiting Razorpay (Phase H)</p>
             <p className="max-w-xs text-xs text-muted-foreground">
               Real invoices, transactions, and card details land here once
               billing is wired. Status today is tracked manually in the billing

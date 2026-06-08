@@ -9,8 +9,8 @@ import { safeFieldKey } from "@/lib/platform/schema"
 
 /*
  * Agent-run telemetry. Single insertion point so the quota counter (used
- * by lib/plans/gate.ts:requireQuota) and any downstream metering (Stripe
- * Meter Events in Phase H) stay in lockstep.
+ * by lib/plans/gate.ts:requireQuota) and any downstream metering (Razorpay
+ * usage reconciliation in Phase H) stay in lockstep.
  *
  * Called from markAgentRunStatus when a run transitions to a terminal
  * state. Quota is incremented for BOTH `succeeded` and `failed` because:
@@ -21,8 +21,8 @@ import { safeFieldKey } from "@/lib/platform/schema"
  * Cancelled runs do not count.
  *
  * Counter writes are best-effort (try/catch around the call site) - a
- * usage-write failure must not break the user's UI. The Stripe push (when
- * it lands) is async-reconciled and never blocks either.
+ * usage-write failure must not break the user's UI. The Razorpay
+ * reconciliation (when it lands) is async and never blocks either.
  */
 
 export type AgentRunOutcome = "succeeded" | "failed"

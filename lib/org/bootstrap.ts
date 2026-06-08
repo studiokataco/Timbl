@@ -46,7 +46,7 @@ const DEFAULT_PLAN_FOR_NEW_ORG = "agency_v1"
  * Per the productization plan + user direction: we want a "free hand" until
  * launch - no plan-gates firing during pilot or dev. agency_v1 has a 5000
  * agentRuns/mo cap and unlimited scheduled posts, which covers any pilot
- * workload. When Stripe ships (Phase H) and self-serve signup goes live,
+ * workload. When Razorpay ships (Phase H) and self-serve signup goes live,
  * this constant flips to free_v1 and existing orgs grandfather. */
 
 const DEFAULT_KANBAN_COLUMNS = [

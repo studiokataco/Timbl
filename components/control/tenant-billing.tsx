@@ -36,7 +36,7 @@ export function TenantBilling({
         <h2 className="font-heading text-sm font-semibold tracking-tight">
           Billing profile
         </h2>
-        <span className="text-xs text-muted-foreground">company-use · manual until Stripe</span>
+        <span className="text-xs text-muted-foreground">company-use · manual until Razorpay</span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Company name">
@@ -52,7 +52,7 @@ export function TenantBilling({
           <Input value={form.country ?? ""} onChange={(e) => set("country", e.target.value)} />
         </Field>
         <Field label="Currency">
-          <Input value={form.currency ?? "USD"} onChange={(e) => set("currency", e.target.value)} />
+          <Input value={form.currency ?? "INR"} onChange={(e) => set("currency", e.target.value)} />
         </Field>
         <Field label="Billing status">
           <select
@@ -67,13 +67,16 @@ export function TenantBilling({
         </Field>
         <Field label="Payment method">
           <Input
-            placeholder="Bank transfer, Visa ****4242..."
+            placeholder="Bank transfer, UPI..."
             value={form.paymentMethod ?? ""}
             onChange={(e) => set("paymentMethod", e.target.value)}
           />
         </Field>
-        <Field label="Stripe customer ID (Phase H)">
-          <Input value={form.stripeCustomerId ?? ""} onChange={(e) => set("stripeCustomerId", e.target.value)} />
+        <Field label="Razorpay customer ID (Phase H)">
+          <Input value={form.razorpayCustomerId ?? ""} onChange={(e) => set("razorpayCustomerId", e.target.value)} />
+        </Field>
+        <Field label="Razorpay subscription ID (Phase H)">
+          <Input value={form.razorpaySubscriptionId ?? ""} onChange={(e) => set("razorpaySubscriptionId", e.target.value)} />
         </Field>
         <div className="sm:col-span-2">
           <Field label="Notes">

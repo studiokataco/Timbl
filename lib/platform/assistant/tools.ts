@@ -2,7 +2,7 @@ import "server-only"
 
 import { compareTwoStrings } from "string-similarity"
 
-import { usd, compact, pct } from "@/lib/platform/format"
+import { usd, inr, compact, pct } from "@/lib/platform/format"
 import {
   getGlobalRollup,
   getOrgPeriod,
@@ -117,7 +117,7 @@ export async function runTool(
       const rev = await getRevenueSummary()
       return {
         tool: name,
-        summary: `Est. MRR ${usd(rev.estMrrUsd)} from ${rev.payingOrgs} paying orgs; infra cost ${usd(rev.infraCostMtdUsd)} (MTD); est. margin ${usd(rev.marginUsd)}.`,
+        summary: `Est. MRR ${inr(rev.estMrrInr)} from ${rev.payingOrgs} paying orgs; infra cost ${inr(rev.infraCostMtdInr)} (MTD); est. margin ${inr(rev.marginInr)}.`,
         data: rev,
       }
     }

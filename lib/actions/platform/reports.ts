@@ -22,7 +22,7 @@ export async function tenantsReportCsv(): Promise<{ ok: boolean; csv?: string; e
     const rows = await listOrgRows()
     const header = [
       "org_id", "name", "tier", "plan", "status", "seats",
-      "mrr_usd", "arr_usd", "infra_mtd_usd", "margin_usd",
+      "mrr_inr", "arr_inr", "infra_mtd_inr", "margin_inr",
       "failure_rate", "last_run_at", "billing_status", "billing_email", "company",
     ]
     const lines = [header.join(",")]
@@ -37,8 +37,8 @@ export async function tenantsReportCsv(): Promise<{ ok: boolean; csv?: string; e
       lines.push(
         [
           row.orgId, row.name, fin.tier, row.plan, row.status, row.seats,
-          fin.mrrUsd ?? "", fin.arrUsd ?? "", row.mtdUsdCost.toFixed(2),
-          fin.marginUsd ?? "", row.failureRate.toFixed(3), row.lastRunAt ?? "",
+          fin.mrrInr ?? "", fin.arrInr ?? "", fin.infraMtdInr.toFixed(2),
+          fin.marginInr ?? "", row.failureRate.toFixed(3), row.lastRunAt ?? "",
           b?.status ?? "", b?.billingEmail ?? "", b?.companyName ?? "",
         ]
           .map(csvCell)

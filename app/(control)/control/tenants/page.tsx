@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
 import { PageHeading, StatusPill } from "@/components/control/widgets"
-import { compact, pct, relativeTime, usd } from "@/lib/platform/format"
+import { compact, inr, pct, relativeTime } from "@/lib/platform/format"
 import { listOrgRows } from "@/lib/platform/queries"
 import { tenantFinancials } from "@/lib/platform/revenue"
 import { cn } from "@/lib/utils"
@@ -99,10 +99,10 @@ export default async function TenantsPage({
                 </td>
                 <td className="px-3 py-2"><StatusPill status={row.status} /></td>
                 <td className="px-3 py-2 text-right tabular-nums">{row.seats}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{fin.mrrUsd === null ? "custom" : usd(fin.mrrUsd)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{usd(row.mtdUsdCost)}</td>
-                <td className={cn("px-3 py-2 text-right tabular-nums", fin.marginUsd !== null && fin.marginUsd < 0 && "text-red-600 dark:text-red-400")}>
-                  {fin.marginUsd === null ? "-" : usd(fin.marginUsd)}
+                <td className="px-3 py-2 text-right tabular-nums">{fin.mrrInr === null ? "custom" : inr(fin.mrrInr)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{inr(fin.infraMtdInr)}</td>
+                <td className={cn("px-3 py-2 text-right tabular-nums", fin.marginInr !== null && fin.marginInr < 0 && "text-red-600 dark:text-red-400")}>
+                  {fin.marginInr === null ? "-" : inr(fin.marginInr)}
                 </td>
                 <td className={cn("px-3 py-2 text-right tabular-nums", row.failureRate > 0.1 && "text-red-600 dark:text-red-400")}>
                   {pct(row.failureRate)}

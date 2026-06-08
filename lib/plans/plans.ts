@@ -33,11 +33,12 @@ export type QuotaMetric = "agentRuns" | "scheduledPosts" | "brands" | "seats"
 export type PlanConfig = {
   id: string
   tier: PlanTier
-  /* Display name and price for the upgrade UI. Stripe price IDs live in
-   * env, not here - this config stays env-agnostic. */
+  /* Display name and price for the upgrade UI. Prices are in INR rupees
+   * (whole rupees, not paise). Razorpay plan ids live in env, not here -
+   * this config stays env-agnostic; the billing layer maps id -> env. */
   label: string
-  monthlyPriceUsd: number | null
-  perBrandPriceUsd?: number
+  monthlyPriceInr: number | null
+  perBrandPriceInr?: number
   /* `null` = unlimited. */
   quotas: Record<QuotaMetric, number | null>
   features: Record<PlanFeatureFlag, boolean>
@@ -52,7 +53,7 @@ export const PLANS: Record<string, PlanConfig> = {
     id: "free_v1",
     tier: "free",
     label: "Free",
-    monthlyPriceUsd: 0,
+    monthlyPriceInr: 0,
     quotas: { agentRuns: 100, scheduledPosts: 30, brands: 1, seats: 2 },
     features: {
       multiStepApproval: false,
@@ -75,7 +76,7 @@ export const PLANS: Record<string, PlanConfig> = {
     id: "studio_v1",
     tier: "studio",
     label: "Studio",
-    monthlyPriceUsd: 39,
+    monthlyPriceInr: 2999,
     quotas: { agentRuns: 1500, scheduledPosts: null, brands: 1, seats: 5 },
     features: {
       multiStepApproval: false,
@@ -95,8 +96,8 @@ export const PLANS: Record<string, PlanConfig> = {
     id: "agency_v1",
     tier: "agency",
     label: "Agency",
-    monthlyPriceUsd: 149,
-    perBrandPriceUsd: 79,
+    monthlyPriceInr: 11999,
+    perBrandPriceInr: 5999,
     quotas: { agentRuns: 5000, scheduledPosts: null, brands: 3, seats: 15 },
     features: {
       multiStepApproval: true,
@@ -117,7 +118,7 @@ export const PLANS: Record<string, PlanConfig> = {
     tier: "scale",
     label: "Scale",
     /* Custom pricing - not self-serve. */
-    monthlyPriceUsd: null,
+    monthlyPriceInr: null,
     quotas: { agentRuns: null, scheduledPosts: null, brands: null, seats: null },
     features: {
       multiStepApproval: true,
@@ -136,7 +137,7 @@ export const PLANS: Record<string, PlanConfig> = {
 }
 
 /* Fallback when /organizations/{id}.plan is missing. Pilot/dev uses the
- * top self-serve tier so gates stay off until Stripe ships. */
+ * top self-serve tier so gates stay off until Razorpay billing ships. */
 export const DEFAULT_PLAN_ID = "agency_v1"
 
 export function getPlan(planId: string | undefined | null): PlanConfig {
@@ -147,7 +148,7 @@ export function getPlan(planId: string | undefined | null): PlanConfig {
 /* Public projection for client UI affordances. Stripped of pricing so
  * the client can render upgrade prompts without leaking the full
  * pricing matrix. (Pricing for the upgrade page is fetched separately
- * from a dedicated endpoint when we wire Stripe.) */
+ * from a dedicated endpoint when we wire Razorpay.) */
 export type PlanFeatures = {
   planId: string
   tier: PlanTier
