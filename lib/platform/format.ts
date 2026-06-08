@@ -8,6 +8,17 @@ export function usd(n: number): string {
   return `$${n.toFixed(4)}`
 }
 
+/* INR (rupees). Uses the Indian lakh/crore scale for large figures - the
+ * control centre money view is denominated in rupees. */
+export function inr(n: number): string {
+  const abs = Math.abs(n)
+  const sign = n < 0 ? "-" : ""
+  if (abs >= 1_00_00_000) return `${sign}₹${(abs / 1_00_00_000).toFixed(1)}Cr`
+  if (abs >= 1_00_000) return `${sign}₹${(abs / 1_00_000).toFixed(1)}L`
+  if (abs >= 1000) return `${sign}₹${(abs / 1000).toFixed(1)}k`
+  return `${sign}₹${Math.round(abs).toLocaleString("en-IN")}`
+}
+
 export function compact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`

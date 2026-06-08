@@ -86,7 +86,7 @@ export async function requireFeature(
 
 function currentPeriod(date = new Date()): string {
   /* YYYY-MM in UTC. Billing cadence is monthly; we don't slice finer than
-   * the calendar month for quota purposes. Stripe meter events are the
+   * the calendar month for quota purposes. Razorpay invoices are the
    * authoritative billable record - this counter is for UX. */
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
 }

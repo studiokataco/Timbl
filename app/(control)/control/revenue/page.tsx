@@ -2,35 +2,35 @@ import { Banknote, Coins, Server, TrendingUp } from "lucide-react"
 
 import { ReportExport } from "@/components/control/report-export"
 import { PageHeading, StatCard } from "@/components/control/widgets"
-import { compact, usd } from "@/lib/platform/format"
+import { compact, inr } from "@/lib/platform/format"
 import { getRevenueSummary, getTierFinancials } from "@/lib/platform/revenue"
 
 export const dynamic = "force-dynamic"
 
 export default async function RevenuePage() {
   const [rev, tiers] = await Promise.all([getRevenueSummary(), getTierFinancials()])
-  const arr = rev.estMrrUsd * 12
+  const arr = rev.estMrrInr * 12
 
   return (
     <div>
       <div className="mb-6 flex items-start justify-between gap-3">
         <PageHeading
           title="Revenue & financials"
-          description="Estimated from assigned plans - Stripe billing (Phase H) is not live, so this is contracted value, not invoiced revenue."
+          description="Estimated from assigned plans - Razorpay billing (Phase H) is not live, so this is contracted value, not invoiced revenue."
         />
         <ReportExport />
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={Banknote} label="Est. MRR" value={usd(rev.estMrrUsd)} sub={`${rev.payingOrgs} paying orgs`} />
-        <StatCard icon={TrendingUp} label="Est. ARR" value={usd(arr)} />
-        <StatCard icon={Server} label="Infra cost (MTD)" value={usd(rev.infraCostMtdUsd)} sub="metered LLM spend" />
+        <StatCard icon={Banknote} label="Est. MRR" value={inr(rev.estMrrInr)} sub={`${rev.payingOrgs} paying orgs`} />
+        <StatCard icon={TrendingUp} label="Est. ARR" value={inr(arr)} />
+        <StatCard icon={Server} label="Infra cost (MTD)" value={inr(rev.infraCostMtdInr)} sub="metered LLM spend" />
         <StatCard
           icon={Coins}
           label="Est. margin"
-          value={usd(rev.marginUsd)}
-          delta={rev.marginUsd < 0 ? "negative" : undefined}
-          sub={rev.marginUsd >= 0 ? "MRR over infra" : "infra over MRR"}
+          value={inr(rev.marginInr)}
+          delta={rev.marginInr < 0 ? "negative" : undefined}
+          sub={rev.marginInr >= 0 ? "MRR over infra" : "infra over MRR"}
         />
       </div>
 
@@ -56,11 +56,11 @@ export default async function RevenuePage() {
                 <tr key={t.tier} className="border-t border-foreground/5">
                   <td className="px-3 py-2 font-medium capitalize">{t.label}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{compact(t.orgs)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{usd(t.mrrUsd)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{usd(t.arrUsd)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{usd(t.infraMtdUsd)}</td>
-                  <td className={`px-3 py-2 text-right tabular-nums ${t.marginUsd < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                    {usd(t.marginUsd)}
+                  <td className="px-3 py-2 text-right tabular-nums">{inr(t.mrrInr)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{inr(t.arrInr)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{inr(t.infraMtdInr)}</td>
+                  <td className={`px-3 py-2 text-right tabular-nums ${t.marginInr < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                    {inr(t.marginInr)}
                   </td>
                 </tr>
               ))}
@@ -88,10 +88,10 @@ export default async function RevenuePage() {
                 <tr key={b.planId} className="border-t border-foreground/5">
                   <td className="px-3 py-2 font-medium">{b.label}</td>
                   <td className="px-3 py-2 text-muted-foreground">
-                    {b.monthlyPriceUsd === null ? "custom" : `${usd(b.monthlyPriceUsd)}/mo`}
+                    {b.monthlyPriceInr === null ? "custom" : `${inr(b.monthlyPriceInr)}/mo`}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{compact(b.orgs)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{usd(b.estMrrUsd)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{inr(b.estMrrInr)}</td>
                 </tr>
               ))}
             </tbody>
@@ -99,7 +99,7 @@ export default async function RevenuePage() {
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
           Scale tier is custom-priced and excluded from the MRR estimate. Real
-          invoices and payment history arrive with Stripe (Phase H).
+          invoices and payment history arrive with Razorpay (Phase H).
         </p>
       </section>
     </div>
