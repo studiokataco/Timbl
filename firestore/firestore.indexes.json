@@ -121,7 +121,40 @@
           "vectorConfig": { "dimension": 768, "flat": {} }
         }
       ]
+    },
+    {
+      "collectionGroup": "agentRuns",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "startedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "daily",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "usdCost", "order": "DESCENDING" }
+      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "agentRuns",
+      "fieldPath": "startedAt",
+      "indexes": [
+        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION_GROUP", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "daily",
+      "fieldPath": "date",
+      "indexes": [
+        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION_GROUP", "order": "DESCENDING" }
+      ]
+    }
+  ]
 }

@@ -46,11 +46,26 @@ function formatGateMessage(reason: PlanGateReason): string {
 }
 
 /* Read the org's current plan from /organizations/{orgId}.plan. Falls back
- * to agency_v1 when the field is missing (pilot: no gates until billing). */
+ * to agency_v1 when the field is missing (pilot: no gates until billing).
+ *
+ * Per-org quotaOverrides (set from the control centre) are merged OVER the
+ * plan's quotas, so a single org can be granted more (or less) headroom
+ * without changing its tier. This is the only quota chokepoint - requireQuota
+ * reads through here - so the override applies everywhere automatically. */
 export async function getOrgPlan(orgId: string): Promise<PlanConfig> {
-  const snap = await getAdminDb().doc(orgPath(orgId)).get()
-  const planId = (snap.data()?.plan as string | undefined) ?? undefined
-  return getPlan(planId)
+  const data = (await getAdminDb().doc(orgPath(orgId)).get()).data()
+  const plan = getPlan((data?.plan as string | undefined) ?? undefined)
+  const overrides = data?.quotaOverrides as
+    | Partial<Record<QuotaMetric, number | null>>
+    | undefined
+  if (!overrides) return plan
+  const quotas = { ...plan.quotas }
+  for (const metric of Object.keys(quotas) as QuotaMetric[]) {
+    if (metric in overrides && overrides[metric] !== undefined) {
+      quotas[metric] = overrides[metric] as number | null
+    }
+  }
+  return { ...plan, quotas }
 }
 
 export async function getOrgPlanFeatures(orgId: string): Promise<PlanFeatures> {

@@ -91,6 +91,13 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
 
   const db = getFirestore()
 
+  /* Platform allowlist - re-stamped on every sign-in so a token refresh
+   * never silently drops control-centre access. Source of truth is
+   * platform/state/admins/{emailSlug}. Spread into whatever org claims the
+   * resolution below produces. Mirrors lib/platform/schema.ts (functions/
+   * can't import @/lib). */
+  const platformClaim = await resolvePlatformClaim(db, email)
+
   /* 1. Existing membership - fastest path, no provisioning. */
   const membership = await findMembership(db, email)
   if (membership) {
@@ -100,6 +107,7 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
         organizationId: membership.orgId,
         role: membership.role,
         userId: membership.userId,
+        ...platformClaim,
       },
     }
   }
@@ -125,6 +133,7 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
         organizationId: legacy.orgId,
         role: seed.role,
         userId: seed.userId,
+        ...platformClaim,
       },
     }
   }
@@ -134,7 +143,7 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
    * business). Keep in sync with lib/auth/domains.ts CONSUMER_EMAIL_DOMAINS. */
   if (isConsumerEmailDomain(domain)) {
     logger.info("[claims] consumer email - workspace deferred to app", { email })
-    return { customClaims: {} }
+    return { customClaims: { ...platformClaim } }
   }
 
   /* 3. Business domain → shared org. Bootstrap inline (functions/ can't
@@ -168,9 +177,32 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
       organizationId: orgId,
       role: seed.role,
       userId: seed.userId,
+      ...platformClaim,
     },
   }
 })
+
+/* platform/state/admins/{emailSlug} exists -> platform claim + role.
+ * emailSlug must match lib/platform/schema.ts emailSlug(); role mirrors the
+ * doc's `role` field (missing = owner, for back-compat). */
+async function resolvePlatformClaim(
+  db: FirebaseFirestore.Firestore,
+  email: string,
+): Promise<{ platform?: "admin"; platformRole?: "owner" | "analyst" }> {
+  try {
+    const slug = email
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+    const snap = await db.doc(`platform/state/admins/${slug}`).get()
+    if (!snap.exists) return {}
+    const role = snap.data()?.role === "analyst" ? "analyst" : "owner"
+    return { platform: "admin", platformRole: role }
+  } catch {
+    return {}
+  }
+}
 
 async function findMembership(
   db: FirebaseFirestore.Firestore,

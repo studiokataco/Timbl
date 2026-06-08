@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath } from "@/lib/firebase/paths"
 import { readSessionAuth, readSessionClaims } from "@/lib/auth/session"
+import { resolveImpersonation } from "@/lib/auth/impersonation"
 import {
   DEV_ORG_COOKIE,
   getDevSession,
@@ -42,6 +43,15 @@ async function resolveDevSession(): Promise<DevSession> {
 }
 
 export async function getCurrentUser(): Promise<DevUser> {
+  const imp = await resolveImpersonation()
+  if (imp) {
+    return {
+      id: imp.userId,
+      email: `impersonated@${imp.orgId}`,
+      name: "Impersonated user",
+      role: imp.role,
+    }
+  }
   if (useDevShim) return (await resolveDevSession()).user
   const auth = await readSessionAuth()
   if (!auth) redirect("/")
@@ -55,6 +65,8 @@ export async function getCurrentUser(): Promise<DevUser> {
 }
 
 export async function getCurrentOrgId(): Promise<string> {
+  const imp = await resolveImpersonation()
+  if (imp) return imp.orgId
   if (useDevShim) return (await resolveDevSession()).organisation.id
   const auth = await readSessionAuth()
   if (!auth) redirect("/")
@@ -65,7 +77,11 @@ export async function getCurrentOrgId(): Promise<string> {
 export async function getCurrentOrganisation(): Promise<DevOrganisation> {
   let orgId: string
   let fallback: DevOrganisation
-  if (useDevShim) {
+  const imp = await resolveImpersonation()
+  if (imp) {
+    orgId = imp.orgId
+    fallback = { id: orgId, slug: orgId, name: orgId }
+  } else if (useDevShim) {
     fallback = (await resolveDevSession()).organisation
     orgId = fallback.id
   } else {
@@ -91,6 +107,15 @@ export async function getCurrentOrganisation(): Promise<DevOrganisation> {
 
 export function getDb() {
   return getAdminDb()
+}
+
+/* Block suspended orgs at the app boundary. Suspension is set from the
+ * control centre (lib/actions/platform/orgs.ts) and enforced app-layer,
+ * consistent with the rest of the multi-tenant model (Rules can't cheaply
+ * read the org doc per request). Called from the (app) layout. */
+export async function requireActiveOrg(orgId: string): Promise<void> {
+  const snap = await getAdminDb().doc(orgPath(orgId)).get()
+  if (snap.data()?.status === "suspended") redirect("/suspended")
 }
 
 export async function requireRole(allowed: ReadonlyArray<DevUser["role"]>): Promise<DevUser> {

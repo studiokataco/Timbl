@@ -9,6 +9,8 @@ import {
   orgTemplatesPath,
 } from "@/lib/firebase/paths"
 
+import { emitEmbeddingCall } from "@/lib/telemetry/agent-events"
+
 import { embed, currentEmbeddingModel } from "./provider"
 
 /*
@@ -111,6 +113,10 @@ export async function embedIfChanged(
     )
     return "soft-failed"
   }
+
+  /* Meter the embedding API call (org usage + platform rollup). Best-effort
+   * inside emitEmbeddingCall; awaited so the count is durable before return. */
+  await emitEmbeddingCall(orgId)
 
   await getAdminDb()
     .doc(`${collectionPathFor(kind, orgId)}/${id}`)

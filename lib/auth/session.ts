@@ -16,12 +16,27 @@ export type SessionAuth = {
   uid: string
   email: string
   workspace: WorkspaceClaims | null
+  /* "admin" when the user is on the platform allowlist (control centre).
+   * Set by functions/src/setUserClaims.ts on sign-in, or immediately by
+   * grantPlatformAdmin. Null for ordinary tenant users. */
+  platform: "admin" | null
+  /* The platform admin's role: "owner" (full god-mode) or "analyst"
+   * (read-only monitoring). Null for non-platform users. */
+  platformRole: "owner" | "analyst" | null
 }
 
 export async function createSessionFromIdToken(idToken: string): Promise<string> {
   return getAdminAuth().createSessionCookie(idToken, {
     expiresIn: SESSION_DURATION_MS,
   })
+}
+
+/* When the app spans subdomains (tenant app + admin control centre), set the
+ * session cookie on the registrable parent (e.g. ".example.com") so a login on
+ * either host is shared with the other. Unset in single-host / local dev =>
+ * host-only cookie, unchanged behaviour. */
+function sessionCookieDomain(): string | undefined {
+  return process.env.NEXT_PUBLIC_COOKIE_DOMAIN || undefined
 }
 
 export async function setSessionCookie(value: string) {
@@ -32,12 +47,14 @@ export async function setSessionCookie(value: string) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
+    domain: sessionCookieDomain(),
   })
 }
 
 export async function clearSessionCookie() {
   const store = await cookies()
-  store.delete(SESSION_COOKIE_NAME)
+  const domain = sessionCookieDomain()
+  store.set(SESSION_COOKIE_NAME, "", { maxAge: 0, path: "/", domain })
 }
 
 export async function readSessionAuth(): Promise<SessionAuth | null> {
@@ -59,7 +76,15 @@ export async function readSessionAuth(): Promise<SessionAuth | null> {
         ? { organizationId, role, userId }
         : null
 
-    return { uid: decoded.uid, email, workspace }
+    const platform = decoded.platform === "admin" ? "admin" : null
+    const platformRole =
+      platform === "admin"
+        ? decoded.platformRole === "analyst"
+          ? "analyst"
+          : "owner"
+        : null
+
+    return { uid: decoded.uid, email, workspace, platform, platformRole }
   } catch {
     return null
   }

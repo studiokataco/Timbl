@@ -14,6 +14,21 @@ export const organisationSchema = audit.extend({
    * Versioned ids let existing customers stay grandfathered
    * when we ship the v2 of a tier. See lib/plans/plans.ts. */
   plan: z.string().optional(),
+  /* Lifecycle status set from the control centre. A suspended org is blocked
+   * at the (app) layer (requireActiveOrg) - it stays in Firestore, it just
+   * can't be used until reactivated. Missing = active. */
+  status: z.enum(["active", "suspended"]).optional(),
+  /* Per-org quota overrides set from the control centre. Merged OVER the
+   * plan's quotas in lib/plans/gate.ts. `null` for a metric = unlimited.
+   * A metric absent here falls back to the plan default. */
+  quotaOverrides: z
+    .object({
+      agentRuns: z.number().int().nullable().optional(),
+      scheduledPosts: z.number().int().nullable().optional(),
+      brands: z.number().int().nullable().optional(),
+      seats: z.number().int().nullable().optional(),
+    })
+    .optional(),
   /* Onboarding state. `completedAt` set on wizard finish OR backfilled
    * for legacy orgs. Layout uses `completedAt` to decide whether to
    * redirect to /onboarding. `profile` is what the user typed at step
