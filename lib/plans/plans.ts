@@ -140,6 +140,9 @@ export const PLANS: Record<string, PlanConfig> = {
  * top self-serve tier so gates stay off until Razorpay billing ships. */
 export const DEFAULT_PLAN_ID = "agency_v1"
 
+/* The tier an org lands on when a subscription is cancelled/expires. */
+export const FREE_PLAN_ID = "free_v1"
+
 export function getPlan(planId: string | undefined | null): PlanConfig {
   if (planId && PLANS[planId]) return PLANS[planId]
   return PLANS[DEFAULT_PLAN_ID]
