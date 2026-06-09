@@ -10,6 +10,7 @@ import { LEGACY_POST_STATUSES } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 import { ApprovalActions } from "@/components/agents/approval-actions"
 import { statusGlyph } from "@/components/calendar/post-chip"
+import { categoryPillColors } from "@/components/calendar/color"
 import { postStatusLabel } from "@/lib/labels/enums"
 
 type Props = {
@@ -61,29 +62,24 @@ export function KanbanCard({
       onClick={onClick}
     >
       <div className="flex items-center gap-1.5 mb-1.5 text-xs">
-        {category && (
-          <span
-            aria-hidden
-            className="size-2 rounded-full shrink-0"
-            style={{ backgroundColor: category.color }}
-          />
-        )}
-        <span className="truncate text-muted-foreground flex-1">
-          {category?.name ?? "Uncategorised"}
+        {/* Tinted category pill with status glyph - the same chip the calendar
+         * renders, so a post reads identically in either view. */}
+        <span
+          className="inline-flex min-w-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium"
+          style={categoryPillColors(category?.color)}
+        >
+          <span aria-hidden className="font-bold" title={postStatusLabel(post.status)}>
+            {statusGlyph(post.status)}
+          </span>
+          <span className="truncate">{category?.name ?? "Uncategorised"}</span>
         </span>
+        <span className="flex-1" />
         {post.agentMeta && (
           <Sparkles
             aria-label="AI-assisted"
             className="size-3 text-muted-foreground/70 shrink-0"
           />
         )}
-        <span
-          aria-hidden
-          className="font-bold text-muted-foreground"
-          title={postStatusLabel(post.status)}
-        >
-          {statusGlyph(post.status)}
-        </span>
         <span className="whitespace-nowrap text-muted-foreground">
           {format(parseISO(post.scheduledDate), "d MMM")}
         </span>
