@@ -55,3 +55,16 @@ export function isBillablePlan(planId: string): boolean {
   const plan = PLANS[planId]
   return Boolean(plan && plan.monthlyPriceInr && plan.monthlyPriceInr > 0)
 }
+
+/* Whether paid self-serve checkout can run at all: keys present AND at least
+ * one tier mapped to a Razorpay plan id (set by `pnpm seed:razorpay`, which
+ * needs the Subscriptions product enabled on the account). When false, the
+ * billing UI goes trial-led and hides Subscribe so a user never hits a raw
+ * Razorpay error. Server-only - reads secrets. */
+export function paidCheckoutAvailable(): boolean {
+  const hasKeys = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)
+  const hasPlan = Boolean(
+    RAZORPAY_PLAN_ENV.studio_v1 || RAZORPAY_PLAN_ENV.agency_v1,
+  )
+  return hasKeys && hasPlan
+}
