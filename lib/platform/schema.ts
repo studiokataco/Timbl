@@ -43,6 +43,10 @@ export const platformRollupDocPath = (period: string) =>
 export const platformBillingPath = `${ROOT}/billing`
 export const platformBillingDocPath = (orgId: string) =>
   `${platformBillingPath}/${orgId}`
+/* Razorpay webhook delivery ids, kept for idempotency (process once). */
+export const platformWebhookEventsPath = `${ROOT}/webhookEvents`
+export const platformWebhookEventDocPath = (eventId: string) =>
+  `${platformWebhookEventsPath}/${eventId}`
 export const platformOrgRollupsPath = `${ROOT}/orgRollups`
 export const platformOrgRollupDocPath = (orgId: string) =>
   `${platformOrgRollupsPath}/${orgId}`
