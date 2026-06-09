@@ -19,6 +19,8 @@ import {
   type IndustryId,
 } from "@/lib/onboarding/industry-defaults"
 import { WIZARD_AGENT_CATALOG } from "@/lib/onboarding/agent-catalog"
+import { getStarterTemplate } from "@/lib/onboarding/starter-templates"
+import { CADENCE_LABELS, POST_TYPE_LABELS, labelOr } from "@/lib/labels/enums"
 import { cn } from "@/lib/utils"
 
 /*
@@ -579,24 +581,41 @@ function TemplatesStep({
         <ul className="space-y-2">
           {suggestions.map((slug) => {
             const on = picked.has(slug)
+            const tpl = getStarterTemplate(slug)
+            const name = tpl?.name ?? slug.replace(/-/g, " ")
             return (
               <li key={slug}>
                 <button
                   type="button"
                   onClick={() => onToggle(slug)}
                   className={cn(
-                    "flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition",
+                    "flex w-full items-start justify-between gap-3 rounded-lg border p-3 text-left transition",
                     on
                       ? "border-foreground bg-muted/30"
                       : "border-border hover:border-foreground/40",
                   )}
                 >
-                  <span className="text-sm font-medium">
-                    {slug.replace(/-/g, " ")}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">{name}</span>
+                    {tpl?.blurbTemplate ? (
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                        {tpl.blurbTemplate}
+                      </span>
+                    ) : null}
+                    {tpl ? (
+                      <span className="mt-1.5 flex flex-wrap gap-1.5">
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          {labelOr(POST_TYPE_LABELS, tpl.defaultPostType)}
+                        </span>
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          {labelOr(CADENCE_LABELS, tpl.cadence)}
+                        </span>
+                      </span>
+                    ) : null}
                   </span>
                   <span
                     className={cn(
-                      "flex size-4 items-center justify-center rounded border",
+                      "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border",
                       on ? "border-foreground bg-foreground" : "border-border",
                     )}
                   >
