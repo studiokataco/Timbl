@@ -83,9 +83,11 @@ const STATUS_TONE: Record<string, string> = {
 export function BillingManager({
   current,
   plans,
+  paidCheckoutAvailable,
 }: {
   current: SubscriptionStatus
   plans: BillingPlanCard[]
+  paidCheckoutAvailable: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -248,6 +250,10 @@ export function BillingManager({
                   <Button size="sm" variant="outline" className="w-full" disabled>
                     {plan.monthlyPriceInr === null ? "Contact sales" : "Included"}
                   </Button>
+                ) : !paidCheckoutAvailable ? (
+                  <Button size="sm" variant="outline" className="w-full" disabled>
+                    Coming soon
+                  </Button>
                 ) : hasActiveSub ? (
                   <Button
                     size="sm"
@@ -274,9 +280,9 @@ export function BillingManager({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Payments are processed by Razorpay. Your plan unlocks once payment is
-        confirmed. Cancelling keeps access until the end of the current billing
-        period.
+        {paidCheckoutAvailable
+          ? "Payments are processed by Razorpay. Your plan unlocks once payment is confirmed. Cancelling keeps access until the end of the current billing period."
+          : "Paid plans are launching soon. Start a free trial to use Agency features today - no card required."}
       </p>
     </div>
   )

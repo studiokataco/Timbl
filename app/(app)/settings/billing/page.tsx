@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { getSubscriptionStatus } from "@/lib/actions/billing"
+import { paidCheckoutAvailable } from "@/lib/billing/razorpay"
 import { PLANS, type PlanConfig } from "@/lib/plans/plans"
 import {
   BillingManager,
@@ -46,7 +47,11 @@ export default async function SettingsBillingPage() {
           Manage your subscription and plan. Prices are in INR.
         </p>
       </div>
-      <BillingManager current={current} plans={plans} />
+      <BillingManager
+        current={current}
+        plans={plans}
+        paidCheckoutAvailable={paidCheckoutAvailable()}
+      />
     </div>
   )
 }
