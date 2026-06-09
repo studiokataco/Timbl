@@ -10,6 +10,7 @@ import {
   cancelSubscription,
   changePlan,
   createSubscription,
+  startTrial,
   type SubscriptionStatus,
 } from "@/lib/actions/billing"
 
@@ -146,6 +147,20 @@ export function BillingManager({
     })
   }
 
+  const beginTrial = () => {
+    start(async () => {
+      const res = await startTrial()
+      if (res.ok) {
+        toast.success("Trial started", {
+          description: "You have 30 days of Agency features. No card required.",
+        })
+        setTimeout(() => router.refresh(), 1500)
+      } else {
+        toast.error("Could not start trial", { description: res.error })
+      }
+    })
+  }
+
   const cancel = () => {
     start(async () => {
       const res = await cancelSubscription()
@@ -167,6 +182,13 @@ export function BillingManager({
           <div>
             <p className="text-sm text-muted-foreground">Current plan</p>
             <p className="text-lg font-medium">{current.planLabel}</p>
+            {current.status === "trialing" && current.trialDaysLeft !== null ? (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Trial - {current.trialDaysLeft}{" "}
+                {current.trialDaysLeft === 1 ? "day" : "days"} left. Subscribe to keep
+                these features.
+              </p>
+            ) : null}
           </div>
           <span
             className={cn(
@@ -183,6 +205,21 @@ export function BillingManager({
           ) : null}
         </div>
       </div>
+
+      {current.trialEligible ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-mint/15 p-4 ring-1 ring-foreground/10">
+          <div>
+            <p className="text-sm font-medium">Try Agency free for 30 days</p>
+            <p className="text-xs text-muted-foreground">
+              Full agency features, no card required. Reverts to Free when the
+              trial ends.
+            </p>
+          </div>
+          <Button size="sm" onClick={beginTrial} disabled={pending}>
+            Start 30-day free trial
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan) => {

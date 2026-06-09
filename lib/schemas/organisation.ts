@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { audit } from "./_shared"
+import { billingStatus } from "./billing"
 
 export const organisationSchema = audit.extend({
   id: z.string(),
@@ -14,6 +15,15 @@ export const organisationSchema = audit.extend({
    * Versioned ids let existing customers stay grandfathered
    * when we ship the v2 of a tier. See lib/plans/plans.ts. */
   plan: z.string().optional(),
+  /* Billing/dunning state, stamped by the Razorpay webhook (and startTrial).
+   * Mirrors the billing profile status; read alongside `plan` by the gate so
+   * dunning + trial expiry need a single org-doc get. Missing = "manual". */
+  billingStatus: billingStatus.optional(),
+  /* 30-day no-card trial. `trialStartedAt` gates one trial per org;
+   * `trialEndsAt` is when the trial tier reverts to Free (enforced lazily in
+   * lib/plans/gate.ts). Both ISO strings. */
+  trialStartedAt: z.string().optional(),
+  trialEndsAt: z.string().optional(),
   /* Lifecycle status set from the control centre. A suspended org is blocked
    * at the (app) layer (requireActiveOrg) - it stays in Firestore, it just
    * can't be used until reactivated. Missing = active. */
