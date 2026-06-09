@@ -147,6 +147,10 @@ export const DEFAULT_PLAN_ID = "free_v1"
 /* The tier an org lands on when a subscription is cancelled/expires. */
 export const FREE_PLAN_ID = "free_v1"
 
+/* 30-day no-card trial grants the Agency tier, then reverts to Free. */
+export const TRIAL_PLAN_ID = "agency_v1"
+export const TRIAL_DAYS = 30
+
 export function getPlan(planId: string | undefined | null): PlanConfig {
   if (planId && PLANS[planId]) return PLANS[planId]
   return PLANS[DEFAULT_PLAN_ID]

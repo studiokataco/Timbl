@@ -10,7 +10,7 @@ import {
   razorpayPlanIdFor,
   isBillablePlan,
 } from "@/lib/billing/razorpay"
-import { getPlan } from "@/lib/plans/plans"
+import { getPlan, TRIAL_DAYS, TRIAL_PLAN_ID } from "@/lib/plans/plans"
 import { billingProfileSchema, type BillingProfile } from "@/lib/schemas/billing"
 
 /*
@@ -44,6 +44,9 @@ export type SubscriptionStatus = {
   status: BillingProfile["status"]
   razorpaySubscriptionId: string | null
   razorpaySubscriptionStatus: string | null
+  trialEndsAt: string | null
+  trialDaysLeft: number | null
+  trialEligible: boolean
 }
 
 async function readBillingProfile(orgId: string): Promise<BillingProfile | null> {
@@ -159,19 +162,62 @@ export async function changePlan(planId: string): Promise<BillingActionResult> {
   }
 }
 
-/* Read-only status for the tenant billing page. */
+/* Start the 30-day no-card trial: grant the trial tier now, revert to Free at
+ * trialEndsAt (enforced lazily in lib/plans/gate.ts). One per org - guarded by
+ * trialStartedAt - and not offered to an org that already has a subscription. */
+export async function startTrial(): Promise<BillingActionResult> {
+  const orgId = await getCurrentOrgId()
+  const ref = getAdminDb().doc(orgPath(orgId))
+  const data = (await ref.get()).data()
+  if (data?.trialStartedAt) return { ok: false, error: "Trial already used" }
+
+  const profile = await readBillingProfile(orgId)
+  if (profile?.razorpaySubscriptionId) {
+    return { ok: false, error: "You already have a subscription" }
+  }
+
+  const now = new Date()
+  const ends = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+  await ref.set(
+    {
+      plan: TRIAL_PLAN_ID,
+      billingStatus: "trialing",
+      trialStartedAt: now.toISOString(),
+      trialEndsAt: ends.toISOString(),
+    },
+    { merge: true },
+  )
+  return { ok: true }
+}
+
+/* Read-only status for the tenant billing page. Reads the org doc once -
+ * billingStatus + trial fields live there; the subscription id lives on the
+ * platform billing profile. */
 export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
   const orgId = await getCurrentOrgId()
-  const orgPlanId = (await getAdminDb().doc(orgPath(orgId)).get()).data()?.plan as
-    | string
-    | undefined
-  const plan = getPlan(orgPlanId)
+  const orgData = (await getAdminDb().doc(orgPath(orgId)).get()).data()
+  const plan = getPlan(orgData?.plan as string | undefined)
   const profile = await readBillingProfile(orgId)
+
+  const status =
+    (orgData?.billingStatus as BillingProfile["status"] | undefined) ??
+    profile?.status ??
+    "manual"
+  const trialEndsAt = (orgData?.trialEndsAt as string | undefined) ?? null
+  const hasSub = Boolean(profile?.razorpaySubscriptionId)
+  const trialDaysLeft =
+    status === "trialing" && trialEndsAt
+      ? Math.max(0, Math.ceil((Date.parse(trialEndsAt) - Date.now()) / 86_400_000))
+      : null
+
   return {
     planId: plan.id,
     planLabel: plan.label,
-    status: profile?.status ?? "manual",
+    status,
     razorpaySubscriptionId: profile?.razorpaySubscriptionId ?? null,
     razorpaySubscriptionStatus: profile?.razorpaySubscriptionStatus ?? null,
+    trialEndsAt,
+    trialDaysLeft,
+    trialEligible: !orgData?.trialStartedAt && !hasSub && status !== "trialing",
   }
 }

@@ -4,6 +4,7 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath, orgUsageDocPath } from "@/lib/firebase/paths"
 import type { BillingStatus } from "@/lib/schemas/billing"
 import {
+  FREE_PLAN_ID,
   getPlan,
   type PlanConfig,
   type PlanFeatureFlag,
@@ -62,9 +63,22 @@ function formatGateMessage(reason: PlanGateReason): string {
 async function getOrgPlanAndStatus(
   orgId: string,
 ): Promise<{ plan: PlanConfig; billingStatus: BillingStatus }> {
-  const data = (await getAdminDb().doc(orgPath(orgId)).get()).data()
-  const base = getPlan((data?.plan as string | undefined) ?? undefined)
-  const billingStatus = (data?.billingStatus as BillingStatus | undefined) ?? "manual"
+  const ref = getAdminDb().doc(orgPath(orgId))
+  const data = (await ref.get()).data()
+  let planId = data?.plan as string | undefined
+  let billingStatus = (data?.billingStatus as BillingStatus | undefined) ?? "manual"
+
+  /* Lazy trial expiry: a trialing org past trialEndsAt drops to Free here,
+   * with a one-time write-back so it persists (no cron needed). Once written,
+   * billingStatus is no longer "trialing" so this never re-fires. */
+  const trialEndsAt = data?.trialEndsAt as string | undefined
+  if (billingStatus === "trialing" && trialEndsAt && Date.parse(trialEndsAt) < Date.now()) {
+    planId = FREE_PLAN_ID
+    billingStatus = "canceled"
+    await ref.set({ plan: FREE_PLAN_ID, billingStatus: "canceled" }, { merge: true })
+  }
+
+  const base = getPlan(planId ?? undefined)
   const overrides = data?.quotaOverrides as
     | Partial<Record<QuotaMetric, number | null>>
     | undefined
