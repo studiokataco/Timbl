@@ -2,6 +2,7 @@ import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath, orgUsageDocPath } from "@/lib/firebase/paths"
+import type { BillingStatus } from "@/lib/schemas/billing"
 import {
   getPlan,
   type PlanConfig,
@@ -45,31 +46,59 @@ function formatGateMessage(reason: PlanGateReason): string {
   return `Quota exceeded: ${reason.metric} (${reason.used}/${reason.limit}) on the ${reason.currentTier} plan.`
 }
 
-/* Read the org's current plan from /organizations/{orgId}.plan. Falls back
- * to agency_v1 when the field is missing (pilot: no gates until billing).
+/* Read the org's plan + billing status from /organizations/{orgId} in one get.
+ * Falls back to free_v1 when the field is missing - billing is live, so an org
+ * with no assigned plan is treated as Free (gates engage). Existing orgs were
+ * backfilled to an explicit plan before the default flipped (scripts/
+ * backfill-org-plans.ts) so nothing downgrades by surprise.
  *
  * Per-org quotaOverrides (set from the control centre) are merged OVER the
  * plan's quotas, so a single org can be granted more (or less) headroom
  * without changing its tier. This is the only quota chokepoint - requireQuota
- * reads through here - so the override applies everywhere automatically. */
-export async function getOrgPlan(orgId: string): Promise<PlanConfig> {
+ * reads through here - so the override applies everywhere automatically.
+ *
+ * billingStatus mirrors the webhook-stamped /organizations/{id}.billingStatus
+ * (the dunning state); defaults to "manual" (no active subscription). */
+async function getOrgPlanAndStatus(
+  orgId: string,
+): Promise<{ plan: PlanConfig; billingStatus: BillingStatus }> {
   const data = (await getAdminDb().doc(orgPath(orgId)).get()).data()
-  const plan = getPlan((data?.plan as string | undefined) ?? undefined)
+  const base = getPlan((data?.plan as string | undefined) ?? undefined)
+  const billingStatus = (data?.billingStatus as BillingStatus | undefined) ?? "manual"
   const overrides = data?.quotaOverrides as
     | Partial<Record<QuotaMetric, number | null>>
     | undefined
-  if (!overrides) return plan
-  const quotas = { ...plan.quotas }
+  if (!overrides) return { plan: base, billingStatus }
+  const quotas = { ...base.quotas }
   for (const metric of Object.keys(quotas) as QuotaMetric[]) {
     if (metric in overrides && overrides[metric] !== undefined) {
       quotas[metric] = overrides[metric] as number | null
     }
   }
-  return { ...plan, quotas }
+  return { plan: { ...base, quotas }, billingStatus }
+}
+
+export async function getOrgPlan(orgId: string): Promise<PlanConfig> {
+  return (await getOrgPlanAndStatus(orgId)).plan
 }
 
 export async function getOrgPlanFeatures(orgId: string): Promise<PlanFeatures> {
-  return toPlanFeatures(await getOrgPlan(orgId))
+  const { plan, billingStatus } = await getOrgPlanAndStatus(orgId)
+  return { ...toPlanFeatures(plan), billingStatus }
+}
+
+/* Dunning gate. A subscription in `past_due` (payment failed, Razorpay still
+ * retrying or halted) blocks new agent runs until payment is fixed. `canceled`
+ * orgs are already on Free via the webhook, so their Free quotas apply instead
+ * - no separate block needed here. Throws a plain Error so the action wrapper
+ * surfaces it as { ok: false, error }. */
+export async function requireActiveBilling(orgId: string): Promise<void> {
+  const { billingStatus } = await getOrgPlanAndStatus(orgId)
+  if (billingStatus === "past_due") {
+    throw new Error(
+      "Billing is past due. Update your payment method in Settings -> Billing to resume agent runs.",
+    )
+  }
 }
 
 /* Throws PlanGateError when the plan doesn't enable the feature. */

@@ -66,11 +66,13 @@ export async function applyRazorpayEvent(
 
   const db = getAdminDb()
 
-  if (decision.planTarget === "paid" && planId) {
-    await db.doc(orgPath(orgId)).set({ plan: planId }, { merge: true })
-  } else if (decision.planTarget === "free") {
-    await db.doc(orgPath(orgId)).set({ plan: FREE_PLAN_ID }, { merge: true })
-  }
+  /* Stamp billingStatus on the org doc (the gate + dunning banner read it from
+   * here, alongside plan, in a single get) and change the plan when the event
+   * implies a tier move. */
+  const orgPatch: Record<string, unknown> = { billingStatus: decision.status }
+  if (decision.planTarget === "paid" && planId) orgPatch.plan = planId
+  else if (decision.planTarget === "free") orgPatch.plan = FREE_PLAN_ID
+  await db.doc(orgPath(orgId)).set(orgPatch, { merge: true })
 
   await db.doc(platformBillingDocPath(orgId)).set(
     {

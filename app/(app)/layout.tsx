@@ -6,6 +6,7 @@ import { AskAiButton } from "@/components/agents/ask-ai-button"
 import { AppHotkeys } from "@/components/shared/app-hotkeys"
 import { CommandPalette } from "@/components/shared/command-palette"
 import { DialogsProvider } from "@/components/shared/dialogs-provider"
+import { DunningBanner } from "@/components/shared/dunning-banner"
 import { Onboarding } from "@/components/shared/onboarding"
 import { ProductTourAutostart } from "@/components/tour/product-tour"
 import { PlanFeaturesProvider } from "@/components/shared/plan-features-provider"
@@ -60,6 +61,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <PlanFeaturesProvider value={planFeatures}>
           <DialogsProvider data={referenceData}>
             {impersonation ? <ImpersonationBanner orgName={org.name} /> : null}
+            <DunningBanner />
             <div className="flex flex-1 min-h-0">
               <Sidebar />
               <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
