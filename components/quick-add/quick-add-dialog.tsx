@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { POST_TYPE_LABELS, labelOr } from "@/lib/labels/enums"
 import {
   Command,
   CommandEmpty,
@@ -228,7 +229,7 @@ export function QuickAddDialog({
             </Popover>
             {selectedCategory ? (
               <p className="text-xs text-muted-foreground">
-                Defaults applied: type {selectedCategory.defaultPostType}
+                Defaults applied: type {labelOr(POST_TYPE_LABELS, selectedCategory.defaultPostType)}
                 {selectedCategory.defaultCtaId
                   ? `, CTA ${ctasById.get(selectedCategory.defaultCtaId)?.label ?? "-"}`
                   : ""}

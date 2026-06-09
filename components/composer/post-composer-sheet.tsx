@@ -75,6 +75,7 @@ import { LEGACY_POST_STATUSES } from "@/lib/schemas"
 import {
   CADENCE_LABELS,
   CHANNEL_STATUS_LABELS,
+  POST_TYPE_LABELS,
   labelOr,
 } from "@/lib/labels/enums"
 import { deletePost, updatePost } from "@/lib/actions/posts"
@@ -771,10 +772,10 @@ export function PostComposerSheet({
                             ...withSyncedPostTypes(next),
                           }))
                         }}
-                        className="capitalize rounded-full"
+                        className="rounded-full"
                         aria-pressed={selected}
                       >
-                        {t}
+                        {labelOr(POST_TYPE_LABELS, t)}
                       </Button>
                     )
                   })}

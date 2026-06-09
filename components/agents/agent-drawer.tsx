@@ -12,7 +12,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
-import type { AgentProvider } from "@/lib/schemas/agentConfig"
 import {
   appendMessage,
   createThread,
@@ -55,8 +54,6 @@ export function AgentDrawer() {
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
   const [transcriptLength, setTranscriptLength] = useState(0)
-  const [provider, setProvider] = useState<AgentProvider | "">("")
-  const [model, setModel] = useState("")
   const chatRef = useRef<AgentChatHandle | null>(null)
   const qc = useQueryClient()
   const bootstrappedRef = useRef(false)
@@ -263,8 +260,8 @@ export function AgentDrawer() {
               </button>
             </div>
             <SheetDescription className="text-xs">
-              Past chats on the left. Agent mode and model sit below the message
-              box, same as Ask AI (⌘J).
+              Past chats on the left. Agent mode sits below the message box,
+              same as Ask AI (⌘J).
             </SheetDescription>
           </SheetHeader>
 
@@ -279,11 +276,6 @@ export function AgentDrawer() {
               streaming={streaming}
               onSubmit={submit}
               isEmpty={isEmpty}
-              provider={provider}
-              onProviderChange={setProvider}
-              model={model}
-              onModelChange={setModel}
-              modelDatalistId="agent-drawer-models"
               showShortcutHints={false}
               className="flex-1 min-h-0"
             >
@@ -301,8 +293,6 @@ export function AgentDrawer() {
                 }}
                 compact
                 onStreamingChange={setStreaming}
-                providerOverride={provider}
-                modelOverride={model}
                 className="h-full"
               />
             </AgentAskShell>

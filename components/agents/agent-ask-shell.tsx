@@ -17,11 +17,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import {
-  MODEL_SUGGESTIONS,
-  isLocalAiAvailable,
-} from "@/lib/agents/provider-catalog"
-import type { AgentProvider } from "@/lib/schemas/agentConfig"
 
 import type { AgentChatHandle } from "./agent-chat"
 
@@ -87,11 +82,6 @@ export type AgentAskShellProps = {
   streaming: boolean
   onSubmit: (override?: string) => void
   isEmpty: boolean
-  provider: AgentProvider | ""
-  onProviderChange: (provider: AgentProvider | "") => void
-  model: string
-  onModelChange: (model: string) => void
-  modelDatalistId?: string
   showShortcutHints?: boolean
   children: ReactNode
   className?: string
@@ -107,11 +97,6 @@ export function AgentAskShell({
   streaming,
   onSubmit,
   isEmpty,
-  provider,
-  onProviderChange,
-  model,
-  onModelChange,
-  modelDatalistId = "agent-ask-shell-models",
   showShortcutHints = true,
   children,
   className,
@@ -136,10 +121,6 @@ export function AgentAskShell({
     },
     [onInputChange],
   )
-
-  const providers: AgentProvider[] = ["gemini", "anthropic", "openrouter"]
-  if (isLocalAiAvailable()) providers.push("ollama")
-  const modelSuggestions = provider ? MODEL_SUGGESTIONS[provider] : []
 
   return (
     <div className={cn("flex flex-1 min-h-0 flex-col", className)}>
@@ -270,50 +251,6 @@ export function AgentAskShell({
                     className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
                   />
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 uppercase tracking-wide">Model</span>
-                <div className="relative">
-                  <select
-                    aria-label="Provider"
-                    value={provider}
-                    disabled={streaming}
-                    onChange={(e) => {
-                      onProviderChange(e.target.value as AgentProvider | "")
-                      onModelChange("")
-                    }}
-                    className={FOOTER_SELECT}
-                  >
-                    <option value="">Agent default</option>
-                    {providers.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    aria-hidden
-                    className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
-                  />
-                </div>
-                {provider && (
-                  <>
-                    <input
-                      aria-label="Model"
-                      list={modelDatalistId}
-                      value={model}
-                      disabled={streaming}
-                      onChange={(e) => onModelChange(e.target.value)}
-                      placeholder={modelSuggestions[0] ?? "model id"}
-                      className="h-7 w-40 rounded-md border border-border bg-background px-2.5 text-caption text-foreground"
-                    />
-                    <datalist id={modelDatalistId}>
-                      {modelSuggestions.map((s) => (
-                        <option key={s} value={s} />
-                      ))}
-                    </datalist>
-                  </>
-                )}
               </div>
             </div>
             {showShortcutHints && (
