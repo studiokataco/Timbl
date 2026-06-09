@@ -40,14 +40,10 @@ import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
  * before overwriting catalog entries. Safe to call twice.
  */
 
-const DEFAULT_PLAN_FOR_NEW_ORG = "agency_v1"
-/* Why agency_v1 and not free_v1?
- *
- * Per the productization plan + user direction: we want a "free hand" until
- * launch - no plan-gates firing during pilot or dev. agency_v1 has a 5000
- * agentRuns/mo cap and unlimited scheduled posts, which covers any pilot
- * workload. When Razorpay ships (Phase H) and self-serve signup goes live,
- * this constant flips to free_v1 and existing orgs grandfather. */
+const DEFAULT_PLAN_FOR_NEW_ORG = "free_v1"
+/* Razorpay billing (Phase H) is live and self-serve signup is open, so a new
+ * org starts on Free and upgrades via Settings -> Billing. Existing orgs were
+ * backfilled to an explicit plan before this flipped (they grandfather). */
 
 const DEFAULT_KANBAN_COLUMNS = [
   { id: "idea", label: "Idea", color: "#94a3b8" },

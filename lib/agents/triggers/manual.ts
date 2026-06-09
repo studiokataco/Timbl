@@ -3,7 +3,7 @@ import type { Content } from "@google/genai"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
-import { requireQuota } from "@/lib/plans/gate"
+import { requireActiveBilling, requireQuota } from "@/lib/plans/gate"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
 import { estimateUsdCost } from "@/lib/agents/pricing"
 
@@ -50,6 +50,11 @@ export interface StartRunResult {
 export async function startAgentRun(
   input: StartRunInput,
 ): Promise<StartRunResult> {
+  /* Dunning gate: a past_due subscription blocks new runs until payment is
+   * fixed (the webhook sets billingStatus). Checked before quota so a lapsed
+   * payer gets the billing message, not a quota message. */
+  await requireActiveBilling(input.orgId)
+
   /* Plan gate: every run, regardless of trigger, counts against the
    * agentRuns quota. Throws PlanGateError on overage; the route handler
    * surfaces it to the UI as a structured upsell. Cron triggers also

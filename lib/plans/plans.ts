@@ -13,6 +13,8 @@
  * never enforces - it only reads `planFeatures` to grey out buttons.
  */
 
+import type { BillingStatus } from "@/lib/schemas/billing"
+
 export type PlanTier = "free" | "studio" | "agency" | "scale"
 
 export type PlanFeatureFlag =
@@ -136,9 +138,11 @@ export const PLANS: Record<string, PlanConfig> = {
   },
 }
 
-/* Fallback when /organizations/{id}.plan is missing. Pilot/dev uses the
- * top self-serve tier so gates stay off until Razorpay billing ships. */
-export const DEFAULT_PLAN_ID = "agency_v1"
+/* Fallback when /organizations/{id}.plan is missing. Billing is live, so an
+ * unassigned org is treated as Free and gates engage. Existing orgs were
+ * backfilled to an explicit plan first (scripts/backfill-org-plans.ts) so the
+ * flip from agency_v1 grandfathers them. */
+export const DEFAULT_PLAN_ID = "free_v1"
 
 /* The tier an org lands on when a subscription is cancelled/expires. */
 export const FREE_PLAN_ID = "free_v1"
@@ -158,6 +162,9 @@ export type PlanFeatures = {
   label: string
   features: Record<PlanFeatureFlag, boolean>
   quotas: Record<QuotaMetric, number | null>
+  /* Dunning state for UI affordances (the billing banner). Attached by
+   * getOrgPlanFeatures; absent on the bare toPlanFeatures projection. */
+  billingStatus?: BillingStatus
 }
 
 export function toPlanFeatures(plan: PlanConfig): PlanFeatures {
