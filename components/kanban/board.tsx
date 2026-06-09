@@ -172,7 +172,7 @@ export function KanbanBoard({
           placeholder="Category"
           value={filterCategory}
           onChange={setFilterCategory}
-          options={categories.map((c) => ({ value: c.id, label: c.name }))}
+          options={categories.map((c) => ({ value: c.id, label: c.name, color: c.color }))}
         />
         <FilterSelect
           placeholder="Assignee"
@@ -242,7 +242,7 @@ function FilterSelect({
   placeholder: string
   value: string
   onChange: (v: string) => void
-  options: { value: string; label: string }[]
+  options: { value: string; label: string; color?: string }[]
 }) {
   const isAll = !value
   const emptyLabel = `Any ${placeholder.toLowerCase()}`
@@ -265,7 +265,16 @@ function FilterSelect({
         <SelectItem value="_all">{emptyLabel}</SelectItem>
         {options.map((o) => (
           <SelectItem key={o.value} value={o.value}>
-            {o.label}
+            <span className="flex items-center gap-2">
+              {o.color && (
+                <span
+                  aria-hidden
+                  className="size-2 rounded-full shrink-0"
+                  style={{ backgroundColor: o.color }}
+                />
+              )}
+              {o.label}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>
