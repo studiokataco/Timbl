@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { promoteAwarenessDay } from "@/lib/actions/awareness"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay } from "@/lib/schemas"
-import { IMPORTANCE_LABELS } from "@/lib/labels/enums"
+import { CADENCE_LABELS, IMPORTANCE_LABELS, labelOr } from "@/lib/labels/enums"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
 
 type Props = {
@@ -156,7 +156,7 @@ export function CalendarAwarenessRail({
                 {s.kind === "template-due" && (
                   <>
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Template due ({s.cadence})
+                      Template due ({labelOr(CADENCE_LABELS, s.cadence)})
                     </span>
                     <div className="font-medium leading-snug">{s.name}</div>
                     <div className="text-muted-foreground">

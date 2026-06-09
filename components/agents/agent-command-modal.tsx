@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { importThread } from "@/lib/storage/agent-threads"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
-import type { AgentProvider } from "@/lib/schemas/agentConfig"
 
 import { AgentAskShell } from "./agent-ask-shell"
 import { AgentChat, type AgentChatHandle } from "./agent-chat"
@@ -37,8 +36,6 @@ export function AgentCommandModal() {
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
   const [transcriptLength, setTranscriptLength] = useState(0)
-  const [provider, setProvider] = useState<AgentProvider | "">("")
-  const [model, setModel] = useState("")
   const chatRef = useRef<AgentChatHandle | null>(null)
 
   useEffect(() => {
@@ -148,11 +145,6 @@ export function AgentCommandModal() {
           streaming={streaming}
           onSubmit={submit}
           isEmpty={isEmpty}
-          provider={provider}
-          onProviderChange={setProvider}
-          model={model}
-          onModelChange={setModel}
-          modelDatalistId="agent-command-modal-models"
           className="flex-1 min-h-0"
         >
           <AgentChat
@@ -164,8 +156,6 @@ export function AgentCommandModal() {
             compact
             onStreamingChange={setStreaming}
             onMessage={onMessage}
-            providerOverride={provider}
-            modelOverride={model}
             className="h-full"
           />
         </AgentAskShell>

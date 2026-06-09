@@ -1,4 +1,5 @@
 import type { PostType } from "@/lib/schemas"
+import { POST_TYPE_LABELS, labelOr } from "@/lib/labels/enums"
 
 export function getPostTypes(post: {
   postType?: PostType
@@ -21,5 +22,7 @@ export function formatPostTypes(post: {
   postType?: PostType
   postTypes?: PostType[]
 }): string {
-  return getPostTypes(post).join(", ")
+  return getPostTypes(post)
+    .map((t) => labelOr(POST_TYPE_LABELS, t))
+    .join(", ")
 }
