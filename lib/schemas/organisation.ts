@@ -24,6 +24,12 @@ export const organisationSchema = audit.extend({
    * lib/plans/gate.ts). Both ISO strings. */
   trialStartedAt: z.string().optional(),
   trialEndsAt: z.string().optional(),
+  /* Comped full-access cohort: orgs that existed before billing went live and
+   * were grandfathered to the top tier "until further notice". The flag makes
+   * the cohort targetable for a later policy change; set by
+   * scripts/grandfather-existing-orgs.ts. */
+  grandfathered: z.boolean().optional(),
+  grandfatheredAt: z.string().optional(),
   /* Lifecycle status set from the control centre. A suspended org is blocked
    * at the (app) layer (requireActiveOrg) - it stays in Firestore, it just
    * can't be used until reactivated. Missing = active. */
