@@ -23,13 +23,6 @@ type Props = {
   onViewChange: (v: CalendarView) => void
 }
 
-const VIEW_LABEL: Record<CalendarView, string> = {
-  month: "Month",
-  week: "Week",
-  day: "Day",
-  list: "List",
-}
-
 function viewLabel(view: CalendarView, date: Date): string {
   if (view === "week") return `Week of ${format(date, "d MMM")}`
   if (view === "day") return format(date, "EEEE, d MMM yyyy")

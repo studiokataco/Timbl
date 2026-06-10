@@ -5,7 +5,7 @@ async function main() {
   ensureEmulator()
   const orgRef = db().doc(`organizations/${SAFE_ORG_ID}`)
   const orgSnap = await orgRef.get()
-  if (!orgSnap.exists) throw new Error("SAFE org not found")
+  if (!orgSnap.exists) throw new Error("Demo org not found")
   console.log(`✓ org: ${orgSnap.data()?.name}`)
 
   const [users, ctas, categories] = await Promise.all([

@@ -43,6 +43,7 @@ export async function sendMemberInviteEmail(opts: {
 <p>Sign in with Google using <strong>${escapeHtml(opts.email)}</strong>:</p>
 <p><a href="${loginUrl}" style="display:inline-block;padding:10px 18px;background:#111;color:#fff;text-decoration:none;border-radius:6px">Continue with Google</a></p>
 <p style="font-size:13px;color:#666">Or open: ${loginUrl}</p>
+<p style="font-size:12px;color:#999;margin-top:24px">Timbl.app</p>
 </body></html>`,
     })
     return { success: true }

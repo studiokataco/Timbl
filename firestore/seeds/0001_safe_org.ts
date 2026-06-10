@@ -1,12 +1,12 @@
 import { db, ensureEmulator, SAFE_ADMIN_USER_ID, SAFE_ORG_ID, withAudit } from "./_helpers"
 
 /*
- * Seeds the SAFE Foundation organization plus a single admin user.
+ * Seeds the Timbl demo organization plus a single admin user.
  * Idempotent: setDoc with merge keyed by stable slugs (`safe-foundation`,
  * `admin`).
  *
  * The admin user is intentionally generic - `admin@safefoundation.dev`,
- * display name "SAFE Admin". Real staff users land via the CSV migration
+ * display name "Timbl Admin". Real staff users land via the CSV migration
  * (Phase 8) and via Google SSO first-login (Phase 7).
  */
 
@@ -17,11 +17,11 @@ export async function seedSafeOrg() {
     withAudit({
       id: SAFE_ORG_ID,
       slug: "safe-foundation",
-      name: "SAFE Foundation",
+      name: "Timbl demo",
       primaryColor: "#111111",
       /* Top self-serve tier during pilot so gates stay off. */
       plan: "agency_v1",
-      /* SAFE is the legacy demo org - already has categories, agents,
+      /* Demo org - already has categories, agents,
        * templates from the seed scripts that follow. Marking onboarding
        * as complete here keeps the (app) layout from redirecting it to
        * /onboarding on every dev boot. */
@@ -35,7 +35,7 @@ export async function seedSafeOrg() {
     }),
     { merge: true },
   )
-  console.log("✓ organization: SAFE Foundation")
+  console.log("✓ organization: Timbl demo")
 
   const userRef = orgRef.collection("users").doc(SAFE_ADMIN_USER_ID)
   await userRef.set(
@@ -43,13 +43,13 @@ export async function seedSafeOrg() {
       id: SAFE_ADMIN_USER_ID,
       organizationId: SAFE_ORG_ID,
       email: "admin@safefoundation.dev",
-      name: "SAFE Admin",
+      name: "Timbl Admin",
       role: "admin",
       defaultCategories: [],
     }),
     { merge: true },
   )
-  console.log("✓ user: SAFE Admin (role=admin)")
+  console.log("✓ user: Timbl Admin (role=admin)")
 }
 
 if (require.main === module) {

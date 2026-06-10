@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
-import { differenceInCalendarDays, format, parseISO } from "date-fns"
+import { format, parseISO } from "date-fns"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"

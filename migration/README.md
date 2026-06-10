@@ -1,6 +1,6 @@
 # CSV migration
 
-One-shot import of the legacy 9-tab planner spreadsheet into Firestore under the SAFE org.
+One-shot import of the legacy 9-tab planner spreadsheet into Firestore under the demo org (`safe-foundation`).
 
 ## Files
 
@@ -19,7 +19,7 @@ The script (`scripts/migrate-from-csv.ts`) expects these filenames:
 | `main.csv` | Main Planner |
 | `copy-of-main.csv` | Copy of Main Page (deduped against main by date+brief) |
 | `events.csv` | Events tab posts |
-| `20-years.csv` | 20 Years of SAFE posts (auto-linked to the campaign) |
+| `20-years.csv` | 20 year anniversary posts (auto-linked to the campaign) |
 | `meet-the-team.csv` | Meet The Team posts (auto-linked to the template) |
 | `awareness.csv` | Awareness days reference |
 | `campaigns.csv` | Campaign reference |

@@ -55,7 +55,7 @@ export function WorkspaceChooser({
         <ChooserCard
           icon={<Boxes className="size-5" />}
           title="Developer mode"
-          description="The SAFE Foundation demo workspace - fully seeded with agents, categories, and awareness days."
+          description="The Timbl demo workspace - fully seeded with agents, categories, and awareness days."
           cta="Open demo workspace"
           isCurrent={currentMode === "demo"}
           busy={pending && chosen === "demo"}

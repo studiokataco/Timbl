@@ -27,7 +27,7 @@ async function main() {
   await seed0008AwarenessResearcher()
   await seed0009EmbeddingsBackfill()
   /* Second org - clean tenant for the onboarding wizard. Independent of
-   * the SAFE seeds above; safe to run last. */
+   * the demo seeds above; safe to run last. */
   await seed0010TenantOrg()
   console.log("\nseed complete.")
 }

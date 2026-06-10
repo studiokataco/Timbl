@@ -2,7 +2,7 @@ import { SAFE_ORG_ID, db, ensureEmulator, withAudit } from "./_helpers"
 import { orgTemplatesPath } from "@/lib/firebase/paths"
 
 /*
- * Seeds 4 starter templates for SAFE Foundation. Each template references a
+ * Seeds 4 starter templates for the Timbl demo org. Each template references a
  * category by slug (= category id). The `useTemplate` server action consumes
  * defaultPostType / defaultHashtags / defaultCtaId / blurbTemplate when
  * promoting a template to a post.
@@ -28,13 +28,12 @@ const TEMPLATES: TemplateSeed[] = [
     defaultPostType: "reel",
     defaultHashtags: [
       "#MeetTheTeam",
-      "#SAFEFoundation",
       "#CharityWork",
       "#CharityStaff",
     ],
     defaultCtaId: "like",
     blurbTemplate:
-      "Meet {{name}} - {{role}} at SAFE Foundation. {{name}} has been with us for {{duration}} and {{oneLineHighlight}}.\n\nDouble-tap if you've met {{name}} at one of our events!",
+      "Meet {{name}} - {{role}} on our team. {{name}} has been with us for {{duration}} and {{oneLineHighlight}}.\n\nDouble-tap if you've met {{name}} at one of our events!",
     cadence: "biweekly",
   },
   {
@@ -50,7 +49,7 @@ const TEMPLATES: TemplateSeed[] = [
     ],
     defaultCtaId: "visit-shop",
     blurbTemplate:
-      "This week's Pick of the Week: {{itemName}} - {{description}}.\n\nFind it in store at the Ethical Boutique. Every purchase supports SAFE's work in the community.",
+      "This week's Pick of the Week: {{itemName}} - {{description}}.\n\nFind it in store at the Ethical Boutique. Every purchase supports our work in the community.",
     cadence: "weekly",
   },
   {
@@ -60,13 +59,13 @@ const TEMPLATES: TemplateSeed[] = [
     defaultPostType: "carousel",
     defaultHashtags: [
       "#WhatsOn",
-      "#SAFEEvents",
+      "#CommunityEvents",
       "#Swansea",
       "#ThingsToDo",
     ],
     defaultCtaId: "attend-an-event",
     blurbTemplate:
-      "Here's what's on at SAFE this {{month}} 💛\n\nSwipe through to see the full line-up - and tap the link in bio to book.",
+      "Here's what's on this {{month}} 💛\n\nSwipe through to see the full line-up - and tap the link in bio to book.",
     cadence: "monthly",
   },
   {

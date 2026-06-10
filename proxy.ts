@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from "next/server"
 const PUBLIC_PATHS = [
   "/",
   "/login",
+  "/signup",
   "/welcome",
   "/access-pending",
   "/auth/callback",
@@ -54,6 +55,7 @@ const ADMIN_PASSTHROUGH_PREFIXES = [
   /* Auth entry/exit must work on the admin host so a platform admin can sign
    * in and out there - otherwise these rewrite into /control and 404. */
   "/login",
+  "/signup",
   "/auth/",
 ]
 
@@ -92,7 +94,7 @@ export default function proxy(req: NextRequest) {
   if (hasSession) return NextResponse.next()
 
   const url = req.nextUrl.clone()
-  url.pathname = "/"
+  url.pathname = "/login"
   url.searchParams.set("next", pathname + req.nextUrl.search)
   return NextResponse.redirect(url)
 }

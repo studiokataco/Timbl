@@ -1,6 +1,6 @@
 /*
  * Org-agnostic default CTAs. Seeded on bootstrap and onboarding so the
- * composer pickers work even when the SAFE-specific emulator seed hasn't run.
+ * composer pickers work even when the demo-org emulator seed hasn't run.
  */
 
 export type DefaultCta = {

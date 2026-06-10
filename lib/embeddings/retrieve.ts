@@ -8,7 +8,7 @@ import { embed } from "./provider"
 /*
  * Top-k similarity over an embeddable collection.
  *
- * Emulator path: brute-force cosine. SAFE has well under 2k docs of each
+ * Emulator path: brute-force cosine. Demo org has well under 2k docs of each
  * kind, so a single .get() + in-process scoring beats wiring up a vector
  * index. The 2000 cap keeps the read bounded if a future bug ever blows up.
  *

@@ -124,18 +124,18 @@ const SIG = {
 const CATEGORIES = [
   { slug: "ethical-boutique-pick", name: "Ethical Boutique – Pick of Week", color: SIG.coral, icon: "shopping-bag", defaultPostType: "grid", defaultHashtags: ["#SustainableFashion", "#CharityShop", "#Donate", "#CharityRaffle", "#EthicalBoutique"], defaultCtaSlug: "visit-shop", displayOrder: 1 },
   { slug: "ethical-boutique-general", name: "Ethical Boutique – General", color: SIG.peach, icon: "shirt", defaultPostType: "grid", defaultHashtags: ["#EthicalBoutique", "#SustainableFashion", "#CharityShop"], defaultCtaSlug: "visit-shop", displayOrder: 2 },
-  { slug: "meet-the-team", name: "Meet the Team", color: SIG.forest, icon: "users", defaultPostType: "reel", defaultHashtags: ["#MeetTheTeam", "#SAFEFoundation", "#CharityWork"], defaultCtaSlug: "like", displayOrder: 3 },
-  { slug: "international-day", name: "International / Awareness Day", color: SIG.mint, icon: "globe", defaultPostType: "carousel", defaultHashtags: ["#AwarenessDay", "#SAFEFoundation"], defaultCtaSlug: "learn-change-behaviour", displayOrder: 4 },
-  { slug: "fundraising-appeal", name: "Fundraising Appeal", color: SIG.yellow, icon: "heart-handshake", defaultPostType: "grid", defaultHashtags: ["#Fundraising", "#Donate", "#SAFEFoundation"], defaultCtaSlug: "donate", displayOrder: 5 },
-  { slug: "events-whats-on", name: "What's On / Events", color: SIG.mustard, icon: "calendar-days", defaultPostType: "carousel", defaultHashtags: ["#WhatsOn", "#SAFEEvents", "#Swansea"], defaultCtaSlug: "attend-an-event", displayOrder: 6 },
+  { slug: "meet-the-team", name: "Meet the Team", color: SIG.forest, icon: "users", defaultPostType: "reel", defaultHashtags: ["#MeetTheTeam", "#CharityWork"], defaultCtaSlug: "like", displayOrder: 3 },
+  { slug: "international-day", name: "International / Awareness Day", color: SIG.mint, icon: "globe", defaultPostType: "carousel", defaultHashtags: ["#AwarenessDay", "#CharityWork"], defaultCtaSlug: "learn-change-behaviour", displayOrder: 4 },
+  { slug: "fundraising-appeal", name: "Fundraising Appeal", color: SIG.yellow, icon: "heart-handshake", defaultPostType: "grid", defaultHashtags: ["#Fundraising", "#Donate", "#CharityWork"], defaultCtaSlug: "donate", displayOrder: 5 },
+  { slug: "events-whats-on", name: "What's On / Events", color: SIG.mustard, icon: "calendar-days", defaultPostType: "carousel", defaultHashtags: ["#WhatsOn", "#CommunityEvents", "#Swansea"], defaultCtaSlug: "attend-an-event", displayOrder: 6 },
   { slug: "did-you-know", name: "Did You Know – GC Facts", color: SIG.cream, icon: "lightbulb", defaultPostType: "carousel", defaultHashtags: ["#DidYouKnow", "#GreenChampions", "#Sustainability"], defaultCtaSlug: "learn-change-behaviour", displayOrder: 7 },
-  { slug: "volunteer-activity", name: "Volunteer Activity", color: SIG.coral, icon: "hand-helping", defaultPostType: "grid", defaultHashtags: ["#Volunteer", "#CharityWork", "#SAFEFoundation"], defaultCtaSlug: "volunteer", displayOrder: 8 },
-  { slug: "anniversary-20-years", name: "20 Years of SAFE", color: SIG.peach, icon: "cake", defaultPostType: "carousel", defaultHashtags: ["#20YearsOfSAFE", "#SAFEFoundation", "#Anniversary"], defaultCtaSlug: "share", displayOrder: 9 },
-  { slug: "campaign-update", name: "Campaign Update", color: SIG.mint, icon: "megaphone", defaultPostType: "grid", defaultHashtags: ["#Campaign", "#SAFEFoundation"], defaultCtaSlug: "share", displayOrder: 10 },
-  { slug: "mental-health", name: "Mental Health", color: SIG.yellow, icon: "brain", defaultPostType: "carousel", defaultHashtags: ["#MentalHealth", "#Wellbeing", "#SAFEFoundation"], defaultCtaSlug: "learn-change-behaviour", displayOrder: 11 },
+  { slug: "volunteer-activity", name: "Volunteer Activity", color: SIG.coral, icon: "hand-helping", defaultPostType: "grid", defaultHashtags: ["#Volunteer", "#CharityWork"], defaultCtaSlug: "volunteer", displayOrder: 8 },
+  { slug: "anniversary-20-years", name: "20 year anniversary", color: SIG.peach, icon: "cake", defaultPostType: "carousel", defaultHashtags: ["#20YearAnniversary", "#CharityWork", "#Anniversary"], defaultCtaSlug: "share", displayOrder: 9 },
+  { slug: "campaign-update", name: "Campaign Update", color: SIG.mint, icon: "megaphone", defaultPostType: "grid", defaultHashtags: ["#Campaign", "#CharityWork"], defaultCtaSlug: "share", displayOrder: 10 },
+  { slug: "mental-health", name: "Mental Health", color: SIG.yellow, icon: "brain", defaultPostType: "carousel", defaultHashtags: ["#MentalHealth", "#Wellbeing", "#CharityWork"], defaultCtaSlug: "learn-change-behaviour", displayOrder: 11 },
   { slug: "staff-roles", name: "Staff Roles & Recruitment", color: SIG.forest, icon: "id-card", defaultPostType: "grid", defaultHashtags: ["#Hiring", "#JoinUs", "#CharityJobs"], defaultCtaSlug: "share", displayOrder: 12 },
-  { slug: "social-media-guide", name: "Social Media Guide / Voice", color: SIG.mustard, icon: "book-open", defaultPostType: "grid", defaultHashtags: ["#SAFEFoundation"], defaultCtaSlug: "like", displayOrder: 13 },
-  { slug: "general", name: "General", color: SIG.navy, icon: "circle", defaultPostType: "grid", defaultHashtags: ["#SAFEFoundation"], defaultCtaSlug: "like", displayOrder: 14 },
+  { slug: "social-media-guide", name: "Social Media Guide / Voice", color: SIG.mustard, icon: "book-open", defaultPostType: "grid", defaultHashtags: ["#CharityWork"], defaultCtaSlug: "like", displayOrder: 13 },
+  { slug: "general", name: "General", color: SIG.navy, icon: "circle", defaultPostType: "grid", defaultHashtags: ["#CharityWork"], defaultCtaSlug: "like", displayOrder: 14 },
 ]
 
 const KANBAN_COLUMNS = [
@@ -151,7 +151,7 @@ const KANBAN_COLUMNS = [
 ]
 
 /* A minimal brandConfig — voice + audience + cadence are required.
- * Sourced from SAFE Foundation public materials (youth mental health). */
+ * Sourced from demo nonprofit public materials (youth mental health). */
 const BRAND_CONFIG = {
   id: "default",
   organizationId: ORG_ID,

@@ -14,11 +14,11 @@ import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
 
 /*
  * Seeds the second dev org - a clean tenant for exercising the onboarding
- * wizard end-to-end. Unlike SAFE Foundation (0001-0009), this org gets:
+ * wizard end-to-end. Unlike the Timbl demo org (0001-0009), this org gets:
  *
  *   - NO categories, templates, awareness days, or campaigns. The wizard
  *     is the only thing that should populate those, so its output is
- *     visible against an empty slate instead of buried under SAFE seeds.
+ *     visible against an empty slate instead of buried under demo seeds.
  *   - NO `onboarding.completedAt` - so the (app) layout redirects to
  *     /onboarding on first visit, exactly like a real new signup.
  *   - The FULL real-agent catalog from lib/agents/defaults.ts. The five

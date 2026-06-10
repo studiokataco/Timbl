@@ -10,6 +10,6 @@ import type { DevUser } from "@/lib/auth/dev-session"
 export const SYSTEM_USER: DevUser = {
   id: "system",
   email: "system@safefoundation.dev",
-  name: "SAFE Cron",
+  name: "Timbl Cron",
   role: "admin",
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useDroppable } from "@dnd-kit/core"
-import { format, isSameDay, isToday, parseISO } from "date-fns"
+import { format, isToday } from "date-fns"
 import { useMemo } from "react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post } from "@/lib/schemas"

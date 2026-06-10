@@ -18,13 +18,13 @@
 - Icons: `lucide-react`, single style.
 
 ## Tenancy (multi-tenant from day 1)
-- Every domain doc lives under `/organizations/{orgId}/...` in Firestore. SAFE is the only org for v1.
+- Every domain doc lives under `/organizations/{orgId}/...` in Firestore. `safe-foundation` is the demo org for v1.
 - Every server action MUST call `getCurrentOrgId()` from `lib/auth/server-helpers.ts` before reading or writing.
 - Never trust implicit scoping. The Admin SDK bypasses Security Rules during dev; app-layer filtering is our only protection until Phase 7.
 - When auth is added in Phase 7, the user-scoped client engages Security Rules as a second defense layer. Defense in depth - keep the explicit `organizationId` filtering even after rules go live.
 
 ## Auth state (until Phase 7)
-- `lib/auth/dev-session.ts` is the source of "who is logged in" - a neutral SAFE admin user. Do not hardcode personal names anywhere; the dev-shim user is "SAFE Admin" with email `admin@safefoundation.dev`.
+- `lib/auth/dev-session.ts` is the source of "who is logged in" - a neutral Timbl admin user. Do not hardcode personal names anywhere; the dev-shim user is "Timbl Admin" with email `admin@safefoundation.dev`.
 - The dev banner at the top of the app reminds us auth isn't real yet. It auto-hides in production.
 - Don't add `/login` or `/auth/callback` routes until Phase 7.
 

@@ -30,7 +30,7 @@ export const SAFE_ADMIN_USER_ID = "admin"
  * in. Kept deliberately bare (no categories / templates / awareness days)
  * so a wizard run is the ONLY thing that populates it. The Settings →
  * Workspace demo toggle switches the dev session between this org and
- * SAFE Foundation. See lib/auth/dev-session.ts.
+ * Timbl demo org. See lib/auth/dev-session.ts.
  */
 export const TENANT_ORG_ID = "tenant-workspace"
 export const TENANT_ADMIN_USER_ID = "admin"

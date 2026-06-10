@@ -15,7 +15,7 @@ import "driver.js/dist/driver.css"
  * a localStorage flag. Re-run is available from Settings → Workspace.
  */
 
-const STORAGE_KEY = "safe.tour.completed.v1"
+const STORAGE_KEY = "timbl.tour.completed.v1"
 
 const STEPS = [
   {

@@ -100,7 +100,7 @@ export function IdeationTriage({ item, initialItems }: Props) {
       const remaining = items.filter((i) => i.id !== item.id)
       focusItem(remaining[idx] ? remaining[idx].id : null)
     })
-  }, [item.id, items, idx, focusItem, queryClient])
+  }, [item.id, items, idx, focusItem, queryClient, router])
 
   const schedule = useCallback(
     (scheduledDate: string, scheduledTime?: string) => {

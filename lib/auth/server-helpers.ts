@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath } from "@/lib/firebase/paths"
-import { readSessionAuth, readSessionClaims } from "@/lib/auth/session"
+import { readSessionAuth } from "@/lib/auth/session"
 import { resolveImpersonation } from "@/lib/auth/impersonation"
 import {
   DEV_ORG_COOKIE,
@@ -35,7 +35,7 @@ import {
 
 const useDevShim = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
 
-/* Resolve the active dev session from the DEV_ORG_COOKIE (SAFE demo vs
+/* Resolve the active dev session from the DEV_ORG_COOKIE (demo vs
  * wizard-built tenant). Only meaningful under the emulator shim. */
 async function resolveDevSession(): Promise<DevSession> {
   const store = await cookies()

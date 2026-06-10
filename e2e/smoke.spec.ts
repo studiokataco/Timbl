@@ -12,10 +12,10 @@ import { test, expect } from "@playwright/test"
 
 test("app shell renders and the calendar route loads", async ({ page }) => {
   await page.goto("/")
-  await expect(page).toHaveURL(/\/(calendar|login)/)
+  await expect(page).toHaveURL(/\/(login|calendar)/)
 
   if (page.url().includes("/login")) {
-    await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible()
     return
   }
 

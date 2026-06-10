@@ -8,7 +8,7 @@ import { awarenessDaysPath } from "@/lib/firebase/paths"
  *
  * Coverage: 36 awareness days spanning 2026 - a mix of high-importance UN /
  * national observances, weeks-long campaigns expressed as their start day,
- * and culturally relevant moments for SAFE's audience (mental health,
+ * and culturally relevant moments for the demo org audience (mental health,
  * sustainability, charity sector).
  *
  * `suggestedCategorySlug` lets the Promote-to-post action pre-populate the

@@ -8,7 +8,7 @@ import { getFirestore } from "firebase-admin/firestore"
 
 /*
  * Local agent-cron driver. Reads every enabled agentConfig with a cron
- * `schedule` for the dev SAFE org, registers a node-cron job per agent,
+ * `schedule` for the dev demo org, registers a node-cron job per agent,
  * and POSTs to /api/agents/cron/tick when each job fires.
  *
  * Started from scripts/dev.mjs only when AGENTS_CRON=1 is set in the
