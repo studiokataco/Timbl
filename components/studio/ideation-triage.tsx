@@ -6,13 +6,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Calendar, Loader2, Sparkles, X } from "lucide-react"
 import { toast } from "sonner"
 
+import { format, parseISO } from "date-fns"
+
 import type { IdeationItem } from "@/lib/schemas/ideationItem"
 import {
   listIdeationFeed,
   markIdeationStatus,
   promoteIdeationItem,
 } from "@/lib/actions/ideation"
+import { approveAgentDraft } from "@/lib/actions/agent-suggestions"
 import { Button } from "@/components/ui/button"
+import { SchedulePostPopover } from "@/components/shared/schedule-post-popover"
 import { cn } from "@/lib/utils"
 
 /*
@@ -97,6 +101,54 @@ export function IdeationTriage({ item, initialItems }: Props) {
       focusItem(remaining[idx] ? remaining[idx].id : null)
     })
   }, [item.id, items, idx, focusItem, queryClient])
+
+  const schedule = useCallback(
+    (scheduledDate: string, scheduledTime?: string) => {
+      startTransition(async () => {
+        const promoted = await promoteIdeationItem({
+          itemId: item.id,
+          scheduledDate,
+        })
+        if (!promoted.ok || !promoted.id) {
+          toast.error("Schedule failed", { description: promoted.error })
+          return
+        }
+        /* The promoted post declares nextAction schedule_post; approving it
+         * with a targetTime override is the same path as "Approve &
+         * schedule" on agent drafts. The Z-suffixed timestamp round-trips
+         * the picked wall-clock values through resolveTargetTime intact. */
+        const approved = await approveAgentDraft({
+          postId: promoted.id,
+          override: scheduledTime
+            ? { targetTime: `${scheduledDate}T${scheduledTime}:00.000Z` }
+            : undefined,
+        })
+        if (!approved.ok) {
+          toast.error("Promoted but scheduling failed", {
+            description: approved.error,
+          })
+        } else {
+          toast.success(
+            `Scheduled for ${format(parseISO(scheduledDate), "EEE d MMM")}${
+              scheduledTime ? ` at ${scheduledTime}` : ""
+            }`,
+            {
+              action: {
+                label: "View",
+                onClick: () => router.push("/calendar"),
+              },
+            },
+          )
+        }
+        queryClient.invalidateQueries({ queryKey: ["ideation"] })
+        queryClient.invalidateQueries({ queryKey: ["posts"] })
+        queryClient.invalidateQueries({ queryKey: ["studio", "runs"] })
+        const remaining = items.filter((i) => i.id !== item.id)
+        focusItem(remaining[idx] ? remaining[idx].id : null)
+      })
+    },
+    [item.id, items, idx, focusItem, queryClient, router],
+  )
 
   const dismiss = useCallback(() => {
     startTransition(async () => {
@@ -211,6 +263,12 @@ export function IdeationTriage({ item, initialItems }: Props) {
           )}
           Promote to draft
         </Button>
+        <SchedulePostPopover
+          initialDate={item.suggestedDate}
+          pending={pending}
+          align="start"
+          onConfirm={schedule}
+        />
         <Button
           type="button"
           variant="outline"

@@ -18,8 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { fetchPostsInRangeAction } from "@/lib/actions/posts"
+import { fetchPostsInRangeAction, updatePost } from "@/lib/actions/posts"
 import { bulkSetStatus } from "@/lib/actions/posts-bulk"
+import { SchedulePostPopover } from "@/components/shared/schedule-post-popover"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import { cn } from "@/lib/utils"
 import type { WithId } from "@/lib/firebase/serialize"
@@ -197,6 +198,31 @@ export function PostsTable({
       } else {
         toast.success(`Marked ${res.updated} posts as scheduled`)
       }
+      queryClient.invalidateQueries({ queryKey: ["posts"] })
+    })
+  }
+
+  const scheduleIdea = (
+    id: string,
+    scheduledDate: string,
+    scheduledTime?: string,
+  ) => {
+    startTransition(async () => {
+      const res = await updatePost({
+        id,
+        status: "scheduled",
+        scheduledDate,
+        ...(scheduledTime ? { scheduledTime } : {}),
+      })
+      if (!res.ok) {
+        toast.error(res.error ?? "Could not schedule")
+        return
+      }
+      toast.success(
+        `Scheduled for ${format(parseISO(scheduledDate), "EEE d MMM")}${
+          scheduledTime ? ` at ${scheduledTime}` : ""
+        }`,
+      )
       queryClient.invalidateQueries({ queryKey: ["posts"] })
     })
   }
@@ -402,7 +428,15 @@ export function PostsTable({
                     <td className="p-2 text-xs">{lead?.name ?? "-"}</td>
                     <td className="p-2 text-xs">{assg?.name ?? "-"}</td>
                     <td className="p-2 text-xs capitalize">{formatPostTypes(p)}</td>
-                    <td className="p-2 text-right">
+                    <td className="p-2 text-right whitespace-nowrap">
+                      {p.status === "idea" || p.status === "brief" ? (
+                        <SchedulePostPopover
+                          initialDate={p.scheduledDate}
+                          pending={pending}
+                          triggerVariant="ghost"
+                          onConfirm={(d, t) => scheduleIdea(p.id, d, t)}
+                        />
+                      ) : null}
                       <Button
                         size="sm"
                         variant="ghost"
