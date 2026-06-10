@@ -1,0 +1,7 @@
+# pnpm >=10 blocks dependency postinstall scripts unless approved. The GCF
+# buildpack ships pnpm 11, which fails the build on unapproved scripts
+# (ERR_PNPM_IGNORED_BUILDS) and reads approvals from this file's allowBuilds
+# (package.json "pnpm" field and onlyBuiltDependencies are no longer read).
+allowBuilds:
+  '@firebase/util': true
+  protobufjs: true
