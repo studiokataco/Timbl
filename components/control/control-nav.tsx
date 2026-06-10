@@ -19,6 +19,7 @@ const LINKS = [
   { href: "/live-ops", label: "Live ops" },
   { href: "/revenue", label: "Revenue" },
   { href: "/assistant", label: "Assistant" },
+  { href: "/audit", label: "Audit" },
   { href: "/team", label: "Team" },
 ]
 

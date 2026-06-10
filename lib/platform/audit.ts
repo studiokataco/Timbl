@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
+import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
 import {
   platformAuditEntrySchema,
   platformAuditLogPath,
@@ -40,6 +41,28 @@ export async function writePlatformAudit(input: PlatformAuditInput): Promise<voi
     meta: input.meta ?? {},
     createdAt: new Date().toISOString(),
   })
+}
+
+export interface PlatformAuditFeed {
+  entries: PlatformAuditEntry[]
+  hasMore: boolean
+}
+
+/* Newest-first window for the control-centre viewer. Re-asserts platform
+ * admin like every read model in lib/platform/queries.ts. */
+export async function getPlatformAuditFeed(limit = 100): Promise<PlatformAuditFeed> {
+  await requirePlatformAdmin()
+  const snap = await getAdminDb()
+    .collection(platformAuditLogPath)
+    .orderBy("createdAt", "desc")
+    .limit(limit)
+    .get()
+  const entries: PlatformAuditEntry[] = []
+  for (const d of snap.docs) {
+    const parsed = platformAuditEntrySchema.safeParse({ ...d.data(), id: d.id })
+    if (parsed.success) entries.push(parsed.data)
+  }
+  return { entries, hasMore: snap.size === limit }
 }
 
 export async function listPlatformAudit(limit = 100): Promise<PlatformAuditEntry[]> {
