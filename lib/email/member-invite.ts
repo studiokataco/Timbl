@@ -23,8 +23,8 @@ export async function sendMemberInviteEmail(opts: {
 
   const testMode = process.env.RESEND_TEST_MODE === "1"
   const from = testMode
-    ? "SAFE Planner <onboarding@resend.dev>"
-    : (process.env.RESEND_INVITE_FROM ?? "SAFE Planner <onboarding@resend.dev>")
+    ? "Timbl <onboarding@resend.dev>"
+    : (process.env.RESEND_INVITE_FROM ?? "Timbl <onboarding@resend.dev>")
   const loginUrl = `${appBaseUrl()}/login`
   const orgLabel = opts.orgName ?? "the workspace"
 

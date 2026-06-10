@@ -11,7 +11,7 @@ export function StartPage({ devShim }: { devShim: boolean }) {
     <main className="min-h-screen w-full grid place-items-center bg-background text-foreground p-6">
       <div className="w-full max-w-sm space-y-8">
         <header className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">SAFE Planner</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Timbl</h1>
           <p className="text-sm text-muted-foreground">
             Sign up with Google, then create or open a workspace.
           </p>

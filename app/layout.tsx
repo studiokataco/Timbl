@@ -25,11 +25,11 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Social planner",
-    template: "%s · Social planner",
+    default: "Timbl",
+    template: "%s · Timbl",
   },
   description: "Calendar-first social media planning for agencies and brands.",
-  applicationName: "Social planner",
+  applicationName: "Timbl",
 }
 
 export default function RootLayout({

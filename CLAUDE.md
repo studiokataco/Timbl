@@ -1,4 +1,4 @@
-# Social Media Planner - conventions for Claude Code
+# Timbl - conventions for Claude Code
 
 ## Read first
 - For ANY UI work, read `/DESIGN.md` before making styling decisions. The Airtable design system (canvas-white background, near-black `ink` primary CTA, signature coral / forest / peach / mint / yellow palette for category pills) is the source of truth - `components/ui/` shadcn primitives are owned and skinned through tokens in `app/globals.css` that map back to `DESIGN.md`.

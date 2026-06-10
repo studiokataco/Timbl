@@ -36,7 +36,7 @@ import { startProductTour } from "@/components/tour/product-tour"
 const STEPS = [
   {
     icon: Sparkles,
-    title: "Welcome to SAFE Planner",
+    title: "Welcome to Timbl",
     body: "Calendar is your home base: scheduled and in-progress posts in one place. Edits save instantly for everyone in this workspace.",
   },
   {
