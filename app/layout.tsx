@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
+import { AiTestingBanner } from "@/components/shared/ai-testing-banner"
 import { DevBanner } from "@/components/shared/dev-banner"
 import { ThemeProvider, ThemeNoFlashScript } from "@/components/shared/theme-provider"
 import { PostHogProvider } from "@/components/shared/posthog-provider"
@@ -47,6 +48,7 @@ export default function RootLayout({
         <PostHogProvider>
           <ThemeProvider defaultTheme="system">
             <DevBanner />
+            <AiTestingBanner />
             {children}
             <Toaster richColors position="bottom-right" />
           </ThemeProvider>
