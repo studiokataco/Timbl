@@ -25,7 +25,23 @@ env:
   # appBaseUrl() falls back to localhost and redirects leak Cloud Run's
   # internal 0.0.0.0:8080 listener address.
   - variable: APP_BASE_URL
-    value: https://safe-planner--sm-dashboard-e7641.asia-east1.hosted.app
+    value: https://timbl.app
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Control centre host gate (proxy.ts) - requests on this host route to
+  # /control, every other host 404s it.
+  - variable: NEXT_PUBLIC_ADMIN_HOST
+    value: admin.timbl.app
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Share the __session cookie across timbl.app + admin.timbl.app so one
+  # sign-in covers both hosts (lib/auth/session.ts).
+  - variable: NEXT_PUBLIC_COOKIE_DOMAIN
+    value: .timbl.app
     availability:
       - BUILD
       - RUNTIME
