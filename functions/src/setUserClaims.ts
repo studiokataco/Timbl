@@ -11,7 +11,7 @@ import { logger } from "firebase-functions"
  *
  *   1. EXISTING MEMBERSHIP - if the user's email already appears in any
  *      /organizations/{orgId}/users/* row, sign them in to that org. Back-
- *      compat for SAFE/Kataco staff already provisioned in safe-foundation.
+ *      compat for legacy Kataco staff already provisioned in safe-foundation.
  *
  *   2. LEGACY DOMAIN MAP - if email domain is in LEGACY_DOMAIN_TO_ORG, route
  *      to that org and auto-provision a contributor row. This keeps the
@@ -28,7 +28,7 @@ import { logger } from "firebase-functions"
  * source still lives in lib/agents/defaults.ts. If the two drift, manual
  * `installDefaultAgents` can repair an org.
  *
- * Production note: SAFE Foundation prod deploy can pin this behind a
+ * Production note: legacy prod deploy can pin this behind a
  * feature flag if open-signup needs to wait - set ENV.NEW_ORG_SIGNUP=off
  * in App Hosting secrets to fall back to the legacy "deny non-allowlisted"
  * behavior.
@@ -112,7 +112,7 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
     }
   }
 
-  /* 2. Legacy domain map - back-compat for SAFE/Kataco. */
+  /* 2. Legacy domain map - back-compat for safefoundation.org.uk / kataco.in. */
   const legacy = LEGACY_DOMAIN_TO_ORG[domain]
   if (legacy) {
     const seed = await provisionContributor(

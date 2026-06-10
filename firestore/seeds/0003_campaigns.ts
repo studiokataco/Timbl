@@ -7,7 +7,7 @@ const campaigns = [
     name: "20th Anniversary Ball",
     slug: "20th-anniversary-ball",
     description:
-      "Celebrating 20 years of SAFE Foundation - gala fundraiser and awareness campaign.",
+      "Celebrating 20 years - gala fundraiser and awareness campaign.",
     color: "#fb923c",
     startDate: "2026-06-01",
     endDate: "2026-09-30",

@@ -23,7 +23,7 @@ async function signInWithGoogleEmulator(): Promise<UserCredential> {
       sub: "emulator-safe-admin",
       email,
       email_verified: true,
-      name: "SAFE Admin",
+      name: "Timbl Admin",
     }),
   )
   return signInWithCredential(auth, credential)

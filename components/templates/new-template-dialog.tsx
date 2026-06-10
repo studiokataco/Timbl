@@ -106,6 +106,7 @@ export function NewTemplateDialog({
     if (open) form.reset(defaults)
   }, [open, defaults, form])
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- RHF watch drives live template preview fields
   const watchedHashtags = form.watch("defaultHashtags")
   const watchedCategoryId = form.watch("categoryId")
   const watchedPostType = form.watch("defaultPostType")
@@ -262,7 +263,7 @@ export function NewTemplateDialog({
               <Textarea
                 id="template-blurb"
                 rows={4}
-                placeholder="Today we're celebrating [TEAM_MEMBER]'s [YEARS]-year anniversary at SAFE..."
+                placeholder="Today we're celebrating [TEAM_MEMBER]'s [YEARS]-year anniversary at [ORGANIZATION]..."
                 {...form.register("blurbTemplate")}
               />
               <p className="text-xs text-muted-foreground">

@@ -8,7 +8,7 @@ import { collectionPathFor, embedIfChanged, type Kind } from "@/lib/embeddings/e
  * are still deterministic, so seed/dev boots are stable across reboots.
  *
  * Scans up to BACKFILL_LIMIT per kind - well above the seeded corpus and
- * enough to catch any organic growth during dev. Bumps required if SAFE
+ * enough to catch any organic growth during dev. Bumps required if demo org
  * ever exceeds it.
  */
 

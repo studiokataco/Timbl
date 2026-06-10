@@ -97,7 +97,8 @@ export class OpenAiCompatibleLlm extends BaseLlm {
       }
     } else {
       // Non-streaming: drain without yielding partials.
-      for await (const _chunk of completionStream) {
+      const streamIterator = completionStream[Symbol.asyncIterator]()
+      while (!(await streamIterator.next()).done) {
         if (abortSignal?.aborted) break
       }
     }

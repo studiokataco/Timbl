@@ -13,7 +13,7 @@ export async function fetchOgImage(url: string): Promise<{ ok: true; image: stri
     }
     const res = await fetch(u.toString(), {
       redirect: "follow",
-      headers: { "user-agent": "Mozilla/5.0 (compatible; SocialMediaPlanner/1.0)" },
+      headers: { "user-agent": "Mozilla/5.0 (compatible; Timbl/1.0)" },
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return { ok: false, error: `Upstream ${res.status}` }

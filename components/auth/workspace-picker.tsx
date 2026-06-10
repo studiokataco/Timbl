@@ -170,7 +170,7 @@ function DevWorkspacePicker({ highlightNew }: { highlightNew: boolean }) {
       <div className="rounded-lg border border-border p-4 space-y-3">
         <h2 className="text-sm font-medium">Existing demo workspace</h2>
         <p className="text-xs text-muted-foreground">
-          Fully seeded SAFE Foundation org for demos.
+          Fully seeded Timbl demo workspace for demos.
         </p>
         <Button
           variant="outline"
@@ -178,7 +178,7 @@ function DevWorkspacePicker({ highlightNew }: { highlightNew: boolean }) {
           disabled={pending}
           onClick={() => pick("demo", "demo")}
         >
-          {busy === "demo" ? "Opening…" : "Open SAFE demo"}
+          {busy === "demo" ? "Opening…" : "Open demo workspace"}
         </Button>
       </div>
     </div>

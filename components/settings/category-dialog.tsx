@@ -78,6 +78,7 @@ export function CategoryDialog({
   )
 
   const form = useForm<FormValues>({ defaultValues: defaults })
+  // eslint-disable-next-line react-hooks/incompatible-library -- RHF watch is intentional for live color preview
   const watchedColor = form.watch("color")
 
   useEffect(() => {

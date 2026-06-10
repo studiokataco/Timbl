@@ -163,7 +163,8 @@ export class AnthropicLlm extends BaseLlm {
     })
 
     // Drain the stream - we don't yield partials in the non-streaming path.
-    for await (const _event of msgStream) {
+    const streamIterator = msgStream[Symbol.asyncIterator]()
+    while (!(await streamIterator.next()).done) {
       if (abortSignal?.aborted) break
     }
 

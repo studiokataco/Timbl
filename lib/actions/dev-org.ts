@@ -13,10 +13,10 @@ import {
 import type { ServerActionResult } from "@/lib/schemas"
 
 /*
- * Dev-only org switch. The Settings → Workspace "SAFE demo mode" toggle
+ * Dev-only org switch. The Settings → Workspace demo-workspace toggle
  * calls `setDevOrg`; `server-helpers` reads the same cookie on every
  * request to decide which dev session the emulator shim returns -
- * SAFE Foundation (demo) or your wizard-built tenant.
+ * Timbl demo org or your wizard-built tenant.
  *
  * No-ops outside emulator mode: production identity comes from the
  * verified Firebase session cookie, never from this switch.
