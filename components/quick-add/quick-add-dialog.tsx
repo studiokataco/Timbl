@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, ChevronsUpDown } from "lucide-react"
 import { toast } from "sonner"
@@ -70,6 +71,7 @@ export function QuickAddDialog({
   onSaved,
   onCreateAndOpenComposer,
 }: Props) {
+  const router = useRouter()
   const [date, setDate] = useState<Date>(initialDate ?? new Date())
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [brief, setBrief] = useState("")
@@ -112,8 +114,15 @@ export function QuickAddDialog({
       onOpenChange(false)
       onCreated?.()
       const newId = res.id
-      toast.success(`Saved to ${format(date, "EEE d MMM")}`, {
+      /* Quick-add posts always land as status "idea", so name the
+       * destination - users were hunting the calendar for them. */
+      toast.success("Saved to ideas", {
+        description: `Planned for ${format(date, "EEE d MMM")}`,
         action: {
+          label: "View",
+          onClick: () => router.push("/posts?status=idea,brief"),
+        },
+        cancel: {
           label: "Undo",
           onClick: () => {
             void deletePost(newId).then(() => onCreated?.())
