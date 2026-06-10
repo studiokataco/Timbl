@@ -6,6 +6,7 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath } from "@/lib/firebase/paths"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
 import { getOnboardingState } from "@/lib/onboarding/state"
+import { isOnboardingStepId } from "@/lib/onboarding/steps"
 import { listIndustries } from "@/lib/onboarding/industry-defaults"
 import { hydrateAgentStubs } from "@/lib/org/hydrate"
 import { OnboardingWizard } from "@/components/onboarding/wizard"
@@ -36,10 +37,17 @@ export default async function OnboardingPage() {
   const orgName = state.completedAt
     ? (orgSnap.data()?.name as string | undefined)
     : undefined
+  /* Resume only mid-flow: a completed wizard (re-run path) always starts
+   * fresh at step 1, and an unknown/stale step id falls back to step 1. */
+  const resumeStep =
+    !state.completedAt && isOnboardingStepId(state.lastStep)
+      ? state.lastStep
+      : undefined
   return (
     <OnboardingWizard
       initialProfile={{ ...(state.profile ?? {}), name: orgName }}
       industries={industries}
+      initialStep={resumeStep}
     />
   )
 }

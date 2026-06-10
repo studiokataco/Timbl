@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Check, ChevronLeft, ChevronRight, Sparkles } from "lucide-react"
 import { toast } from "sonner"
@@ -13,7 +13,9 @@ import {
   applyOnboardingSelections,
   completeOnboarding,
   saveOnboardingProfile,
+  saveOnboardingStep,
 } from "@/lib/actions/onboarding"
+import type { OnboardingStepId } from "@/lib/onboarding/steps"
 import {
   getIndustryDefaults,
   type IndustryId,
@@ -38,7 +40,7 @@ import { cn } from "@/lib/utils"
  *   step 5 → applyOnboardingSelections (channels) + completeOnboarding
  */
 
-type StepId = "profile" | "agents" | "categories" | "templates" | "channels"
+type StepId = OnboardingStepId
 const STEPS: { id: StepId; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "agents", label: "Agents" },
@@ -72,14 +74,22 @@ interface InitialProfile {
 export function OnboardingWizard({
   initialProfile,
   industries,
+  initialStep,
 }: {
   initialProfile: InitialProfile
   industries: { id: IndustryId; label: string }[]
+  initialStep?: StepId
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [activeStep, setActiveStep] = useState<StepId>("profile")
+  const [activeStep, setActiveStep] = useState<StepId>(initialStep ?? "profile")
   const [skipped, setSkipped] = useState<Set<StepId>>(new Set())
+
+  useEffect(() => {
+    if (initialStep && initialStep !== "profile") {
+      toast.message("Resuming where you left off")
+    }
+  }, [initialStep])
 
   /* Form state - flat for simplicity. Each step writes its slice. */
   const [industry, setIndustry] = useState<string>(
@@ -124,11 +134,17 @@ export function OnboardingWizard({
 
   const stepIndex = STEPS.findIndex((s) => s.id === activeStep)
 
+  /* Navigation persists the step position (best-effort, non-blocking) so
+   * a reload resumes here instead of restarting at step 1. */
+  function navigate(step: StepId) {
+    setActiveStep(step)
+    void saveOnboardingStep({ step })
+  }
   function goNext() {
-    if (stepIndex < STEPS.length - 1) setActiveStep(STEPS[stepIndex + 1].id)
+    if (stepIndex < STEPS.length - 1) navigate(STEPS[stepIndex + 1].id)
   }
   function goPrev() {
-    if (stepIndex > 0) setActiveStep(STEPS[stepIndex - 1].id)
+    if (stepIndex > 0) navigate(STEPS[stepIndex - 1].id)
   }
   function skipCurrent() {
     setSkipped((s) => new Set(s).add(activeStep))
