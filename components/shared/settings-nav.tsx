@@ -22,6 +22,7 @@ const NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: "/settings", label: "Overview", exact: true },
   { href: "/settings/workspace", label: "Workspace" },
   { href: "/settings/billing", label: "Billing" },
+  { href: "/settings/usage", label: "Usage" },
   { href: "/settings/brand", label: "Brand" },
   { href: "/settings/categories", label: "Categories" },
   { href: "/settings/channels", label: "Channels" },
