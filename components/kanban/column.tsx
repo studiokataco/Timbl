@@ -29,6 +29,9 @@ type Props = {
   userById: Map<string, WithId<User>>
   onCardClick: (post: WithId<Post>) => void
   onCardStatusChange?: (post: WithId<Post>, next: PostStatus) => void
+  selectedIds?: ReadonlySet<string>
+  selectionActive?: boolean
+  onToggleSelect?: (post: WithId<Post>) => void
 }
 
 export function KanbanColumn({
@@ -39,6 +42,9 @@ export function KanbanColumn({
   userById,
   onCardClick,
   onCardStatusChange,
+  selectedIds,
+  selectionActive,
+  onToggleSelect,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -137,6 +143,11 @@ export function KanbanColumn({
                 onCardStatusChange
                   ? (next) => onCardStatusChange(post, next)
                   : undefined
+              }
+              selected={selectedIds?.has(post.id)}
+              selectionActive={selectionActive}
+              onToggleSelect={
+                onToggleSelect ? () => onToggleSelect(post) : undefined
               }
             />
           ))}

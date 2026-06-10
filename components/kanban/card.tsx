@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
 import { Sparkles } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { LEGACY_POST_STATUSES } from "@/lib/schemas"
@@ -21,6 +22,9 @@ type Props = {
   onClick: () => void
   onStatusChange?: (status: PostStatus) => void
   isDragging?: boolean
+  selected?: boolean
+  selectionActive?: boolean
+  onToggleSelect?: () => void
 }
 
 export function KanbanCard({
@@ -31,11 +35,16 @@ export function KanbanCard({
   onClick,
   onStatusChange,
   isDragging,
+  selected,
+  selectionActive,
+  onToggleSelect,
 }: Props) {
   const statuses =
     columnIds && columnIds.length > 0 ? columnIds : LEGACY_POST_STATUSES
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: post.id })
+  const pendingReview = post.agentMeta?.reviewState === "pending"
+  const selectable = pendingReview && !!onToggleSelect
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -55,13 +64,33 @@ export function KanbanCard({
       {...attributes}
       {...listeners}
       className={cn(
-        "bg-background border border-border border-l-4 rounded-lg p-3 md:cursor-grab md:active:cursor-grabbing",
+        "group bg-background border border-border border-l-4 rounded-lg p-3 md:cursor-grab md:active:cursor-grabbing",
         "hover:shadow-sm transition-shadow select-none",
         isDragging && "opacity-40",
+        selected && "ring-2 ring-primary/40",
       )}
       onClick={onClick}
     >
       <div className="flex items-center gap-1.5 mb-1.5 text-xs">
+        {selectable && (
+          <span
+            className={cn(
+              "shrink-0 transition-opacity",
+              selected || selectionActive
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100 focus-within:opacity-100",
+            )}
+            onPointerDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={!!selected}
+              onCheckedChange={() => onToggleSelect?.()}
+              aria-label="Select for bulk approval"
+            />
+          </span>
+        )}
         {/* Tinted category pill with status glyph - the same chip the calendar
          * renders, so a post reads identically in either view. */}
         <span
@@ -97,7 +126,7 @@ export function KanbanCard({
           </span>
         )}
       </div>
-      {post.agentMeta?.reviewState === "pending" && (
+      {pendingReview && (
         <div className="mt-2 pt-2 border-t border-border">
           <p
             className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1.5"
