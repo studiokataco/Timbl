@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   DndContext,
@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
+import { BulkApproveBar } from "./bulk-approve-bar"
 import { KanbanCard } from "./card"
 import { KanbanColumn } from "./column"
 import { KanbanColumnAddButton } from "./column-add-button"
@@ -70,6 +71,7 @@ export function KanbanBoard({
   const [filterCampaign, setFilterCampaign] = useState("")
   const [filterQ, setFilterQ] = useState("")
   const [createOpen, setCreateOpen] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set())
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -113,6 +115,44 @@ export function KanbanBoard({
     () => posts.find((p) => p.id === activeId) ?? null,
     [posts, activeId],
   )
+
+  /* Selection is pruned against live data: a card approved elsewhere (or by
+   * the bulk action itself) leaves pending state and drops out here. */
+  const pendingIds = useMemo(
+    () =>
+      new Set(
+        posts
+          .filter((p) => p.agentMeta?.reviewState === "pending")
+          .map((p) => p.id),
+      ),
+    [posts],
+  )
+  const activeSelection = useMemo(
+    () => [...selectedIds].filter((id) => pendingIds.has(id)),
+    [selectedIds, pendingIds],
+  )
+
+  function toggleSelect(post: WithId<Post>) {
+    if (!selectedIds.has(post.id) && activeSelection.length >= 50) {
+      toast.message("You can select up to 50 cards at a time")
+      return
+    }
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(post.id)) next.delete(post.id)
+      else next.add(post.id)
+      return next
+    })
+  }
+
+  useEffect(() => {
+    if (activeSelection.length === 0) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedIds(new Set())
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [activeSelection.length])
 
   /* Patch every cached posts query (any date range) by id so the card jumps
    * columns instantly; invalidate afterwards reconciles against the server. */
@@ -205,6 +245,9 @@ export function KanbanBoard({
                 userById={userById}
                 onCardClick={openComposer}
                 onCardStatusChange={onStatusChange}
+                selectedIds={selectedIds}
+                selectionActive={activeSelection.length > 0}
+                onToggleSelect={toggleSelect}
               />
             ))}
             <KanbanColumnAddButton onClick={() => setCreateOpen(true)} />
@@ -223,6 +266,11 @@ export function KanbanBoard({
           </DragOverlay>
         </DndContext>
       </div>
+
+      <BulkApproveBar
+        selectedIds={activeSelection}
+        onClear={() => setSelectedIds(new Set())}
+      />
 
       <ColumnEditDialog
         open={createOpen}
