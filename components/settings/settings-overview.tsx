@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   Bell,
   Briefcase,
+  Gauge,
   Palette,
   Tags,
   Megaphone,
@@ -45,6 +46,13 @@ const SECTIONS: Section[] = [
     description:
       "Teach the AI your brand voice, audience, channels, and posting cadence.",
     icon: Palette,
+  },
+  {
+    href: "/settings/usage",
+    title: "Usage",
+    description:
+      "Agent runs, scheduled posts, channels, and seats this month, against your plan limits.",
+    icon: Gauge,
   },
   {
     href: "/settings/categories",
