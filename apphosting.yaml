@@ -56,10 +56,16 @@ env:
       - BUILD
       - RUNTIME
 
-  # OAuth redirect_uri must match the GCP web client allowlist (firebaseapp.com).
-  # App stays on hosted.app; /__/auth rewrites proxy auth assets in next.config.ts.
+  # Shown in the Google "continue to …" prompt. /__/auth rewrites in next.config.ts
+  # still proxy handler assets from *.firebaseapp.com (FIREBASE_AUTH_PROXY_HOST).
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: timbl.app
+
+  - variable: FIREBASE_AUTH_PROXY_HOST
     value: sm-dashboard-e7641.firebaseapp.com
+    availability:
+      - BUILD
+      - RUNTIME
     availability:
       - BUILD
       - RUNTIME
@@ -135,7 +141,7 @@ env:
     availability:
       - RUNTIME
 
-  # Single PLATFORM OpenRouter key - SAFE owns it, cost folded into the
+  # Single PLATFORM OpenRouter key - Timbl owns it, cost folded into the
   # subscription. Used by the openai-compatible adapter for provider=openrouter.
   # Create the secret + grant the App Hosting SA secretAccessor before deploy:
   #   gcloud secrets create OPENROUTER_API_KEY --replication-policy=automatic

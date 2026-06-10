@@ -35,10 +35,10 @@ export function TopBar({
         <a
           href="/calendar"
           className="flex items-baseline gap-2 group"
-          aria-label="Social planner home"
+          aria-label="Timbl home"
         >
           <span className="text-base font-semibold tracking-tight leading-none text-foreground">
-            social planner
+            timbl
           </span>
           <span
             aria-hidden
