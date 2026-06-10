@@ -24,6 +24,9 @@ export interface OnboardingState {
   completedAt?: string
   skippedSteps?: string[]
   profile?: OnboardingProfile
+  /* Furthest step the wizard reached - validated against the step-id enum
+   * on read; cleared on complete and on re-run reset. */
+  lastStep?: string | null
 }
 
 export async function getOnboardingState(orgId: string): Promise<OnboardingState> {

@@ -26,6 +26,7 @@ import { getAgentDefault, getAgentDefaultBudgets } from "@/lib/agents/defaults"
 import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
 import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import { channelKey, type ChannelKey } from "@/lib/schemas/_shared"
+import { ONBOARDING_STEP_IDS } from "@/lib/onboarding/steps"
 import type { ServerActionResult } from "@/lib/schemas"
 
 /*
@@ -62,6 +63,30 @@ const selectionsInput = z.object({
 const completeInput = z.object({
   skippedSteps: z.array(z.string()).default([]),
 })
+
+const stepInput = z.object({
+  step: z.enum(ONBOARDING_STEP_IDS),
+})
+
+/* Records the step the wizard is currently on so a reload resumes there.
+ * Best-effort - the wizard fires it without blocking navigation. */
+export async function saveOnboardingStep(
+  input: unknown,
+): Promise<ServerActionResult> {
+  const parsed = stepInput.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
+  }
+  const orgId = await getCurrentOrgId()
+  await getAdminDb().doc(orgPath(orgId)).set(
+    {
+      onboarding: { lastStep: parsed.data.step },
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  )
+  return { ok: true, id: orgId }
+}
 
 export async function saveOnboardingProfile(
   input: unknown,
@@ -347,6 +372,7 @@ export async function completeOnboarding(
       onboarding: {
         completedAt,
         skippedSteps: parsed.data.skippedSteps,
+        lastStep: null,
       },
       updatedAt: completedAt,
     },
@@ -380,7 +406,7 @@ export async function resetOnboarding(): Promise<ServerActionResult> {
   await Promise.all([
     db.doc(orgPath(orgId)).set(
       {
-        onboarding: { completedAt: null },
+        onboarding: { completedAt: null, lastStep: null },
         updatedAt: new Date().toISOString(),
       },
       { merge: true },
