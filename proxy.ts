@@ -61,7 +61,16 @@ const ADMIN_PASSTHROUGH_PREFIXES = [
 
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const host = req.headers.get("host") ?? ""
+  /* App Hosting's CDN hits Cloud Run on the tagged *.run.app URL and carries
+   * the user-facing domain in X-Forwarded-Host - Host alone never equals
+   * admin.<domain> in prod. Routing only; authz stays in requirePlatformAdmin. */
+  const host = (
+    req.headers.get("x-forwarded-host") ??
+    req.headers.get("host") ??
+    ""
+  )
+    .split(",")[0]
+    .trim()
   const adminHost = process.env.NEXT_PUBLIC_ADMIN_HOST
 
   /* Host gate (runs before everything, including the emulator bypass, so
