@@ -16,6 +16,7 @@ import {
   slugify,
   type MembershipRole,
 } from "@/lib/auth/membership"
+import { resolvePlatformClaim } from "@/lib/auth/platform-claim"
 import { getAdminAuth } from "@/lib/firebase/admin"
 import {
   orgAccessRequestsPath,
@@ -271,10 +272,12 @@ async function syncClaimsForEmail(email: string) {
   if (!membership || membership.active === false) return
   try {
     const authUser = await getAdminAuth().getUserByEmail(email)
+    const platformClaim = await resolvePlatformClaim(email)
     await getAdminAuth().setCustomUserClaims(authUser.uid, {
       organizationId: membership.organizationId,
       role: membership.role,
       userId: membership.userId,
+      ...platformClaim,
     })
   } catch {
     /* Auth user may not exist until first Google sign-in. */
