@@ -115,9 +115,9 @@ cat <<EOF
 
 ==> DNS cutover (manual, after smoke test passes)
 1. Firebase Console -> App Hosting -> ${BACKEND} -> Domains
-2. Add timbl.app and admin.timbl.app (remove from sm-dashboard backend first if attached)
-3. Copy the A + TXT records Firebase shows for admin.timbl.app into your registrar
+2. Add timbl.app, www.timbl.app, and admin.timbl.app (remove from sm-dashboard backend first if attached)
+3. Copy the A + TXT records Firebase shows for each host into your registrar (remove any www CNAME first)
 4. Apex timbl.app may already point correctly; confirm records match the new backend
-5. When both hosts are ACTIVE, smoke test https://timbl.app and https://admin.timbl.app
+5. When all hosts are ACTIVE, smoke test https://timbl.app, https://www.timbl.app, and https://admin.timbl.app
 
 EOF

@@ -2,7 +2,9 @@ export const dynamic = "force-dynamic"
 
 import { getSubscriptionStatus } from "@/lib/actions/billing"
 import { paidCheckoutAvailable } from "@/lib/billing/razorpay"
+import { billingSelfServeEnabled } from "@/lib/billing/self-serve"
 import { PLANS, type PlanConfig } from "@/lib/plans/plans"
+import { BillingPageGate } from "@/components/settings/billing-page-gate"
 import {
   BillingManager,
   type BillingPlanCard,
@@ -36,22 +38,36 @@ function toCard(plan: PlanConfig): BillingPlanCard {
 }
 
 export default async function SettingsBillingPage() {
-  const current = await getSubscriptionStatus()
-  const plans = PLAN_ORDER.filter((id) => PLANS[id]).map((id) => toCard(PLANS[id]))
+  const billingLive = billingSelfServeEnabled()
 
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
       <div className="mb-4">
         <h1 className="text-lg font-medium">Billing</h1>
         <p className="text-xs text-muted-foreground">
-          Manage your subscription and plan. Prices are in INR.
+          {billingLive
+            ? "Manage your subscription and plan. Prices are in INR."
+            : "Subscription management is coming soon."}
         </p>
       </div>
-      <BillingManager
-        current={current}
-        plans={plans}
-        paidCheckoutAvailable={paidCheckoutAvailable()}
-      />
+      {billingLive ? (
+        <BillingLive />
+      ) : (
+        <BillingPageGate />
+      )}
     </div>
+  )
+}
+
+async function BillingLive() {
+  const current = await getSubscriptionStatus()
+  const plans = PLAN_ORDER.filter((id) => PLANS[id]).map((id) => toCard(PLANS[id]))
+
+  return (
+    <BillingManager
+      current={current}
+      plans={plans}
+      paidCheckoutAvailable={paidCheckoutAvailable()}
+    />
   )
 }

@@ -10,6 +10,7 @@ import {
   razorpayPlanIdFor,
   isBillablePlan,
 } from "@/lib/billing/razorpay"
+import { billingSelfServeEnabled } from "@/lib/billing/self-serve"
 import { getPlan, TRIAL_DAYS, TRIAL_PLAN_ID } from "@/lib/plans/plans"
 import { billingProfileSchema, type BillingProfile } from "@/lib/schemas/billing"
 
@@ -31,6 +32,13 @@ import { billingProfileSchema, type BillingProfile } from "@/lib/schemas/billing
  */
 
 const BILLING_CYCLES = 120
+
+const BILLING_OFF_MSG = "Billing is not available yet"
+
+function billingSelfServeOff(): { ok: false; error: string } | null {
+  if (billingSelfServeEnabled()) return null
+  return { ok: false, error: BILLING_OFF_MSG }
+}
 
 export type CreateSubscriptionResult =
   | { ok: true; subscriptionId: string; keyId: string; shortUrl: string | null }
@@ -65,6 +73,9 @@ async function patchBillingProfile(orgId: string, patch: Partial<BillingProfile>
 /* Start a subscription for `planId`. Returns the ids Razorpay Checkout needs.
  * Does NOT change the org's plan - that waits for the webhook. */
 export async function createSubscription(planId: string): Promise<CreateSubscriptionResult> {
+  const off = billingSelfServeOff()
+  if (off) return off
+
   const orgId = await getCurrentOrgId()
   const user = await getCurrentUser()
 
@@ -106,6 +117,9 @@ export async function createSubscription(planId: string): Promise<CreateSubscrip
 /* Cancel at the end of the current billing cycle (no mid-cycle refund). The
  * webhook downgrades the plan when Razorpay emits subscription.cancelled. */
 export async function cancelSubscription(): Promise<BillingActionResult> {
+  const off = billingSelfServeOff()
+  if (off) return off
+
   const orgId = await getCurrentOrgId()
   const profile = await readBillingProfile(orgId)
   const subId = profile?.razorpaySubscriptionId
@@ -126,6 +140,9 @@ export async function cancelSubscription(): Promise<BillingActionResult> {
  * downgrade applies at the next cycle so the customer keeps what they paid for.
  * Plan still flips on the webhook, not here. */
 export async function changePlan(planId: string): Promise<BillingActionResult> {
+  const off = billingSelfServeOff()
+  if (off) return off
+
   const orgId = await getCurrentOrgId()
   const user = await getCurrentUser()
 
@@ -166,6 +183,9 @@ export async function changePlan(planId: string): Promise<BillingActionResult> {
  * trialEndsAt (enforced lazily in lib/plans/gate.ts). One per org - guarded by
  * trialStartedAt - and not offered to an org that already has a subscription. */
 export async function startTrial(): Promise<BillingActionResult> {
+  const off = billingSelfServeOff()
+  if (off) return off
+
   const orgId = await getCurrentOrgId()
   const ref = getAdminDb().doc(orgPath(orgId))
   const data = (await ref.get()).data()

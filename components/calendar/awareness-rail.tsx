@@ -1,9 +1,9 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { Lightbulb, Sparkles, TrendingDown } from "lucide-react"
+import { Bell, ChevronDown, Sparkles, TrendingDown } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,8 +32,8 @@ const IMPORTANCE_VARIANT: Record<
  * Right rail on the calendar surface. Two stacked panels:
  *   1. Awareness this period - upcoming awareness days within the visible
  *      calendar window. Promote-to-post inline.
- *   2. Suggestions - silent categories, cadence-due templates, campaigns
- *      ending soon. Computed server-side per render.
+ *   2. Reminders - collapsible; silent categories, cadence-due templates,
+ *      campaigns ending soon. Computed server-side per render.
  */
 export function CalendarAwarenessRail({
   awarenessDays,
@@ -42,6 +42,7 @@ export function CalendarAwarenessRail({
 }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [remindersOpen, setRemindersOpen] = useState(false)
   const planned = new Set(plannedAwarenessIds)
 
   const promote = (day: WithId<AwarenessDay>) => {
@@ -119,15 +120,34 @@ export function CalendarAwarenessRail({
       </section>
 
       <section className="flex flex-col gap-3 border-t border-border py-6">
-        <div className="flex items-center gap-1.5">
-          <Lightbulb aria-hidden className="size-3.5 text-muted-foreground" />
+        <button
+          type="button"
+          className="flex w-full items-center gap-1.5 text-left"
+          onClick={() => setRemindersOpen((o) => !o)}
+          aria-expanded={remindersOpen}
+        >
+          <Bell aria-hidden className="size-3.5 text-muted-foreground" />
           <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Suggestions
+            Reminders
           </h2>
-        </div>
-        {suggestions.length === 0 ? (
+          {suggestions.length > 0 && (
+            <Badge
+              variant="secondary"
+              className="font-normal text-[10px] px-1.5 py-0"
+            >
+              {suggestions.length}
+            </Badge>
+          )}
+          <ChevronDown
+            aria-hidden
+            className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
+              remindersOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {!remindersOpen ? null : suggestions.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            All caught up - no nudges right now.
+            All caught up - no reminders right now.
           </p>
         ) : (
           <ul className="flex flex-col gap-1.5">
