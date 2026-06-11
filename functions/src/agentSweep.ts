@@ -15,8 +15,8 @@ import { CronExpressionParser } from "cron-parser"
  */
 
 const APP_BASE_URL = defineString("APP_BASE_URL", {
-  description: "Public origin of the Next app, e.g. https://sm-dashboard-e7641--*.a.run.app",
-  default: "https://sm-dashboard-e7641.web.app",
+  description: "Public origin of the Next app (production: https://timbl.app)",
+  default: "https://timbl.app",
 })
 const CRON_SECRET = defineSecret("AGENT_CRON_SECRET")
 const SWEEP_TOLERANCE_SECONDS = 30

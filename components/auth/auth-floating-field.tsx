@@ -11,6 +11,7 @@ export function AuthFloatingField({
   icon: Icon,
   type = "text",
   error,
+  className,
   ...props
 }: React.ComponentProps<"input"> & {
   id: string
@@ -19,26 +20,30 @@ export function AuthFloatingField({
   error?: FieldError
 }) {
   return (
-    <div className="relative z-0">
-      <input
-        id={id}
-        type={type}
-        placeholder=" "
-        className={cn(
-          "peer block w-full appearance-none border-0 border-b-2 border-border bg-transparent px-0 py-2.5 text-sm text-foreground focus:border-brand-accent focus:outline-none focus:ring-0",
-          error && "border-destructive focus:border-destructive",
-        )}
-        {...props}
-      />
-      <label
-        htmlFor={id}
-        className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 text-sm text-muted-foreground duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-brand-accent"
-      >
-        <Icon className="-mt-1 mr-2 inline-block" size={16} />
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
         {label}
       </label>
+      <div className="relative">
+        <Icon
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          id={id}
+          type={type}
+          className={cn(
+            "flex h-11 w-full rounded-lg border border-border bg-[var(--auth-field)] px-3 pl-10 text-sm text-foreground",
+            "placeholder:text-muted-foreground focus:border-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-accent/25",
+            error &&
+              "border-destructive focus:border-destructive focus:ring-destructive/25",
+            className,
+          )}
+          {...props}
+        />
+      </div>
       {error?.message ? (
-        <p className="mt-1 text-xs text-destructive">{error.message}</p>
+        <p className="text-xs text-destructive">{error.message}</p>
       ) : null}
     </div>
   )

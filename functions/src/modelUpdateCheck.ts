@@ -16,8 +16,8 @@ import { logger } from "firebase-functions"
  */
 
 const APP_BASE_URL = defineString("APP_BASE_URL", {
-  description: "Public origin of the Next app",
-  default: "https://sm-dashboard-e7641.web.app",
+  description: "Public origin of the Next app (production: https://timbl.app)",
+  default: "https://timbl.app",
 })
 const CRON_SECRET = defineSecret("AGENT_CRON_SECRET")
 

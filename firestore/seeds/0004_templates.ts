@@ -1,4 +1,4 @@
-import { SAFE_ORG_ID, db, ensureEmulator, withAudit } from "./_helpers"
+import { TIMBL_DEMO_ORG_ID, db, ensureEmulator, withAudit } from "./_helpers"
 import { orgTemplatesPath } from "@/lib/firebase/paths"
 
 /*
@@ -88,12 +88,12 @@ const TEMPLATES: TemplateSeed[] = [
 
 export async function seed0004Templates() {
   ensureEmulator()
-  const col = orgTemplatesPath(SAFE_ORG_ID)
+  const col = orgTemplatesPath(TIMBL_DEMO_ORG_ID)
   for (const t of TEMPLATES) {
     const { id, ...rest } = t
     await db()
       .doc(`${col}/${id}`)
-      .set(withAudit({ ...rest, organizationId: SAFE_ORG_ID }), { merge: true })
+      .set(withAudit({ ...rest, organizationId: TIMBL_DEMO_ORG_ID }), { merge: true })
     console.log(`  ✓ template ${id}`)
   }
   console.log(`✓ templates: ${TEMPLATES.length}`)

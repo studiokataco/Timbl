@@ -19,7 +19,6 @@ import type { AuthIntent } from "@/lib/auth/intent"
 
 export type { AuthIntent }
 
-export const SAFE_ORG_ID = "safe-foundation"
 export const ALLOWED_DOMAINS = ["safefoundation.org.uk", "kataco.in"] as const
 export type MembershipRole = "admin" | "editor" | "contributor"
 

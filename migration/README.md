@@ -1,6 +1,6 @@
 # CSV migration
 
-One-shot import of the legacy 9-tab planner spreadsheet into Firestore under the demo org (`safe-foundation`).
+One-shot import of the legacy 9-tab planner spreadsheet into Firestore under the demo org (`timbl-demo`).
 
 ## Files
 
@@ -51,7 +51,7 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
   pnpm tsx scripts/migrate-from-csv.ts --commit
 ```
 
-`--commit` prompts for `yes` before writing. The script refuses to run if `/organizations/safe-foundation` doesn't exist (run `pnpm seed` first).
+`--commit` prompts for `yes` before writing. The script refuses to run if `/organizations/timbl-demo` doesn't exist (run `pnpm seed` first).
 
 ## Output
 

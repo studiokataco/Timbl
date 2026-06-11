@@ -12,10 +12,12 @@ function getReducedMotionSnapshot() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches
 }
 
+/* Timbl mark - app/icon.svg */
 const BRAND_COLORS = {
-  accent: "#3b82f6",
-  violet: "#8b5cf6",
-  emerald: "#34d399",
+  base: "#0c1224",
+  green: "#00E89A",
+  purple: "#7B5EFF",
+  coral: "#FF5040",
 } as const
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -35,11 +37,12 @@ type ShaderBackgroundProps = {
 
 export function ShaderBackground({
   flowSpeed = 0.4,
-  colorIntensity = 1.0,
+  colorIntensity = 2.2,
   noiseLayers = 4,
   mouseInfluence = 0.25,
   className = "",
 }: ShaderBackgroundProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mousePos = useRef({ x: 0.5, y: 0.5 })
   const reducedMotion = useSyncExternalStore(
@@ -53,8 +56,11 @@ export function ShaderBackground({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const gl = canvas.getContext("webgl")
-    if (!gl) return
+    const gl = canvas.getContext("webgl", { alpha: false, antialias: false })
+    if (!gl) {
+      console.error("WebGL not supported")
+      return
+    }
 
     const vertexShaderSource = `
       attribute vec2 aPosition;
@@ -75,6 +81,7 @@ export function ShaderBackground({
       uniform vec3 uColorA;
       uniform vec3 uColorB;
       uniform vec3 uColorC;
+      uniform vec3 uBaseColor;
 
       #define MARCH_STEPS 32
 
@@ -120,11 +127,13 @@ export function ShaderBackground({
                 float blend = sin(p.y * 2.0 + iTime * 0.5) * 0.5 + 0.5;
                 vec3 auroraColor = mix(uColorA, uColorB, blend);
                 auroraColor = mix(auroraColor, uColorC, sin(iTime * 0.3 + p.y) * 0.5 + 0.5);
-                col += auroraColor * density * 0.1 * uColorIntensity;
+                col += auroraColor * density * 0.14 * uColorIntensity;
             }
             t += 0.1;
         }
 
+        float peak = max(col.r, max(col.g, col.b));
+        col = mix(col, uBaseColor, smoothstep(0.5, 0.9, peak));
         gl_FragColor = vec4(col, 1.0);
       }
     `
@@ -135,6 +144,7 @@ export function ShaderBackground({
       gl.shaderSource(shader, source)
       gl.compileShader(shader)
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Shader compile error:", gl.getShaderInfoLog(shader))
         gl.deleteShader(shader)
         return null
       }
@@ -150,7 +160,10 @@ export function ShaderBackground({
     gl.attachShader(program, vertexShader)
     gl.attachShader(program, fragmentShader)
     gl.linkProgram(program)
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error("Program link error:", gl.getProgramInfoLog(program))
+      return
+    }
     gl.useProgram(program)
 
     const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1])
@@ -172,13 +185,16 @@ export function ShaderBackground({
     const uColorALocation = gl.getUniformLocation(program, "uColorA")
     const uColorBLocation = gl.getUniformLocation(program, "uColorB")
     const uColorCLocation = gl.getUniformLocation(program, "uColorC")
+    const uBaseColorLocation = gl.getUniformLocation(program, "uBaseColor")
 
-    const [rA, gA, bA] = hexToRgb(BRAND_COLORS.accent)
-    const [rB, gB, bB] = hexToRgb(BRAND_COLORS.violet)
-    const [rC, gC, bC] = hexToRgb(BRAND_COLORS.emerald)
+    const [rA, gA, bA] = hexToRgb(BRAND_COLORS.green)
+    const [rB, gB, bB] = hexToRgb(BRAND_COLORS.purple)
+    const [rC, gC, bC] = hexToRgb(BRAND_COLORS.coral)
+    const [rBase, gBase, bBase] = hexToRgb(BRAND_COLORS.base)
     gl.uniform3f(uColorALocation, rA, gA, bA)
     gl.uniform3f(uColorBLocation, rB, gB, bB)
     gl.uniform3f(uColorCLocation, rC, gC, bC)
+    gl.uniform3f(uBaseColorLocation, rBase, gBase, bBase)
 
     const startTime = performance.now()
     let animationFrameId: number
@@ -193,11 +209,18 @@ export function ShaderBackground({
     window.addEventListener("mousemove", handleMouseMove)
 
     const resizeCanvas = () => {
-      canvas.width = canvas.clientWidth
-      canvas.height = canvas.clientHeight
-      gl.viewport(0, 0, canvas.width, canvas.height)
-      gl.uniform2f(iResolutionLocation, canvas.width, canvas.height)
+      const container = containerRef.current
+      const w = container?.clientWidth || canvas.clientWidth || window.innerWidth
+      const h = container?.clientHeight || canvas.clientHeight || window.innerHeight
+      if (w === 0 || h === 0) return
+      canvas.width = w
+      canvas.height = h
+      gl.viewport(0, 0, w, h)
+      gl.uniform2f(iResolutionLocation, w, h)
     }
+
+    const ro = new ResizeObserver(resizeCanvas)
+    if (containerRef.current) ro.observe(containerRef.current)
     window.addEventListener("resize", resizeCanvas)
     resizeCanvas()
 
@@ -220,6 +243,7 @@ export function ShaderBackground({
 
     return () => {
       cancelAnimationFrame(animationFrameId)
+      ro.disconnect()
       window.removeEventListener("resize", resizeCanvas)
       window.removeEventListener("mousemove", handleMouseMove)
       if (!gl.isContextLost()) {
@@ -234,16 +258,19 @@ export function ShaderBackground({
   if (reducedMotion) {
     return (
       <div
-        className={`absolute inset-0 -z-10 bg-surface-dark ${className}`}
+        className={`pointer-events-none absolute inset-0 z-0 bg-[#0c1224] bg-gradient-to-br from-[#7B5EFF]/35 via-[#0c1224] to-[#FF5040]/30 ${className}`}
         aria-hidden
       />
     )
   }
 
   return (
-    <div className={`absolute inset-0 -z-10 bg-surface-dark ${className}`} aria-hidden>
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
+    <div
+      ref={containerRef}
+      className={`pointer-events-none absolute inset-0 z-0 bg-[#0c1224] ${className}`}
+      aria-hidden
+    >
+      <canvas ref={canvasRef} className="block h-full w-full" />
     </div>
   )
 }

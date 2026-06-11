@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Building2, Plus } from "lucide-react"
 import { toast } from "sonner"
 
+import { AuthCard } from "@/components/auth/auth-card"
 import { Button } from "@/components/ui/button"
 import { activateWorkspaceClient } from "@/lib/auth/activate-workspace-client"
 import { setDevOrg } from "@/lib/actions/dev-org"
@@ -48,10 +49,10 @@ export function WorkspacePicker({
   }
 
   return (
-    <div className="space-y-6">
+    <AuthCard className="space-y-6">
       <header className="space-y-1.5 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Create a workspace</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-foreground/75">
           Get ready to level up your social media management in seconds.
         </p>
       </header>
@@ -71,7 +72,7 @@ export function WorkspacePicker({
                   }, ws.organizationId)
                 }
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border border-border p-4 text-left transition hover:bg-muted/50",
+                  "flex w-full items-center gap-3 rounded-lg border border-border bg-input/30 p-4 text-left transition hover:bg-input/50",
                   busyId === ws.organizationId && "opacity-70",
                 )}
               >
@@ -116,7 +117,7 @@ export function WorkspacePicker({
           {busyId === "new" ? "Creating…" : "Create workspace"}
         </Button>
       </div>
-    </div>
+    </AuthCard>
   )
 }
 
@@ -140,10 +141,10 @@ function DevWorkspacePicker({ highlightNew }: { highlightNew: boolean }) {
   }
 
   return (
-    <div className="space-y-6">
+    <AuthCard className="space-y-6">
       <header className="space-y-1.5 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Choose a workspace</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-foreground/75">
           Emulator mode - same step as after sign up in production.
         </p>
       </header>
@@ -174,13 +175,13 @@ function DevWorkspacePicker({ highlightNew }: { highlightNew: boolean }) {
         </p>
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full border-border bg-input/50 hover:bg-input/70"
           disabled={pending}
           onClick={() => pick("demo", "demo")}
         >
           {busy === "demo" ? "Opening…" : "Open demo workspace"}
         </Button>
       </div>
-    </div>
+    </AuthCard>
   )
 }

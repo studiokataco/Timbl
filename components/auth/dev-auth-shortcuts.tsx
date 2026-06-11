@@ -11,13 +11,13 @@ export function DevAuthShortcuts({ mode }: { mode: "signin" | "signup" }) {
 
   return (
     <div className="mt-4 space-y-2 border-t border-border pt-4">
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs font-medium text-foreground/70">
         Emulator shortcuts
       </p>
       <Button
         type="button"
         variant="outline"
-        className="w-full"
+        className="h-11 w-full border-border bg-input/50 text-foreground hover:bg-input/70"
         disabled={pending}
         onClick={() => {
           startTransition(() => {

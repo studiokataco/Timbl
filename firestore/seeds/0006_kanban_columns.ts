@@ -1,4 +1,4 @@
-import { db, ensureEmulator, SAFE_ORG_ID, withAudit } from "./_helpers"
+import { db, ensureEmulator, TIMBL_DEMO_ORG_ID, withAudit } from "./_helpers"
 
 /*
  * Seeds 9 default kanban columns matching the legacy PostStatus enum so the
@@ -23,7 +23,7 @@ const COLUMNS: ColumnSeed[] = [
 export async function seed0006KanbanColumns() {
   ensureEmulator()
   const col = db()
-    .doc(`organizations/${SAFE_ORG_ID}`)
+    .doc(`organizations/${TIMBL_DEMO_ORG_ID}`)
     .collection("kanbanColumns")
 
   const existing = await col.limit(1).get()
@@ -37,7 +37,7 @@ export async function seed0006KanbanColumns() {
     await col.doc(c.id).set(
       withAudit({
         id: c.id,
-        organizationId: SAFE_ORG_ID,
+        organizationId: TIMBL_DEMO_ORG_ID,
         label: c.label,
         color: c.color,
         sortOrder: i,

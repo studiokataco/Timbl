@@ -1,9 +1,9 @@
-import { db, ensureEmulator, SAFE_ORG_ID } from "./_helpers"
+import { db, ensureEmulator, TIMBL_DEMO_ORG_ID } from "./_helpers"
 
 /* One-shot verifier - counts seeded docs to confirm Phase 1 acceptance. */
 async function main() {
   ensureEmulator()
-  const orgRef = db().doc(`organizations/${SAFE_ORG_ID}`)
+  const orgRef = db().doc(`organizations/${TIMBL_DEMO_ORG_ID}`)
   const orgSnap = await orgRef.get()
   if (!orgSnap.exists) throw new Error("Demo org not found")
   console.log(`✓ org: ${orgSnap.data()?.name}`)

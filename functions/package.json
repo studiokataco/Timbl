@@ -1,5 +1,5 @@
 {
-  "name": "social-media-planner-functions",
+  "name": "timbl-functions",
   "version": "0.1.0",
   "private": true,
   "main": "lib/index.js",

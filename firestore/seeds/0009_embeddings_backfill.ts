@@ -1,4 +1,4 @@
-import { db, ensureEmulator, SAFE_ORG_ID } from "./_helpers"
+import { db, ensureEmulator, TIMBL_DEMO_ORG_ID } from "./_helpers"
 import { collectionPathFor, embedIfChanged, type Kind } from "@/lib/embeddings/embeddable"
 
 /*
@@ -12,7 +12,7 @@ import { collectionPathFor, embedIfChanged, type Kind } from "@/lib/embeddings/e
  * ever exceeds it.
  */
 
-const KINDS_FOR_SAFE: Kind[] = ["post", "campaign", "template", "agentMemory"]
+const KINDS_FOR_DEMO: Kind[] = ["post", "campaign", "template", "agentMemory"]
 const GLOBAL_KINDS: Kind[] = ["awarenessDay"]
 const BACKFILL_LIMIT = 5000
 
@@ -37,8 +37,8 @@ async function backfillKind(kind: Kind, orgId: string): Promise<void> {
 export async function seed0009EmbeddingsBackfill(): Promise<void> {
   ensureEmulator()
   console.log("→ backfilling embeddings")
-  for (const kind of KINDS_FOR_SAFE) await backfillKind(kind, SAFE_ORG_ID)
-  for (const kind of GLOBAL_KINDS) await backfillKind(kind, SAFE_ORG_ID)
+  for (const kind of KINDS_FOR_DEMO) await backfillKind(kind, TIMBL_DEMO_ORG_ID)
+  for (const kind of GLOBAL_KINDS) await backfillKind(kind, TIMBL_DEMO_ORG_ID)
   console.log("✓ embeddings backfill")
 }
 

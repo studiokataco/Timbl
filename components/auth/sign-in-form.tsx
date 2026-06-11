@@ -7,6 +7,7 @@ import { ArrowRight, Lock, User } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import { AuthCard } from "@/components/auth/auth-card"
 import { AuthFloatingField } from "@/components/auth/auth-floating-field"
 import { DevAuthShortcuts } from "@/components/auth/dev-auth-shortcuts"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
@@ -106,7 +107,7 @@ function SignInFormInner() {
   }
 
   return (
-    <div className="space-y-6 rounded-xl border border-border bg-card/10 p-8 shadow-2xl backdrop-blur-lg">
+    <AuthCard className="space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Welcome back
@@ -115,7 +116,7 @@ function SignInFormInner() {
       </div>
 
       <form
-        className="space-y-8"
+        className="space-y-5"
         onSubmit={handleSubmit((values) => {
           const parsed = signInSchema.safeParse(values)
           if (!parsed.success) {
@@ -150,7 +151,7 @@ function SignInFormInner() {
         <div className="flex items-center justify-between">
           <button
             type="button"
-            className="text-xs text-muted-foreground transition hover:text-foreground"
+            className="text-xs text-foreground/75 transition hover:text-foreground"
             onClick={() => setShowForgot((v) => !v)}
           >
             Forgot password?
@@ -158,8 +159,8 @@ function SignInFormInner() {
         </div>
 
         {showForgot ? (
-          <div className="rounded-lg border border-border bg-card/20 p-3">
-            <p className="mb-2 text-xs text-muted-foreground">
+          <div className="rounded-lg border border-border bg-input/40 p-3">
+            <p className="mb-2 text-xs text-foreground/75">
               We will email a reset link to the address above.
             </p>
             <Button
@@ -185,12 +186,12 @@ function SignInFormInner() {
           <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Button>
 
-        <div className="relative flex items-center py-2">
-          <div className="flex-grow border-t border-border" />
-          <span className="mx-4 shrink-0 text-xs text-muted-foreground">
+        <div className="relative flex items-center py-1">
+          <div className="grow border-t border-border" />
+          <span className="mx-4 shrink-0 text-xs text-foreground/65">
             Or continue with
           </span>
-          <div className="flex-grow border-t border-border" />
+          <div className="grow border-t border-border" />
         </div>
 
         <GoogleAuthButton
@@ -198,21 +199,22 @@ function SignInFormInner() {
           label="Sign in with Google"
           pendingLabel="Signing in…"
           variant="outline"
+          className="h-11 w-full border-border bg-input/50 text-foreground hover:bg-input/70"
           icon={<GoogleIcon />}
         />
       </form>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-sm text-foreground/75">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-semibold text-brand-accent hover:text-brand-accent/80"
+          className="font-semibold text-sky-400 hover:text-sky-300"
         >
           Sign up
         </Link>
       </p>
 
       {IS_DEV_SHIM ? <DevAuthShortcuts mode="signin" /> : null}
-    </div>
+    </AuthCard>
   )
 }

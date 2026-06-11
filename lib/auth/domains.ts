@@ -1,11 +1,13 @@
 import { randomBytes } from "crypto"
 
+import { TIMBL_DEMO_ORG_ID } from "@/lib/constants/timbl"
+
 export const LEGACY_DOMAIN_TO_ORG: Record<
   string,
   { orgId: string; role: "admin" | "editor" | "contributor" }
 > = {
-  "safefoundation.org.uk": { orgId: "safe-foundation", role: "contributor" },
-  "kataco.in": { orgId: "safe-foundation", role: "admin" },
+  "safefoundation.org.uk": { orgId: TIMBL_DEMO_ORG_ID, role: "contributor" },
+  "kataco.in": { orgId: TIMBL_DEMO_ORG_ID, role: "admin" },
 }
 
 /*

@@ -1,4 +1,4 @@
-import { db, ensureEmulator, SAFE_ORG_ID, withAudit } from "./_helpers"
+import { db, ensureEmulator, TIMBL_DEMO_ORG_ID, withAudit } from "./_helpers"
 
 /*
  * Seeds 9 CTAs and 14 post categories for the Timbl demo org. Colours come from
@@ -200,7 +200,7 @@ const CATEGORIES: CategorySeed[] = [
 export async function seedCategoriesAndCtas() {
   ensureEmulator()
 
-  const orgRef = db().doc(`organizations/${SAFE_ORG_ID}`)
+  const orgRef = db().doc(`organizations/${TIMBL_DEMO_ORG_ID}`)
   const ctaCol = orgRef.collection("ctas")
   const catCol = orgRef.collection("categories")
 
@@ -211,7 +211,7 @@ export async function seedCategoriesAndCtas() {
     await ctaCol.doc(id).set(
       withAudit({
         id,
-        organizationId: SAFE_ORG_ID,
+        organizationId: TIMBL_DEMO_ORG_ID,
         slug: cta.slug,
         label: cta.label,
         description: cta.description,
@@ -235,7 +235,7 @@ export async function seedCategoriesAndCtas() {
     await catCol.doc(id).set(
       withAudit({
         id,
-        organizationId: SAFE_ORG_ID,
+        organizationId: TIMBL_DEMO_ORG_ID,
         slug: cat.slug,
         name: cat.name,
         color: cat.color,

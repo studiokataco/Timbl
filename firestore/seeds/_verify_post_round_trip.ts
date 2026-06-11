@@ -1,14 +1,14 @@
-import { db, ensureEmulator, SAFE_ORG_ID, withAudit } from "./_helpers"
+import { db, ensureEmulator, TIMBL_DEMO_ORG_ID, withAudit } from "./_helpers"
 
 /* Phase 2 acceptance: write a post directly via Admin SDK, read it back. */
 async function main() {
   ensureEmulator()
-  const orgRef = db().doc(`organizations/${SAFE_ORG_ID}`)
+  const orgRef = db().doc(`organizations/${TIMBL_DEMO_ORG_ID}`)
   const ref = orgRef.collection("posts").doc("phase2-smoke")
   await ref.set(
     withAudit({
       id: "phase2-smoke",
-      organizationId: SAFE_ORG_ID,
+      organizationId: TIMBL_DEMO_ORG_ID,
       scheduledDate: new Date().toISOString().slice(0, 10),
       status: "idea",
       categoryId: "ethical-boutique-pick",

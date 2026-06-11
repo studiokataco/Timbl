@@ -9,7 +9,7 @@
  * Flags:
  *   --dry-run         Read + reconcile, write nothing. Default if no flag.
  *   --commit          Actually write to Firestore. Requires interactive
- *                     confirmation. Refuses to run if /organizations/safe-foundation
+ *                     confirmation. Refuses to run if /organizations/timbl-demo
  *                     does not yet exist (run pnpm seed first).
  *   --source <dir>    Where the CSVs live. Default: migration/source.
  *   --year <YYYY>     Default year for ambiguous dates. Default: current year.
@@ -39,6 +39,10 @@ import {
   orgUsersPath,
 } from "../lib/firebase/paths"
 import {
+  TIMBL_DEMO_ORG_ID,
+  TIMBL_DEV_EMAIL_DOMAIN,
+} from "../lib/constants/timbl"
+import {
   CANONICAL_STAFF,
   collapseStatus,
   mapCategory,
@@ -49,7 +53,7 @@ import {
   type CanonicalStaff,
 } from "../migration/reconciliation"
 
-const SAFE_ORG_ID = "safe-foundation"
+const DEMO_ORG_ID = TIMBL_DEMO_ORG_ID
 
 type Args = {
   dryRun: boolean
@@ -173,10 +177,10 @@ class Reporter {
 }
 
 async function ensureOrgExists(db: FirebaseFirestore.Firestore): Promise<void> {
-  const snap = await db.doc(orgPath(SAFE_ORG_ID)).get()
+  const snap = await db.doc(orgPath(DEMO_ORG_ID)).get()
   if (!snap.exists) {
     throw new Error(
-      `Organization /organizations/${SAFE_ORG_ID} does not exist. Run pnpm seed against your target before migrating.`,
+      `Organization /organizations/${DEMO_ORG_ID} does not exist. Run pnpm seed against your target before migrating.`,
     )
   }
 }
@@ -251,7 +255,7 @@ async function importUsers(ctx: ImportContext, allRows: CsvRow[]): Promise<void>
 
   for (const raw of ambiguous) ctx.manualStaff.add(raw)
 
-  const usersPath = orgUsersPath(SAFE_ORG_ID)
+  const usersPath = orgUsersPath(DEMO_ORG_ID)
   for (const name of seen) {
     const id = staffSlug(name)
     const sourceHash = hashRow("users", 0, { name, id })
@@ -288,8 +292,8 @@ async function importUsers(ctx: ImportContext, allRows: CsvRow[]): Promise<void>
 
     await ref.set({
       id,
-      organizationId: SAFE_ORG_ID,
-      email: `${id}@safefoundation.dev`,
+      organizationId: DEMO_ORG_ID,
+      email: `${id}@${TIMBL_DEV_EMAIL_DOMAIN}`,
       name,
       role: "contributor",
       defaultCategories: [],
@@ -442,7 +446,7 @@ async function importCampaigns(
     console.log("  · campaigns tab missing, skipping")
     return
   }
-  const collection = orgCampaignsPath(SAFE_ORG_ID)
+  const collection = orgCampaignsPath(DEMO_ORG_ID)
   const existing = await getExistingHashes(ctx, collection)
 
   for (let i = 0; i < rows.length; i++) {
@@ -483,7 +487,7 @@ async function importCampaigns(
     await ctx.db.doc(`${collection}/${slug}`).set(
       {
         id: slug,
-        organizationId: SAFE_ORG_ID,
+        organizationId: DEMO_ORG_ID,
         slug,
         name,
         description: pick(row, "Description"),
@@ -556,7 +560,7 @@ async function importPosts(
   ctx: ImportContext,
   variants: { variant: PostVariant; rows: CsvRow[] }[],
 ): Promise<void> {
-  const collection = orgPostsPath(SAFE_ORG_ID)
+  const collection = orgPostsPath(DEMO_ORG_ID)
   const existing = await getExistingHashes(ctx, collection)
   const mainKeys = new Set<string>()
 
@@ -707,7 +711,7 @@ async function importPosts(
       const now = new Date().toISOString()
       await ref.set({
         id: ref.id,
-        organizationId: SAFE_ORG_ID,
+        organizationId: DEMO_ORG_ID,
         scheduledDate: date,
         status,
         categoryId: cat.slug,
@@ -758,7 +762,7 @@ async function importEvents(
   rows: CsvRow[],
 ): Promise<void> {
   if (rows.length === 0) return
-  const collection = orgEventsPath(SAFE_ORG_ID)
+  const collection = orgEventsPath(DEMO_ORG_ID)
   const existing = await getExistingHashes(ctx, collection)
 
   for (let i = 0; i < rows.length; i++) {
@@ -790,7 +794,7 @@ async function importEvents(
     await ctx.db.doc(`${collection}/${slug}`).set(
       {
         id: slug,
-        organizationId: SAFE_ORG_ID,
+        organizationId: DEMO_ORG_ID,
         name,
         startDate: start,
         endDate:
@@ -826,7 +830,7 @@ async function confirmCommit(): Promise<boolean> {
   console.log("   inspected the report.")
   const rl = readline.createInterface({ input, output })
   const answer = await rl.question(
-    `Proceed with writes to /organizations/${SAFE_ORG_ID}? Type 'yes' to confirm: `,
+    `Proceed with writes to /organizations/${DEMO_ORG_ID}? Type 'yes' to confirm: `,
   )
   rl.close()
   return answer.trim().toLowerCase() === "yes"

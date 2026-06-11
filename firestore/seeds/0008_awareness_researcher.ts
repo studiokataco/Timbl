@@ -1,4 +1,4 @@
-import { db, ensureEmulator, SAFE_ORG_ID, withAudit } from "./_helpers"
+import { db, ensureEmulator, TIMBL_DEMO_ORG_ID, withAudit } from "./_helpers"
 import { getAgentDefault, getAgentDefaultBudgets } from "@/lib/agents/defaults"
 
 /*
@@ -13,14 +13,14 @@ export async function seed0008AwarenessResearcher() {
 
   const ref = db()
     .collection("organizations")
-    .doc(SAFE_ORG_ID)
+    .doc(TIMBL_DEMO_ORG_ID)
     .collection("agentConfigs")
     .doc(cfg.name)
 
   await ref.set(
     withAudit({
       id: cfg.name,
-      organizationId: SAFE_ORG_ID,
+      organizationId: TIMBL_DEMO_ORG_ID,
       name: cfg.name,
       role: cfg.role,
       description: cfg.description,

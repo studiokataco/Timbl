@@ -28,7 +28,7 @@ import {
  * boots against a fresh emulator process each run.
  */
 
-const PROJECT_ID = "social-media-planner-rules-test"
+const PROJECT_ID = "timbl-rules-test"
 const ORG_A = "org-a"
 const ORG_B = "org-b"
 

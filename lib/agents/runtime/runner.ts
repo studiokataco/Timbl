@@ -1,6 +1,7 @@
 import type { BaseAgent } from "@google/adk"
 import { Runner } from "@google/adk"
 
+import { TIMBL_AGENT_APP_NAME } from "@/lib/constants/timbl"
 import { FirestoreSessionService } from "./session-service"
 
 /*
@@ -16,7 +17,7 @@ export interface BuildRunnerInput {
   appName?: string
 }
 
-export const AGENT_APP_NAME = "safe-social-planner"
+export const AGENT_APP_NAME = TIMBL_AGENT_APP_NAME
 
 export function buildRunner({ orgId, agent, appName }: BuildRunnerInput): Runner {
   return new Runner({
