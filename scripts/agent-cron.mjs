@@ -20,7 +20,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 
 const NEXT_BASE = process.env.AGENT_CRON_BASE_URL ?? "http://127.0.0.1:3000"
 const SECRET = process.env.AGENT_CRON_SECRET
-const ORG_ID = process.env.AGENT_CRON_ORG_ID ?? "safe-foundation"
+const ORG_ID = process.env.AGENT_CRON_ORG_ID ?? "timbl-demo"
 
 if (!SECRET) {
   console.error(

@@ -1,4 +1,4 @@
-import { seedSafeOrg } from "./0001_safe_org"
+import { seedDemoOrg } from "./0001_demo_org"
 import { seedCategoriesAndCtas } from "./0002_categories_and_ctas"
 import { seed0003Campaigns } from "./0003_campaigns"
 import { seed0004Templates } from "./0004_templates"
@@ -17,7 +17,7 @@ import { seed0010TenantOrg } from "./0010_tenant_org"
  *   2. Run seeds:                            pnpm seed
  */
 async function main() {
-  await seedSafeOrg()
+  await seedDemoOrg()
   await seedCategoriesAndCtas()
   await seed0003Campaigns()
   await seed0004Templates()

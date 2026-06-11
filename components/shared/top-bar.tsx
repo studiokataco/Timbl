@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { TimblLogo } from "@/components/brand/timbl-logo"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 
@@ -34,17 +35,18 @@ export function TopBar({
       <div className="flex items-center gap-4 px-6 sm:px-10 h-16">
         <a
           href="/calendar"
-          className="flex items-baseline gap-2 group"
+          className="flex items-center gap-2.5 group min-w-0"
           aria-label="Timbl home"
         >
+          <TimblLogo size={24} />
           <span className="text-base font-semibold tracking-tight leading-none text-foreground">
             timbl
           </span>
           <span
             aria-hidden
-            className="size-1 rounded-full bg-foreground translate-y-[-3px] group-hover:bg-[var(--color-brand-accent)] transition-colors"
+            className="size-1 rounded-full bg-foreground translate-y-[-1px] group-hover:bg-[var(--color-brand-accent)] transition-colors"
           />
-          <span className="text-caption text-muted-foreground leading-none tracking-tight">
+          <span className="text-caption text-muted-foreground leading-none tracking-tight truncate">
             {workspaceName}
           </span>
         </a>

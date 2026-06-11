@@ -16,8 +16,8 @@
 
 import { execSync } from "node:child_process"
 
-const PROJECT_ID = "sm-dashboard-e7641"
-const ORG_ID = "safe-foundation"
+const PROJECT_ID = process.env.GCP_PROJECT ?? "timbl-prod"
+const ORG_ID = "timbl-demo"
 const ACCOUNT = "hello@kataco.in"
 
 function authToken() {

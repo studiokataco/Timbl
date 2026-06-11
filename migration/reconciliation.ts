@@ -72,7 +72,7 @@ export function matchStaff(raw: string | undefined | null): StaffMatchResult {
   return { kind: "ambiguous", raw: cleaned, bestScore: best?.score ?? 0 }
 }
 
-/** Convert a canonical name to the user doc id used in /organizations/safe-foundation/users. */
+/** Convert a canonical name to the user doc id used in /organizations/timbl-demo/users. */
 export function staffSlug(name: CanonicalStaff): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
 }

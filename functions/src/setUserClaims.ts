@@ -11,7 +11,7 @@ import { logger } from "firebase-functions"
  *
  *   1. EXISTING MEMBERSHIP - if the user's email already appears in any
  *      /organizations/{orgId}/users/* row, sign them in to that org. Back-
- *      compat for legacy Kataco staff already provisioned in safe-foundation.
+ *      compat for legacy Kataco staff already provisioned in timbl-demo.
  *
  *   2. LEGACY DOMAIN MAP - if email domain is in LEGACY_DOMAIN_TO_ORG, route
  *      to that org and auto-provision a contributor row. This keeps the
@@ -38,11 +38,11 @@ const LEGACY_DOMAIN_TO_ORG: Record<
   string,
   { orgId: string; role: "admin" | "editor" | "contributor" }
 > = {
-  "safefoundation.org.uk": { orgId: "safe-foundation", role: "contributor" },
+  "safefoundation.org.uk": { orgId: "timbl-demo", role: "contributor" },
   /* Kataco is the platform team - every kataco.in signup gets admin on
-   * safe-foundation so they can manage OAuth credentials, agents, etc.
+   * timbl-demo so they can manage OAuth credentials, agents, etc.
    * without a separate role-grant step. */
-  "kataco.in": { orgId: "safe-foundation", role: "admin" },
+  "kataco.in": { orgId: "timbl-demo", role: "admin" },
 }
 
 const DEFAULT_PLAN_FOR_NEW_ORG = "agency_v1"

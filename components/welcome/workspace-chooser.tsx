@@ -11,7 +11,7 @@ import type { DevOrgMode } from "@/lib/auth/dev-session"
 import { cn } from "@/lib/utils"
 
 /*
- * Dev workspace chooser. Each card calls setDevOrg to pin the safe_dev_org
+ * Dev workspace chooser. Each card calls setDevOrg to pin the timbl_dev_org
  * cookie, then routes to /calendar - the (app) layout redirects the tenant
  * org on to /onboarding when it isn't onboarded yet, so the chooser itself
  * needs no per-mode routing.

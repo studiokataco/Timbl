@@ -17,6 +17,7 @@ export function GoogleAuthButton({
   variant = "default",
   glow = false,
   icon,
+  className,
 }: {
   intent: AuthIntent
   label: string
@@ -24,6 +25,7 @@ export function GoogleAuthButton({
   variant?: "default" | "outline"
   glow?: boolean
   icon?: ReactNode
+  className?: string
 }) {
   const router = useRouter()
   const search = useSearchParams()
@@ -81,7 +83,7 @@ export function GoogleAuthButton({
       onClick={handleClick}
       disabled={pending}
       variant={variant}
-      className="w-full"
+      className={className ?? "w-full"}
       size="lg"
     >
       {content}

@@ -1,10 +1,11 @@
 {
-  "name": "social-media-planner",
+  "name": "timbl",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@9.15.6",
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "dev:kill": "node scripts/dev-kill.mjs",
     "dev:next": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} FIREBASE_AUTH_EMULATOR_HOST=${FIREBASE_AUTH_EMULATOR_HOST:-127.0.0.1:9099} FIREBASE_STORAGE_EMULATOR_HOST=${FIREBASE_STORAGE_EMULATOR_HOST:-127.0.0.1:9199} NEXT_PUBLIC_USE_EMULATORS=1 next dev",
     "dev:cloud": "next dev",
     "build": "next build",
@@ -19,11 +20,13 @@
     "backfill:plans": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/backfill-org-plans.ts",
     "verify:billing": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/verify-billing.ts",
     "grandfather:existing": "tsx --require ./scripts/stub-server-only.cjs scripts/grandfather-existing-orgs.ts",
-    "test:rules": "firebase emulators:exec --only firestore --project social-media-planner-rules-test \"vitest run\"",
+    "migrate:legacy-identifiers": "tsx --require ./scripts/stub-server-only.cjs scripts/migrate-legacy-identifiers.ts",
+    "test:rules": "firebase emulators:exec --only firestore --project timbl-rules-test \"vitest run\"",
     "test:smoke": "playwright test",
     "functions:build": "pnpm --dir functions build",
     "auth:configure": "bash scripts/configure-auth-domain.sh",
     "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh",
+    "cutover:prod": "bash scripts/cutover-timbl-prod.sh",
     "secrets:rotate-resend": "bash scripts/rotate-secret.sh RESEND_API_KEY --env-local",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },

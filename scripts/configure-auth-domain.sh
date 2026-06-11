@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT="${GCP_PROJECT:-sm-dashboard-e7641}"
+PROJECT="${GCP_PROJECT:-timbl-prod}"
 APP_HOST="${APP_HOST:-timbl.app}"
 ADMIN_HOST="${ADMIN_HOST:-admin.timbl.app}"
 REDIRECT_URI="https://${APP_HOST}/__/auth/handler"

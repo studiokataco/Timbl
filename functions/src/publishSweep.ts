@@ -11,8 +11,8 @@ import { getFirestore } from "firebase-admin/firestore"
  */
 
 const APP_BASE_URL = defineString("APP_BASE_URL", {
-  description: "Public origin of the Next app",
-  default: "https://safe-planner--sm-dashboard-e7641.asia-east1.hosted.app",
+  description: "Public origin of the Next app (production: https://timbl.app)",
+  default: "https://timbl.app",
 })
 const PUBLISH_SECRET = defineSecret("PUBLISH_SWEEP_SECRET")
 

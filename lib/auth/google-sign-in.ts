@@ -5,6 +5,10 @@ import {
   type UserCredential,
 } from "firebase/auth"
 
+import {
+  EMULATOR_ADMIN_SUB,
+  TIMBL_DEV_ADMIN_EMAIL,
+} from "@/lib/constants/timbl"
 import { getClientAuth } from "@/lib/firebase/client"
 
 const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
@@ -17,10 +21,10 @@ export function isAuthHostileBrowser(): boolean {
 
 async function signInWithGoogleEmulator(): Promise<UserCredential> {
   const auth = getClientAuth()
-  const email = "admin@safefoundation.dev"
+  const email = TIMBL_DEV_ADMIN_EMAIL
   const credential = GoogleAuthProvider.credential(
     JSON.stringify({
-      sub: "emulator-safe-admin",
+      sub: EMULATOR_ADMIN_SUB,
       email,
       email_verified: true,
       name: "Timbl Admin",

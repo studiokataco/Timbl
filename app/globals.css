@@ -162,6 +162,42 @@
  * Cards lift slightly to surface-dark-elevated (#1a1a1a). Pastels stay the
  * same - they're luminous on near-black just as on white.
  */
+/*
+ * Auth routes always render on the shader backdrop. Pin tokens here so
+ * light-mode :root vars do not bleed through the glass card.
+ */
+.auth-dark {
+  color-scheme: dark;
+  --background: #101010;
+  --foreground: #ffffff;
+  --card: #161b22;
+  --card-foreground: #ffffff;
+  --popover: #161b22;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #111111;
+  --secondary: #1a1f26;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1f26;
+  --muted-foreground: #b4bcc8;
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: #3b82f6;
+  --auth-field: #1a1f26;
+}
+
+.auth-dark input:-webkit-autofill,
+.auth-dark input:-webkit-autofill:hover,
+.auth-dark input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--auth-field) inset;
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  transition: background-color 9999s ease-out 0s;
+}
+
 .dark {
   --background: #101010;             /* surface-dark */
   --foreground: #ffffff;             /* on-dark */

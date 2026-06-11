@@ -1,4 +1,4 @@
-import { db, ensureEmulator, SAFE_ORG_ID, withAudit } from "./_helpers"
+import { db, ensureEmulator, TIMBL_DEMO_ORG_ID, withAudit } from "./_helpers"
 import {
   AGENT_DEFAULTS,
   getAgentDefaultBudgets,
@@ -17,7 +17,7 @@ export async function seed0007AgentConfigs() {
   ensureEmulator()
   const col = db()
     .collection("organizations")
-    .doc(SAFE_ORG_ID)
+    .doc(TIMBL_DEMO_ORG_ID)
     .collection("agentConfigs")
 
   // Skip awareness-researcher here - 0008 owns it (preserves prior log order).
@@ -28,7 +28,7 @@ export async function seed0007AgentConfigs() {
     await ref.set(
       withAudit({
         id: cfg.name,
-        organizationId: SAFE_ORG_ID,
+        organizationId: TIMBL_DEMO_ORG_ID,
         name: cfg.name,
         role: cfg.role,
         description: cfg.description,

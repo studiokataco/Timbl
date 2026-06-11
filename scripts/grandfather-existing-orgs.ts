@@ -21,7 +21,7 @@ const GRANDFATHER_PLAN_ID = "agency_v1"
 async function main() {
   const onEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
   const dryRun = process.env.DRY_RUN === "1"
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "social-media-planner-dev"
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "timbl-dev"
   const target = onEmulator ? `EMULATOR (${projectId})` : `PRODUCTION (${projectId})`
   console.log(`Grandfather existing orgs -> ${target}${dryRun ? " [DRY RUN]" : ""}\n`)
 

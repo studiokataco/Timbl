@@ -89,6 +89,38 @@ function spawnLogged(name, cmd, args, env = {}) {
   return child
 }
 
+const DEV_PORTS = [3000, 3001, 4000, 8080, 9099, 9199]
+
+function portOpen(host, port) {
+  return new Promise((resolve) => {
+    const sock = net.createConnection({ host, port })
+    sock.once("connect", () => {
+      sock.end()
+      resolve(true)
+    })
+    sock.once("error", () => {
+      sock.destroy()
+      resolve(false)
+    })
+  })
+}
+
+async function assertDevPortsFree() {
+  const busy = []
+  for (const port of DEV_PORTS) {
+    if (await portOpen("127.0.0.1", port)) busy.push(port)
+  }
+  if (busy.length === 0) return
+
+  console.error(
+    `Ports already in use: ${busy.join(", ")}. Another dev session is probably still running.`,
+  )
+  console.error("Stop it first, then retry:")
+  console.error("  pnpm dev:kill")
+  console.error("  pnpm dev")
+  process.exit(1)
+}
+
 function waitForPort(host, port, timeoutMs = 60_000) {
   const started = Date.now()
   return new Promise((resolve, reject) => {
@@ -125,6 +157,8 @@ const EMULATOR_ENV = {
 }
 
 async function main() {
+  await assertDevPortsFree()
+
   console.log(`→ starting Firebase emulators (project=${PROJECT_ID})`)
   spawnLogged("emulators", "firebase", [
     "emulators:start",

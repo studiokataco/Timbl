@@ -1,16 +1,18 @@
+import { AGENT_THREADS_DB_NAME } from "@/lib/constants/timbl"
+
 /*
  * Tiny IndexedDB wrapper for persistent agent conversation threads.
  *
  * We don't pull in `idb` / `idb-keyval` - the surface here is small
  * enough that a hand-rolled wrapper is cheaper than a new dep.
- * Single DB `safe-agent-threads`, single object store `threads`,
+ * Single DB `timbl-agent-threads`, single object store `threads`,
  * keyed by `id`. All functions are SSR-safe (no-op on the server)
  * and swallow errors so a flaky IDB never crashes the drawer.
  * Threads are scoped by `organizationId` so switching workspaces
  * never mixes chat history.
  */
 
-const DB_NAME = "safe-agent-threads"
+const DB_NAME = AGENT_THREADS_DB_NAME
 const STORE = "threads"
 const DB_VERSION = 1
 

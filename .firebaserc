@@ -1,6 +1,8 @@
 {
   "projects": {
-    "default": "social-media-planner-dev",
-    "prod": "sm-dashboard-e7641"
+    "default": "timbl-dev",
+    "prod": "timbl-prod",
+    "timbl-prod": "timbl-prod",
+    "legacy": "sm-dashboard-e7641"
   }
 }

@@ -49,9 +49,11 @@ env:
   # ---------------------------------------------------------------------------
   # Public (NEXT_PUBLIC_*) - exposed to the browser bundle.
   # Available at BUILD time so Next inlines them into the client chunks.
+  #
+  # GCP/Firebase project id (timbl-prod).
   # ---------------------------------------------------------------------------
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: sm-dashboard-e7641
+    value: timbl-prod
     availability:
       - BUILD
       - RUNTIME
@@ -61,17 +63,15 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
     value: timbl.app
 
+  # Default Firebase Auth handler host (project ID suffix; custom domain is timbl.app above).
   - variable: FIREBASE_AUTH_PROXY_HOST
-    value: sm-dashboard-e7641.firebaseapp.com
-    availability:
-      - BUILD
-      - RUNTIME
+    value: timbl-prod.firebaseapp.com
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: sm-dashboard-e7641.firebasestorage.app
+    value: timbl-prod.firebasestorage.app
     availability:
       - BUILD
       - RUNTIME

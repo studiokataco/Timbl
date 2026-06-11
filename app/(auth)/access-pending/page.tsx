@@ -1,18 +1,21 @@
 import Link from "next/link"
 
+import { AuthCard } from "@/components/auth/auth-card"
 import { Button } from "@/components/ui/button"
 
 export default function AccessPendingPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-      <h1 className="text-xl font-medium">Access pending</h1>
-      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+    <AuthCard className="space-y-6 text-center">
+      <h1 className="text-xl font-medium text-foreground">Access pending</h1>
+      <p className="text-sm text-foreground/75">
         You signed in with an allowed email, but an admin still needs to approve
         your workspace access. You will get in after approval - sign in again then.
       </p>
-      <Link href="/login" className="mt-6 inline-flex">
-        <Button variant="outline">Back to sign in</Button>
+      <Link href="/login" className="inline-flex">
+        <Button variant="outline" className="border-border bg-input/50 hover:bg-input/70">
+          Back to sign in
+        </Button>
       </Link>
-    </main>
+    </AuthCard>
   )
 }

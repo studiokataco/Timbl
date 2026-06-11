@@ -3,12 +3,12 @@
 Two conceptually distinct seed paths exist in this app - keep them separate
 in your head even though they live in the same folder today.
 
-## demo-safe (these `00xx_*.ts` files)
+## demo-org (these `00xx_*.ts` files)
 
 The 0001-0009 seeds load the Timbl demo workspace data into the emulator.
 Only ever run in local dev (`pnpm seed`); never in production.
 
-The demo org seed (`0001_safe_org.ts`) backfills:
+The demo org seed (`0001_demo_org.ts`) backfills:
 
 - `plan: "agency_v1"` - so nothing the dev user clicks hits a quota gate.
 - `onboarding.completedAt` - so the (app) layout doesn't redirect to

@@ -1,4 +1,4 @@
-import { SAFE_ORG_ID, db, ensureEmulator, withAudit } from "./_helpers"
+import { TIMBL_DEMO_ORG_ID, db, ensureEmulator, withAudit } from "./_helpers"
 import { orgCampaignsPath } from "@/lib/firebase/paths"
 
 const campaigns = [
@@ -27,7 +27,7 @@ const campaigns = [
 
 export async function seed0003Campaigns() {
   ensureEmulator()
-  const col = orgCampaignsPath(SAFE_ORG_ID)
+  const col = orgCampaignsPath(TIMBL_DEMO_ORG_ID)
   for (const c of campaigns) {
     const { id, ...rest } = c
     await db().doc(`${col}/${id}`).set(withAudit(rest), { merge: true })

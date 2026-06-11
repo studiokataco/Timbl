@@ -63,7 +63,7 @@ export function getAdminApp(): App {
               // env vars are set.
               projectId:
                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
-                "social-media-planner-dev",
+                "timbl-dev",
             },
       )
     }

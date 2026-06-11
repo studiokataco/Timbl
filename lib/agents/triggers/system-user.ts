@@ -1,4 +1,5 @@
 import type { DevUser } from "@/lib/auth/dev-session"
+import { TIMBL_SYSTEM_EMAIL } from "@/lib/constants/timbl"
 
 /*
  * Cron-triggered agent runs do not have a user request to inherit identity
@@ -9,7 +10,7 @@ import type { DevUser } from "@/lib/auth/dev-session"
  */
 export const SYSTEM_USER: DevUser = {
   id: "system",
-  email: "system@safefoundation.dev",
+  email: TIMBL_SYSTEM_EMAIL,
   name: "Timbl Cron",
   role: "admin",
 }
