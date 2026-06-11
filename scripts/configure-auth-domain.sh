@@ -3,9 +3,12 @@ set -euo pipefail
 
 PROJECT="${GCP_PROJECT:-timbl-prod}"
 APP_HOST="${APP_HOST:-timbl.app}"
+WWW_HOST="${WWW_HOST:-www.timbl.app}"
 ADMIN_HOST="${ADMIN_HOST:-admin.timbl.app}"
 REDIRECT_URI="https://${APP_HOST}/__/auth/handler"
 ORIGIN_URI="https://${APP_HOST}"
+WWW_REDIRECT_URI="https://${WWW_HOST}/__/auth/handler"
+WWW_ORIGIN_URI="https://${WWW_HOST}"
 ADMIN_REDIRECT_URI="https://${ADMIN_HOST}/__/auth/handler"
 ADMIN_ORIGIN_URI="https://${ADMIN_HOST}"
 
@@ -32,7 +35,7 @@ for x in sorted(set(d.get('authorizedDomains') or [])):
     print(x)
 ")"
 
-for host in "${APP_HOST}" "${ADMIN_HOST}"; do
+for host in "${APP_HOST}" "${WWW_HOST}" "${ADMIN_HOST}"; do
   if echo "${domains}" | grep -qx "${host}"; then
     echo "[ok] Authorized domain already present: ${host}"
   else
@@ -79,9 +82,11 @@ echo "==> GCP Console (redirect_uri_mismatch fix)"
 echo "    Add ALL of these on the OAuth client, then Save:"
 echo "      Authorized JavaScript origins:"
 echo "        ${ORIGIN_URI}"
+echo "        ${WWW_ORIGIN_URI}"
 echo "        ${ADMIN_ORIGIN_URI}"
 echo "      Authorized redirect URIs:"
 echo "        ${REDIRECT_URI}"
+echo "        ${WWW_REDIRECT_URI}"
 echo "        ${ADMIN_REDIRECT_URI}"
 echo ""
 echo "    Open: ${CONSOLE_URL}"

@@ -50,8 +50,8 @@ export async function readPlatformActor(): Promise<PlatformActor | null> {
 
 /**
  * Gate for the control surface. Returns the platform actor, or:
- *   - signed out (prod): redirect to sign-in on the tenant app so they can
- *     authenticate, then return to the admin host.
+ *   - signed out (prod): redirect to the control-centre sign-in on the
+ *     admin host (/login rewrites into /control/login there).
  *   - signed in but not a platform admin: 404 (don't reveal the surface).
  *   - dev shim without PLATFORM_ADMIN_DEV: 404.
  */
@@ -61,7 +61,9 @@ export async function requirePlatformAdmin(): Promise<PlatformActor> {
 
   if (!useDevShim) {
     const auth = await readSessionAuth()
-    if (!auth) redirect(process.env.APP_BASE_URL || "/login")
+    /* Relative: stays on the admin host, where /login rewrites to the
+     * control-centre sign-in. */
+    if (!auth) redirect("/login")
   }
   notFound()
 }

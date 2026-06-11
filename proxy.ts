@@ -52,10 +52,9 @@ const ADMIN_PASSTHROUGH_PREFIXES = [
   "/ingest/",
   "/api/control/",
   "/control",
-  /* Auth entry/exit must work on the admin host so a platform admin can sign
-   * in and out there - otherwise these rewrite into /control and 404. */
-  "/login",
-  "/signup",
+  /* Sign-out and the Firebase popup handlers must work on the admin host.
+   * /login is NOT passed through - it rewrites into /control/login, the
+   * dedicated platform-admin sign-in, separate from the tenant login. */
   "/auth/",
 ]
 
