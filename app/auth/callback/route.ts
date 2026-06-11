@@ -8,6 +8,7 @@ import {
   MembershipError,
   resolveSignInMembership,
 } from "@/lib/auth/membership"
+import { resolvePlatformClaim } from "@/lib/auth/platform-claim"
 import { createSessionFromIdToken, setSessionCookie } from "@/lib/auth/session"
 
 export const runtime = "nodejs"
@@ -45,8 +46,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: "Google account must include an email." }, { status: 403 })
   }
 
+  const platformClaim = await resolvePlatformClaim(email)
+
   if (payload.intent === "signup") {
-    await auth.setCustomUserClaims(decoded.uid, {})
+    await auth.setCustomUserClaims(decoded.uid, { ...platformClaim })
     try {
       const cookie = await createSessionFromIdToken(payload.idToken)
       await setSessionCookie(cookie)
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
 
   const memberships = await listMembershipsForEmail(email)
   if (memberships.length > 1) {
-    await auth.setCustomUserClaims(decoded.uid, {})
+    await auth.setCustomUserClaims(decoded.uid, { ...platformClaim })
     try {
       const cookie = await createSessionFromIdToken(payload.idToken)
       await setSessionCookie(cookie)
@@ -105,10 +108,12 @@ export async function POST(req: NextRequest) {
   const hasClaims =
     decoded.organizationId === claims.organizationId &&
     decoded.role === claims.role &&
-    decoded.userId === claims.userId
+    decoded.userId === claims.userId &&
+    (decoded.platform ?? undefined) === platformClaim.platform &&
+    (decoded.platformRole ?? undefined) === platformClaim.platformRole
 
   if (!hasClaims) {
-    await auth.setCustomUserClaims(decoded.uid, claims)
+    await auth.setCustomUserClaims(decoded.uid, { ...claims, ...platformClaim })
     return Response.json({ ok: true, refresh: true })
   }
 

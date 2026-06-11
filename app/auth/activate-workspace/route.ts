@@ -6,6 +6,7 @@ import {
   getMembershipInOrg,
   provisionNewWorkspace,
 } from "@/lib/auth/membership"
+import { resolvePlatformClaim } from "@/lib/auth/platform-claim"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: "organizationId or create required." }, { status: 400 })
   }
 
-  await auth.setCustomUserClaims(decoded.uid, claims)
+  const platformClaim = await resolvePlatformClaim(email)
+  await auth.setCustomUserClaims(decoded.uid, { ...claims, ...platformClaim })
   return Response.json({ ok: true, refresh: true })
 }
