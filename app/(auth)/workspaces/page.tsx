@@ -7,7 +7,10 @@ import { readSessionAuth } from "@/lib/auth/session"
 
 export const dynamic = "force-dynamic"
 
-export const metadata = { title: "Choose a workspace" }
+export const metadata = {
+  title: "Choose a workspace",
+  robots: { index: false, follow: false },
+}
 
 export default async function WorkspacesPage({
   searchParams,

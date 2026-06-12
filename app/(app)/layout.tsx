@@ -28,6 +28,8 @@ import {
 import { isOnboardingComplete } from "@/lib/onboarding/state"
 import { getOrgPlanFeatures } from "@/lib/plans/gate"
 
+export const metadata = { robots: { index: false, follow: false } }
+
 /*
  * (app) tree shares one QueryClient + sidebar nav + global ⌘K palette + the
  * global DialogsProvider that mounts QuickAddDialog and PostComposerSheet

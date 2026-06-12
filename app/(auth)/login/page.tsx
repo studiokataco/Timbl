@@ -7,6 +7,11 @@ import { readSessionAuth } from "@/lib/auth/session"
 
 export const dynamic = "force-dynamic"
 
+export const metadata = {
+  title: "Log in",
+  description: "Log in to your Timbl workspace.",
+}
+
 export default async function LoginPage() {
   if (IS_DEV_SHIM) {
     const store = await cookies()
