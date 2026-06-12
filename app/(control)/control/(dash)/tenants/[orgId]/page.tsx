@@ -76,7 +76,12 @@ export default async function TenantDetailPage({
           <h2 className="mb-3 font-heading text-sm font-semibold tracking-tight">
             God-mode controls
           </h2>
-          <TenantControls orgId={orgId} plan={row.plan} status={row.status} />
+          <TenantControls
+            orgId={orgId}
+            plan={row.plan}
+            status={row.status}
+            suspendedAt={row.suspendedAt}
+          />
         </section>
       ) : null}
 

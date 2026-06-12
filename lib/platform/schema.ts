@@ -98,6 +98,8 @@ export type PlatformAdmin = z.infer<typeof platformAdminSchema>
 export const platformAuditAction = z.enum([
   "org.suspend",
   "org.reactivate",
+  "org.delete",
+  "org.auto_delete",
   "plan.change",
   "quota.override",
   "agent.force_run",

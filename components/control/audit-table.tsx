@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils"
 export const ACTION_LABEL: Record<PlatformAuditAction, string> = {
   "org.suspend": "Org suspended",
   "org.reactivate": "Org reactivated",
+  "org.delete": "Org deleted",
+  "org.auto_delete": "Org auto-deleted",
   "plan.change": "Plan changed",
   "quota.override": "Quota override",
   "agent.force_run": "Agent force run",
@@ -19,6 +21,8 @@ export const ACTION_LABEL: Record<PlatformAuditAction, string> = {
 export const ACTION_TONE: Record<PlatformAuditAction, string> = {
   "org.suspend": "bg-red-500/15 text-red-700 dark:text-red-400",
   "org.reactivate": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  "org.delete": "bg-red-500/15 text-red-700 dark:text-red-400",
+  "org.auto_delete": "bg-red-500/15 text-red-700 dark:text-red-400",
   "plan.change": "bg-violet-500/15 text-violet-700 dark:text-violet-400",
   "quota.override": "bg-amber-500/15 text-amber-700 dark:text-amber-500",
   "agent.force_run": "bg-blue-500/15 text-blue-700 dark:text-blue-400",

@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { setOrgStatus } from "@/lib/actions/platform/orgs"
+import { deleteOrganization, setOrgStatus } from "@/lib/actions/platform/orgs"
 import { setOrgPlan } from "@/lib/actions/platform/plans"
 import { setOrgQuotaOverride } from "@/lib/actions/platform/quotas"
 import { forceRunAgent } from "@/lib/actions/platform/agents"
@@ -16,15 +16,18 @@ type Result = { ok: boolean; error?: string }
 
 const PLAN_IDS = ["free_v1", "studio_v1", "agency_v1", "scale_v1"]
 const METRICS = ["agentRuns", "scheduledPosts", "brands", "seats"] as const
+const RETENTION_DAYS = 60
 
 export function TenantControls({
   orgId,
   plan,
   status,
+  suspendedAt,
 }: {
   orgId: string
   plan: string
   status: "active" | "suspended"
+  suspendedAt: string | null
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -33,6 +36,13 @@ export function TenantControls({
   const [quotaValue, setQuotaValue] = useState("")
   const [agentName, setAgentName] = useState("")
   const [agentInput, setAgentInput] = useState("")
+  const [deleteConfirm, setDeleteConfirm] = useState("")
+
+  const autoDeleteDate = suspendedAt
+    ? new Date(
+        new Date(suspendedAt).getTime() + RETENTION_DAYS * 86_400_000,
+      ).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : null
 
   const run = (label: string, fn: () => Promise<Result>) =>
     start(async () => {
@@ -95,6 +105,14 @@ export function TenantControls({
             </Button>
           )}
         </div>
+        {status === "suspended" && autoDeleteDate ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Suspended workspaces are deleted automatically after{" "}
+            {RETENTION_DAYS} days - this one on{" "}
+            <span className="font-medium text-foreground">{autoDeleteDate}</span>.
+            Reactivate to cancel.
+          </p>
+        ) : null}
       </Section>
 
       <Section title="Quota override">
@@ -191,6 +209,45 @@ export function TenantControls({
           </Button>
         </div>
       </Section>
+
+      {status === "suspended" ? (
+        <Section title="Danger zone" full>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Permanently delete this workspace and all of its data - posts,
+            members, agent history, billing profile. This cannot be undone.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              placeholder={`type "${orgId}" to confirm`}
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              className="h-9 w-64"
+            />
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={pending || deleteConfirm !== orgId}
+              onClick={() =>
+                start(async () => {
+                  const res = await deleteOrganization({
+                    orgId,
+                    confirm: deleteConfirm,
+                  })
+                  if (res.ok) {
+                    toast.success("Workspace deleted")
+                    router.push("/tenants")
+                    router.refresh()
+                  } else {
+                    toast.error(`Delete failed: ${res.error ?? "unknown"}`)
+                  }
+                })
+              }
+            >
+              Delete workspace permanently
+            </Button>
+          </div>
+        </Section>
+      ) : null}
     </div>
   )
 }
