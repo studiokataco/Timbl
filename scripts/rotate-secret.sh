@@ -122,7 +122,69 @@ if [[ "$UPDATE_ENV_LOCAL" == "--env-local" ]]; then
   fi
 fi
 
+# App Hosting resolves secret bindings at rollout time, so a backend keeps
+# serving the old value until a new rollout. If apphosting.yaml binds this
+# secret, roll out every backend now (build from the deploy branch's HEAD -
+# same thing a push to main would do).
+if grep -q "secret: *${SECRET_NAME}\$" "${ROOT}/apphosting.yaml" 2>/dev/null; then
+  echo "apphosting.yaml binds ${SECRET_NAME} - rolling out App Hosting backends..."
+  TOKEN="$(gcloud auth print-access-token)" \
+    PROJECT="$PROJECT" BRANCH="${APP_BRANCH:-main}" SECRET_NAME="$SECRET_NAME" \
+    python3 - <<'PYEOF'
+import json, os, time, urllib.request
+
+project = os.environ["PROJECT"]
+branch = os.environ["BRANCH"]
+slug = os.environ["SECRET_NAME"].lower().replace("_", "-")
+headers = {
+    "Authorization": f"Bearer {os.environ['TOKEN']}",
+    "Content-Type": "application/json",
+}
+base = "https://firebaseapphosting.googleapis.com/v1"
+
+def call(url, method="GET", body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req) as res:
+        return json.load(res)
+
+backends = call(f"{base}/projects/{project}/locations/-/backends").get("backends", [])
+if not backends:
+    print("No App Hosting backends found - nothing to roll out.")
+    raise SystemExit(0)
+
+stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
+rollouts = []
+for be in backends:
+    rid = f"rotate-{slug}-{stamp}"
+    call(f"{base}/{be['name']}/builds?buildId={rid}",
+         method="POST", body={"source": {"codebase": {"branch": branch}}})
+    call(f"{base}/{be['name']}/rollouts?rolloutId={rid}",
+         method="POST", body={"build": f"{be['name']}/builds/{rid}"})
+    rollouts.append(f"{be['name']}/rollouts/{rid}")
+    print(f"Rollout started: {be['name'].split('/')[-1]} ({rid})")
+
+deadline = time.time() + 1200
+pending = set(rollouts)
+while pending and time.time() < deadline:
+    time.sleep(30)
+    for name in list(pending):
+        state = call(f"{base}/{name}").get("state")
+        backend = name.split("/backends/")[1].split("/")[0]
+        if state == "SUCCEEDED":
+            print(f"{backend}: rollout SUCCEEDED")
+            pending.discard(name)
+        elif state in ("FAILED", "CANCELLED", "SKIPPED"):
+            print(f"{backend}: rollout {state} - check the App Hosting console")
+            pending.discard(name)
+if pending:
+    short = ", ".join(n.split("/backends/")[1].split("/")[0] for n in pending)
+    print(f"Still rolling out after 20m: {short} - verify in the App Hosting console.")
+    raise SystemExit(1)
+PYEOF
+else
+  echo "apphosting.yaml does not bind ${SECRET_NAME} - no App Hosting rollout needed."
+fi
+
 echo ""
-echo "Cloud Functions consuming ${SECRET_NAME} are patched to the new version (above)."
-echo "Production app: trigger a new App Hosting rollout (push to main or Roll out in console)."
-echo "App Hosting reads Secret Manager at deploy time - a new GSM version alone is not enough until you redeploy."
+echo "Rotation complete: GSM version added, consumer Cloud Functions patched, App Hosting rolled out where bound."
