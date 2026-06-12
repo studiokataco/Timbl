@@ -110,6 +110,6 @@ export default function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     /* Match everything except static assets and the public icons. */
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|opengraph-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }

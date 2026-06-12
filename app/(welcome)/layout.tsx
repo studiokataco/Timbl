@@ -4,6 +4,8 @@
  * the first-launch onboarding redirect can't reach it. Mirrors the
  * centered card layout of (auth).
  */
+export const metadata = { robots: { index: false, follow: false } }
+
 export default function WelcomeLayout({
   children,
 }: {

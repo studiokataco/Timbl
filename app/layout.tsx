@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
+import { siteUrl } from "@/lib/seo"
 import { Toaster } from "@/components/ui/sonner"
 import { AiTestingBanner } from "@/components/shared/ai-testing-banner"
 import { DevBanner } from "@/components/shared/dev-banner"
@@ -23,13 +24,39 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 })
 
+const description =
+  "Timbl is a calendar-first social media planner for agencies and brands - AI agents help plan, draft and schedule posts across every channel."
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "Timbl",
     template: "%s · Timbl",
   },
-  description: "Calendar-first social media planning for agencies and brands.",
+  description,
   applicationName: "Timbl",
+  keywords: [
+    "social media planner",
+    "content calendar",
+    "social media scheduler",
+    "social media management",
+    "agency",
+    "AI social media",
+    "content planning",
+  ],
+  openGraph: {
+    siteName: "Timbl",
+    type: "website",
+    locale: "en_US",
+    url: siteUrl(),
+    title: "Timbl",
+    description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Timbl",
+    description,
+  },
 }
 
 export default function RootLayout({

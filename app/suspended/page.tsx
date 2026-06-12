@@ -2,6 +2,8 @@ import { ShieldAlert } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
+export const metadata = { robots: { index: false, follow: false } }
+
 export default function SuspendedPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-6">

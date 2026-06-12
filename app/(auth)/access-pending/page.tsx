@@ -3,6 +3,11 @@ import Link from "next/link"
 import { AuthCard } from "@/components/auth/auth-card"
 import { Button } from "@/components/ui/button"
 
+export const metadata = {
+  title: "Access pending",
+  robots: { index: false, follow: false },
+}
+
 export default function AccessPendingPage() {
   return (
     <AuthCard className="space-y-6 text-center">
