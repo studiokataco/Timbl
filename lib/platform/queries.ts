@@ -2,7 +2,7 @@ import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
-import { orgAgentRunsPath } from "@/lib/firebase/paths"
+import { orgAgentRunsPath, orgPath, orgUsersPath } from "@/lib/firebase/paths"
 import {
   platformOrgRollupDocPath,
   platformOrgRollupPeriodDocPath,
@@ -115,33 +115,7 @@ export interface OrgRow {
   lastRunAt: string | null
 }
 
-export async function listOrgRows(): Promise<OrgRow[]> {
-  await requirePlatformAdmin()
-  const snap = await getAdminDb().collection(platformOrgRollupsPath).get()
-  const rows: OrgRow[] = snap.docs.map((doc) => {
-    const d = doc.data()
-    return {
-      orgId: (d.orgId as string) ?? doc.id,
-      name: (d.name as string) ?? doc.id,
-      plan: (d.plan as string) ?? "agency_v1",
-      status: (d.status as "active" | "suspended") ?? "active",
-      seats: num(d.seats),
-      mtdUsdCost: num(d.mtdUsdCost),
-      mtdAgentRuns: num(d.mtdAgentRuns),
-      failureRate: num(d.failureRate),
-      onboardingCompletedAt: (d.onboardingCompletedAt as string | null) ?? null,
-      lastRunAt: (d.lastRunAt as string | null) ?? null,
-    }
-  })
-  rows.sort((a, b) => b.mtdUsdCost - a.mtdUsdCost)
-  return rows
-}
-
-export async function getOrgRow(orgId: string): Promise<OrgRow | null> {
-  await requirePlatformAdmin()
-  const snap = await getAdminDb().doc(platformOrgRollupDocPath(orgId)).get()
-  if (!snap.exists) return null
-  const d = snap.data() ?? {}
+function rowFromRollup(orgId: string, d: FirebaseFirestore.DocumentData): OrgRow {
   return {
     orgId: (d.orgId as string) ?? orgId,
     name: (d.name as string) ?? orgId,
@@ -154,6 +128,62 @@ export async function getOrgRow(orgId: string): Promise<OrgRow | null> {
     onboardingCompletedAt: (d.onboardingCompletedAt as string | null) ?? null,
     lastRunAt: (d.lastRunAt as string | null) ?? null,
   }
+}
+
+/* Rollup docs only exist once telemetry has been ingested (or the hourly
+ * reconciler has run). An org with zero runs must still be visible in the
+ * control centre, so fall back to the authoritative org doc with zeroed
+ * telemetry. */
+function rowFromOrgDoc(
+  orgId: string,
+  d: FirebaseFirestore.DocumentData,
+  seats: number,
+): OrgRow {
+  const onboarding = (d.onboarding ?? {}) as { completedAt?: string }
+  return {
+    orgId,
+    name: (d.name as string) ?? orgId,
+    plan: (d.plan as string) ?? "agency_v1",
+    status: (d.status as "active" | "suspended") ?? "active",
+    seats,
+    mtdUsdCost: 0,
+    mtdAgentRuns: 0,
+    failureRate: 0,
+    onboardingCompletedAt: onboarding.completedAt ?? null,
+    lastRunAt: null,
+  }
+}
+
+export async function listOrgRows(): Promise<OrgRow[]> {
+  await requirePlatformAdmin()
+  const db = getAdminDb()
+  const [rollupSnap, orgsSnap] = await Promise.all([
+    db.collection(platformOrgRollupsPath).get(),
+    db.collection("organizations").get(),
+  ])
+  const rows = new Map<string, OrgRow>()
+  for (const doc of rollupSnap.docs) rows.set(doc.id, rowFromRollup(doc.id, doc.data()))
+  const missing = orgsSnap.docs.filter((doc) => !rows.has(doc.id))
+  const seatCounts = await Promise.all(
+    missing.map((doc) => db.collection(orgUsersPath(doc.id)).count().get()),
+  )
+  missing.forEach((doc, i) => {
+    rows.set(doc.id, rowFromOrgDoc(doc.id, doc.data(), seatCounts[i].data().count))
+  })
+  const out = [...rows.values()]
+  out.sort((a, b) => b.mtdUsdCost - a.mtdUsdCost)
+  return out
+}
+
+export async function getOrgRow(orgId: string): Promise<OrgRow | null> {
+  await requirePlatformAdmin()
+  const db = getAdminDb()
+  const snap = await db.doc(platformOrgRollupDocPath(orgId)).get()
+  if (snap.exists) return rowFromRollup(orgId, snap.data() ?? {})
+  const orgSnap = await db.doc(orgPath(orgId)).get()
+  if (!orgSnap.exists) return null
+  const seats = await db.collection(orgUsersPath(orgId)).count().get()
+  return rowFromOrgDoc(orgId, orgSnap.data() ?? {}, seats.data().count)
 }
 
 export interface OrgPeriod {
