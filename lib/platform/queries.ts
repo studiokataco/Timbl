@@ -107,6 +107,7 @@ export interface OrgRow {
   name: string
   plan: string
   status: "active" | "suspended"
+  suspendedAt: string | null
   seats: number
   mtdUsdCost: number
   mtdAgentRuns: number
@@ -121,6 +122,7 @@ function rowFromRollup(orgId: string, d: FirebaseFirestore.DocumentData): OrgRow
     name: (d.name as string) ?? orgId,
     plan: (d.plan as string) ?? "agency_v1",
     status: (d.status as "active" | "suspended") ?? "active",
+    suspendedAt: null,
     seats: num(d.seats),
     mtdUsdCost: num(d.mtdUsdCost),
     mtdAgentRuns: num(d.mtdAgentRuns),
@@ -145,6 +147,7 @@ function rowFromOrgDoc(
     name: (d.name as string) ?? orgId,
     plan: (d.plan as string) ?? "agency_v1",
     status: (d.status as "active" | "suspended") ?? "active",
+    suspendedAt: (d.suspendedAt as string | null) ?? null,
     seats,
     mtdUsdCost: 0,
     mtdAgentRuns: 0,
@@ -178,12 +181,28 @@ export async function listOrgRows(): Promise<OrgRow[]> {
 export async function getOrgRow(orgId: string): Promise<OrgRow | null> {
   await requirePlatformAdmin()
   const db = getAdminDb()
-  const snap = await db.doc(platformOrgRollupDocPath(orgId)).get()
-  if (snap.exists) return rowFromRollup(orgId, snap.data() ?? {})
-  const orgSnap = await db.doc(orgPath(orgId)).get()
-  if (!orgSnap.exists) return null
-  const seats = await db.collection(orgUsersPath(orgId)).count().get()
-  return rowFromOrgDoc(orgId, orgSnap.data() ?? {}, seats.data().count)
+  const [rollupSnap, orgSnap] = await Promise.all([
+    db.doc(platformOrgRollupDocPath(orgId)).get(),
+    db.doc(orgPath(orgId)).get(),
+  ])
+  if (!rollupSnap.exists && !orgSnap.exists) return null
+  let row: OrgRow
+  if (rollupSnap.exists) {
+    row = rowFromRollup(orgId, rollupSnap.data() ?? {})
+  } else {
+    const seats = await db.collection(orgUsersPath(orgId)).count().get()
+    return rowFromOrgDoc(orgId, orgSnap.data() ?? {}, seats.data().count)
+  }
+  /* The rollup snapshot is reconciler-lagged; the org doc is authoritative
+   * for lifecycle fields, and is the only source of suspendedAt. */
+  if (orgSnap.exists) {
+    const d = orgSnap.data() ?? {}
+    row.name = (d.name as string) ?? row.name
+    row.plan = (d.plan as string) ?? row.plan
+    row.status = (d.status as "active" | "suspended") ?? "active"
+    row.suspendedAt = (d.suspendedAt as string | null) ?? null
+  }
+  return row
 }
 
 export interface OrgPeriod {

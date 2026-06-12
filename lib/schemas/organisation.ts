@@ -32,8 +32,11 @@ export const organisationSchema = audit.extend({
   grandfatheredAt: z.string().optional(),
   /* Lifecycle status set from the control centre. A suspended org is blocked
    * at the (app) layer (requireActiveOrg) - it stays in Firestore, it just
-   * can't be used until reactivated. Missing = active. */
+   * can't be used until reactivated. Missing = active. `suspendedAt` (ISO)
+   * is stamped on suspension, cleared on reactivation; suspended orgs are
+   * permanently deleted 60 days after it (orgRetentionSweep). */
   status: z.enum(["active", "suspended"]).optional(),
+  suspendedAt: z.string().optional(),
   /* Per-org quota overrides set from the control centre. Merged OVER the
    * plan's quotas in lib/plans/gate.ts. `null` for a metric = unlimited.
    * A metric absent here falls back to the plan default. */
