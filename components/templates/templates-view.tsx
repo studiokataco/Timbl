@@ -77,7 +77,6 @@ export function TemplatesView({ templates, categories, ctas }: Props) {
       )
       setPickerFor(null)
       router.push("/calendar")
-      router.refresh()
     })
   }
 

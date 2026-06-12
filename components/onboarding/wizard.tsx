@@ -196,7 +196,6 @@ export function OnboardingWizard({
       }
       toast.success("Setup complete")
       router.push("/")
-      router.refresh()
     })
   }
 

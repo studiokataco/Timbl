@@ -1,20 +1,21 @@
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
-import { PageHeading, StatusPill } from "@/components/control/widgets"
-import { compact, inr, pct, relativeTime } from "@/lib/platform/format"
+import {
+  HealthBadge,
+  OrgAvatar,
+  PageHeading,
+  StatItem,
+  StatStrip,
+  StatusPill,
+  TierPill,
+} from "@/components/control/widgets"
+import { inr, relativeTime } from "@/lib/platform/format"
 import { listOrgRows } from "@/lib/platform/queries"
 import { tenantFinancials } from "@/lib/platform/revenue"
 import { cn } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
-
-const TIER_TONE: Record<string, string> = {
-  free: "bg-muted text-muted-foreground",
-  studio: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
-  agency: "bg-violet-500/15 text-violet-700 dark:text-violet-400",
-  scale: "bg-amber-500/15 text-amber-700 dark:text-amber-500",
-}
 
 const TIER_ORDER = ["free", "studio", "agency", "scale"]
 
@@ -38,12 +39,21 @@ export default async function TenantsPage({
     ? enriched.filter((e) => e.fin.tier === activeTier)
     : enriched
 
+  const activeCount = enriched.filter((e) => e.row.status === "active").length
+  const customCount = enriched.filter((e) => e.fin.mrrInr === null).length
+  const mrrTotal = enriched.reduce((s, e) => s + (e.fin.mrrInr ?? 0), 0)
+  const infraTotal = enriched.reduce((s, e) => s + e.fin.infraMtdInr, 0)
+  const marginTotal = enriched.reduce((s, e) => s + (e.fin.marginInr ?? 0), 0)
+  const atRisk = enriched.filter(
+    (e) => e.row.failureRate > 0.1 || (e.fin.marginInr !== null && e.fin.marginInr < 0),
+  ).length
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <PageHeading
           title="Tenants"
-          description="Manage every organisation by tier. For company-wide financials, see Revenue."
+          description="Every organisation by tier. For company-wide financials, see Revenue."
         />
         <Link
           href="/revenue"
@@ -53,66 +63,111 @@ export default async function TenantsPage({
         </Link>
       </div>
 
-      {/* Control by tier */}
-      <div className="mb-5 flex flex-wrap gap-2">
-        <TierChip label="All tiers" href="/tenants" count={enriched.length} active={!activeTier} />
-        {TIER_ORDER.filter((t) => tierCounts.has(t)).map((t) => (
-          <TierChip
-            key={t}
-            label={t}
-            href={`/tenants?tier=${t}`}
-            count={tierCounts.get(t) ?? 0}
-            active={activeTier === t}
-            tone={TIER_TONE[t]}
-          />
-        ))}
+      <StatStrip className="mb-8 grid-cols-2 lg:grid-cols-5">
+        <StatItem label="Tenants" value={String(enriched.length)} sub={`${activeCount} active`} />
+        <StatItem
+          label="Portfolio MRR"
+          value={inr(mrrTotal)}
+          sub={customCount > 0 ? `+ ${customCount} custom` : undefined}
+        />
+        <StatItem label="Infra (MTD)" value={inr(infraTotal)} />
+        <StatItem
+          label="Blended margin"
+          value={inr(marginTotal)}
+          tone={marginTotal < 0 ? "negative" : undefined}
+        />
+        <StatItem
+          label="At risk"
+          value={String(atRisk)}
+          sub="failing or negative margin"
+          tone={atRisk > 0 ? "negative" : undefined}
+          className="col-span-2 lg:col-span-1"
+        />
+      </StatStrip>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
+          <Segment label="All tiers" href="/tenants" count={enriched.length} active={!activeTier} />
+          {TIER_ORDER.filter((t) => tierCounts.has(t)).map((t) => (
+            <Segment
+              key={t}
+              label={t}
+              href={`/tenants?tier=${t}`}
+              count={tierCounts.get(t) ?? 0}
+              active={activeTier === t}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {visible.length} of {enriched.length}
+        </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 font-medium">Org</th>
-              <th className="px-3 py-2 font-medium">Tier</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 text-right font-medium">Seats</th>
-              <th className="px-3 py-2 text-right font-medium">MRR</th>
-              <th className="px-3 py-2 text-right font-medium">Infra</th>
-              <th className="px-3 py-2 text-right font-medium">Margin</th>
-              <th className="px-3 py-2 text-right font-medium">Errors</th>
-              <th className="px-3 py-2 text-right font-medium">Last run</th>
+      <div className="overflow-x-auto rounded-xl bg-card ring-1 ring-foreground/10">
+        <table className="w-full min-w-[860px] text-sm">
+          <thead>
+            <tr className="border-b border-foreground/10 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 font-medium">Organisation</th>
+              <th className="px-3 py-3 font-medium">Tier</th>
+              <th className="px-3 py-3 font-medium">Status</th>
+              <th className="px-3 py-3 text-right font-medium">Seats</th>
+              <th className="px-3 py-3 text-right font-medium">MRR</th>
+              <th className="px-3 py-3 text-right font-medium">Infra</th>
+              <th className="px-3 py-3 text-right font-medium">Margin</th>
+              <th className="px-3 py-3 text-right font-medium">Health</th>
+              <th className="px-4 py-3 text-right font-medium">Last run</th>
             </tr>
           </thead>
           <tbody>
             {visible.map(({ row, fin }) => (
-              <tr key={row.orgId} className="border-t border-foreground/5 hover:bg-muted/30">
-                <td className="px-3 py-2">
-                  <Link href={`/tenants/${row.orgId}`} className="font-medium hover:underline">
-                    {row.name}
+              <tr
+                key={row.orgId}
+                className={cn(
+                  "group border-b border-foreground/5 transition-colors last:border-0 hover:bg-muted/40",
+                  row.status === "suspended" && "opacity-60",
+                )}
+              >
+                <td className="px-4 py-3">
+                  <Link href={`/tenants/${row.orgId}`} className="flex items-center gap-3">
+                    <OrgAvatar name={row.name} seed={row.orgId} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium group-hover:underline">
+                        {row.name}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {row.orgId}
+                      </span>
+                    </span>
                   </Link>
-                  <div className="text-xs text-muted-foreground">{row.orgId}</div>
                 </td>
-                <td className="px-3 py-2">
-                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium capitalize", TIER_TONE[fin.tier])}>
-                    {fin.tier}
-                  </span>
+                <td className="px-3 py-3"><TierPill tier={fin.tier} /></td>
+                <td className="px-3 py-3"><StatusPill status={row.status} /></td>
+                <td className="px-3 py-3 text-right tabular-nums">{row.seats}</td>
+                <td className="px-3 py-3 text-right tabular-nums">
+                  {fin.mrrInr === null ? "custom" : inr(fin.mrrInr)}
                 </td>
-                <td className="px-3 py-2"><StatusPill status={row.status} /></td>
-                <td className="px-3 py-2 text-right tabular-nums">{row.seats}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{fin.mrrInr === null ? "custom" : inr(fin.mrrInr)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{inr(fin.infraMtdInr)}</td>
-                <td className={cn("px-3 py-2 text-right tabular-nums", fin.marginInr !== null && fin.marginInr < 0 && "text-red-600 dark:text-red-400")}>
+                <td className="px-3 py-3 text-right text-muted-foreground tabular-nums">
+                  {inr(fin.infraMtdInr)}
+                </td>
+                <td
+                  className={cn(
+                    "px-3 py-3 text-right tabular-nums",
+                    fin.marginInr !== null && fin.marginInr < 0 && "text-red-600 dark:text-red-400",
+                  )}
+                >
                   {fin.marginInr === null ? "-" : inr(fin.marginInr)}
                 </td>
-                <td className={cn("px-3 py-2 text-right tabular-nums", row.failureRate > 0.1 && "text-red-600 dark:text-red-400")}>
-                  {pct(row.failureRate)}
+                <td className="px-3 py-3 text-right">
+                  <HealthBadge rate={row.failureRate} />
                 </td>
-                <td className="px-3 py-2 text-right text-muted-foreground">{relativeTime(row.lastRunAt)}</td>
+                <td className="px-4 py-3 text-right text-muted-foreground">
+                  {relativeTime(row.lastRunAt)}
+                </td>
               </tr>
             ))}
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-12 text-center text-muted-foreground">
                   No tenants in this tier.
                 </td>
               </tr>
@@ -120,35 +175,33 @@ export default async function TenantsPage({
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{compact(visible.length)} shown</p>
     </div>
   )
 }
 
-function TierChip({
+function Segment({
   label,
   href,
   count,
   active,
-  tone,
 }: {
   label: string
   href: string
   count: number
   active: boolean
-  tone?: string
 }) {
   return (
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium capitalize transition-colors",
-        active ? "border-foreground bg-foreground text-background" : "hover:bg-muted",
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium capitalize transition-colors",
+        active
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground",
       )}
     >
-      {!active && tone ? <span className={cn("size-2 rounded-full", tone)} /> : null}
       {label}
-      <span className={cn("tabular-nums", active ? "opacity-80" : "text-muted-foreground")}>{count}</span>
+      <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
     </Link>
   )
 }

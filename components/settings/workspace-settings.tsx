@@ -42,7 +42,6 @@ export function WorkspaceSettings({
         return
       }
       router.push("/onboarding")
-      router.refresh()
     })
   }
 
