@@ -131,6 +131,22 @@
       ]
     },
     {
+      "collectionGroup": "agentRuns",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "startedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "agentRuns",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "agentName", "order": "ASCENDING" },
+        { "fieldPath": "startedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "daily",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
@@ -144,6 +160,8 @@
       "collectionGroup": "agentRuns",
       "fieldPath": "startedAt",
       "indexes": [
+        { "queryScope": "COLLECTION", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION", "order": "DESCENDING" },
         { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" },
         { "queryScope": "COLLECTION_GROUP", "order": "DESCENDING" }
       ]
@@ -152,6 +170,8 @@
       "collectionGroup": "daily",
       "fieldPath": "date",
       "indexes": [
+        { "queryScope": "COLLECTION", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION", "order": "DESCENDING" },
         { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" },
         { "queryScope": "COLLECTION_GROUP", "order": "DESCENDING" }
       ]
