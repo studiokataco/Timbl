@@ -1,9 +1,154 @@
 import type { LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { usd } from "@/lib/platform/format"
+import { pct, usd } from "@/lib/platform/format"
 
 /* Server-safe presentational widgets shared across control pages. */
+
+export function StatStrip({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        "grid gap-px overflow-hidden rounded-xl bg-foreground/10 ring-1 ring-foreground/10",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+export function StatItem({
+  label,
+  value,
+  sub,
+  tone,
+  className,
+}: {
+  label: string
+  value: string
+  sub?: string
+  tone?: "positive" | "negative"
+  className?: string
+}) {
+  return (
+    <div className={cn("bg-card px-4 py-3.5", className)}>
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div
+        className={cn(
+          "mt-1.5 font-heading text-2xl font-semibold tracking-tight tabular-nums",
+          tone === "negative" && "text-red-600 dark:text-red-400",
+          tone === "positive" && "text-emerald-600 dark:text-emerald-400",
+        )}
+      >
+        {value}
+      </div>
+      {sub ? <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div> : null}
+    </div>
+  )
+}
+
+const AVATAR_TONES = [
+  "bg-orange-400/20 text-orange-700 dark:text-orange-400",
+  "bg-pink-400/20 text-pink-700 dark:text-pink-400",
+  "bg-violet-400/20 text-violet-700 dark:text-violet-400",
+  "bg-emerald-400/20 text-emerald-700 dark:text-emerald-400",
+]
+
+export function OrgAvatar({
+  name,
+  seed,
+  size = "md",
+}: {
+  name: string
+  seed: string
+  size?: "md" | "lg"
+}) {
+  let hash = 0
+  for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) | 0
+  const tone = AVATAR_TONES[Math.abs(hash) % AVATAR_TONES.length]
+  const initials =
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "?"
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full font-semibold",
+        size === "lg" ? "size-12 text-base" : "size-8 text-xs",
+        tone,
+      )}
+    >
+      {initials}
+    </span>
+  )
+}
+
+const TIER_DOT: Record<string, string> = {
+  free: "bg-muted-foreground/50",
+  studio: "bg-blue-500",
+  agency: "bg-violet-500",
+  scale: "bg-amber-500",
+}
+
+export function TierPill({ tier }: { tier: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize">
+      <span className={cn("size-1.5 rounded-full", TIER_DOT[tier] ?? "bg-muted-foreground/50")} />
+      {tier}
+    </span>
+  )
+}
+
+export function HealthBadge({ rate }: { rate: number }) {
+  const dot =
+    rate > 0.1 ? "bg-red-500" : rate > 0.02 ? "bg-amber-500" : "bg-emerald-500"
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 tabular-nums",
+        rate > 0.1 ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", dot)} />
+      {pct(rate)}
+    </span>
+  )
+}
+
+export function Panel({
+  title,
+  sub,
+  children,
+  className,
+  bodyClassName,
+}: {
+  title?: string
+  sub?: React.ReactNode
+  children: React.ReactNode
+  className?: string
+  bodyClassName?: string
+}) {
+  return (
+    <section className={cn("rounded-xl bg-card ring-1 ring-foreground/10", className)}>
+      {title ? (
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-foreground/5 px-4 py-3">
+          <h2 className="font-heading text-sm font-semibold tracking-tight">{title}</h2>
+          {sub ? <span className="text-xs text-muted-foreground">{sub}</span> : null}
+        </header>
+      ) : null}
+      <div className={cn("p-4", bodyClassName)}>{children}</div>
+    </section>
+  )
+}
 
 export function StatCard({
   label,

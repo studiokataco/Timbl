@@ -31,14 +31,14 @@ export function TenantBilling({
     })
 
   return (
-    <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="rounded-xl bg-card ring-1 ring-foreground/10">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-foreground/5 px-4 py-3">
         <h2 className="font-heading text-sm font-semibold tracking-tight">
           Billing profile
         </h2>
         <span className="text-xs text-muted-foreground">company-use · manual until Razorpay</span>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 p-4 sm:grid-cols-2">
         <Field label="Company name">
           <Input value={form.companyName ?? ""} onChange={(e) => set("companyName", e.target.value)} />
         </Field>
@@ -84,7 +84,7 @@ export function TenantBilling({
           </Field>
         </div>
       </div>
-      <div className="mt-4 flex justify-end">
+      <div className="flex justify-end border-t border-foreground/5 px-4 py-3">
         <Button size="sm" onClick={save} disabled={pending}>
           {pending ? "Saving..." : "Save billing profile"}
         </Button>
