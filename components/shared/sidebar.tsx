@@ -6,13 +6,13 @@ import {
   Calendar,
   KanbanSquare,
   LayoutList,
-  Lightbulb,
   Megaphone,
   BookOpen,
   Globe,
   Sparkles,
   Settings,
 } from "lucide-react"
+import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { cn } from "@/lib/utils"
 
 /*
@@ -34,7 +34,6 @@ const GROUPS: NavGroup[] = [
       { href: "/kanban", label: "Kanban", icon: KanbanSquare },
       { href: "/campaigns", label: "Campaigns", icon: Megaphone },
       { href: "/studio", label: "Studio", icon: Sparkles },
-      { href: "/ideation", label: "Ideation", icon: Lightbulb },
     ],
   },
   {
@@ -62,6 +61,7 @@ export function Sidebar() {
       aria-label="Primary"
       className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1 overflow-y-auto"
     >
+      <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-6" />
       {GROUPS.map((group, gi) => (
         <div
           key={gi}

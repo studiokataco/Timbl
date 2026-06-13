@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { createPublicApp, rotateKey } from "@/lib/actions/public-apps"
 import { publicScopeSchema, type PublicScope } from "@/lib/auth/public-scopes"
 import type { PublicApp } from "@/lib/schemas/publicApp"
+import { McpConnector } from "@/components/settings/mcp-connector"
 import type { AuditRow } from "./page"
 
 const ALL_SCOPES = publicScopeSchema.options as PublicScope[]
@@ -180,6 +181,10 @@ export function IntegrationsClient({ apps: initial, auditRows, revokeAction }: P
         <Button onClick={handleCreate} disabled={creating}>
           {creating ? "Creating..." : "Create key"}
         </Button>
+      </div>
+
+      <div className="border-t border-border pt-8">
+        <McpConnector apiKey={newKey} />
       </div>
 
       <div className="space-y-3">

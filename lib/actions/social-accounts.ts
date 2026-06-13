@@ -58,6 +58,6 @@ export async function disconnectAccount(id: string): Promise<ServerActionResult>
   if (!id) return { ok: false, error: "Missing account id" }
   const orgId = await getCurrentOrgId()
   await getDb().doc(`${orgSocialAccountsPath(orgId)}/${id}`).delete()
-  revalidatePath("/settings/channels")
+  revalidatePath("/settings/integrations")
   return { ok: true, id }
 }

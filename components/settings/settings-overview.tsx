@@ -3,10 +3,8 @@ import {
   Bell,
   Briefcase,
   Gauge,
-  Palette,
   Tags,
   Megaphone,
-  Bot,
   Share2,
   Users,
   ChevronRight,
@@ -27,9 +25,6 @@ type Section = {
   title: string
   description: string
   icon: typeof Briefcase
-  /** Short tag shown next to the title when the section lives outside the
-   *  /settings tab shell (e.g. its own top-level page). */
-  badge?: string
 }
 
 const SECTIONS: Section[] = [
@@ -37,19 +32,12 @@ const SECTIONS: Section[] = [
     href: "/settings/workspace",
     title: "Workspace",
     description:
-      "Re-run the setup wizard, switch between workspaces, and manage workspace-level options.",
+      "Setup wizard, brand voice, and workspace options for this organization.",
     icon: Briefcase,
   },
   {
-    href: "/settings/brand",
-    title: "Brand",
-    description:
-      "Teach the AI your brand voice, audience, channels, and posting cadence.",
-    icon: Palette,
-  },
-  {
     href: "/settings/billing",
-    title: "Plan & usage",
+    title: "Plan & Usage",
     description:
       "Consumption this month against your plan limits, and the plan this workspace runs on.",
     icon: Gauge,
@@ -62,10 +50,10 @@ const SECTIONS: Section[] = [
     icon: Tags,
   },
   {
-    href: "/settings/channels",
+    href: "/settings/integrations",
     title: "Integrations & API",
     description:
-      "Connect social accounts for publishing, and create API keys for external apps and agents.",
+      "Connect social accounts, and set up API keys or MCP for external apps and agents.",
     icon: Share2,
   },
   {
@@ -88,14 +76,6 @@ const SECTIONS: Section[] = [
     description:
       "Browse, create, edit, and archive campaigns - content series with a shared timeline.",
     icon: Megaphone,
-  },
-  {
-    href: "/studio",
-    title: "AI agents",
-    description:
-      "Agent providers, models, schedules, and budgets live in Studio.",
-    icon: Bot,
-    badge: "Studio",
   },
 ]
 
@@ -122,13 +102,8 @@ export function SettingsOverview() {
                 <Icon aria-hidden className="size-4" />
               </span>
               <span className="flex-1 min-w-0">
-                <span className="flex items-center gap-1 text-sm font-medium text-foreground">
+                <span className="text-sm font-medium text-foreground">
                   {s.title}
-                  {s.badge && (
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      · {s.badge}
-                    </span>
-                  )}
                 </span>
                 <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                   {s.description}

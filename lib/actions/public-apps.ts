@@ -52,7 +52,7 @@ export async function createPublicApp(
   }
 
   await ref.set(app)
-  revalidatePath("/settings/channels")
+  revalidatePath("/settings/integrations")
   return { ok: true, key, appId: ref.id }
 }
 
@@ -87,7 +87,7 @@ export async function rotateKey(
     updatedAt: new Date().toISOString(),
   })
 
-  revalidatePath("/settings/channels")
+  revalidatePath("/settings/integrations")
   return { ok: true, key }
 }
 
@@ -98,6 +98,6 @@ export async function revokePublicApp(appId: string): Promise<ServerActionResult
   if (!snap.exists) return { ok: false, error: "App not found" }
 
   await ref.update({ revokedAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
-  revalidatePath("/settings/channels")
+  revalidatePath("/settings/integrations")
   return { ok: true }
 }

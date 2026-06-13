@@ -10,7 +10,7 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 function back(error: string) {
-  return NextResponse.redirect(settingsRedirect("/settings/channels", { error }))
+  return NextResponse.redirect(settingsRedirect("/settings/integrations", { error }))
 }
 
 export async function GET(

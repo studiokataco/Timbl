@@ -23,25 +23,24 @@ export function BrandPreviewPanel() {
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-5 w-32" />
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-14 w-full" />
       </div>
     )
   }
 
   if (!data) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-secondary/20 p-4 text-body-sm text-muted-foreground">
-        Nothing saved yet. Chat with the wizard on the left - fields will
-        appear here as they&apos;re captured.
+      <div className="rounded-md border border-dashed border-border bg-secondary/20 p-3 text-xs text-muted-foreground leading-snug">
+        Nothing saved yet. Fields appear here as the wizard captures them.
       </div>
     )
   }
 
   return (
-    <dl className="space-y-3">
+    <dl className="space-y-2.5">
       <Field label="Voice">{data.voice}</Field>
       <Field label="Audience">{data.audience}</Field>
       <Field label="Channels">
@@ -63,11 +62,11 @@ export function BrandPreviewPanel() {
       )}
       {data.samplePosts.length > 0 && (
         <Field label="Sample posts">
-          <ul className="space-y-1.5">
+          <ul className="space-y-1 max-h-32 overflow-y-auto">
             {data.samplePosts.slice(0, 4).map((p, i) => (
               <li
                 key={i}
-                className="border border-border/60 rounded-md px-2 py-1.5 leading-relaxed"
+                className="border border-border/60 rounded-md px-2 py-1 text-xs leading-snug"
               >
                 {p.text}
                 {p.tag && (
@@ -91,11 +90,13 @@ function Field({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-1">
-      <dt className="text-caption uppercase tracking-wider text-muted-foreground">
+    <div className="space-y-0.5">
+      <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
         {label}
       </dt>
-      <dd className="text-body-sm text-foreground leading-relaxed">{children}</dd>
+      <dd className="text-xs text-foreground leading-snug line-clamp-4">
+        {children}
+      </dd>
     </div>
   )
 }

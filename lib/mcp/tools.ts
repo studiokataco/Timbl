@@ -1,7 +1,6 @@
 import "server-only"
 
 import { z } from "zod"
-import zodToJsonSchema from "zod-to-json-schema"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import {
@@ -10,22 +9,13 @@ import {
   orgPublishRunsPath,
 } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
-import { requireScope, InsufficientScopeError } from "@/lib/auth/public-scopes"
+import { requireScope } from "@/lib/auth/public-scopes"
 import type { PublicCaller } from "@/lib/api/public-middleware"
 
-function toMcpSchema(s: unknown): unknown {
-  const json = JSON.stringify(s).replaceAll("#/definitions/", "#/$defs/")
-  const obj = JSON.parse(json) as Record<string, unknown>
-  if (obj.definitions) {
-    obj.$defs = obj.definitions
-    delete obj.definitions
-  }
-  delete obj.$schema
-  return obj
-}
-
 function zs(schema: z.ZodTypeAny): unknown {
-  return toMcpSchema(zodToJsonSchema(schema as unknown as Parameters<typeof zodToJsonSchema>[0]))
+  const json = z.toJSONSchema(schema) as Record<string, unknown>
+  delete json.$schema
+  return json
 }
 
 export interface McpTool {

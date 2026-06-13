@@ -282,7 +282,7 @@ export async function applyOnboardingSelections(
    * time via readBrandConfig. Seeding it from the wizard profile means
    * the niche reaches agents even beyond the spliced prompts. Cadence is
    * written only on first create - a wizard re-run must not reset a
-   * cadence the user has since tuned in /settings/brand. */
+   * cadence the user has since tuned in Settings > Workspace. */
   const brandChannels: ChannelKey[] = parsed.data.channels.flatMap((c) => {
     const parsedChannel = channelKey.safeParse(c)
     return parsedChannel.success ? [parsedChannel.data] : []
@@ -315,7 +315,7 @@ export async function applyOnboardingSelections(
   revalidatePath("/calendar")
   revalidatePath("/studio")
   revalidatePath("/settings/categories")
-  revalidatePath("/settings/brand")
+  revalidatePath("/settings/workspace")
   revalidatePath("/settings/agents")
   revalidatePath("/templates")
   revalidatePath("/", "layout")

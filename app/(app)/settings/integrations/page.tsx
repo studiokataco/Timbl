@@ -1,4 +1,21 @@
-import { redirect } from "next/navigation"
+export const dynamic = "force-dynamic"
+
+import { getCurrentUser, getCurrentOrgId } from "@/lib/auth/server-helpers"
+import {
+  getChannelRedirectUri,
+  listConfiguredChannels,
+} from "@/lib/actions/oauth-apps"
+import { listSocialAccounts } from "@/lib/actions/social-accounts"
+import { listPublicApps, revokePublicApp } from "@/lib/actions/public-apps"
+import { getAdminDb } from "@/lib/firebase/admin"
+import { orgPublicApiAuditPath } from "@/lib/firebase/paths"
+import type { ChannelKey } from "@/lib/schemas/_shared"
+
+import { SettingsSection } from "@/components/settings/settings-section"
+import { SocialChannelsGate } from "@/components/settings/social-channels-gate"
+import { socialChannelsEnabled } from "@/lib/integrations/social-channels"
+import { ChannelsClient } from "./channels-client"
+import { IntegrationsClient } from "./client"
 
 export interface AuditRow {
   id: string
@@ -10,6 +27,93 @@ export interface AuditRow {
   createdAt: string
 }
 
-export default function SettingsIntegrationsPage() {
-  redirect("/settings/channels")
+const PLATFORMS: ChannelKey[] = ["linkedin", "x", "facebook", "instagram"]
+
+export default async function SettingsIntegrationsPage() {
+  const channelsLive = socialChannelsEnabled()
+
+  const [user, apps, orgId, ...channelData] = await Promise.all([
+    getCurrentUser(),
+    listPublicApps(),
+    getCurrentOrgId(),
+    ...(channelsLive
+      ? [
+          listSocialAccounts(),
+          listConfiguredChannels(),
+          ...PLATFORMS.map((p) => getChannelRedirectUri(p)),
+        ]
+      : []),
+  ])
+
+  const accounts = channelsLive ? (channelData[0] as Awaited<ReturnType<typeof listSocialAccounts>>) : []
+  const configured = channelsLive ? (channelData[1] as Awaited<ReturnType<typeof listConfiguredChannels>>) : []
+  const redirectUris = channelsLive ? channelData.slice(2) : []
+  const redirectUriByChannel = Object.fromEntries(
+    PLATFORMS.map((p, i) => [p, redirectUris[i] ?? ""] as const),
+  ) as Record<ChannelKey, string>
+
+  const auditSnap = await getAdminDb()
+    .collection(orgPublicApiAuditPath(orgId))
+    .orderBy("createdAt", "desc")
+    .limit(20)
+    .get()
+
+  const auditRows: AuditRow[] = auditSnap.docs.map((d) => {
+    const data = d.data()
+    return {
+      id: d.id,
+      kind: data.kind ?? "",
+      appId: data.appId ?? "",
+      success: data.success ?? false,
+      latencyMs: data.latencyMs ?? 0,
+      errorCode: data.errorCode ?? null,
+      createdAt: data.createdAt ?? "",
+    }
+  })
+
+  return (
+    <div className="px-4 sm:px-6 py-4 flex-1">
+      <div className="mb-2">
+        <h1 className="text-lg font-medium">Integrations & API</h1>
+        <p className="text-xs text-muted-foreground">
+          Social accounts that publish your posts, plus API keys and MCP access
+          for external apps and agents.
+        </p>
+      </div>
+
+      <div className="max-w-6xl">
+        <SettingsSection
+          title="Social channels"
+          description={
+            channelsLive
+              ? "Connect accounts so scheduled posts publish automatically at their slot. Reconnect any channel that needs re-auth."
+              : "Connecting social accounts is coming soon."
+          }
+          isFirst
+        >
+          {channelsLive ? (
+            <ChannelsClient
+              accounts={accounts}
+              configuredChannels={configured}
+              redirectUriByChannel={redirectUriByChannel}
+              isAdmin={user.role === "admin"}
+            />
+          ) : (
+            <SocialChannelsGate />
+          )}
+        </SettingsSection>
+
+        <SettingsSection
+          title="API keys & MCP"
+          description="Scoped keys that let external apps, agents, and MCP clients like Cursor and Claude drive this workspace."
+        >
+          <IntegrationsClient
+            apps={apps}
+            auditRows={auditRows}
+            revokeAction={revokePublicApp}
+          />
+        </SettingsSection>
+      </div>
+    </div>
+  )
 }
