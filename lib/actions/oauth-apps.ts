@@ -69,7 +69,7 @@ export async function setPlatformOauthApp(
   }
   await batch.commit()
 
-  revalidatePath("/settings/channels")
+  revalidatePath("/settings/integrations")
   return { ok: true, id: validChannel.data }
 }
 
@@ -88,7 +88,7 @@ export async function clearPlatformOauthApp(
   }
   await batch.commit()
 
-  revalidatePath("/settings/channels")
+  revalidatePath("/settings/integrations")
   return { ok: true, id: validChannel.data }
 }
 

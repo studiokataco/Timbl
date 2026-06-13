@@ -17,7 +17,7 @@ function back(error?: string, detail?: string) {
    * Truncated; these messages never contain secrets (the app secret is only
    * ever sent in the request, never echoed by Graph). */
   if (error && detail) params.detail = detail.slice(0, 200)
-  return NextResponse.redirect(settingsRedirect("/settings/channels", params))
+  return NextResponse.redirect(settingsRedirect("/settings/integrations", params))
 }
 
 export async function GET(

@@ -47,7 +47,7 @@ export default async function SettingsPlanPage() {
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
       <div className="mb-2">
-        <h1 className="text-lg font-medium">Plan & usage</h1>
+        <h1 className="text-lg font-medium">Plan & Usage</h1>
         <p className="text-xs text-muted-foreground">
           What this workspace has used this month, and the plan it runs on.
         </p>

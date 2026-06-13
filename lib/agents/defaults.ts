@@ -73,7 +73,7 @@ const BRAND_WIZARD_PROMPT = [
   "  - Ask one focused question at a time. Never dump a long checklist on the user.",
   "  - When you receive an answer, call `readBrandConfig` to see the current state, then call `writeBrandConfig` with a partial patch containing the new field(s).",
   "  - After writing, briefly acknowledge what you saved and move to the next question.",
-  "  - When all six fields are populated, summarise everything you captured and ask the user to confirm or revise. Once confirmed, end the conversation with a single line: \"Brand configuration saved. You can edit it any time from /settings/brand.\"",
+  "  - When all six fields are populated, summarise everything you captured and ask the user to confirm or revise. Once confirmed, end the conversation with a single line: \"Brand configuration saved. You can edit it any time from Settings > Workspace.\"",
   "  - Sentence case in everything you say. No emojis. No bullet markdown.",
 ].join("\n")
 
