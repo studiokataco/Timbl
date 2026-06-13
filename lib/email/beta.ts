@@ -37,7 +37,7 @@ export async function sendInviteAcceptedEmail(opts: {
   const resend = getResend()
   if (!resend) return { success: false, error: "Resend not configured" }
 
-  const loginUrl = `${appBaseUrl()}/login`
+  const claimUrl = `${appBaseUrl()}/claim-access?email=${encodeURIComponent(opts.email)}`
 
   try {
     await resend.emails.send({
@@ -46,14 +46,15 @@ export async function sendInviteAcceptedEmail(opts: {
       subject: "You're in - welcome to Timbl",
       html: `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.6;color:#111;max-width:560px;margin:0 auto;padding:24px">
 <p>Hi ${escapeHtml(opts.name)},</p>
-<p>Great news - your Timbl early access request has been approved. You can now sign in and set up your workspace.</p>
+<p>Your Timbl early access request was approved. Before you can use your workspace, create a login with Google or a password.</p>
+<p>Use <strong>${escapeHtml(opts.email)}</strong> for whichever option you pick - you will need the same method next time you sign in.</p>
 <p>
-  <a href="${loginUrl}" style="display:inline-block;padding:11px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-weight:500">
-    Sign in to Timbl
+  <a href="${claimUrl}" style="display:inline-block;padding:11px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-weight:500">
+    Create your login
   </a>
 </p>
-<p style="font-size:13px;color:#666">Or open: ${loginUrl}</p>
-<p style="font-size:13px;color:#999">You were approved because you requested early access. If this wasn't you, ignore this email.</p>
+<p style="font-size:13px;color:#666">Or open: ${claimUrl}</p>
+<p style="font-size:13px;color:#999">Already created your account? Sign in at ${appBaseUrl()}/login</p>
 <p style="font-size:12px;color:#bbb;margin-top:32px">Timbl.app</p>
 </body></html>`,
     })
