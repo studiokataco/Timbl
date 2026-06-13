@@ -1,9 +1,12 @@
 export const dynamic = "force-dynamic"
 
 import { getSubscriptionStatus } from "@/lib/actions/billing"
+import { getUsageOverview } from "@/lib/actions/usage"
 import { paidCheckoutAvailable } from "@/lib/billing/razorpay"
 import { billingSelfServeEnabled } from "@/lib/billing/self-serve"
 import { PLANS, type PlanConfig } from "@/lib/plans/plans"
+import { SettingsSection } from "@/components/settings/settings-section"
+import { UsageOverview } from "@/components/settings/usage-overview"
 import { BillingPageGate } from "@/components/settings/billing-page-gate"
 import {
   BillingManager,
@@ -37,24 +40,39 @@ function toCard(plan: PlanConfig): BillingPlanCard {
   }
 }
 
-export default async function SettingsBillingPage() {
+export default async function SettingsPlanPage() {
   const billingLive = billingSelfServeEnabled()
+  const usage = await getUsageOverview()
 
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
-      <div className="mb-4">
-        <h1 className="text-lg font-medium">Billing</h1>
+      <div className="mb-2">
+        <h1 className="text-lg font-medium">Plan & usage</h1>
         <p className="text-xs text-muted-foreground">
-          {billingLive
-            ? "Manage your subscription and plan. Prices are in INR."
-            : "Subscription management is coming soon."}
+          What this workspace has used this month, and the plan it runs on.
         </p>
       </div>
-      {billingLive ? (
-        <BillingLive />
-      ) : (
-        <BillingPageGate />
-      )}
+
+      <div className="max-w-3xl">
+        <SettingsSection
+          title="Usage"
+          description="Consumption this month against your plan limits."
+          isFirst
+        >
+          <UsageOverview initial={usage} />
+        </SettingsSection>
+
+        <SettingsSection
+          title="Billing"
+          description={
+            billingLive
+              ? "Manage your subscription and plan. Prices are in INR."
+              : "Plan changes and checkout are coming soon."
+          }
+        >
+          {billingLive ? <BillingLive /> : <BillingPageGate />}
+        </SettingsSection>
+      </div>
     </div>
   )
 }

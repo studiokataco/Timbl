@@ -48,10 +48,10 @@ const SECTIONS: Section[] = [
     icon: Palette,
   },
   {
-    href: "/settings/usage",
-    title: "Usage",
+    href: "/settings/billing",
+    title: "Plan & usage",
     description:
-      "Agent runs, scheduled posts, channels, and seats this month, against your plan limits.",
+      "Consumption this month against your plan limits, and the plan this workspace runs on.",
     icon: Gauge,
   },
   {
@@ -63,9 +63,9 @@ const SECTIONS: Section[] = [
   },
   {
     href: "/settings/channels",
-    title: "Channels",
+    title: "Connections",
     description:
-      "Connect social accounts so scheduled posts publish automatically at their slot.",
+      "Connect social accounts for publishing, and create API keys for external apps and agents.",
     icon: Share2,
   },
   {
