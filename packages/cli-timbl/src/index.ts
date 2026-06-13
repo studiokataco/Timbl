@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+import { Command } from "commander";
+import { registerConfigCommands } from "./commands/config.js";
+import { registerPostsCommands } from "./commands/posts.js";
+import { registerIdeationCommands } from "./commands/ideation.js";
+import { registerApprovalsCommands } from "./commands/approvals.js";
+import { registerCategoriesCommands } from "./commands/categories.js";
+import { registerChannelsCommands } from "./commands/channels.js";
+import { registerMetricsCommands } from "./commands/metrics.js";
+import { registerWebhooksCommands } from "./commands/webhooks.js";
+
+const program = new Command();
+
+program.name("timbl").description("Timbl CLI").version("0.1.0");
+
+registerConfigCommands(program);
+registerPostsCommands(program);
+registerIdeationCommands(program);
+registerApprovalsCommands(program);
+registerCategoriesCommands(program);
+registerChannelsCommands(program);
+registerMetricsCommands(program);
+registerWebhooksCommands(program);
+
+program.parse();
