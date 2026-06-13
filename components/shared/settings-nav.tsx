@@ -21,14 +21,12 @@ import { cn } from "@/lib/utils"
 const NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: "/settings", label: "Overview", exact: true },
   { href: "/settings/workspace", label: "Workspace" },
-  { href: "/settings/billing", label: "Billing" },
-  { href: "/settings/usage", label: "Usage" },
+  { href: "/settings/billing", label: "Plan & usage" },
   { href: "/settings/brand", label: "Brand" },
   { href: "/settings/categories", label: "Categories" },
-  { href: "/settings/channels", label: "Channels" },
+  { href: "/settings/channels", label: "Connections" },
   { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/team", label: "Team" },
-  { href: "/settings/integrations", label: "Integrations" },
 ]
 
 export function SettingsNav() {

@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -40,9 +39,27 @@ export function IntegrationsClient({ apps: initial, auditRows, revokeAction }: P
     if (scopes.length === 0) { toast.error("Select at least one scope"); return }
     startCreate(async () => {
       const result = await createPublicApp(name.trim(), scopes)
-      if (!result.ok) { toast.error(result.error ?? "Failed to create key"); return }
+      if (!result.ok || !result.appId) {
+        toast.error(result.error ?? "Failed to create key")
+        return
+      }
       setNewKey(result.key ?? null)
-      setApps((prev) => [...prev])
+      setApps((prev) => [
+        {
+          id: result.appId!,
+          organizationId: "",
+          name: name.trim(),
+          keyPrefix: (result.key ?? "").slice(0, 14),
+          keyHash: "",
+          keyCiphertext: "",
+          scopes,
+          rateTier: "free",
+          createdBy: "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as PublicApp,
+        ...prev,
+      ])
       setName("")
       setScopes([])
       toast.success("API key created")
@@ -59,129 +76,114 @@ export function IntegrationsClient({ apps: initial, auditRows, revokeAction }: P
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <Card>
-        <CardHeader>
-          <CardTitle>API keys</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {apps.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No active API keys.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {apps.map((app) => (
-                <div key={app.id} className="flex items-start justify-between py-3 gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{app.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {app.keyPrefix}... - created {(app.createdAt ?? "").slice(0, 10)}
-                    </p>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {app.scopes.map((s) => (
-                        <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
-                      ))}
-                      <Badge variant="outline" className="text-xs">{app.rateTier}</Badge>
-                    </div>
+    <div className="space-y-8">
+      <div>
+        {apps.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No active API keys.</p>
+        ) : (
+          <div className="divide-y divide-border border-y border-border">
+            {apps.map((app) => (
+              <div key={app.id} className="flex items-start justify-between py-3 gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{app.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                    {app.keyPrefix}... - created {(app.createdAt ?? "").slice(0, 10)}
+                  </p>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {app.scopes.map((s) => (
+                      <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+                    ))}
+                    <Badge variant="outline" className="text-xs">{app.rateTier}</Badge>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0 text-destructive hover:text-destructive"
-                    disabled={revoking}
-                    onClick={() => handleRevoke(app.id)}
-                  >
-                    Revoke
-                  </Button>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Create API key</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {newKey && (
-            <div className="mb-4 p-3 rounded-lg bg-muted border border-border">
-              <p className="text-xs text-muted-foreground mb-1">
-                Copy this key now - it will not be shown again.
-              </p>
-              <code className="text-sm font-mono break-all select-all">{newKey}</code>
-            </div>
-          )}
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="key-name">Name</Label>
-              <Input
-                id="key-name"
-                placeholder="e.g. My automation"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Scopes</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {ALL_SCOPES.map((scope) => (
-                  <label key={scope} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={scopes.includes(scope)}
-                      onCheckedChange={() => toggleScope(scope)}
-                    />
-                    <span className="text-sm">{scope}</span>
-                  </label>
-                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-destructive hover:text-destructive"
+                  disabled={revoking}
+                  onClick={() => handleRevoke(app.id)}
+                >
+                  Revoke
+                </Button>
               </div>
-            </div>
-            <Button onClick={handleCreate} disabled={creating}>
-              {creating ? "Creating..." : "Create key"}
-            </Button>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent API usage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {auditRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No API calls recorded yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-muted-foreground border-b border-border">
-                    <th className="text-left pb-2 pr-4 font-medium">Action</th>
-                    <th className="text-left pb-2 pr-4 font-medium">Status</th>
-                    <th className="text-right pb-2 pr-4 font-medium">Latency</th>
-                    <th className="text-left pb-2 font-medium">Time</th>
+      <div className="space-y-4">
+        <p className="text-sm font-medium text-foreground">Create a key</p>
+        {newKey && (
+          <div className="p-3 rounded-lg bg-muted border border-border">
+            <p className="text-xs text-muted-foreground mb-1">
+              Copy this key now - it will not be shown again.
+            </p>
+            <code className="text-sm font-mono break-all select-all">{newKey}</code>
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <Label htmlFor="key-name">Name</Label>
+          <Input
+            id="key-name"
+            placeholder="e.g. My automation"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Scopes</Label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {ALL_SCOPES.map((scope) => (
+              <label key={scope} className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={scopes.includes(scope)}
+                  onCheckedChange={() => toggleScope(scope)}
+                />
+                <span className="text-sm">{scope}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <Button onClick={handleCreate} disabled={creating}>
+          {creating ? "Creating..." : "Create key"}
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-foreground">Recent API usage</p>
+        {auditRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No API calls recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted-foreground border-b border-border">
+                  <th className="text-left pb-2 pr-4 font-medium">Action</th>
+                  <th className="text-left pb-2 pr-4 font-medium">Status</th>
+                  <th className="text-right pb-2 pr-4 font-medium">Latency</th>
+                  <th className="text-left pb-2 font-medium">Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {auditRows.map((row) => (
+                  <tr key={row.id}>
+                    <td className="py-2 pr-4 font-mono text-xs">{row.kind}</td>
+                    <td className="py-2 pr-4">
+                      <Badge variant={row.success ? "secondary" : "destructive"} className="text-xs">
+                        {row.success ? "ok" : (row.errorCode ?? "error")}
+                      </Badge>
+                    </td>
+                    <td className="py-2 pr-4 text-right text-muted-foreground">{row.latencyMs}ms</td>
+                    <td className="py-2 text-muted-foreground text-xs">
+                      {row.createdAt.slice(0, 19).replace("T", " ")}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {auditRows.map((row) => (
-                    <tr key={row.id}>
-                      <td className="py-2 pr-4 font-mono text-xs">{row.kind}</td>
-                      <td className="py-2 pr-4">
-                        <Badge variant={row.success ? "secondary" : "destructive"} className="text-xs">
-                          {row.success ? "ok" : (row.errorCode ?? "error")}
-                        </Badge>
-                      </td>
-                      <td className="py-2 pr-4 text-right text-muted-foreground">{row.latencyMs}ms</td>
-                      <td className="py-2 text-muted-foreground text-xs">
-                        {row.createdAt.slice(0, 19).replace("T", " ")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
