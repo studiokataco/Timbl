@@ -20,20 +20,22 @@ export function SettingsSection({
   return (
     <section
       className={cn(
+        "grid grid-cols-1 gap-x-8 gap-y-5 lg:grid-cols-12",
         !isFirst && "border-t border-border mt-10 pt-10",
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div className="min-w-0">
+      <div className="lg:col-span-4 lg:max-w-xs">
+        <div className="flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
-          )}
+          {action && <div className="shrink-0 lg:hidden">{action}</div>}
         </div>
-        {action && <div className="shrink-0">{action}</div>}
+        {description && (
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        )}
+        {action && <div className="hidden lg:block mt-4">{action}</div>}
       </div>
-      {children}
+      <div className="lg:col-span-8 min-w-0">{children}</div>
     </section>
   )
 }

@@ -63,7 +63,7 @@ const SECTIONS: Section[] = [
   },
   {
     href: "/settings/channels",
-    title: "Connections",
+    title: "Integrations & API",
     description:
       "Connect social accounts for publishing, and create API keys for external apps and agents.",
     icon: Share2,
