@@ -60,10 +60,9 @@ export async function listPublicApps(): Promise<PublicApp[]> {
   const { orgId } = await requireOwner()
   const snap = await getAdminDb()
     .collection(orgPublicAppsPath(orgId))
-    .where("revokedAt", "==", null)
     .orderBy("createdAt", "desc")
     .get()
-  return snap.docs.map((d) => d.data() as PublicApp)
+  return snap.docs.map((d) => d.data() as PublicApp).filter((a) => !a.revokedAt)
 }
 
 export async function rotateKey(

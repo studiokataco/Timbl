@@ -40,13 +40,13 @@ async function resolveApiKey(key: string): Promise<AuthResult> {
   const snap = await db
     .collectionGroup("publicApps")
     .where("keyPrefix", "==", prefix)
-    .where("revokedAt", "==", null)
     .limit(1)
     .get()
 
   if (snap.empty) return { error: "invalid_token", status: 401 }
 
   const app = snap.docs[0].data() as PublicApp
+  if (app.revokedAt) return { error: "invalid_token", status: 401 }
   const valid = await verifyApiKey(key, app.keyHash)
   if (!valid) return { error: "invalid_token", status: 401 }
 
