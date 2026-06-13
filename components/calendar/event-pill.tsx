@@ -3,6 +3,7 @@
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
+import { Pencil } from "lucide-react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
@@ -56,6 +57,17 @@ export function EventPill({ post, category, onClick }: Props) {
         {time && <span className="font-semibold mr-1">{time}</span>}
         <span className="truncate">{post.brief ?? "Untitled"}</span>
       </button>
+
+      {post.status === "scheduled" && (
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label="Edit post"
+          className="absolute top-0 right-0 opacity-0 group-hover/pill:opacity-100 transition-opacity p-0.5"
+        >
+          <Pencil aria-hidden className="h-4 w-4 text-[#111111]/60" />
+        </button>
+      )}
 
       {/* Hover tooltip */}
       <div
