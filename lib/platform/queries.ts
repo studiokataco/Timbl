@@ -401,7 +401,6 @@ export async function listSignupRequests(
   const snap = await getAdminDb()
     .collection(platformSignupRequestsPath)
     .where("status", "==", status)
-    .orderBy("requestedAt", "desc")
     .limit(limit)
     .get()
   const out: SignupRequest[] = []
@@ -409,6 +408,7 @@ export async function listSignupRequests(
     const parsed = signupRequestSchema.safeParse({ ...doc.data(), id: doc.id })
     if (parsed.success) out.push(parsed.data)
   }
+  out.sort((a, b) => b.requestedAt.localeCompare(a.requestedAt))
   return out
 }
 

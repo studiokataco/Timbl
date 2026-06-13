@@ -17,25 +17,23 @@ export async function submitInviteRequest(raw: unknown): Promise<ServerActionRes
   const existing = await db
     .collection(platformSignupRequestsPath)
     .where("email", "==", norm)
-    .where("status", "==", "pending")
-    .limit(1)
+    .limit(5)
     .get()
-  if (!existing.empty) {
-    return { ok: true, id: existing.docs[0].id }
+  const pending = existing.docs.find((d) => d.data().status === "pending")
+  if (pending) {
+    return { ok: true, id: pending.id }
   }
 
   const ref = db.collection(platformSignupRequestsPath).doc()
+  const now = new Date().toISOString()
   await ref.set({
     id: ref.id,
     email: norm,
     name: name.trim(),
-    company: company?.trim() ?? null,
-    useCase: useCase?.trim() ?? null,
+    ...(company?.trim() ? { company: company.trim() } : {}),
+    ...(useCase?.trim() ? { useCase: useCase.trim() } : {}),
     status: "pending",
-    requestedAt: new Date().toISOString(),
-    decidedAt: null,
-    decidedBy: null,
-    orgId: null,
+    requestedAt: now,
   })
   return { ok: true, id: ref.id }
 }

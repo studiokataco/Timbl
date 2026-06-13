@@ -187,13 +187,13 @@ export const signupRequestSchema = z.object({
   id: z.string(),
   email: z.string().email(),
   name: z.string().min(1),
-  company: z.string().optional(),
-  useCase: z.string().optional(),
+  company: z.string().nullish(),
+  useCase: z.string().nullish(),
   status: z.enum(["pending", "approved", "denied"]).default("pending"),
   requestedAt: z.string(),
-  decidedAt: z.string().optional(),
-  decidedBy: z.string().optional(),
-  orgId: z.string().optional(),
+  decidedAt: z.string().nullish(),
+  decidedBy: z.string().nullish(),
+  orgId: z.string().nullish(),
 })
 export type SignupRequest = z.infer<typeof signupRequestSchema>
 
