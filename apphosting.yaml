@@ -183,10 +183,16 @@ env:
     availability:
       - RUNTIME
 
-  # Until you verify a product domain in Resend, keep test mode on (no DNS).
-  # Later: set RESEND_TEST_MODE=0 and bind RESEND_INVITE_FROM from Secret Manager.
+  # timbl.app is verified in Resend, so live sends go to real recipients from
+  # the verified-domain sender below. Flip RESEND_TEST_MODE back to "1" only to
+  # route everything to delivered@resend.dev (the black-hole test inbox).
   - variable: RESEND_TEST_MODE
-    value: "1"
+    value: "0"
+    availability:
+      - RUNTIME
+
+  - variable: RESEND_INVITE_FROM
+    value: Timbl <hello@timbl.app>
     availability:
       - RUNTIME
 
