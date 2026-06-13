@@ -28,6 +28,7 @@ const NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: "/settings/channels", label: "Channels" },
   { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/team", label: "Team" },
+  { href: "/settings/integrations", label: "Integrations" },
 ]
 
 export function SettingsNav() {
