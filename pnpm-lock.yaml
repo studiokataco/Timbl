@@ -4,186 +4,216 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-dependencies:
-  '@anthropic-ai/sdk':
-    specifier: ^0.95.2
-    version: 0.95.2(zod@4.4.3)
-  '@base-ui/react':
-    specifier: ^1.4.1
-    version: 1.4.1(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.4)(react@19.2.4)
-  '@dnd-kit/core':
-    specifier: ^6.3.1
-    version: 6.3.1(react-dom@19.2.4)(react@19.2.4)
-  '@dnd-kit/sortable':
-    specifier: ^10.0.0
-    version: 10.0.0(@dnd-kit/core@6.3.1)(react@19.2.4)
-  '@dnd-kit/utilities':
-    specifier: ^3.2.2
-    version: 3.2.2(react@19.2.4)
-  '@fullcalendar/timegrid':
-    specifier: ^6.1.20
-    version: 6.1.20(@fullcalendar/core@6.1.20)
-  '@google/adk':
-    specifier: 1.1.0
-    version: 1.1.0(@mikro-orm/mariadb@6.6.14)(@mikro-orm/mssql@6.6.14)(@mikro-orm/mysql@6.6.14)(@mikro-orm/postgresql@6.6.14)(@mikro-orm/sqlite@6.6.14)(@opentelemetry/core@2.7.1)
-  '@google/genai':
-    specifier: ^2.1.0
-    version: 2.1.0
-  '@gsap/react':
-    specifier: ^2.1.2
-    version: 2.1.2(gsap@3.15.0)(react@19.2.4)
-  '@hookform/resolvers':
-    specifier: ^5.2.2
-    version: 5.2.2(react-hook-form@7.75.0)
-  '@tanstack/react-query':
-    specifier: ^5.100.9
-    version: 5.100.9(react@19.2.4)
-  '@tanstack/react-table':
-    specifier: ^8.21.3
-    version: 8.21.3(react-dom@19.2.4)(react@19.2.4)
-  class-variance-authority:
-    specifier: ^0.7.1
-    version: 0.7.1
-  clsx:
-    specifier: ^2.1.1
-    version: 2.1.1
-  cmdk:
-    specifier: ^1.1.1
-    version: 1.1.1(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)
-  cronstrue:
-    specifier: ^3.14.0
-    version: 3.14.0
-  csv-parse:
-    specifier: ^6.2.1
-    version: 6.2.1
-  date-fns:
-    specifier: 4.1.0
-    version: 4.1.0
-  driver.js:
-    specifier: ^1.4.0
-    version: 1.4.0
-  firebase:
-    specifier: ^12.12.1
-    version: 12.12.1
-  firebase-admin:
-    specifier: ^13.8.0
-    version: 13.8.0
-  framer-motion:
-    specifier: ^12.38.0
-    version: 12.38.0(react-dom@19.2.4)(react@19.2.4)
-  gsap:
-    specifier: ^3.15.0
-    version: 3.15.0
-  lucide-react:
-    specifier: ^1.14.0
-    version: 1.14.0(react@19.2.4)
-  next:
-    specifier: 16.2.4
-    version: 16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.4)(react@19.2.4)
-  node-cron:
-    specifier: ^4.2.1
-    version: 4.2.1
-  openai:
-    specifier: ^6.38.0
-    version: 6.38.0(zod@4.4.3)
-  posthog-js:
-    specifier: ^1.376.4
-    version: 1.376.4
-  razorpay:
-    specifier: ^2.9.6
-    version: 2.9.6
-  react:
-    specifier: 19.2.4
-    version: 19.2.4
-  react-day-picker:
-    specifier: ^9.14.0
-    version: 9.14.0(react@19.2.4)
-  react-dom:
-    specifier: 19.2.4
-    version: 19.2.4(react@19.2.4)
-  react-hook-form:
-    specifier: ^7.75.0
-    version: 7.75.0(react@19.2.4)
-  react-markdown:
-    specifier: ^10.1.0
-    version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
-  recharts:
-    specifier: ^3.8.1
-    version: 3.8.1(@types/react@19.2.14)(react-dom@19.2.4)(react-is@16.13.1)(react@19.2.4)(redux@5.0.1)
-  remark-gfm:
-    specifier: ^4.0.1
-    version: 4.0.1
-  resend:
-    specifier: ^6.12.4
-    version: 6.12.4
-  server-only:
-    specifier: ^0.0.1
-    version: 0.0.1
-  shadcn:
-    specifier: ^4.7.0
-    version: 4.7.0(@types/node@20.19.39)(typescript@5.9.3)
-  sonner:
-    specifier: ^2.0.7
-    version: 2.0.7(react-dom@19.2.4)(react@19.2.4)
-  string-similarity:
-    specifier: ^4.0.4
-    version: 4.0.4
-  tailwind-merge:
-    specifier: ^3.5.0
-    version: 3.5.0
-  tw-animate-css:
-    specifier: ^1.4.0
-    version: 1.4.0
-  zod:
-    specifier: ^4.4.3
-    version: 4.4.3
+importers:
 
-devDependencies:
-  '@firebase/rules-unit-testing':
-    specifier: ^4.0.1
-    version: 4.0.1(firebase@12.12.1)
-  '@playwright/test':
-    specifier: ^1.49.0
-    version: 1.60.0
-  '@tailwindcss/postcss':
-    specifier: ^4
-    version: 4.2.4
-  '@types/node':
-    specifier: ^20
-    version: 20.19.39
-  '@types/node-cron':
-    specifier: ^3.0.11
-    version: 3.0.11
-  '@types/react':
-    specifier: ^19
-    version: 19.2.14
-  '@types/react-dom':
-    specifier: ^19
-    version: 19.2.3(@types/react@19.2.14)
-  '@types/string-similarity':
-    specifier: ^4.0.2
-    version: 4.0.2
-  eslint:
-    specifier: ^9
-    version: 9.39.4
-  eslint-config-next:
-    specifier: 16.2.4
-    version: 16.2.4(@typescript-eslint/parser@8.59.2)(eslint@9.39.4)(typescript@5.9.3)
-  firebase-tools:
-    specifier: ^14.0.0
-    version: 14.27.0(@types/node@20.19.39)(typescript@5.9.3)
-  tailwindcss:
-    specifier: ^4
-    version: 4.2.4
-  tsx:
-    specifier: ^4.21.0
-    version: 4.21.0
-  typescript:
-    specifier: ^5
-    version: 5.9.3
-  vitest:
-    specifier: ^2.1.8
-    version: 2.1.9(@types/node@20.19.39)
+  .:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.95.2
+        version: 0.95.2(zod@4.4.3)
+      '@asteasolutions/zod-to-openapi':
+        specifier: ^8.0.0
+        version: 8.5.0(zod@4.4.3)
+      '@base-ui/react':
+        specifier: ^1.4.1
+        version: 1.4.1(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.4)(react@19.2.4)
+      '@dnd-kit/core':
+        specifier: ^6.3.1
+        version: 6.3.1(react-dom@19.2.4)(react@19.2.4)
+      '@dnd-kit/sortable':
+        specifier: ^10.0.0
+        version: 10.0.0(@dnd-kit/core@6.3.1)(react@19.2.4)
+      '@dnd-kit/utilities':
+        specifier: ^3.2.2
+        version: 3.2.2(react@19.2.4)
+      '@fullcalendar/timegrid':
+        specifier: ^6.1.20
+        version: 6.1.20(@fullcalendar/core@6.1.20)
+      '@google/adk':
+        specifier: 1.1.0
+        version: 1.1.0(@mikro-orm/mariadb@6.6.14)(@mikro-orm/mssql@6.6.14)(@mikro-orm/mysql@6.6.14)(@mikro-orm/postgresql@6.6.14)(@mikro-orm/sqlite@6.6.14)(@opentelemetry/core@2.7.1)
+      '@google/genai':
+        specifier: ^2.1.0
+        version: 2.1.0
+      '@gsap/react':
+        specifier: ^2.1.2
+        version: 2.1.2(gsap@3.15.0)(react@19.2.4)
+      '@hookform/resolvers':
+        specifier: ^5.2.2
+        version: 5.2.2(react-hook-form@7.75.0)
+      '@tanstack/react-query':
+        specifier: ^5.100.9
+        version: 5.100.9(react@19.2.4)
+      '@tanstack/react-table':
+        specifier: ^8.21.3
+        version: 8.21.3(react-dom@19.2.4)(react@19.2.4)
+      bcrypt:
+        specifier: ^5.1.1
+        version: 5.1.1
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      cmdk:
+        specifier: ^1.1.1
+        version: 1.1.1(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)
+      cronstrue:
+        specifier: ^3.14.0
+        version: 3.14.0
+      csv-parse:
+        specifier: ^6.2.1
+        version: 6.2.1
+      date-fns:
+        specifier: 4.1.0
+        version: 4.1.0
+      driver.js:
+        specifier: ^1.4.0
+        version: 1.4.0
+      firebase:
+        specifier: ^12.12.1
+        version: 12.12.1
+      firebase-admin:
+        specifier: ^13.8.0
+        version: 13.8.0
+      framer-motion:
+        specifier: ^12.38.0
+        version: 12.38.0(react-dom@19.2.4)(react@19.2.4)
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.14.0(react@19.2.4)
+      next:
+        specifier: 16.2.4
+        version: 16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.4)(react@19.2.4)
+      node-cron:
+        specifier: ^4.2.1
+        version: 4.2.1
+      openai:
+        specifier: ^6.38.0
+        version: 6.38.0(zod@4.4.3)
+      posthog-js:
+        specifier: ^1.376.4
+        version: 1.376.4
+      posthog-node:
+        specifier: ^4.0.0
+        version: 4.18.0
+      razorpay:
+        specifier: ^2.9.6
+        version: 2.9.6
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      react-day-picker:
+        specifier: ^9.14.0
+        version: 9.14.0(react@19.2.4)
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
+      react-hook-form:
+        specifier: ^7.75.0
+        version: 7.75.0(react@19.2.4)
+      react-markdown:
+        specifier: ^10.1.0
+        version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
+      recharts:
+        specifier: ^3.8.1
+        version: 3.8.1(@types/react@19.2.14)(react-dom@19.2.4)(react-is@16.13.1)(react@19.2.4)(redux@5.0.1)
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
+      resend:
+        specifier: ^6.12.4
+        version: 6.12.4
+      server-only:
+        specifier: ^0.0.1
+        version: 0.0.1
+      shadcn:
+        specifier: ^4.7.0
+        version: 4.7.0(@types/node@20.19.39)(typescript@5.9.3)
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.4)(react@19.2.4)
+      string-similarity:
+        specifier: ^4.0.4
+        version: 4.0.4
+      tailwind-merge:
+        specifier: ^3.5.0
+        version: 3.5.0
+      tw-animate-css:
+        specifier: ^1.4.0
+        version: 1.4.0
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+      zod-to-json-schema:
+        specifier: ^3.23.0
+        version: 3.25.2(zod@4.4.3)
+    devDependencies:
+      '@firebase/rules-unit-testing':
+        specifier: ^4.0.1
+        version: 4.0.1(firebase@12.12.1)
+      '@playwright/test':
+        specifier: ^1.49.0
+        version: 1.60.0
+      '@tailwindcss/postcss':
+        specifier: ^4
+        version: 4.2.4
+      '@types/bcrypt':
+        specifier: ^5.0.2
+        version: 5.0.2
+      '@types/node':
+        specifier: ^20
+        version: 20.19.39
+      '@types/node-cron':
+        specifier: ^3.0.11
+        version: 3.0.11
+      '@types/react':
+        specifier: ^19
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.14)
+      '@types/string-similarity':
+        specifier: ^4.0.2
+        version: 4.0.2
+      eslint:
+        specifier: ^9
+        version: 9.39.4
+      eslint-config-next:
+        specifier: 16.2.4
+        version: 16.2.4(@typescript-eslint/parser@8.59.2)(eslint@9.39.4)(typescript@5.9.3)
+      firebase-tools:
+        specifier: ^14.0.0
+        version: 14.27.0(@types/node@20.19.39)(typescript@5.9.3)
+      tailwindcss:
+        specifier: ^4
+        version: 4.2.4
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.39)
+
+  packages/cli-timbl:
+    dependencies:
+      commander:
+        specifier: ^12.0.0
+        version: 12.1.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.39
+      typescript:
+        specifier: ^5
+        version: 5.9.3
 
 packages:
 
@@ -258,6 +288,15 @@ packages:
   /@apphosting/common@0.0.9:
     resolution: {integrity: sha512-ZbPZDcVhEN+8m0sf90PmQN4xWaKmmySnBSKKPaIOD0JvcDsRr509WenFEFlojP++VSxwFZDGG/TYsHs1FMMqpw==}
     dev: true
+
+  /@asteasolutions/zod-to-openapi@8.5.0(zod@4.4.3):
+    resolution: {integrity: sha512-SABbKiObg5dLRiTFnqiW1WWwGcg1BJfmHtT2asIBnBHg6Smy/Ms2KHc650+JI4Hw7lSkdiNebEGXpwoxfben8Q==}
+    peerDependencies:
+      zod: ^4.0.0
+    dependencies:
+      openapi3-ts: 4.6.0
+      zod: 4.4.3
+    dev: false
 
   /@azure-rest/core-client@2.6.0:
     resolution: {integrity: sha512-iuFKDm8XPzNxPfRjhyU5/xKZmcRDzSuEghXDHHk4MjBV/wFL34GmYVBZnn9wmuoLBeS1qAw9ceMdaeJBPcB1QQ==}
@@ -2927,6 +2966,24 @@ packages:
       jsep: 1.4.0
     dev: false
 
+  /@mapbox/node-pre-gyp@1.0.11:
+    resolution: {integrity: sha512-Yhlar6v9WQgUp/He7BdgzOz8lqMQ8sU+jkCq7Wx8Myc5YFJLbEe7lgui/V7G1qB1DJykHSGwreceSaD60Y0PUQ==}
+    hasBin: true
+    dependencies:
+      detect-libc: 2.1.2
+      https-proxy-agent: 5.0.1
+      make-dir: 3.1.0
+      node-fetch: 2.7.0
+      nopt: 5.0.0
+      npmlog: 5.0.1
+      rimraf: 3.0.2
+      semver: 7.7.4
+      tar: 6.2.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+    dev: false
+
   /@mikro-orm/core@6.6.14:
     resolution: {integrity: sha512-jKdtf1A2wI2D48phOPJzTc3h7Bev64Ype0FHwbUgHEdZ5VxrCNLKOziFnYqMfPmBe0piVExLaPN2qXgbzCiApw==}
     engines: {node: '>= 18.12.0'}
@@ -4778,6 +4835,12 @@ packages:
     dev: true
     optional: true
 
+  /@types/bcrypt@5.0.2:
+    resolution: {integrity: sha512-6atioO8Y75fNcbmj0G7UjI9lXN2pQ/IGJ2FWT4a/btd0Lk9lQalHLKhkgKVZ3r+spnmWUKfbMi1GEe9wyHQfNQ==}
+    dependencies:
+      '@types/node': 20.19.39
+    dev: true
+
   /@types/caseless@0.12.5:
     resolution: {integrity: sha512-hWtVTC2q7hc7xZ/RLbxapMvDMgUnDvKvMOpKal4DrMyfGBUfB1oKaZlIRr6mJL+If3bAP6sV/QneGzF6tJjZDg==}
     requiresBuild: true
@@ -5346,7 +5409,6 @@ packages:
     resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
     requiresBuild: true
     dev: false
-    optional: true
 
   /abbrev@4.0.0:
     resolution: {integrity: sha512-a1wflyaL0tHtJSmLSOVybYhy22vRih4eduhhrkcjgrWGnRfrZtovJ2FRjxuTtkkj47O/baf0R86QU5OuYpz8fA==}
@@ -5516,7 +5578,6 @@ packages:
     resolution: {integrity: sha512-tLIEcj5GuR2RSTnxNKdkK0dJ/GrC7P38sUkiDmDuHfsHmbagTFAxDVIBltoklXEVIQ/f14IL8IMJ5pn9Hez1Ew==}
     requiresBuild: true
     dev: false
-    optional: true
 
   /archiver-utils@5.0.2:
     resolution: {integrity: sha512-wuLJMmIBQYCsGZgYLTy5FIB2pF6Lfb6cXMSF8Qywwk3t20zWnAi7zLcQFdKQmIB8wyZpY5ER38x08GbwtR2cLA==}
@@ -5547,6 +5608,15 @@ packages:
       - bare-buffer
       - react-native-b4a
     dev: true
+
+  /are-we-there-yet@2.0.0:
+    resolution: {integrity: sha512-Ci/qENmwHnsYo9xKIcUJN5LeDKdJ6R1Z1j9V/J5wyq8nh/mYPEpIKJbBZXtZjG04HiK7zV/p6Vs9952MrMeUIw==}
+    engines: {node: '>=10'}
+    deprecated: This package is no longer supported.
+    dependencies:
+      delegates: 1.0.0
+      readable-stream: 3.6.2
+    dev: false
 
   /are-we-there-yet@3.0.1:
     resolution: {integrity: sha512-QZW4EDmGwlYur0Yyf/b2uGucHQMa8aFUP7eu9ddR73vvhFyt4V0Vl3QHPcTNJ8l6qYOBdxgXdnBXQrHilfRQBg==}
@@ -5883,6 +5953,18 @@ packages:
     resolution: {integrity: sha512-bopVNp6ugyA150DDuZfPFdt1KZ5a94ZDiwX4hMgZDzF+GttD80lEy8kj98kbyhLXnPvhtIo93mdnLIjpCAeeOw==}
     engines: {node: '>=10.0.0'}
     dev: true
+
+  /bcrypt@5.1.1:
+    resolution: {integrity: sha512-AGBHOG5hPYZ5Xl9KXzU5iKq9516yEmvCKDg3ecP5kX2aB6UqTeXZxk2ELnDgDm6BQSMlLt9rDB4LoSMx0rYwww==}
+    engines: {node: '>= 10.0.0'}
+    requiresBuild: true
+    dependencies:
+      '@mapbox/node-pre-gyp': 1.0.11
+      node-addon-api: 5.1.0
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+    dev: false
 
   /bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
@@ -6343,7 +6425,6 @@ packages:
     hasBin: true
     requiresBuild: true
     dev: false
-    optional: true
 
   /color@5.0.3:
     resolution: {integrity: sha512-ezmVcLR3xAVp8kYOm4GS45ZLLgIE6SPAFoduLr6hTDajwb3KZ2F46gulK3XpcwRFb5KKGCSezCBAY4Dw4HsyXA==}
@@ -6377,6 +6458,11 @@ packages:
   /commander@11.1.0:
     resolution: {integrity: sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==}
     engines: {node: '>=16'}
+
+  /commander@12.1.0:
+    resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
+    engines: {node: '>=18'}
+    dev: false
 
   /commander@14.0.3:
     resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
@@ -6463,7 +6549,6 @@ packages:
     resolution: {integrity: sha512-ty/fTekppD2fIwRvnZAVdeOiGd1c7YXEixbgJTNzqcxJWKQnjJ/V1bNEEE6hygpM3WjwHFUVK6HTjWSzV4a8sQ==}
     requiresBuild: true
     dev: false
-    optional: true
 
   /content-disposition@0.5.4:
     resolution: {integrity: sha512-FveZTNuGw04cxlAiWbzi6zTAL/lhehaWbTtgluJh4/E95DqMwTmha3KZN1aAWA8cFIhHzMZUvLevkw5Rqk+tSQ==}
@@ -6884,7 +6969,6 @@ packages:
     resolution: {integrity: sha512-bd2L678uiWATM6m5Z1VzNCErI3jiGzt6HGY8OVICs40JQq/HALfbyNJmp0UDakEY4pMMaN0Ly5om/B1VI/+xfQ==}
     requiresBuild: true
     dev: false
-    optional: true
 
   /denque@2.1.0:
     resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
@@ -8334,7 +8418,6 @@ packages:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
     requiresBuild: true
     dev: false
-    optional: true
 
   /fsevents@2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
@@ -8383,6 +8466,22 @@ packages:
 
   /fuzzysort@3.1.0:
     resolution: {integrity: sha512-sR9BNCjBg6LNgwvxlBd0sBABvQitkLzoVY9MYYROQVX/FvfJ4Mai9LsGhDgd8qYdds0bY77VzYd5iuB+v5rwQQ==}
+    dev: false
+
+  /gauge@3.0.2:
+    resolution: {integrity: sha512-+5J6MS/5XksCuXq++uFRsnUd7Ovu1XenbeuIuNRJxYWjgQbPuFhT14lAvsWfqfAmnwluf1OwMjz39HjfLPci0Q==}
+    engines: {node: '>=10'}
+    deprecated: This package is no longer supported.
+    dependencies:
+      aproba: 2.1.0
+      color-support: 1.1.3
+      console-control-strings: 1.1.0
+      has-unicode: 2.0.1
+      object-assign: 4.1.1
+      signal-exit: 3.0.7
+      string-width: 4.2.3
+      strip-ansi: 6.0.1
+      wide-align: 1.1.5
     dev: false
 
   /gauge@4.0.4:
@@ -8606,7 +8705,6 @@ packages:
       once: 1.4.0
       path-is-absolute: 1.0.1
     dev: false
-    optional: true
 
   /global-dirs@3.0.1:
     resolution: {integrity: sha512-NBcGGFbBA9s1VzD41QXDG+3++t9Mn5t1FpLdhESY6oKY4gYTFpX4wO3sqGUa0Srjtbfj3szX0RnemmrVRUdULA==}
@@ -8831,7 +8929,6 @@ packages:
     resolution: {integrity: sha512-8Rf9Y83NBReMnx0gFzA8JImQACstCYWUplepDa9xprwwtmgEZUF0h/i5xSA625zB/I37EtrswSST6OXxwaaIJQ==}
     requiresBuild: true
     dev: false
-    optional: true
 
   /has-yarn@2.1.0:
     resolution: {integrity: sha512-UqBRqi4ju7T+TqGNdqAO0PaSVGsDGJUBQvk9eUWNGRY1CFGDzYhLWoM7JQEemnlvVcv/YEmc2wNW8BC24EnUsw==}
@@ -9086,7 +9183,6 @@ packages:
       once: 1.4.0
       wrappy: 1.0.2
     dev: false
-    optional: true
 
   /inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
@@ -10326,7 +10422,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       semver: 6.3.1
-    dev: true
 
   /make-error@1.3.6:
     resolution: {integrity: sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==}
@@ -11269,6 +11364,10 @@ packages:
       semver: 7.7.4
     dev: false
 
+  /node-addon-api@5.1.0:
+    resolution: {integrity: sha512-eh0GgfEkpnoWDq+VY8OyvYhFEzBk6jIYbRKdIlyTiAXIVJ8PyBaKb0rp7oDtoddbdoHWhq8wwr+XZ81F1rpNdA==}
+    dev: false
+
   /node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
     dev: false
@@ -11380,7 +11479,6 @@ packages:
     dependencies:
       abbrev: 1.1.1
     dev: false
-    optional: true
 
   /nopt@9.0.0:
     resolution: {integrity: sha512-Zhq3a+yFKrYwSBluL4H9XP3m3y5uvQkB/09CwDruCiRmR/UJYnn9W4R48ry0uGC70aeTPKLynBtscP9efFFcPw==}
@@ -11442,6 +11540,16 @@ packages:
     dependencies:
       path-key: 4.0.0
       unicorn-magic: 0.3.0
+    dev: false
+
+  /npmlog@5.0.1:
+    resolution: {integrity: sha512-AqZtDUWOMKs1G/8lwylVjrdYgqA4d9nu8hc+0gzRxlDb1I10+FHBGMXs6aiQHFdCUUlqH99MUMuLfzWDNDtfxw==}
+    deprecated: This package is no longer supported.
+    dependencies:
+      are-we-there-yet: 2.0.0
+      console-control-strings: 1.1.0
+      gauge: 3.0.2
+      set-blocking: 2.0.0
     dev: false
 
   /npmlog@6.0.2:
@@ -11621,6 +11729,12 @@ packages:
     dependencies:
       yaml: 2.9.0
     dev: true
+
+  /openapi3-ts@4.6.0:
+    resolution: {integrity: sha512-a4sfn6L2sIShhtzJqmjGrARvxAW/3F2BJDdyRVvNF9VhAsZSh5hSyI3a9TNvmzBxXmq66nY5LNT5bQcBxYAZZg==}
+    dependencies:
+      yaml: 2.9.0
+    dev: false
 
   /optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -11816,7 +11930,6 @@ packages:
     engines: {node: '>=0.10.0'}
     requiresBuild: true
     dev: false
-    optional: true
 
   /path-key@3.1.1:
     resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
@@ -12052,6 +12165,16 @@ packages:
       preact: 10.29.2
       query-selector-shadow-dom: 1.0.1
       web-vitals: 5.3.0
+    dev: false
+
+  /posthog-node@4.18.0:
+    resolution: {integrity: sha512-XROs1h+DNatgKh/AlIlCtDxWzwrKdYDb2mOs58n4yN8BkGN9ewqeQwG5ApS4/IzwCb7HPttUkOVulkYatd2PIw==}
+    engines: {node: '>=15.0.0'}
+    dependencies:
+      axios: 1.17.0
+    transitivePeerDependencies:
+      - debug
+      - supports-color
     dev: false
 
   /powershell-utils@0.1.0:
@@ -12787,7 +12910,6 @@ packages:
     dependencies:
       glob: 7.2.3
     dev: false
-    optional: true
 
   /rimraf@5.0.10:
     resolution: {integrity: sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==}
@@ -12983,7 +13105,6 @@ packages:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
     requiresBuild: true
     dev: false
-    optional: true
 
   /set-cookie-parser@3.1.0:
     resolution: {integrity: sha512-kjnC1DXBHcxaOaOXBHBeRtltsDG2nUiUni+jP92M9gYdW12rsmx92UsfpH7o5tDRs7I1ZZPSQJQGv3UaRfCiuw==}
@@ -14707,7 +14828,6 @@ packages:
     dependencies:
       string-width: 4.2.3
     dev: false
-    optional: true
 
   /widest-line@3.1.0:
     resolution: {integrity: sha512-NsmoXalsWVDMGupxZ5R08ka9flZjjiLvHVAWYOKtiKM8ujtZWr9cRffak+uSE48+Ob8ObalXpwyeUiyDD6QFgg==}
@@ -14854,7 +14974,6 @@ packages:
     resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
     engines: {node: '>= 14.6'}
     hasBin: true
-    dev: true
 
   /yargs-parser@20.2.9:
     resolution: {integrity: sha512-y11nGElTIV+CT3Zv9t7VKl+Q3hTQoT9a1Qzezhhl6Rp21gJ/IVTW7Z3y9EWXhuUBC2Shnf+DX0antecpAwSP8w==}

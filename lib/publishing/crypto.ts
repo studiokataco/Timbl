@@ -1,6 +1,7 @@
 import "server-only"
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto"
+import bcrypt from "bcrypt"
 
 /*
  * AES-256-GCM token encryption. The key is derived (sha256 → 32 bytes) from
@@ -25,6 +26,19 @@ export function encrypt(plaintext: string): string {
   const ct = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()])
   const tag = cipher.getAuthTag()
   return `${iv.toString("base64")}:${tag.toString("base64")}:${ct.toString("base64")}`
+}
+
+const BCRYPT_ROUNDS = 10
+
+export async function hashApiKey(key: string): Promise<string> {
+  return bcrypt.hash(key, BCRYPT_ROUNDS)
+}
+
+export async function verifyApiKey(
+  key: string,
+  hash: string,
+): Promise<boolean> {
+  return bcrypt.compare(key, hash)
 }
 
 export function decrypt(ciphertext: string): string {
