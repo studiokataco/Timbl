@@ -6,6 +6,7 @@ import {
   Calendar,
   KanbanSquare,
   LayoutList,
+  Lightbulb,
   Megaphone,
   BookOpen,
   Globe,
@@ -33,6 +34,7 @@ const GROUPS: NavGroup[] = [
       { href: "/kanban", label: "Kanban", icon: KanbanSquare },
       { href: "/campaigns", label: "Campaigns", icon: Megaphone },
       { href: "/studio", label: "Studio", icon: Sparkles },
+      { href: "/ideation", label: "Ideation", icon: Lightbulb },
     ],
   },
   {
