@@ -25,6 +25,7 @@ import { WIZARD_AGENT_IDS } from "@/lib/onboarding/agent-catalog"
 import { getAgentDefault, getAgentDefaultBudgets } from "@/lib/agents/defaults"
 import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
 import { writeAuditEvent } from "@/lib/telemetry/audit-events"
+import { sendOnboardingEmail } from "@/lib/email/beta"
 import { channelKey, type ChannelKey } from "@/lib/schemas/_shared"
 import { ONBOARDING_STEP_IDS } from "@/lib/onboarding/steps"
 import type { ServerActionResult } from "@/lib/schemas"
@@ -367,7 +368,13 @@ export async function completeOnboarding(
   }
   const orgId = await getCurrentOrgId()
   const completedAt = new Date().toISOString()
-  await getAdminDb().doc(orgPath(orgId)).set(
+  const db = getAdminDb()
+
+  const orgSnap = await db.doc(orgPath(orgId)).get()
+  const orgData = orgSnap.data() ?? {}
+  const alreadyCompleted = Boolean(orgData.onboarding?.completedAt)
+
+  await db.doc(orgPath(orgId)).set(
     {
       onboarding: {
         completedAt,
@@ -386,6 +393,15 @@ export async function completeOnboarding(
     target: { type: "organization", id: orgId },
     meta: { skippedSteps: parsed.data.skippedSteps },
   })
+
+  if (!alreadyCompleted && actor?.email) {
+    await sendOnboardingEmail({
+      email: actor.email,
+      name: actor.name ?? actor.email.split("@")[0],
+      orgName: (orgData.name as string | undefined) ?? orgId,
+    })
+  }
+
   revalidatePath("/")
   return { ok: true, id: orgId }
 }

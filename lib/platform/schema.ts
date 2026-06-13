@@ -47,6 +47,9 @@ export const platformBillingDocPath = (orgId: string) =>
 export const platformWebhookEventsPath = `${ROOT}/webhookEvents`
 export const platformWebhookEventDocPath = (eventId: string) =>
   `${platformWebhookEventsPath}/${eventId}`
+export const platformSignupRequestsPath = `${ROOT}/signupRequests`
+export const platformSignupRequestDocPath = (id: string) =>
+  `${platformSignupRequestsPath}/${id}`
 export const platformOrgRollupsPath = `${ROOT}/orgRollups`
 export const platformOrgRollupDocPath = (orgId: string) =>
   `${platformOrgRollupsPath}/${orgId}`
@@ -110,6 +113,8 @@ export const platformAuditAction = z.enum([
   "admin.grant",
   "admin.revoke",
   "billing.update",
+  "signup.approve",
+  "signup.deny",
 ])
 export type PlatformAuditAction = z.infer<typeof platformAuditAction>
 
@@ -177,6 +182,20 @@ export const orgRollupSnapshotSchema = z.object({
   updatedAt: z.string().optional(),
 })
 export type OrgRollupSnapshot = z.infer<typeof orgRollupSnapshotSchema>
+
+export const signupRequestSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  name: z.string().min(1),
+  company: z.string().optional(),
+  useCase: z.string().optional(),
+  status: z.enum(["pending", "approved", "denied"]).default("pending"),
+  requestedAt: z.string(),
+  decidedAt: z.string().optional(),
+  decidedBy: z.string().optional(),
+  orgId: z.string().optional(),
+})
+export type SignupRequest = z.infer<typeof signupRequestSchema>
 
 export const orgRollupPeriodSchema = z.object({
   period: z.string(),

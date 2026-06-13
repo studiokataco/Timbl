@@ -16,6 +16,7 @@ const LINKS = [
   { href: "/dashboard", label: "Overview" },
   { href: "/ai-usage", label: "AI usage" },
   { href: "/tenants", label: "Tenants" },
+  { href: "/signups", label: "Signups" },
   { href: "/live-ops", label: "Live ops" },
   { href: "/revenue", label: "Revenue" },
   { href: "/assistant", label: "Assistant" },
@@ -23,7 +24,7 @@ const LINKS = [
   { href: "/team", label: "Team" },
 ]
 
-export function ControlNav() {
+export function ControlNav({ pendingSignups = 0 }: { pendingSignups?: number }) {
   const pathname = usePathname() ?? ""
   return (
     <nav className="flex items-center gap-1">
@@ -37,13 +38,18 @@ export function ControlNav() {
             key={link.href}
             href={link.href}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              "relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               active
                 ? "bg-foreground text-background"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {link.label}
+            {link.href === "/signups" && pendingSignups > 0 ? (
+              <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-semibold text-white">
+                {pendingSignups > 99 ? "99+" : pendingSignups}
+              </span>
+            ) : null}
           </Link>
         )
       })}
