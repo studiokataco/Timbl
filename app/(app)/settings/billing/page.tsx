@@ -53,7 +53,7 @@ export default async function SettingsPlanPage() {
         </p>
       </div>
 
-      <div className="max-w-3xl">
+      <div className="max-w-6xl">
         <SettingsSection
           title="Usage"
           description="Consumption this month against your plan limits."
