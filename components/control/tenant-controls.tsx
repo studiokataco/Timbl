@@ -6,7 +6,11 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { deleteOrganization, setOrgStatus } from "@/lib/actions/platform/orgs"
+import {
+  deleteOrganization,
+  renameOrganization,
+  setOrgStatus,
+} from "@/lib/actions/platform/orgs"
 import { setOrgPlan } from "@/lib/actions/platform/plans"
 import { setOrgQuotaOverride } from "@/lib/actions/platform/quotas"
 import { forceRunAgent } from "@/lib/actions/platform/agents"
@@ -20,17 +24,20 @@ const RETENTION_DAYS = 60
 
 export function TenantControls({
   orgId,
+  name,
   plan,
   status,
   suspendedAt,
 }: {
   orgId: string
+  name: string
   plan: string
   status: "active" | "suspended"
   suspendedAt: string | null
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
+  const [nameValue, setNameValue] = useState(name)
   const [planId, setPlanId] = useState(plan)
   const [metric, setMetric] = useState<(typeof METRICS)[number]>("agentRuns")
   const [quotaValue, setQuotaValue] = useState("")
@@ -64,6 +71,29 @@ export function TenantControls({
           </h2>
           <span className="text-xs text-muted-foreground">owner only</span>
         </header>
+
+        <ControlRow
+          title="Rename workspace"
+          hint="Changes the display name only - the workspace ID is permanent."
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              placeholder="Workspace name"
+              className="h-9 min-w-48 flex-1"
+            />
+            <Button
+              size="sm"
+              disabled={pending || nameValue.trim() === "" || nameValue.trim() === name}
+              onClick={() =>
+                run("Rename", () => renameOrganization({ orgId, name: nameValue.trim() }))
+              }
+            >
+              Save
+            </Button>
+          </div>
+        </ControlRow>
 
         <ControlRow title="Plan">
           <div className="flex flex-wrap items-center gap-2">

@@ -5,6 +5,7 @@ import { z } from "zod"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath } from "@/lib/firebase/paths"
+import { slugify } from "@/lib/auth/domains"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import {
@@ -45,6 +46,42 @@ export async function setOrgStatus(raw: unknown): Promise<PlatformActionResult> 
     action: status === "suspended" ? "org.suspend" : "org.reactivate",
     targetOrgId: orgId,
     meta: { status },
+  })
+  return { ok: true }
+}
+
+const renameInput = z.object({
+  orgId: z.string().min(1),
+  name: z.string().trim().min(1).max(120),
+})
+
+/*
+ * Rename a workspace. The orgId is an immutable doc key, so this only changes
+ * the display name (and the derived slug). Use to clean up auto-generated
+ * names like "Jane Doe workspace" left behind by abandoned onboarding.
+ */
+export async function renameOrganization(
+  raw: unknown,
+): Promise<PlatformActionResult> {
+  const actor = await requirePlatformAdmin()
+  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  const parsed = renameInput.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const { orgId, name } = parsed.data
+
+  const ref = getAdminDb().doc(orgPath(orgId))
+  const snap = await ref.get()
+  if (!snap.exists) return { ok: false, error: "org_not_found" }
+  const previous = (snap.data()?.name as string) ?? orgId
+
+  const now = new Date().toISOString()
+  await ref.set({ name, slug: slugify(name) || orgId, updatedAt: now }, { merge: true })
+  await writePlatformAudit({
+    actorUid: actor.uid,
+    actorEmail: actor.email,
+    action: "org.rename",
+    targetOrgId: orgId,
+    meta: { from: previous, to: name },
   })
   return { ok: true }
 }

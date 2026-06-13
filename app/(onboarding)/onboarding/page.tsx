@@ -31,12 +31,11 @@ export default async function OnboardingPage() {
     getAdminDb().doc(orgPath(orgId)).get(),
   ])
   const industries = listIndustries()
-  /* Prefill the workspace-name field only on a re-run - on first run the
-   * org still carries the seed placeholder, so we let the input's own
-   * placeholder show rather than pre-filling a generic value. */
-  const orgName = state.completedAt
-    ? (orgSnap.data()?.name as string | undefined)
-    : undefined
+  /* Prefill the workspace-name field with the name chosen at create time
+   * (signup now requires one). Filter the dev/emulator seed placeholder so
+   * it never shows as a pre-filled value. */
+  const rawName = orgSnap.data()?.name as string | undefined
+  const orgName = rawName && rawName !== "Your workspace" ? rawName : undefined
   /* Resume only mid-flow: a completed wizard (re-run path) always starts
    * fresh at step 1, and an unknown/stale step id falls back to step 1. */
   const resumeStep =

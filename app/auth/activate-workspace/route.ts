@@ -15,6 +15,7 @@ const bodySchema = z.object({
   idToken: z.string().min(20),
   organizationId: z.string().min(1).optional(),
   create: z.boolean().optional(),
+  name: z.string().trim().min(1).max(120).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -46,9 +47,16 @@ export async function POST(req: NextRequest) {
 
   let claims: Awaited<ReturnType<typeof getMembershipInOrg>>
   if (payload.create) {
+    if (!payload.name) {
+      return Response.json(
+        { ok: false, error: "A workspace name is required." },
+        { status: 400 },
+      )
+    }
     claims = await provisionNewWorkspace({
       email,
       displayName: decoded.name as string | undefined,
+      workspaceName: payload.name,
     })
   } else if (payload.organizationId) {
     claims = await getMembershipInOrg(email, payload.organizationId)

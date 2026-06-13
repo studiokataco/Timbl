@@ -100,6 +100,7 @@ export const platformAuditAction = z.enum([
   "org.reactivate",
   "org.delete",
   "org.auto_delete",
+  "org.rename",
   "plan.change",
   "quota.override",
   "agent.force_run",

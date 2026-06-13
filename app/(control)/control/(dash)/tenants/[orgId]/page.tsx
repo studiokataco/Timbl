@@ -6,6 +6,7 @@ import type { BillingProfile } from "@/lib/schemas/billing"
 import { TenantBilling } from "@/components/control/tenant-billing"
 import { TenantControls } from "@/components/control/tenant-controls"
 import { CostDonut } from "@/components/control/charts"
+import { OrgKey } from "@/components/control/org-key"
 import {
   OrgAvatar,
   Panel,
@@ -58,9 +59,10 @@ export default async function TenantDetailPage({
             <StatusPill status={row.status} />
             <TierPill tier={fin.tier} />
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {row.orgId} · {fin.planLabel} · last run {relativeTime(row.lastRunAt)}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <OrgKey orgId={row.orgId} className="-ml-1.5" />
+            <span>· {fin.planLabel} · last run {relativeTime(row.lastRunAt)}</span>
+          </div>
         </div>
       </div>
 
@@ -135,6 +137,7 @@ export default async function TenantDetailPage({
           {isOwner ? (
             <TenantControls
               orgId={orgId}
+              name={row.name}
               plan={row.plan}
               status={row.status}
               suspendedAt={row.suspendedAt}
