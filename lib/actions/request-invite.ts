@@ -1,7 +1,7 @@
 "use server"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { platformSignupRequestDocPath, platformSignupRequestsPath } from "@/lib/platform/schema"
+import { platformSignupRequestsPath } from "@/lib/platform/schema"
 import { signupRequestFormSchema } from "@/lib/schemas/signupRequest"
 import type { ServerActionResult } from "@/lib/schemas"
 
