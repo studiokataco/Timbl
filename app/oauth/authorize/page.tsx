@@ -43,23 +43,22 @@ function OAuthAuthorizeInner() {
   const scopes = scopeParam.split(" ").filter(Boolean)
 
   const [appName, setAppName] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const paramError = !clientId || !orgId ? "Invalid authorization request." : null
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const error = paramError ?? fetchError
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!clientId || !orgId) {
-      setError("Invalid authorization request.")
-      return
-    }
+    if (!clientId || !orgId) return
     fetch(
       `/api/oauth/authorize?client_id=${encodeURIComponent(clientId)}&org_id=${encodeURIComponent(orgId)}`,
     )
       .then((r) => r.json())
       .then((data) => {
-        if (data.error) setError("Unknown application.")
+        if (data.error) setFetchError("Unknown application.")
         else setAppName(data.name as string)
       })
-      .catch(() => setError("Could not load application details."))
+      .catch(() => setFetchError("Could not load application details."))
   }, [clientId, orgId])
 
   async function handleApprove() {
@@ -79,13 +78,13 @@ function OAuthAuthorizeInner() {
       })
       const data = (await res.json()) as { redirectTo?: string; error?: string }
       if (!res.ok || !data.redirectTo) {
-        setError(data.error ?? "Authorization failed.")
+        setFetchError(data.error ?? "Authorization failed.")
         setLoading(false)
         return
       }
       router.push(data.redirectTo)
     } catch {
-      setError("Something went wrong. Please try again.")
+      setFetchError("Something went wrong. Please try again.")
       setLoading(false)
     }
   }

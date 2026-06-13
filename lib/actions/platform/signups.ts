@@ -7,7 +7,6 @@ import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import {
   platformSignupRequestDocPath,
-  platformSignupRequestsPath,
   signupRequestSchema,
 } from "@/lib/platform/schema"
 import { bootstrapNewOrg } from "@/lib/org/bootstrap"
