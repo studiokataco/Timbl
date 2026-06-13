@@ -8,6 +8,9 @@ import {
   platformOrgRollupPeriodDocPath,
   platformOrgRollupsPath,
   platformRollupDocPath,
+  platformSignupRequestsPath,
+  signupRequestSchema,
+  type SignupRequest,
 } from "@/lib/platform/schema"
 
 /*
@@ -388,6 +391,35 @@ export async function getOpsData(sample = 400): Promise<OpsData> {
     sampleSize: rows.length,
     totalUsd: rows.reduce((s, r) => s + r.usdCost, 0),
   }
+}
+
+export async function listSignupRequests(
+  status: "pending" | "approved" | "denied" = "pending",
+  limit = 100,
+): Promise<SignupRequest[]> {
+  await requirePlatformAdmin()
+  const snap = await getAdminDb()
+    .collection(platformSignupRequestsPath)
+    .where("status", "==", status)
+    .orderBy("requestedAt", "desc")
+    .limit(limit)
+    .get()
+  const out: SignupRequest[] = []
+  for (const doc of snap.docs) {
+    const parsed = signupRequestSchema.safeParse({ ...doc.data(), id: doc.id })
+    if (parsed.success) out.push(parsed.data)
+  }
+  return out
+}
+
+export async function countPendingSignupRequests(): Promise<number> {
+  await requirePlatformAdmin()
+  const snap = await getAdminDb()
+    .collection(platformSignupRequestsPath)
+    .where("status", "==", "pending")
+    .count()
+    .get()
+  return snap.data().count
 }
 
 export interface LatencyStats {

@@ -169,6 +169,15 @@ env:
     availability:
       - RUNTIME
 
+  # Beta invite-only mode. When set to "off", open workspace creation is
+  # disabled and new users must request an invite via /request-invite.
+  # Approved via admin.timbl.app/signups. Remove or set to any other value
+  # to re-open public signups.
+  - variable: NEW_ORG_SIGNUP
+    value: "off"
+    availability:
+      - RUNTIME
+
   - variable: RESEND_API_KEY
     secret: RESEND_API_KEY
     availability:

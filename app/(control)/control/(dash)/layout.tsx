@@ -3,6 +3,7 @@ import { ShieldCheck } from "lucide-react"
 import { ControlNav } from "@/components/control/control-nav"
 import { ControlUserMenu } from "@/components/control/control-user-menu"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { countPendingSignupRequests } from "@/lib/platform/queries"
 
 /*
  * Control centre (platform super-admin) shell. Served only on the admin
@@ -23,7 +24,10 @@ export default async function ControlLayout({
 }: {
   children: React.ReactNode
 }) {
-  const actor = await requirePlatformAdmin()
+  const [actor, pendingSignups] = await Promise.all([
+    requirePlatformAdmin(),
+    countPendingSignupRequests().catch(() => 0),
+  ])
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
       <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b bg-background/95 px-6 py-3 backdrop-blur">
@@ -33,7 +37,7 @@ export default async function ControlLayout({
             Control centre
           </span>
         </div>
-        <ControlNav />
+        <ControlNav pendingSignups={pendingSignups} />
         <ControlUserMenu email={actor.email} />
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">{children}</main>

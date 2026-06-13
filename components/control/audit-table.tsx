@@ -17,6 +17,8 @@ export const ACTION_LABEL: Record<PlatformAuditAction, string> = {
   "admin.grant": "Admin granted",
   "admin.revoke": "Admin revoked",
   "billing.update": "Billing updated",
+  "signup.approve": "Signup approved",
+  "signup.deny": "Signup denied",
 }
 
 export const ACTION_TONE: Record<PlatformAuditAction, string> = {
@@ -34,6 +36,8 @@ export const ACTION_TONE: Record<PlatformAuditAction, string> = {
   "admin.grant": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   "admin.revoke": "bg-red-500/15 text-red-700 dark:text-red-400",
   "billing.update": "bg-violet-500/15 text-violet-700 dark:text-violet-400",
+  "signup.approve": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  "signup.deny": "bg-red-500/15 text-red-700 dark:text-red-400",
 }
 
 export function ActionPill({ action }: { action: PlatformAuditAction }) {
