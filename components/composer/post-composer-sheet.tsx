@@ -12,6 +12,8 @@ import {
   Trash2,
   X,
 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { NetworkPreview } from "./network-preview"
 import { toast } from "sonner"
 import {
   Sheet,
@@ -435,12 +437,13 @@ export function PostComposerSheet({
           </SheetHeader>
 
           <Tabs defaultValue="brief" className="flex-1 overflow-y-auto">
-            <TabsList className="mx-6 mt-4 grid grid-cols-5 w-[calc(100%-3rem)]">
+            <TabsList className="mx-6 mt-4 grid grid-cols-6 w-[calc(100%-3rem)]">
               <TabsTrigger value="brief">Brief</TabsTrigger>
               <TabsTrigger value="copy">Copy</TabsTrigger>
               <TabsTrigger value="design">Design</TabsTrigger>
               <TabsTrigger value="channels">Channels</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
 
             {/* --- Brief --- */}
@@ -742,6 +745,26 @@ export function PostComposerSheet({
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>First comment</Label>
+                <Textarea
+                  rows={3}
+                  maxLength={2200}
+                  value={draft.firstComment ?? ""}
+                  onChange={(e) => setField("firstComment", e.target.value || undefined)}
+                  placeholder="Add a first comment that posts immediately after (LinkedIn, Instagram, Facebook)..."
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="ai-assisted-toggle">AI-assisted</Label>
+                <Switch
+                  id="ai-assisted-toggle"
+                  checked={draft.isAiGenerated ?? false}
+                  onCheckedChange={(v) => setField("isAiGenerated", v || undefined)}
+                />
+              </div>
             </TabsContent>
 
             {/* --- Design --- */}
@@ -868,6 +891,19 @@ export function PostComposerSheet({
                 value={draft.notes ?? ""}
                 onChange={(e) => setField("notes", e.target.value)}
                 placeholder="Internal-only notes..."
+              />
+            </TabsContent>
+
+            {/* --- Preview --- */}
+            <TabsContent value="preview" className="px-6 py-5">
+              <NetworkPreview
+                post={{
+                  brief: draft.brief,
+                  blurb: draft.blurb,
+                  firstComment: draft.firstComment,
+                  isAiGenerated: draft.isAiGenerated,
+                }}
+                channels={orgChannels}
               />
             </TabsContent>
           </Tabs>
