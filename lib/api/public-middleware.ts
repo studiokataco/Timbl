@@ -11,6 +11,7 @@ export interface PublicCaller {
   appId: string
   subjectUserId: string | null
   scopes: PublicScope[]
+  rateTier: "free" | "agency" | "operator"
 }
 
 type AuthResult = { caller: PublicCaller } | { error: string; status: number }
@@ -55,6 +56,7 @@ async function resolveApiKey(key: string): Promise<AuthResult> {
       appId: app.id,
       subjectUserId: null,
       scopes: app.scopes,
+      rateTier: app.rateTier ?? "free",
     },
   }
 }
@@ -68,6 +70,7 @@ async function resolveOauthToken(token: string): Promise<AuthResult> {
       appId: tokenDoc.appId,
       subjectUserId: tokenDoc.subjectUserId,
       scopes: tokenDoc.scopes,
+      rateTier: "free",
     },
   }
 }

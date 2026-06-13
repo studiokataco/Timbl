@@ -22,6 +22,7 @@ import { writePublicAudit, type PublicAuditKind } from "@/lib/telemetry/public-a
 import { postSchema } from "@/lib/schemas/post"
 import { ideationItemSchema } from "@/lib/schemas/ideationItem"
 import { randomBytes } from "node:crypto"
+import { checkRateLimit } from "@/lib/api/rate-limiter"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -315,6 +316,14 @@ export async function POST(
   const authResult = await resolvePublicCaller(req.headers.get("authorization"))
   if ("error" in authResult) return authResponse(authResult.error, authResult.status)
   const { caller } = authResult
+
+  const rl = checkRateLimit(caller.appId, caller.rateTier)
+  if (!rl.allowed) {
+    return Response.json(
+      { error: { code: "rate_limited", message: "rate limited" } },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter ?? 60) } },
+    )
+  }
 
   let body: Record<string, unknown>
   try {
