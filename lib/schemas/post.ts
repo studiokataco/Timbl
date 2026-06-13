@@ -105,6 +105,9 @@ export const postSchema = audit.extend({
    * resolver reads them as `?? []` / `?? 1`. */
   approvedBy: z.array(z.string()).optional(),
   requiredApprovers: z.number().int().min(1).max(5).optional(),
+
+  firstComment: z.string().max(2_200).optional(),
+  isAiGenerated: z.boolean().optional(),
 })
 export type Post = z.infer<typeof postSchema>
 

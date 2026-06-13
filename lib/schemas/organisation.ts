@@ -106,8 +106,18 @@ export const organisationSchema = audit.extend({
       overdueIncludeScheduled: z.boolean().default(true),
     })
     .optional(),
+  /* Per-org boolean feature flags toggled from the control centre or seed.
+   * A missing key is treated as `false`. Current known key: `public_api_v1`. */
+  featureFlags: z.record(z.string(), z.boolean()).optional(),
 })
 export type Organisation = z.infer<typeof organisationSchema>
+
+export function hasFeatureFlag(
+  org: Partial<Pick<Organisation, "featureFlags">>,
+  flag: string,
+): boolean {
+  return org.featureFlags?.[flag] === true
+}
 
 export const reminderPreferencesSchema = z.object({
   enabled: z.boolean(),

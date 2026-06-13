@@ -64,3 +64,14 @@ export const orgUsageDocPath = (orgId: string, period: string) =>
  * add, template create, etc. Distinct from approvalsLog (which records
  * agent-suggestion approvals only). */
 export const orgAuditLogPath = (orgId: string) => `${orgPath(orgId)}/auditLog`
+
+/* Public API surface (Phase 8). */
+export const orgPublicAppsPath = (orgId: string) => `${orgPath(orgId)}/publicApps`
+export const orgPublicApiAuditPath = (orgId: string) => `${orgPath(orgId)}/publicApiAudit`
+export const orgWebhookSubscriptionsPath = (orgId: string) => `${orgPath(orgId)}/webhookSubscriptions`
+
+/* OAuth 2.1 token store (Phase 8). */
+export const orgOauthAuthCodesPath = (orgId: string) => `${orgPath(orgId)}/oauthAuthCodes`
+export const orgOauthAccessTokensPath = (orgId: string) => `${orgPath(orgId)}/oauthAccessTokens`
+export const orgOauthRefreshTokensPath = (orgId: string) => `${orgPath(orgId)}/oauthRefreshTokens`
+export const orgConsentGrantsPath = (orgId: string) => `${orgPath(orgId)}/oauthConsentGrants`

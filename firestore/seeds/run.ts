@@ -8,6 +8,7 @@ import { seed0007AgentConfigs } from "./0007_agent_configs"
 import { seed0008AwarenessResearcher } from "./0008_awareness_researcher"
 import { seed0009EmbeddingsBackfill } from "./0009_embeddings_backfill"
 import { seed0010TenantOrg } from "./0010_tenant_org"
+import { seed0014InboxFixtures } from "./0014_inbox_fixtures"
 
 /*
  * Seed runner. Each seed is independently idempotent - safe to re-run.
@@ -29,6 +30,7 @@ async function main() {
   /* Second org - clean tenant for the onboarding wizard. Independent of
    * the demo seeds above; safe to run last. */
   await seed0010TenantOrg()
+  await seed0014InboxFixtures()
   console.log("\nseed complete.")
 }
 
