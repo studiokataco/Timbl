@@ -148,6 +148,10 @@ export async function resolveSignInMembership(opts: {
 export async function provisionNewWorkspace(opts: {
   email: string
   displayName?: string
+  /* Name the user typed in the create-workspace step. Required by the app
+   * signup UI; falls back to a derived default for any caller that omits it
+   * (e.g. first member of a business domain). */
+  workspaceName?: string
 }): Promise<MembershipClaims> {
   if (process.env.NEW_ORG_SIGNUP === "off") {
     throw new MembershipError(
@@ -163,6 +167,9 @@ export async function provisionNewWorkspace(opts: {
     throw new MembershipError("domain_not_allowed", "A valid email domain is required.")
   }
 
+  const chosenName = opts.workspaceName?.trim()
+  const orgName = chosenName || defaultOrgNameForNewWorkspace(email, opts.displayName)
+
   const consumer = isConsumerEmailDomain(domain)
   const orgId = orgIdForNewWorkspace(email)
   const db = getAdminDb()
@@ -176,10 +183,7 @@ export async function provisionNewWorkspace(opts: {
         "Could not create workspace. Please try again.",
       )
     }
-    await bootstrapNewOrg({
-      orgId,
-      name: defaultOrgNameForNewWorkspace(email, opts.displayName),
-    })
+    await bootstrapNewOrg({ orgId, name: orgName })
     return provisionOrgMember({
       orgId,
       email,
@@ -190,10 +194,7 @@ export async function provisionNewWorkspace(opts: {
   }
 
   if (!orgSnap.exists) {
-    await bootstrapNewOrg({
-      orgId,
-      name: defaultOrgNameForNewWorkspace(email, opts.displayName),
-    })
+    await bootstrapNewOrg({ orgId, name: orgName })
   }
 
   const hasMembers = !(await orgRef.collection("users").limit(1).get()).empty

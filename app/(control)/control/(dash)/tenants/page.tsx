@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
+import { OrgKey } from "@/components/control/org-key"
 import {
   HealthBadge,
   OrgAvatar,
@@ -128,17 +129,22 @@ export default async function TenantsPage({
                 )}
               >
                 <td className="px-4 py-3">
-                  <Link href={`/tenants/${row.orgId}`} className="flex items-center gap-3">
-                    <OrgAvatar name={row.name} seed={row.orgId} />
+                  <div className="flex items-center gap-3">
+                    <Link href={`/tenants/${row.orgId}`}>
+                      <OrgAvatar name={row.name} seed={row.orgId} />
+                    </Link>
                     <span className="min-w-0">
-                      <span className="block truncate font-medium group-hover:underline">
+                      <Link
+                        href={`/tenants/${row.orgId}`}
+                        className="block truncate font-medium hover:underline"
+                      >
                         {row.name}
-                      </span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {row.orgId}
-                      </span>
+                      </Link>
+                      {row.orgId === row.name ? null : (
+                        <OrgKey orgId={row.orgId} className="-ml-1.5" />
+                      )}
                     </span>
-                  </Link>
+                  </div>
                 </td>
                 <td className="px-3 py-3"><TierPill tier={fin.tier} /></td>
                 <td className="px-3 py-3"><StatusPill status={row.status} /></td>

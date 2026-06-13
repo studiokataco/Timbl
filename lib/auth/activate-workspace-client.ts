@@ -3,6 +3,7 @@ import { getClientAuth } from "@/lib/firebase/client"
 export async function activateWorkspaceClient(opts: {
   organizationId?: string
   create?: boolean
+  name?: string
 }): Promise<{ next: string }> {
   const auth = getClientAuth()
   const user = auth.currentUser

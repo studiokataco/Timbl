@@ -7,6 +7,8 @@ import { toast } from "sonner"
 
 import { AuthCard } from "@/components/auth/auth-card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { activateWorkspaceClient } from "@/lib/auth/activate-workspace-client"
 import { setDevOrg } from "@/lib/actions/dev-org"
 import { cn } from "@/lib/utils"
@@ -28,6 +30,7 @@ export function WorkspacePicker({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [newName, setNewName] = useState("")
 
   function openWorkspace(fn: () => Promise<void>, id: string) {
     setBusyId(id)
@@ -102,15 +105,33 @@ export function WorkspacePicker({
           <Plus className="size-5" />
           <h2 className="text-sm font-medium">Create a new workspace</h2>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Set up your organization workspace with the wizard.
-        </p>
+        <div className="space-y-1.5">
+          <Label htmlFor="ws-name">Workspace name</Label>
+          <Input
+            id="ws-name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Acme Studio"
+            maxLength={120}
+            autoComplete="off"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newName.trim() && !pending) {
+                openWorkspace(async () => {
+                  await activateWorkspaceClient({ create: true, name: newName.trim() })
+                }, "new")
+              }
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            You can rename it later in settings.
+          </p>
+        </div>
         <Button
           className="w-full"
-          disabled={pending}
+          disabled={pending || newName.trim() === ""}
           onClick={() =>
             openWorkspace(async () => {
-              await activateWorkspaceClient({ create: true })
+              await activateWorkspaceClient({ create: true, name: newName.trim() })
             }, "new")
           }
         >
