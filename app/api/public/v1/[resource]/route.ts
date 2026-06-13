@@ -36,7 +36,8 @@ type Handler = (
 const handlers: Record<string, Record<string, Handler>> = {
   posts: {
     list: async (caller, body) => {
-      scopeCheck(caller, "posts:read")
+      const deny = scopeCheck(caller, "posts:read")
+      if (deny) return deny
       const { start, end, status, limit = 50 } = body
       let q = getAdminDb().collection(orgPostsPath(caller.orgId)) as FirebaseFirestore.Query
       if (status) q = q.where("status", "==", status)
