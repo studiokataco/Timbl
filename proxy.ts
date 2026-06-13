@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/signup",
   "/request-invite",
+  "/claim-access",
   "/welcome",
   "/access-pending",
   "/auth/callback",
