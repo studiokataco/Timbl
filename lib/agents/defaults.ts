@@ -21,6 +21,8 @@ export interface AgentBudgetsDefault {
 
 export interface AgentDefault {
   name: string
+  boutique?: boolean
+  label?: string
   role: "config" | "workflow"
   description: string
   provider: "gemini" | "anthropic" | "mock"
@@ -149,6 +151,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
   },
   {
     name: "drafter",
+    boutique: true,
+    label: "Drafter",
     role: "workflow",
     description:
       "Writes a draft post from a brief, honouring brandConfig. Iterated in the review loop until the reviewer is satisfied.",
@@ -227,6 +231,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
   },
   {
     name: "ideator",
+    boutique: true,
+    label: "Ideator",
     role: "workflow",
     description:
       "Web-research-driven idea generator. Uses GOOGLE_SEARCH + URL_CONTEXT to discover awareness days and trending topics, persists each to ideationFeed with source URLs.",
@@ -263,6 +269,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
   },
   {
     name: "cadence-planner",
+    boutique: true,
+    label: "Cadence planner",
     role: "workflow",
     description:
       "Bulk-drafts a posting plan for a date range, respecting brandConfig.targetCadence. Used by the calendar toolbar 'Plan cadence' button and the weekly cron.",
@@ -285,6 +293,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
   },
   {
     name: "approval-triage",
+    boutique: true,
+    label: "Approval triage",
     role: "workflow",
     description:
       "Scans pending drafts and nudges any whose scheduledDate is approaching but still unreviewed.",
@@ -300,6 +310,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
   },
   {
     name: "awareness-researcher",
+    boutique: true,
+    label: "Awareness researcher",
     role: "workflow",
     description:
       "Web-research-driven discovery of awareness days. Uses Gemini GOOGLE_SEARCH grounding to find real observances in a window, writes them as proposals for human review before they enter the official awarenessDays collection.",
@@ -318,7 +330,63 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
       monthlyUsdCap: 25,
     },
   },
+  {
+    name: "repurposer",
+    boutique: true,
+    label: "Repurposer",
+    role: "workflow",
+    description:
+      "Mines approved posts for high-performing patterns and drafts fresh variants so the brand stays active without starting from zero.",
+    provider: "anthropic",
+    model: "claude-haiku-4-5-20251001",
+    temperature: 0.8,
+    systemPrompt:
+      "You are this workspace's repurposer. Your job is to mine approved posts for patterns that worked well, then write a genuinely new take - same topic or audience, fresh angle, updated hook. Never copy the source blurb verbatim. Set reviewState='pending' on every draft you create so a human signs off before it publishes.",
+    enabled: true,
+    allowedTools: ["readBrandConfig", "listPosts", "recall", "retrieve", "createDraftPost"],
+    triggers: { manual: true, cron: false, systemUserId: "system" },
+  },
+  {
+    name: "gap-filler",
+    boutique: true,
+    label: "Gap filler",
+    role: "workflow",
+    description:
+      "Scans the posting calendar for empty windows in the next 2 weeks and proposes draft posts to fill them, respecting brandConfig cadence.",
+    provider: "gemini",
+    model: "gemini-3.5-flash",
+    temperature: 0.5,
+    systemPrompt:
+      "You are this workspace's gap filler. Find open calendar windows in the next 14 days that the brand's targetCadence expects to be filled but currently are not. For each gap, propose one draft post with a clear brief. Set reviewState='pending'. Report how many gaps you found and filled.",
+    enabled: true,
+    allowedTools: ["readBrandConfig", "findOpenSlots", "listEvents", "listPosts", "createDraftPost"],
+    triggers: { manual: true, cron: false, systemUserId: "system" },
+  },
+  {
+    name: "brand-auditor",
+    boutique: true,
+    label: "Brand auditor",
+    role: "workflow",
+    description:
+      "Reviews recent published posts against brandConfig voice, audience, and forbidden topics. Reports drift so the team can course-correct.",
+    provider: "gemini",
+    model: "gemini-3.5-flash",
+    temperature: 0.2,
+    systemPrompt:
+      "You are this workspace's brand auditor. Read the current brandConfig (voice, audience, forbiddenTopics). Then scan the 20 most recent approved or published posts with listPosts. For each post, judge whether it is on-brand. Report any drift - tone slipping, forbidden topics appearing, or audience mismatch. Be specific: quote the offending phrase and state the rule it breaks. If everything is on-brand, say so plainly.",
+    enabled: true,
+    allowedTools: ["readBrandConfig", "listPosts", "recall"],
+    triggers: { manual: true, cron: false, systemUserId: "system" },
+  },
 ]
+
+export function boutiqueAgentDefaults(): AgentDefault[] {
+  return AGENT_DEFAULTS.filter((d) => d.boutique === true)
+}
+
+export function isBoutiqueAgent(name: string): boolean {
+  return AGENT_DEFAULTS.some((d) => d.name === name && d.boutique === true)
+}
 
 export function getAgentDefault(name: string): AgentDefault | undefined {
   return AGENT_DEFAULTS.find((d) => d.name === name)

@@ -21,6 +21,9 @@ import { buildPipelineAgent } from "./agents/workflow/pipeline"
 import { buildCadencePlannerAgent } from "./agents/workflow/cadence-planner"
 import { buildApprovalTriageAgent } from "./agents/workflow/approval-triage"
 import { buildAwarenessResearcherAgent } from "./agents/workflow/awareness-researcher"
+import { buildRepurposerAgent } from "./agents/workflow/repurposer"
+import { buildGapFillerAgent } from "./agents/workflow/gap-filler"
+import { buildBrandAuditorAgent } from "./agents/workflow/brand-auditor"
 
 /*
  * Agent factory registry. Each entry is either:
@@ -62,6 +65,9 @@ const FACTORIES: Record<string, AnyFactory> = {
   "cadence-planner": buildCadencePlannerAgent,
   "approval-triage": buildApprovalTriageAgent,
   "awareness-researcher": buildAwarenessResearcherAgent,
+  "repurposer": buildRepurposerAgent,
+  "gap-filler": buildGapFillerAgent,
+  "brand-auditor": buildBrandAuditorAgent,
 }
 
 export interface ResolvedAgent {

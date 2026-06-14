@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Plus, Search } from "lucide-react"
 import {
   DndContext,
   DragOverlay,
@@ -13,6 +15,14 @@ import {
 } from "@dnd-kit/core"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import { Button } from "@/components/ui/button"
+import { SegmentedTabs } from "@/components/ui/segmented-tabs"
+import { SettingDisclosure } from "@/components/settings/setting-disclosure"
 import {
   Select,
   SelectContent,
@@ -28,7 +38,7 @@ import type { Category, Post, PostStatus, User } from "@/lib/schemas"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { BulkApproveBar } from "./bulk-approve-bar"
 import { KanbanCard } from "./card"
-import { KanbanColumn } from "./column"
+import { KanbanColumnComponent as KanbanColumn } from "./column"
 import { KanbanColumnAddButton } from "./column-add-button"
 import { ColumnEditDialog } from "./column-edit-dialog"
 
@@ -48,6 +58,7 @@ export function KanbanBoard({
   range,
 }: Props) {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const { openComposerWithPost, data } = useDialogs()
   const campaigns = data.campaigns
   const columns = data.kanbanColumns
@@ -72,6 +83,7 @@ export function KanbanBoard({
   const [filterQ, setFilterQ] = useState("")
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set())
+  const [mobileColumnId, setMobileColumnId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -131,6 +143,31 @@ export function KanbanBoard({
     () => [...selectedIds].filter((id) => pendingIds.has(id)),
     [selectedIds, pendingIds],
   )
+
+  useEffect(() => {
+    if (mobileColumnId && columns.some((c) => c.id === mobileColumnId)) return
+    const withPosts = columns.find((c) => (byStatus.get(c.id)?.length ?? 0) > 0)
+    setMobileColumnId(withPosts?.id ?? columns[0]?.id ?? null)
+  }, [columns, byStatus, mobileColumnId])
+
+  const hasActiveFilters = !!(filterCategory || filterAssignee || filterCampaign)
+  const filterSummary = [
+    filterCategory
+      ? categories.find((c) => c.id === filterCategory)?.name
+      : null,
+    filterAssignee ? users.find((u) => u.id === filterAssignee)?.name : null,
+    filterCampaign ? campaigns.find((c) => c.id === filterCampaign)?.name : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
+  const clearFilters = () => {
+    setFilterCategory("")
+    setFilterAssignee("")
+    setFilterCampaign("")
+  }
+
+  const mobileColumn = columns.find((c) => c.id === mobileColumnId)
 
   function toggleSelect(post: WithId<Post>) {
     if (!selectedIds.has(post.id) && activeSelection.length >= 50) {
@@ -201,11 +238,64 @@ export function KanbanBoard({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="mb-4 md:hidden">
+        <InputGroup className="mb-3 h-10">
+          <InputGroupAddon align="inline-start">
+            <Search aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={filterQ}
+            onChange={(e) => setFilterQ(e.target.value)}
+            placeholder="Search posts..."
+          />
+        </InputGroup>
+        <SettingDisclosure
+          title="Filters"
+          defaultOpen={hasActiveFilters}
+          summary={filterSummary || "Category, assignee, campaign"}
+        >
+          <div className="grid gap-3">
+            <FilterSelect
+              placeholder="Category"
+              value={filterCategory}
+              onChange={setFilterCategory}
+              options={categories.map((c) => ({ value: c.id, label: c.name, color: c.color }))}
+              className="w-full"
+            />
+            <FilterSelect
+              placeholder="Assignee"
+              value={filterAssignee}
+              onChange={setFilterAssignee}
+              options={users.map((u) => ({ value: u.id, label: u.name }))}
+              className="w-full"
+            />
+            <FilterSelect
+              placeholder="Campaign"
+              value={filterCampaign}
+              onChange={setFilterCampaign}
+              options={campaigns.map((c) => ({ value: c.id, label: c.name }))}
+              className="w-full"
+            />
+            {hasActiveFilters ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="w-full"
+              >
+                Clear filters
+              </Button>
+            ) : null}
+          </div>
+        </SettingDisclosure>
+      </div>
+
+      <div className="mb-4 hidden flex-wrap gap-2 md:flex">
         <Input
           value={filterQ}
           onChange={(e) => setFilterQ(e.target.value)}
-          placeholder="Search brief…"
+          placeholder="Search brief..."
           className="w-44"
         />
         <FilterSelect
@@ -228,13 +318,39 @@ export function KanbanBoard({
         />
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-4 min-h-0">
+      <SegmentedTabs
+        className="mb-3 w-full md:hidden"
+        scrollable
+        value={mobileColumnId ?? ""}
+        onChange={setMobileColumnId}
+        tabs={columns.map((col) => {
+          const count = byStatus.get(col.id)?.length ?? 0
+          return {
+            id: col.id,
+            label: (
+              <>
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: col.color }}
+                />
+                <span className="max-w-[7rem] truncate">{col.label}</span>
+                <span className="tabular-nums text-[10px] text-muted-foreground">
+                  {count}
+                </span>
+              </>
+            ),
+          }
+        })}
+      />
+
+      <div className="min-h-0 flex-1 overflow-x-hidden pb-24 md:overflow-x-auto md:scrollbar-subtle md:pb-4">
         <DndContext
           sensors={sensors}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
         >
-          <div className="flex gap-3 h-full w-full">
+          <div className="hidden h-full w-full gap-3 md:flex">
             {columns.map((col) => (
               <KanbanColumn
                 key={col.id}
@@ -248,9 +364,38 @@ export function KanbanBoard({
                 selectedIds={selectedIds}
                 selectionActive={activeSelection.length > 0}
                 onToggleSelect={toggleSelect}
+                dragEnabled
               />
             ))}
             <KanbanColumnAddButton onClick={() => setCreateOpen(true)} />
+          </div>
+
+          <div className="flex flex-col gap-3 md:hidden">
+            {mobileColumn ? (
+              <KanbanColumn
+                column={mobileColumn}
+                allColumns={columns}
+                posts={byStatus.get(mobileColumn.id) ?? []}
+                categoryById={categoryById}
+                userById={userById}
+                onCardClick={openComposer}
+                onCardStatusChange={onStatusChange}
+                selectedIds={selectedIds}
+                selectionActive={activeSelection.length > 0}
+                onToggleSelect={toggleSelect}
+                dragEnabled={false}
+                fullWidth
+              />
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCreateOpen(true)}
+              className="w-full"
+            >
+              <Plus aria-hidden className="size-4" />
+              Add column
+            </Button>
           </div>
 
           <DragOverlay>
@@ -276,6 +421,7 @@ export function KanbanBoard({
         open={createOpen}
         onOpenChange={setCreateOpen}
         mode="create"
+        onDone={() => router.refresh()}
       />
     </>
   )
@@ -286,11 +432,13 @@ function FilterSelect({
   value,
   onChange,
   options,
+  className,
 }: {
   placeholder: string
   value: string
   onChange: (v: string) => void
   options: { value: string; label: string; color?: string }[]
+  className?: string
 }) {
   const isAll = !value
   const emptyLabel = `Any ${placeholder.toLowerCase()}`
@@ -300,7 +448,7 @@ function FilterSelect({
       onValueChange={(v) => onChange(!v || v === "_all" ? "" : v)}
     >
       <SelectTrigger
-        className={cn("w-36", isAll && "text-muted-foreground")}
+        className={cn("w-36", isAll && "text-muted-foreground", className)}
       >
         <SelectValue placeholder={emptyLabel}>
           {(v) => {

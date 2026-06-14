@@ -33,6 +33,29 @@ type Handler = (
   params: Record<string, string>,
 ) => Promise<Response>
 
+const PUBLIC_POST_UPDATE_FIELDS = [
+  "scheduledDate", "scheduledTime", "status", "categoryId", "campaignId",
+  "templateId", "awarenessDayId", "eventId", "postType", "postTypes", "brief",
+  "detailedBrief", "blurb", "hashtags", "pagesToTag", "ctaId", "leadUserId",
+  "assigneeId", "blurbAuthorId", "canvaUrl", "assetUrls", "channelStatuses",
+  "notes", "postedAt", "firstComment", "isAiGenerated",
+] as const
+
+function buildPostPatch(
+  rest: Record<string, unknown>,
+):
+  | { ok: true; patch: Record<string, unknown> }
+  | { ok: false; message?: string } {
+  const parsed = postSchema.partial().safeParse(rest)
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message }
+  const data = parsed.data as Record<string, unknown>
+  const patch: Record<string, unknown> = {}
+  for (const k of PUBLIC_POST_UPDATE_FIELDS) {
+    if (k in rest && data[k] !== undefined) patch[k] = data[k]
+  }
+  return { ok: true, patch }
+}
+
 const handlers: Record<string, Record<string, Handler>> = {
   posts: {
     list: async (caller, body) => {
@@ -81,7 +104,14 @@ const handlers: Record<string, Record<string, Handler>> = {
       if (!snap.exists) return apiError("not_found", 404)
       const { id: bodyId, ...rest } = body
       void bodyId
-      await ref.set({ ...rest, updatedAt: new Date().toISOString() }, { merge: true })
+      const built = buildPostPatch(rest)
+      if (!built.ok) return apiError("invalid_body", 400, built.message)
+      const resultingStatus = (built.patch.status as string | undefined) ?? snap.data()?.status
+      if (resultingStatus === "posted") {
+        const publishDeny = scopeCheck(caller, "posts:publish")
+        if (publishDeny) return publishDeny
+      }
+      await ref.set({ ...built.patch, updatedAt: new Date().toISOString() }, { merge: true })
       return Response.json({ ok: true })
     },
 
@@ -96,7 +126,14 @@ const handlers: Record<string, Record<string, Handler>> = {
       if (!["scheduled", "draft"].includes(snap.data()?.status)) return apiError("invalid_state", 409)
       const { id: bodyId2, ...rest } = body
       void bodyId2
-      await ref.set({ ...rest, updatedAt: new Date().toISOString() }, { merge: true })
+      const built = buildPostPatch(rest)
+      if (!built.ok) return apiError("invalid_body", 400, built.message)
+      const resultingStatus = (built.patch.status as string | undefined) ?? snap.data()?.status
+      if (resultingStatus === "posted") {
+        const publishDeny = scopeCheck(caller, "posts:publish")
+        if (publishDeny) return publishDeny
+      }
+      await ref.set({ ...built.patch, updatedAt: new Date().toISOString() }, { merge: true })
       return Response.json({ ok: true })
     },
 
@@ -209,19 +246,19 @@ const handlers: Record<string, Record<string, Handler>> = {
       if (!id.success) return apiError("invalid_id", 400)
       const ref = getAdminDb().doc(`${orgPostsPath(caller.orgId)}/${id.data}`)
       if (!(await ref.get()).exists) return apiError("not_found", 404)
-      await ref.set({ "agentMeta.reviewState": "pending", updatedAt: new Date().toISOString() }, { merge: true })
+      await ref.update({ "agentMeta.reviewState": "pending", updatedAt: new Date().toISOString() })
       return Response.json({ ok: true })
     },
 
     decide: async (caller, body) => {
-      const deny = scopeCheck(caller, "approvals:request")
+      const deny = scopeCheck(caller, "approvals:decide")
       if (deny) return deny
       const schema = z.object({ postId: z.string(), approved: z.boolean(), feedback: z.string().optional() })
       const parsed = schema.safeParse(body)
       if (!parsed.success) return apiError("invalid_body", 400)
       const ref = getAdminDb().doc(`${orgPostsPath(caller.orgId)}/${parsed.data.postId}`)
       if (!(await ref.get()).exists) return apiError("not_found", 404)
-      await ref.set({ "agentMeta.reviewState": parsed.data.approved ? "approved" : "rejected", updatedAt: new Date().toISOString() }, { merge: true })
+      await ref.update({ "agentMeta.reviewState": parsed.data.approved ? "approved" : "rejected", updatedAt: new Date().toISOString() })
       return Response.json({ ok: true })
     },
   },
@@ -265,7 +302,9 @@ const handlers: Record<string, Record<string, Handler>> = {
     window: async (caller, body) => {
       const deny = scopeCheck(caller, "metrics:read")
       if (deny) return deny
-      const { start, end } = z.object({ start: z.string(), end: z.string() }).parse(body)
+      const parsed = z.object({ start: z.string(), end: z.string() }).safeParse(body)
+      if (!parsed.success) return apiError("invalid_body", 400)
+      const { start, end } = parsed.data
       const snap = await getAdminDb()
         .collection(orgPublishRunsPath(caller.orgId))
         .where("startedAt", ">=", start)

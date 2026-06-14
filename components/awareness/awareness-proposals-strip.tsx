@@ -59,11 +59,13 @@ export function AwarenessProposalsStrip({
       aria-label="Proposed awareness days"
       className="rounded-lg border border-border bg-secondary/20 p-4 sm:p-5 space-y-3"
     >
-      <header className="flex items-center gap-2">
-        <Sparkles aria-hidden className="size-4 text-foreground" />
-        <h2 className="text-sm font-semibold text-foreground">
-          {proposals.length} proposed awareness {proposals.length === 1 ? "day" : "days"}
-        </h2>
+      <header className="space-y-1">
+        <div className="flex items-center gap-2">
+          <Sparkles aria-hidden className="size-4 text-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">
+            {proposals.length} proposed awareness {proposals.length === 1 ? "day" : "days"}
+          </h2>
+        </div>
         <p className="text-xs text-muted-foreground">
           From the awareness-researcher - accept to add to your calendar, or reject to dismiss.
         </p>
@@ -75,7 +77,7 @@ export function AwarenessProposalsStrip({
             key={p.id}
             className="rounded-lg border border-border bg-background p-3 sm:p-4"
           >
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className="bg-badge-orange text-foreground border-transparent font-normal text-[11px]">
@@ -114,13 +116,14 @@ export function AwarenessProposalsStrip({
                   </ul>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex w-full gap-2 sm:w-auto sm:shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => handle("reject", p)}
                   disabled={pending}
                   aria-label={`Reject ${p.name}`}
+                  className="flex-1 sm:flex-none"
                 >
                   <X aria-hidden className="size-3.5" /> Reject
                 </Button>
@@ -129,6 +132,7 @@ export function AwarenessProposalsStrip({
                   onClick={() => handle("accept", p)}
                   disabled={pending}
                   aria-label={`Accept ${p.name}`}
+                  className="flex-1 sm:flex-none"
                 >
                   <Check aria-hidden className="size-3.5" /> Accept
                 </Button>

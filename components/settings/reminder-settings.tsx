@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { SettingDisclosure } from "@/components/settings/setting-disclosure"
 import {
   Select,
   SelectContent,
@@ -184,19 +185,18 @@ export function ReminderSettings({
       </section>
 
       {prefs.enabled ? (
-        <section className="rounded-lg border border-border p-4 space-y-4">
-          <div>
-            <h2 className="text-sm font-medium">Reminder types</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Turn types on or off and tune when each one fires.
-            </p>
-          </div>
-          <ul className="space-y-5">
+        <SettingDisclosure
+          title="Reminder types"
+          summary={`${KIND_ROWS.filter((r) => prefs[r.key]).length} of ${KIND_ROWS.length} on - tune when each one fires`}
+        >
+          <ul className="space-y-2">
             {KIND_ROWS.map((row) => (
-              <li
-                key={row.key}
-                className="rounded-md border border-border/80 p-3 space-y-3"
-              >
+              <li key={row.key}>
+                <SettingDisclosure
+                  title={row.label}
+                  summary={prefs[row.key] ? `On - ${row.description}` : "Off"}
+                >
+                <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <Checkbox
                     id={`reminder-${row.key}`}
@@ -210,7 +210,7 @@ export function ReminderSettings({
                       htmlFor={`reminder-${row.key}`}
                       className="text-sm font-medium"
                     >
-                      {row.label}
+                      Show this reminder
                     </Label>
                     <p className="text-xs text-muted-foreground">
                       {row.description}
@@ -345,10 +345,12 @@ export function ReminderSettings({
                     </Button>
                   </div>
                 ) : null}
+                </div>
+                </SettingDisclosure>
               </li>
             ))}
           </ul>
-        </section>
+        </SettingDisclosure>
       ) : null}
 
       <Button size="sm" onClick={handleSave} disabled={pending}>

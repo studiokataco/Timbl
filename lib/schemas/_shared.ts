@@ -27,6 +27,16 @@ export const LEGACY_POST_STATUSES = [
 ] as const
 export type LegacyPostStatus = (typeof LEGACY_POST_STATUSES)[number]
 
+/*
+ * Statuses the publishing pipeline depends on by id (publish.ts, scheduler,
+ * public API). They can be renamed, recolored, and reordered, but not deleted
+ * - removing them would orphan scheduling and publishing logic.
+ */
+export const PROTECTED_STATUS_IDS = ["scheduled", "posted"] as const
+export function isProtectedStatusId(id: string): boolean {
+  return (PROTECTED_STATUS_IDS as readonly string[]).includes(id)
+}
+
 export const postType = z.enum(["grid", "carousel", "reel", "story", "video"])
 export type PostType = z.infer<typeof postType>
 

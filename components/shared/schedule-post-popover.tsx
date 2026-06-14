@@ -57,12 +57,12 @@ export function SchedulePostPopover({
             variant={triggerVariant}
             disabled={pending}
             aria-label="Schedule"
-          />
+          >
+            <CalendarClock aria-hidden className="size-3.5" />
+            Schedule
+          </Button>
         }
-      >
-        <CalendarClock aria-hidden className="size-3.5" />
-        Schedule
-      </PopoverTrigger>
+      />
       <PopoverContent
         className="w-auto p-3"
         align={align}

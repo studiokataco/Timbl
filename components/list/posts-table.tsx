@@ -4,13 +4,20 @@ import { useMemo, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { format, parseISO } from "date-fns"
-import { Download, FilterX, ListChecks } from "lucide-react"
+import { Download, FilterX, ListChecks, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { SegmentedTabs } from "@/components/ui/segmented-tabs"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { EmptyState } from "@/components/shared/empty-state"
+import { SettingDisclosure } from "@/components/settings/setting-disclosure"
 import {
   Select,
   SelectContent,
@@ -28,6 +35,8 @@ import { LEGACY_POST_STATUSES, type Category, type Post, type PostStatus, type U
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { formatPostTypes } from "@/lib/post-types"
 import { postStatusLabel } from "@/lib/labels/enums"
+import { categoryPillColors } from "@/components/calendar/color"
+import { statusGlyph } from "@/components/calendar/post-chip"
 
 const STATUS_FILTER_OPTIONS = LEGACY_POST_STATUSES.map((s) => ({
   value: s,
@@ -151,8 +160,8 @@ export function PostsTable({
     const head = [
       "date",
       "status",
+      "title",
       "category",
-      "brief",
       "lead",
       "assignee",
       "postType",
@@ -162,8 +171,8 @@ export function PostsTable({
       const cells = [
         p.scheduledDate,
         p.status,
-        categoryById.get(p.categoryId ?? "")?.name ?? "",
         (p.brief ?? "").replaceAll('"', '""'),
+        categoryById.get(p.categoryId ?? "")?.name ?? "",
         userById.get(p.leadUserId ?? "")?.name ?? "",
         userById.get(p.assigneeId ?? "")?.name ?? "",
         formatPostTypes(p),
@@ -250,40 +259,156 @@ export function PostsTable({
     setParam("status", next.join(","))
   }
 
+  const hasAdvancedFilters =
+    category.length > 0 ||
+    assignee.length > 0 ||
+    !!dateFrom ||
+    !!dateTo ||
+    (status.length > 0 && activeSegment === null)
+
+  const advancedFilterSummary = [
+    activeSegment === null && status.length
+      ? STATUS_FILTER_OPTIONS.find((o) => o.value === status[0])?.label ?? status[0]
+      : null,
+    category.length
+      ? categoryById.get(category[0])?.name ?? "Category"
+      : null,
+    assignee.length ? userById.get(assignee[0])?.name ?? "Assignee" : null,
+    dateFrom ? `From ${dateFrom}` : null,
+    dateTo ? `To ${dateTo}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
+  const clearAdvancedFilters = () => {
+    const next = new URLSearchParams(searchParams.toString())
+    next.delete("category")
+    next.delete("assignee")
+    next.delete("from")
+    next.delete("to")
+    if (activeSegment === null) next.delete("status")
+    next.delete("page")
+    router.replace(`?${next.toString()}`, { scroll: false })
+  }
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const segmentTabItems = (
+    [
+      { id: "all", label: "All posts", short: "All" },
+      { id: "ideas", label: "Ideas", short: "Ideas" },
+      { id: "drafts", label: "Drafts", short: "Drafts" },
+      { id: "scheduled", label: "Scheduled", short: "Scheduled" },
+    ] as const
+  ).map((seg) => ({
+    id: seg.id,
+    label: (
+      <>
+        <span className="sm:hidden">{seg.short}</span>
+        <span className="hidden sm:inline">{seg.label}</span>
+      </>
+    ),
+  }))
+
   return (
     <>
-      <div className="flex flex-wrap items-center gap-1 mb-3 rounded-lg border border-border bg-muted/30 p-1 w-fit">
-        {(
-          [
-            { id: "all", label: "All posts" },
-            { id: "ideas", label: "Ideas" },
-            { id: "drafts", label: "Drafts" },
-            { id: "scheduled", label: "Scheduled" },
-          ] as const
-        ).map((seg) => (
-          <button
-            key={seg.id}
-            type="button"
-            onClick={() => setSegment(seg.id)}
-            className={cn(
-              "px-3 py-1 text-xs rounded-md transition-colors",
-              activeSegment === seg.id
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {seg.label}
-          </button>
-        ))}
+      <SegmentedTabs
+        tabs={segmentTabItems}
+        value={activeSegment ?? ""}
+        onChange={setSegment}
+        className="mb-3 w-full max-w-full md:w-fit"
+        scrollable
+      />
+
+      <div className="mb-4 md:hidden">
+        <InputGroup className="mb-3 h-10">
+          <InputGroupAddon align="inline-start">
+            <Search aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={q}
+            onChange={(e) => setParam("q", e.target.value)}
+            placeholder="Search posts..."
+          />
+        </InputGroup>
+        <SettingDisclosure
+          title="Filters"
+          defaultOpen={hasAdvancedFilters}
+          summary={advancedFilterSummary || "Category, assignee, dates"}
+        >
+          <div className="grid gap-3">
+            {activeSegment === null ? (
+              <FacetSelect
+                label="Status"
+                value={status}
+                options={STATUS_FILTER_OPTIONS}
+                onChange={(v) => setParam("status", v.join(","))}
+                className="w-full"
+              />
+            ) : null}
+            <FacetSelect
+              label="Category"
+              value={category}
+              options={categories.map((c) => ({ value: c.id, label: c.name }))}
+              onChange={(v) => setParam("category", v.join(","))}
+              className="w-full"
+            />
+            <FacetSelect
+              label="Assignee"
+              value={assignee}
+              options={users.map((u) => ({ value: u.id, label: u.name }))}
+              onChange={(v) => setParam("assignee", v.join(","))}
+              className="w-full"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">From</label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setParam("from", e.target.value)}
+                  className="w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 dark:[&::-webkit-calendar-picker-indicator]:invert"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">To</label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setParam("to", e.target.value)}
+                  className="w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 dark:[&::-webkit-calendar-picker-indicator]:invert"
+                />
+              </div>
+            </div>
+            {hasAdvancedFilters ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearAdvancedFilters}
+                className="w-full"
+              >
+                Clear filters
+              </Button>
+            ) : null}
+          </div>
+        </SettingDisclosure>
       </div>
 
-      <div className="flex flex-wrap items-end gap-2 mb-4">
-        <div className="flex flex-col gap-1 min-w-[180px] flex-1">
+      <div className="mb-4 hidden flex-wrap items-end gap-2 md:flex">
+        <div className="flex min-w-[180px] flex-1 flex-col gap-1">
           <label className="text-xs text-muted-foreground">Search</label>
           <Input
             value={q}
             onChange={(e) => setParam("q", e.target.value)}
-            placeholder="Title, caption, brief…"
+            placeholder="Title, caption, brief..."
           />
         </div>
         <FacetSelect
@@ -310,6 +435,7 @@ export function PostsTable({
             type="date"
             value={dateFrom}
             onChange={(e) => setParam("from", e.target.value)}
+            className="w-[140px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 dark:[&::-webkit-calendar-picker-indicator]:invert"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -318,37 +444,139 @@ export function PostsTable({
             type="date"
             value={dateTo}
             onChange={(e) => setParam("to", e.target.value)}
+            className="w-[140px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 dark:[&::-webkit-calendar-picker-indicator]:invert"
           />
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {filtered.length} {filtered.length === 1 ? "post" : "posts"} match
+          {filtered.length} {filtered.length === 1 ? "post" : "posts"}
+          <span className="hidden md:inline"> match</span>
           {selected.size > 0 ? ` · ${selected.size} selected` : ""}
         </p>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={bulkMarkScheduled}
             disabled={selected.size === 0 || pending}
+            className="hidden md:inline-flex"
           >
             <ListChecks aria-hidden className="size-4" />
             Mark scheduled
           </Button>
-          <Button variant="outline" size="sm" onClick={exportCsv}>
+          <Button variant="outline" size="sm" onClick={exportCsv} className="md:inline-flex">
             <Download aria-hidden className="size-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
           </Button>
         </div>
       </div>
 
-      <div className="rounded-lg border border-border overflow-x-auto bg-background">
-        <table className="w-full text-sm">
+      <div className="space-y-2 pb-24 md:hidden md:pb-0">
+        {paged.length === 0 ? (
+          <EmptyState
+            icon={FilterX}
+            title="No posts match these filters"
+            body="Try clearing a filter, widening the date range, or adjusting your search term."
+            size="sm"
+          />
+        ) : (
+          paged.map((p) => {
+            const cat = categoryById.get(p.categoryId ?? "")
+            const assg = userById.get(p.assigneeId ?? "")
+            const isSelected = selected.has(p.id)
+            const canSchedule = p.status === "idea" || p.status === "brief"
+            return (
+              <div
+                key={p.id}
+                style={{ borderLeftColor: cat?.color ?? undefined }}
+                className={cn(
+                  "relative rounded-lg border border-border border-l-4 bg-background p-3 transition-colors",
+                  isSelected && "ring-2 ring-primary/30",
+                )}
+              >
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => toggleSelected(p.id)}
+                  aria-label={`Select ${p.brief ?? "post"}`}
+                  className="absolute right-3 top-3"
+                />
+                <button
+                  type="button"
+                  onClick={() => openComposer(p.id)}
+                  className="w-full pr-8 text-left active:opacity-80"
+                >
+                  <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
+                    {p.brief ?? "Untitled post"}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+                    <span>{format(parseISO(p.scheduledDate), "d MMM yyyy")}</span>
+                    <span aria-hidden>·</span>
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[11px] font-normal">
+                      {postStatusLabel(p.status)}
+                    </Badge>
+                    <span aria-hidden>·</span>
+                    <span className="capitalize">{formatPostTypes(p)}</span>
+                  </div>
+                  {cat || assg ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {cat ? (
+                        <span
+                          className="inline-flex max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium"
+                          style={categoryPillColors(cat.color)}
+                        >
+                          <span aria-hidden className="font-bold">
+                            {statusGlyph(p.status)}
+                          </span>
+                          <span className="truncate">{cat.name}</span>
+                        </span>
+                      ) : null}
+                      {assg ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span className="inline-flex size-5 items-center justify-center rounded-full bg-secondary text-[10px] font-medium">
+                            {assg.name[0]?.toUpperCase()}
+                          </span>
+                          {assg.name}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </button>
+                {canSchedule ? (
+                  <div
+                    className="mt-3 border-t border-border pt-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <SchedulePostPopover
+                      initialDate={p.scheduledDate}
+                      pending={pending}
+                      onConfirm={(d, t) => scheduleIdea(p.id, d, t)}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      <div className="hidden min-w-0 overflow-x-auto rounded-lg border border-border bg-background md:block">
+        <table className="w-full min-w-[60rem] table-fixed text-sm">
+          <colgroup>
+            <col className="w-10" />
+            <col className="w-[9.5rem]" />
+            <col className="w-24" />
+            <col />
+            <col className="w-44" />
+            <col className="w-24" />
+            <col className="w-28" />
+            <col className="w-16" />
+            <col className="w-[6.5rem]" />
+          </colgroup>
           <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="w-8 p-2">
+              <th className="px-1.5 py-2">
                 <Checkbox
                   checked={allSelectedOnPage}
                   onCheckedChange={toggleSelectAll}
@@ -357,12 +585,12 @@ export function PostsTable({
               </th>
               <Th onClick={() => toggleSort("scheduledDate")}>Date</Th>
               <Th onClick={() => toggleSort("status")}>Status</Th>
+              <Th onClick={() => toggleSort("brief")}>Title</Th>
               <Th>Category</Th>
-              <Th onClick={() => toggleSort("brief")}>Brief</Th>
               <Th>Lead</Th>
               <Th>Assignee</Th>
               <Th>Type</Th>
-              <th />
+              <th className="px-1.5 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -386,9 +614,10 @@ export function PostsTable({
                 return (
                   <tr
                     key={p.id}
-                    className="border-t border-border hover:bg-secondary/30"
+                    className="border-t border-border hover:bg-secondary/30 cursor-pointer"
+                    onClick={() => openComposer(p.id)}
                   >
-                    <td className="p-2">
+                    <RowCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selected.has(p.id)}
                         onCheckedChange={() =>
@@ -401,50 +630,45 @@ export function PostsTable({
                         }
                         aria-label={`Select ${p.brief}`}
                       />
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      {format(parseISO(p.scheduledDate), "EEE d MMM")}
-                    </td>
-                    <td className="p-2">
+                    </RowCell>
+                    <RowCell className="whitespace-nowrap">
+                      {format(parseISO(p.scheduledDate), "EEE d MMM yyyy")}
+                    </RowCell>
+                    <RowCell>
                       <Badge variant="secondary" className="font-normal">
                         {postStatusLabel(p.status)}
                       </Badge>
-                    </td>
-                    <td className="p-2">
+                    </RowCell>
+                    <RowCell className="min-w-0 truncate">{p.brief ?? "-"}</RowCell>
+                    <RowCell className="min-w-0">
                       {cat ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs">
+                        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-xs">
                           <span
                             aria-hidden
-                            className="size-2 rounded-full"
+                            className="size-2 shrink-0 rounded-full"
                             style={{ backgroundColor: cat.color }}
                           />
-                          {cat.name}
+                          <span className="truncate">{cat.name}</span>
                         </span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
-                    </td>
-                    <td className="p-2 max-w-[280px] truncate">{p.brief ?? "-"}</td>
-                    <td className="p-2 text-xs">{lead?.name ?? "-"}</td>
-                    <td className="p-2 text-xs">{assg?.name ?? "-"}</td>
-                    <td className="p-2 text-xs capitalize">{formatPostTypes(p)}</td>
-                    <td className="p-2 text-right whitespace-nowrap">
+                    </RowCell>
+                    <RowCell className="min-w-0 truncate text-xs">{lead?.name ?? "-"}</RowCell>
+                    <RowCell className="min-w-0 truncate text-xs">{assg?.name ?? "-"}</RowCell>
+                    <RowCell className="text-xs capitalize">{formatPostTypes(p)}</RowCell>
+                    <RowCell
+                      className="justify-end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {p.status === "idea" || p.status === "brief" ? (
                         <SchedulePostPopover
                           initialDate={p.scheduledDate}
                           pending={pending}
-                          triggerVariant="ghost"
                           onConfirm={(d, t) => scheduleIdea(p.id, d, t)}
                         />
                       ) : null}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openComposer(p.id)}
-                      >
-                        Open
-                      </Button>
-                    </td>
+                    </RowCell>
                   </tr>
                 )
               })
@@ -479,7 +703,50 @@ export function PostsTable({
         </div>
       ) : null}
 
+      {selected.size > 0 ? (
+        <div
+          role="toolbar"
+          aria-label="Bulk actions"
+          className="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3 shadow-lg md:hidden"
+        >
+          <span className="text-sm tabular-nums">{selected.size} selected</span>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={bulkMarkScheduled} disabled={pending}>
+              <ListChecks aria-hidden className="size-4" />
+              Schedule
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground"
+              onClick={() => setSelected(new Set())}
+              disabled={pending}
+            >
+              <X aria-hidden className="size-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
     </>
+  )
+}
+
+function RowCell({
+  className,
+  children,
+  onClick,
+}: {
+  className?: string
+  children: React.ReactNode
+  onClick?: React.MouseEventHandler<HTMLTableCellElement>
+}) {
+  return (
+    <td className="h-px min-w-0 p-0" onClick={onClick}>
+      <div className={cn("flex h-full min-h-9 min-w-0 items-center px-1.5 py-2", className)}>
+        {children}
+      </div>
+    </td>
   )
 }
 
@@ -492,7 +759,7 @@ function Th({
 }) {
   return (
     <th
-      className={`p-2 text-left font-medium ${onClick ? "cursor-pointer hover:text-foreground" : ""}`}
+      className={`px-1.5 py-2 text-left font-medium ${onClick ? "cursor-pointer hover:text-foreground" : ""}`}
       onClick={onClick}
     >
       {children}
@@ -505,23 +772,23 @@ function FacetSelect({
   value,
   options,
   onChange,
+  className,
 }: {
   label: string
   value: string[]
   options: { value: string; label: string }[]
   onChange: (next: string[]) => void
+  className?: string
 }) {
-  // Single-select facade for now; the URL still serialises as a list so
-  // multi-select can land later without changing the wire format.
   const current = value[0] ?? ""
   return (
-    <div className="flex flex-col gap-1 min-w-[140px]">
+    <div className={cn("flex w-[140px] flex-col gap-1", className)}>
       <label className="text-xs text-muted-foreground">{label}</label>
       <Select
         value={current}
         onValueChange={(v) => onChange(v ? [v] : [])}
       >
-        <SelectTrigger>
+        <SelectTrigger className="w-full">
           <SelectValue placeholder="Any">
             {(v) => {
               if (!v) return "Any"

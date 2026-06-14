@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SettingDisclosure } from "@/components/settings/setting-disclosure"
 import { cn } from "@/lib/utils"
 
 const CLIENTS = [
@@ -130,23 +130,12 @@ export function McpConnector({ apiKey }: { apiKey: string | null }) {
   const url = `${origin}/api/mcp`
 
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-sm font-medium text-foreground">Connect via MCP</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Point any MCP client at this workspace. Pick how you want to
-          authenticate, then drop the config into your editor.
-        </p>
-      </div>
-
-      <Tabs defaultValue="key">
-        <TabsList>
-          <TabsTrigger value="key">API key</TabsTrigger>
-          <TabsTrigger value="oauth">OAuth (sign in)</TabsTrigger>
-          <TabsTrigger value="cli">CLI</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="key" className="space-y-4 pt-3">
+    <div className="space-y-2">
+      <SettingDisclosure
+        title="API key"
+        summary="Simplest - paste a key, drop the config in"
+      >
+        <div className="space-y-4">
           <p className="text-xs text-muted-foreground">
             Simplest for personal use and automations. Paste a key (or create
             one above - it auto-fills here right after creation).
@@ -167,9 +156,14 @@ export function McpConnector({ apiKey }: { apiKey: string | null }) {
             code={apiKeySnippet(client, url, key)}
             lang={client === "claude-code" ? "bash" : "json"}
           />
-        </TabsContent>
+        </div>
+      </SettingDisclosure>
 
-        <TabsContent value="oauth" className="space-y-4 pt-3">
+      <SettingDisclosure
+        title="OAuth (sign in)"
+        summary="User-delegated - no key to copy"
+      >
+        <div className="space-y-4">
           <p className="text-xs text-muted-foreground">
             User-delegated. The client opens a browser, you sign in and pick
             scopes, and it receives a short-lived <code>tmbl_at_</code> token -
@@ -186,9 +180,14 @@ export function McpConnector({ apiKey }: { apiKey: string | null }) {
             <p className="font-mono break-all">{origin}/.well-known/oauth-protected-resource</p>
             <p className="font-mono break-all">{origin}/.well-known/oauth-authorization-server</p>
           </div>
-        </TabsContent>
+        </div>
+      </SettingDisclosure>
 
-        <TabsContent value="cli" className="space-y-4 pt-3">
+      <SettingDisclosure
+        title="CLI"
+        summary="The timbl CLI over the same REST API"
+      >
+        <div className="space-y-4">
           <p className="text-xs text-muted-foreground">
             Not MCP - the <code>timbl</code> CLI drives the same REST API, and
             installs a skill so Claude Code or Codex can run it for you.
@@ -202,8 +201,8 @@ export function McpConnector({ apiKey }: { apiKey: string | null }) {
             ].join("\n")}
             lang="bash"
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </SettingDisclosure>
     </div>
   )
 }

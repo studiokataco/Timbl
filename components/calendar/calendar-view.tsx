@@ -26,6 +26,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { PanelRightClose, PanelRightOpen, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { PlanCadenceDialog } from "@/components/agents/plan-cadence-dialog"
 import { fetchPostsInRangeAction, updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
@@ -72,6 +78,7 @@ export function CalendarView({
   const [visibleDate, setVisibleDate] = useState<Date>(() => startOfMonth(new Date()))
   const [view, setView] = useState<ViewT>("month")
   const [planOpen, setPlanOpen] = useState(false)
+  const [railOpen, setRailOpen] = useState(false)
   const [visibleCategoryIds, setVisibleCategoryIds] = useState<Set<string>>(
     () => new Set(categories.map((c) => c.id)),
   )
@@ -264,6 +271,26 @@ export function CalendarView({
 
   const categoryFilter = allCategoriesVisible ? null : visibleCategoryIds
 
+  const railContent = (
+    <>
+      <div className="pb-6">
+        <CategoryFilter
+          categories={categories}
+          visibleIds={visibleCategoryIds}
+          onToggle={toggleCategory}
+          onAll={() => setVisibleCategoryIds(allCategoryIds)}
+          onNone={() => setVisibleCategoryIds(new Set())}
+        />
+      </div>
+      <CampaignTracker campaigns={campaigns} />
+      <CalendarAwarenessRail
+        awarenessDays={awarenessDays}
+        plannedAwarenessIds={plannedAwarenessIds}
+        suggestions={suggestions}
+      />
+    </>
+  )
+
   return (
     <>
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -279,6 +306,7 @@ export function CalendarView({
               onNext={onNext}
               onToday={onToday}
               onViewChange={onViewChange}
+              onOpenFilters={() => setRailOpen(true)}
             />
             <div data-cal-reveal>
               {view === "month" && (
@@ -388,25 +416,22 @@ export function CalendarView({
                   <PanelRightClose className="size-4" aria-hidden />
                 </button>
               </div>
-              <div className="pb-6">
-                <CategoryFilter
-                  categories={categories}
-                  visibleIds={visibleCategoryIds}
-                  onToggle={toggleCategory}
-                  onAll={() => setVisibleCategoryIds(allCategoryIds)}
-                  onNone={() => setVisibleCategoryIds(new Set())}
-                />
-              </div>
-              <CampaignTracker campaigns={campaigns} />
-              <CalendarAwarenessRail
-                awarenessDays={awarenessDays}
-                plannedAwarenessIds={plannedAwarenessIds}
-                suggestions={suggestions}
-              />
+              {railContent}
             </div>
           )}
         </aside>
       </div>
+
+      <Sheet open={railOpen} onOpenChange={setRailOpen}>
+        <SheetContent side="right" className="w-80 max-w-[85vw] lg:hidden p-0">
+          <SheetHeader className="border-b border-border">
+            <SheetTitle>Filters & insights</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+            {railContent}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

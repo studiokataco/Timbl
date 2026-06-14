@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
 import { orgKanbanColumnsPath, orgPostsPath } from "@/lib/firebase/paths"
-import type { ServerActionResult } from "@/lib/schemas"
+import { isProtectedStatusId, type ServerActionResult } from "@/lib/schemas"
 
 const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected #rrggbb")
 const labelSchema = z.string().trim().min(1).max(40)
@@ -104,6 +104,9 @@ export async function deleteKanbanColumn(input: unknown): Promise<ServerActionRe
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" }
   if (parsed.data.id === parsed.data.moveTo) {
     return { ok: false, error: "Move-to column cannot equal the deleted column" }
+  }
+  if (isProtectedStatusId(parsed.data.id)) {
+    return { ok: false, error: "This status is required by the publishing workflow and can't be deleted." }
   }
 
   const orgId = await getCurrentOrgId()

@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
+import { MobileNav } from "@/components/shared/mobile-nav"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 
 export function TopBar({
@@ -32,6 +33,7 @@ export function TopBar({
   return (
     <header className="border-b border-border bg-background sticky top-0 z-30">
       <div className="flex items-center gap-4 px-6 sm:px-10 h-16">
+        <MobileNav />
         <h1 className="text-base font-semibold tracking-tight leading-none text-foreground truncate min-w-0">
           {workspaceName}
         </h1>

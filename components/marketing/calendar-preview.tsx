@@ -42,7 +42,8 @@ const WEEK: Array<{
 
 export function CalendarPreview() {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+    <div className="relative">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
       <div className="min-w-[680px]">
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <span className="text-sm font-semibold">This week</span>
@@ -51,7 +52,7 @@ export function CalendarPreview() {
             Drafter agent: 2 drafts ready for review
           </span>
         </div>
-        <div className="grid grid-cols-7 divide-x divide-border">
+        <div className="cal-grid grid grid-cols-7 divide-x divide-border">
           {WEEK.map(({ day, posts }) => (
             <div key={day} className="min-h-36 p-2">
               <p className="px-1 pb-2 text-xs font-medium text-muted-foreground">{day}</p>
@@ -61,7 +62,7 @@ export function CalendarPreview() {
                   return (
                     <div
                       key={post.title}
-                      className="rounded-md px-2 py-1.5"
+                      className="cal-post rounded-md px-2 py-1.5"
                       style={{ backgroundColor: `${color}24` }}
                     >
                       <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
@@ -76,7 +77,7 @@ export function CalendarPreview() {
                   )
                 })}
                 {day === "Thu" && (
-                  <div className="rounded-md border border-dashed border-border px-2 py-1.5">
+                  <div className="cal-post rounded-md border border-dashed border-border px-2 py-1.5">
                     <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
                       <Sparkles className="size-3" />
                       Agent drafting...
@@ -88,6 +89,8 @@ export function CalendarPreview() {
           ))}
         </div>
       </div>
+      </div>
+      <div className="pointer-events-none absolute inset-y-px right-px w-12 rounded-r-2xl bg-gradient-to-l from-card to-transparent md:hidden" />
     </div>
   )
 }

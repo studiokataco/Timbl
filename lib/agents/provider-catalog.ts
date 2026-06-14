@@ -11,6 +11,35 @@ import type { AgentProvider } from "@/lib/schemas/agentConfig"
  * operator can always type an ID not listed here.
  */
 
+/* Human-readable names for the model picker. Curated for the ids we
+ * ship; anything else falls back to `prettifyModelId`. */
+const MODEL_LABELS: Record<string, string> = {
+  "gemini-2.5-flash": "Gemini 2.5 Flash",
+  "gemini-2.5-pro": "Gemini 2.5 Pro",
+  "gemini-3.5-flash": "Gemini 3.5 Flash",
+  "claude-haiku-4-5-20251001": "Claude Haiku 4.5",
+  "claude-sonnet-4-6": "Claude Sonnet 4.6",
+  "deepseek/deepseek-v4-flash": "DeepSeek V4 Flash",
+  "z-ai/glm-5.1": "GLM 5.1",
+  "qwen/qwen3.6-plus": "Qwen 3.6 Plus",
+  mock: "Mock",
+}
+
+function prettifyModelId(id: string): string {
+  const noVendor = id.includes("/") ? id.slice(id.indexOf("/") + 1) : id
+  const noDate = noVendor.replace(/-\d{6,}$/, "")
+  return noDate
+    .split(/[-_:.]/)
+    .filter(Boolean)
+    .map((w) => (/^\d/.test(w) ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
+    .join(" ")
+}
+
+/** Display name for a model id (e.g. `gemini-3.5-flash` -> `Gemini 3.5 Flash`). */
+export function modelLabel(id: string): string {
+  return MODEL_LABELS[id] ?? prettifyModelId(id)
+}
+
 /** Suggested model IDs per provider (datalist hints - not an allowlist). */
 export const MODEL_SUGGESTIONS: Record<AgentProvider, readonly string[]> = {
   gemini: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3.5-flash"],

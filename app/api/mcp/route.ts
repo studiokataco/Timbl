@@ -7,6 +7,7 @@ import {
 import { writePublicAudit } from "@/lib/telemetry/public-audit"
 import { getMcpTools, callMcpTool } from "@/lib/mcp/tools"
 import { InsufficientScopeError } from "@/lib/auth/public-scopes"
+import { checkRateLimit } from "@/lib/api/rate-limiter"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -90,6 +91,23 @@ export async function POST(req: NextRequest) {
       return jsonrpcError(id, -32001, authResult.error)
     }
     const caller: PublicCaller = authResult.caller
+
+    const rl = checkRateLimit(caller.appId, caller.rateTier)
+    if (!rl.allowed) {
+      void writePublicAudit({
+        orgId: caller.orgId,
+        kind: "mcp.tool_call",
+        appId: caller.appId,
+        subjectUserId: caller.subjectUserId,
+        latencyMs: Date.now() - start,
+        success: false,
+        errorCode: "rate_limited",
+      })
+      return jsonrpc(id, {
+        content: [{ type: "text", text: JSON.stringify({ error: "rate_limited", retryAfter: rl.retryAfter ?? 60 }) }],
+        isError: true,
+      })
+    }
 
     let result: Record<string, unknown>
     let success = true

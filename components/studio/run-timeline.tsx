@@ -83,7 +83,7 @@ export function RunTimeline({ run }: Props) {
             {run.id}
           </p>
 
-          <dl className="mt-4 grid grid-cols-4 gap-3 text-[12px]">
+          <dl className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px]">
             <Metric label="Duration">
               {run.durationMs != null
                 ? `${(run.durationMs / 1000).toFixed(2)}s`

@@ -484,7 +484,9 @@ export async function revertApproval(
       { merge: true },
     )
     if (log.artifactId) {
-      await db.collection(orgPostsPath(orgId)).doc(log.artifactId).delete().catch(() => {})
+      await db.collection(orgPostsPath(orgId)).doc(log.artifactId).delete().catch((err: unknown) => {
+        console.error(`[approvals] revert: failed to delete artifact ${log.artifactId}`, err)
+      })
     }
   }
 

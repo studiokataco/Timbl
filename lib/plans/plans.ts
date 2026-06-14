@@ -30,7 +30,7 @@ export type PlanFeatureFlag =
 
 /* Metrics tracked per org per billing period. A value of `null` means
  * unlimited under this plan. */
-export type QuotaMetric = "agentRuns" | "scheduledPosts" | "brands" | "seats"
+export type QuotaMetric = "agentRuns" | "scheduledPosts" | "brands" | "seats" | "agents"
 
 export type PlanConfig = {
   id: string
@@ -56,7 +56,7 @@ export const PLANS: Record<string, PlanConfig> = {
     tier: "free",
     label: "Free",
     monthlyPriceInr: 0,
-    quotas: { agentRuns: 100, scheduledPosts: 30, brands: 1, seats: 2 },
+    quotas: { agentRuns: 100, scheduledPosts: 30, brands: 1, seats: 2, agents: 0 },
     features: {
       multiStepApproval: false,
       customCategories: true,
@@ -79,7 +79,7 @@ export const PLANS: Record<string, PlanConfig> = {
     tier: "studio",
     label: "Studio",
     monthlyPriceInr: 2999,
-    quotas: { agentRuns: 1500, scheduledPosts: null, brands: 1, seats: 5 },
+    quotas: { agentRuns: 1500, scheduledPosts: null, brands: 1, seats: 5, agents: 5 },
     features: {
       multiStepApproval: false,
       customCategories: true,
@@ -100,7 +100,7 @@ export const PLANS: Record<string, PlanConfig> = {
     label: "Agency",
     monthlyPriceInr: 11999,
     perBrandPriceInr: 5999,
-    quotas: { agentRuns: 5000, scheduledPosts: null, brands: 3, seats: 15 },
+    quotas: { agentRuns: 5000, scheduledPosts: null, brands: 3, seats: 15, agents: 20 },
     features: {
       multiStepApproval: true,
       customCategories: true,
@@ -121,7 +121,7 @@ export const PLANS: Record<string, PlanConfig> = {
     label: "Scale",
     /* Custom pricing - not self-serve. */
     monthlyPriceInr: null,
-    quotas: { agentRuns: null, scheduledPosts: null, brands: null, seats: null },
+    quotas: { agentRuns: null, scheduledPosts: null, brands: null, seats: null, agents: null },
     features: {
       multiStepApproval: true,
       customCategories: true,

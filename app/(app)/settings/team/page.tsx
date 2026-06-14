@@ -22,12 +22,6 @@ export default async function SettingsTeamPage() {
 
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
-      <div className="mb-4">
-        <h1 className="text-lg font-medium">Team</h1>
-        <p className="text-xs text-muted-foreground">
-          Invite people, approve new sign-ins, and manage member roles.
-        </p>
-      </div>
       <TeamManager members={members} invites={invites} requests={requests} />
     </div>
   )
