@@ -1,16 +1,25 @@
 "use client"
 
 import { format } from "date-fns"
-import { Calendar, ChevronLeft, ChevronRight, Clock, Grid3x3, List } from "lucide-react"
+import {
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Grid3x3,
+  List,
+  SlidersHorizontal,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export type CalendarView = "month" | "week" | "day" | "list"
 
@@ -21,6 +30,7 @@ type Props = {
   onNext: () => void
   onToday: () => void
   onViewChange: (v: CalendarView) => void
+  onOpenFilters?: () => void
 }
 
 function viewLabel(view: CalendarView, date: Date): string {
@@ -37,6 +47,50 @@ const VIEWS: { value: CalendarView; icon: React.ReactNode; label: string }[] = [
   { value: "list", icon: <List className="size-3.5" aria-hidden />, label: "List" },
 ]
 
+function TodayMenu({
+  view,
+  onToday,
+  onViewChange,
+}: {
+  view: CalendarView
+  onToday: () => void
+  onViewChange: (v: CalendarView) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1 pr-2"
+          />
+        }
+      >
+        Today
+        <ChevronDown aria-hidden className="size-3.5 opacity-60" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-36">
+        <DropdownMenuItem onClick={onToday}>Go to today</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {VIEWS.map((v) => (
+          <DropdownMenuItem
+            key={v.value}
+            onClick={() => onViewChange(v.value)}
+            className="gap-2"
+          >
+            {v.icon}
+            {v.label}
+            {view === v.value ? (
+              <Check aria-hidden className="ml-auto size-3.5" />
+            ) : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export function CalendarToolbar({
   visibleDate,
   view,
@@ -44,82 +98,120 @@ export function CalendarToolbar({
   onNext,
   onToday,
   onViewChange,
+  onOpenFilters,
 }: Props) {
   const prevLabel =
     view === "week" ? "Previous week" : view === "day" ? "Previous day" : "Previous month"
   const nextLabel =
     view === "week" ? "Next week" : view === "day" ? "Next day" : "Next month"
+  const title = viewLabel(view, visibleDate)
 
   return (
-    <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onToday}>
-          Today
-        </Button>
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onPrev}
-            aria-label={prevLabel}
-            className="size-8"
-          >
-            <ChevronLeft aria-hidden className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onNext}
-            aria-label={nextLabel}
-            className="size-8"
-          >
-            <ChevronRight aria-hidden className="size-4" />
-          </Button>
+    <>
+      <div className="relative sm:hidden mb-4 flex items-center justify-between min-h-9">
+        <div className="relative z-10">
+          <TodayMenu view={view} onToday={onToday} onViewChange={onViewChange} />
         </div>
-        <h2 className="text-display-sm text-foreground ml-1">
-          {viewLabel(view, visibleDate)}
-        </h2>
-      </div>
 
-      {/* Desktop: button group */}
-      <div className="hidden sm:flex items-center gap-1 rounded-lg border border-border bg-background p-1">
-        {VIEWS.map((v) => (
+        <div className="pointer-events-none absolute inset-x-0 flex justify-center">
+          <div className="pointer-events-auto flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onPrev}
+              aria-label={prevLabel}
+              className="size-8 shrink-0"
+            >
+              <ChevronLeft aria-hidden className="size-4" />
+            </Button>
+            <h2 className="text-sm font-semibold text-foreground px-1 whitespace-nowrap">
+              {title}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onNext}
+              aria-label={nextLabel}
+              className="size-8 shrink-0"
+            >
+              <ChevronRight aria-hidden className="size-4" />
+            </Button>
+          </div>
+        </div>
+
+        {onOpenFilters ? (
           <Button
-            key={v.value}
-            variant={view === v.value ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => onViewChange(v.value)}
-            className="h-8 gap-1.5"
+            variant="outline"
+            size="icon"
+            onClick={onOpenFilters}
+            aria-label="Filters and insights"
+            className="relative z-10 size-8 shrink-0"
           >
-            {v.icon}
-            {v.label}
+            <SlidersHorizontal aria-hidden className="size-4" />
           </Button>
-        ))}
+        ) : (
+          <span aria-hidden className="size-8 shrink-0" />
+        )}
       </div>
 
-      {/* Mobile: select */}
-      <div className="sm:hidden">
-        <Select
-          value={view}
-          onValueChange={(v) => onViewChange((v ?? "month") as CalendarView)}
-        >
-          <SelectTrigger className="w-32" size="sm">
-            <SelectValue>
-              {(v) => VIEWS.find((view) => view.value === v)?.label ?? v}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
+      <div className="hidden sm:flex mb-4 items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Button variant="outline" size="sm" onClick={onToday}>
+            Today
+          </Button>
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onPrev}
+              aria-label={prevLabel}
+              className="size-8"
+            >
+              <ChevronLeft aria-hidden className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onNext}
+              aria-label={nextLabel}
+              className="size-8"
+            >
+              <ChevronRight aria-hidden className="size-4" />
+            </Button>
+          </div>
+          <h2 className="text-display-sm text-foreground ml-1 truncate min-w-0">
+            {title}
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
             {VIEWS.map((v) => (
-              <SelectItem key={v.value} value={v.value}>
-                <span className={cn("flex items-center gap-2")}>
-                  {v.icon}
-                  {v.label}
-                </span>
-              </SelectItem>
+              <Button
+                key={v.value}
+                variant={view === v.value ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => onViewChange(v.value)}
+                className="h-8 gap-1.5"
+              >
+                {v.icon}
+                {v.label}
+              </Button>
             ))}
-          </SelectContent>
-        </Select>
+          </div>
+          {onOpenFilters ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="hidden sm:inline-flex lg:hidden size-9 shrink-0"
+              onClick={onOpenFilters}
+              aria-label="Filters and insights"
+            >
+              <SlidersHorizontal aria-hidden className="size-4" />
+            </Button>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </>
   )
 }

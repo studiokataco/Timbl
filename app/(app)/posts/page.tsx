@@ -31,22 +31,20 @@ export default async function PostsPage() {
   ])
 
   return (
-    <>
-      <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
-        <div className="mx-auto w-full max-w-6xl space-y-8">
-          <PageHeader
-            title="All posts"
-            description="Filter, sort, export, bulk-update. Select from the dropdowns or search to find a post."
-          />
-          <PostsTable
-            orgId={orgId}
-            posts={posts}
-            categories={categories}
-            users={users}
-            range={{ start, end }}
-          />
-        </div>
-      </div>
-    </>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 py-6 sm:px-10 lg:py-14">
+      <PageHeader
+        title="All posts"
+        description="Search, filter, and update your content pipeline."
+        className="mb-4 md:mb-8"
+        size="sm"
+      />
+      <PostsTable
+        orgId={orgId}
+        posts={posts}
+        categories={categories}
+        users={users}
+        range={{ start, end }}
+      />
+    </div>
   )
 }

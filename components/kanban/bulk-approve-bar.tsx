@@ -44,7 +44,7 @@ export function BulkApproveBar({ selectedIds, onClear }: Props) {
     <div
       role="toolbar"
       aria-label="Bulk approval"
-      className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-border bg-background px-4 py-2.5 shadow-md"
+      className="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-2.5 shadow-lg md:bottom-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:shadow-md"
     >
       <span className="text-sm tabular-nums">{count} selected</span>
       <Button size="sm" onClick={approveSelected} disabled={pending}>

@@ -1,7 +1,8 @@
 import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { orgPath, orgUsageDocPath } from "@/lib/firebase/paths"
+import { orgAgentConfigsPath, orgPath, orgUsageDocPath } from "@/lib/firebase/paths"
+import { isBoutiqueAgent } from "@/lib/agents/defaults"
 import type { BillingStatus } from "@/lib/schemas/billing"
 import {
   FREE_PLAN_ID,
@@ -112,6 +113,30 @@ export async function requireActiveBilling(orgId: string): Promise<void> {
     throw new Error(
       "Billing is past due. Update your payment method in Settings -> Billing to resume agent runs.",
     )
+  }
+}
+
+/* Capacity is measured in ENABLED boutique agents, not installed docs:
+ * disabling an agent (keeping its config) frees a slot, so switching which
+ * agents run is a free user preference rather than an install/delete chore. */
+export async function requireAgentCapacity(orgId: string): Promise<void> {
+  const plan = await getOrgPlan(orgId)
+  const limit = plan.quotas.agents
+  if (limit === null) return
+  const snap = await getAdminDb()
+    .collection(orgAgentConfigsPath(orgId))
+    .get()
+  const used = snap.docs.filter(
+    (d) => isBoutiqueAgent(d.id) && d.data().enabled !== false,
+  ).length
+  if (used >= limit) {
+    throw new PlanGateError({
+      kind: "quota",
+      metric: "agents",
+      limit,
+      used,
+      currentTier: plan.tier,
+    })
   }
 }
 

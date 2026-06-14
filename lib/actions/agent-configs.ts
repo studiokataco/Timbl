@@ -14,10 +14,12 @@ import {
   AGENT_DEFAULTS,
   getAgentDefault,
   getAgentDefaultBudgets,
+  isBoutiqueAgent,
   listAgentDefaultNames,
   type AgentDefault,
 } from "@/lib/agents/defaults"
 import type { ServerActionResult } from "@/lib/schemas"
+import { requireAgentCapacity, gateErrorToResult } from "@/lib/plans/gate"
 
 const UNDELETABLE_AGENTS = new Set(["hello", "pipeline"])
 
@@ -90,6 +92,17 @@ export async function toggleAgent(input: unknown): Promise<ServerActionResult> {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
   const orgId = await getCurrentOrgId()
+  /* Enabling a boutique agent consumes a plan slot; gate it like install.
+   * Disabling never gates (it frees a slot). */
+  if (parsed.data.enabled && isBoutiqueAgent(parsed.data.name)) {
+    try {
+      await requireAgentCapacity(orgId)
+    } catch (err) {
+      const gated = gateErrorToResult(err)
+      if (gated) return gated
+      throw err
+    }
+  }
   const ref = getAdminDb()
     .collection(orgAgentConfigsPath(orgId))
     .doc(parsed.data.name)
@@ -161,6 +174,15 @@ export async function createAgentConfig(
     }
   }
   const orgId = await getCurrentOrgId()
+  if (def.boutique) {
+    try {
+      await requireAgentCapacity(orgId)
+    } catch (err) {
+      const gated = gateErrorToResult(err)
+      if (gated) return gated
+      throw err
+    }
+  }
   const ref = getAdminDb()
     .collection(orgAgentConfigsPath(orgId))
     .doc(def.name)

@@ -27,21 +27,20 @@ export default async function KanbanPage() {
   ])
 
   return (
-    <>
-      <div className="flex-1 flex flex-col min-h-0 px-6 sm:px-10 py-10 lg:py-14">
-        <PageHeader
-          title="Kanban"
-          description="Drag cards between columns to move posts through the workflow."
-          className="mb-8"
-        />
-        <KanbanBoard
-          orgId={orgId}
-          initialPosts={posts}
-          categories={categories}
-          users={users}
-          range={{ start, end }}
-        />
-      </div>
-    </>
+    <div className="flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-10 lg:py-14">
+      <PageHeader
+        title="Kanban"
+        description="Move posts through your workflow."
+        className="mb-4 md:mb-8"
+        size="sm"
+      />
+      <KanbanBoard
+        orgId={orgId}
+        initialPosts={posts}
+        categories={categories}
+        users={users}
+        range={{ start, end }}
+      />
+    </div>
   )
 }

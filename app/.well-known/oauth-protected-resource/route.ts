@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server"
+import { siteUrl } from "@/lib/seo"
 
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic"
 
 /*
  * OAuth 2.0 Protected Resource Metadata (RFC 9728 / MCP 2025-06).
  * Points MCP clients at the authorization server for token acquisition.
  */
-export function GET(req: NextRequest) {
-  const base = new URL(req.url).origin
+export function GET() {
+  const base = siteUrl()
   return Response.json(
     {
       resource: `${base}/api/mcp`,

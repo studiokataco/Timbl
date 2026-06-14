@@ -73,8 +73,8 @@ export function PipelineGraph({ agents, runs, initialPublishCounts }: Props) {
   }, [agents, runs])
 
   return (
-    <div className="px-6 pt-6 pb-2">
-      <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
+    <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+      <div className="flex items-stretch gap-0 overflow-x-auto no-scrollbar pb-2 snap-x snap-mandatory">
         {PIPELINE_STAGES.map((stage, i) => {
           const isPublish = stage.key === "PUBLISH"
           const primary = isPublish
@@ -90,7 +90,7 @@ export function PipelineGraph({ agents, runs, initialPublishCounts }: Props) {
                   : undefined
             : undefined
           return (
-            <div key={stage.key} className="flex items-center shrink-0">
+            <div key={stage.key} className="flex items-center shrink-0 snap-start">
               <StageCard
                 label={stage.label}
                 count={primary}
@@ -118,17 +118,11 @@ function StageCard({
   agents: AgentConfig[]
 }) {
   return (
-    <div
-      className="rounded-lg bg-secondary p-6 min-w-[180px] border border-transparent"
-      style={{ width: 200 }}
-    >
+    <div className="rounded-lg bg-secondary border border-transparent p-4 sm:p-6 w-[148px] sm:w-[180px] shrink-0">
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <p
-        className="mt-2 text-display-sm tabular-nums text-foreground leading-none"
-        style={{ fontFamily: "var(--font-sans)" }}
-      >
+      <p className="mt-2 text-title-md sm:text-display-sm tabular-nums text-foreground leading-none font-semibold">
         {count}
       </p>
       {secondary && (
@@ -136,7 +130,7 @@ function StageCard({
           {secondary}
         </p>
       )}
-      <div className="mt-4 flex -space-x-1.5">
+      <div className="mt-3 sm:mt-4 flex -space-x-1.5">
         {agents.slice(0, 4).map((a) => (
           <AgentChip key={a.name} name={a.name} />
         ))}
@@ -173,12 +167,10 @@ function AgentChip({ name }: { name: string }) {
 function Arrow() {
   return (
     <svg
-      width="40"
-      height="24"
       viewBox="0 0 40 24"
       fill="none"
       aria-hidden
-      className="text-border shrink-0"
+      className="h-6 w-6 text-border shrink-0 sm:h-6 sm:w-10"
     >
       <line
         x1="2"

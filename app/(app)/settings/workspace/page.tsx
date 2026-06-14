@@ -17,36 +17,26 @@ export default async function SettingsWorkspacePage() {
   ])
 
   return (
-    <div className="px-4 sm:px-6 py-4 flex-1">
-      <div className="mb-2">
-        <h1 className="text-lg font-medium">Workspace</h1>
-        <p className="text-xs text-muted-foreground">
-          Setup wizard, brand voice, and workspace options for this
-          organization.
-        </p>
-      </div>
+    <div className="px-4 sm:px-6 pt-4 pb-24 flex-1">
+      <SettingsSection
+        title="Setup"
+        description="Re-run the onboarding wizard, replay the product tour, or switch workspaces."
+        isFirst
+      >
+        <WorkspaceSettings
+          completedAt={state.completedAt}
+          industry={state.profile?.industry}
+          devShim={IS_DEV_SHIM}
+          devOrgMode={devOrgMode}
+        />
+      </SettingsSection>
 
-      <div className="max-w-6xl">
-        <SettingsSection
-          title="Setup"
-          description="Re-run the onboarding wizard, replay the product tour, or switch demo workspaces in local dev."
-          isFirst
-        >
-          <WorkspaceSettings
-            completedAt={state.completedAt}
-            industry={state.profile?.industry}
-            devShim={IS_DEV_SHIM}
-            devOrgMode={devOrgMode}
-          />
-        </SettingsSection>
-
-        <SettingsSection
-          title="Brand"
-          description="Teach the AI your brand voice, audience, channels, and posting cadence."
-        >
-          <BrandWizardClient />
-        </SettingsSection>
-      </div>
+      <SettingsSection
+        title="Brand"
+        description="Teach the AI your brand voice, audience, channels, and posting cadence."
+      >
+        <BrandWizardClient />
+      </SettingsSection>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { SettingDisclosure } from "@/components/settings/setting-disclosure"
 import { resetOnboarding } from "@/lib/actions/onboarding"
 import { setDevOrg } from "@/lib/actions/dev-org"
 import {
@@ -65,10 +66,19 @@ export function WorkspaceSettings({
     })
   }
 
+  const setupSummary = completedAt
+    ? `Completed ${new Date(completedAt).toLocaleDateString()}${
+        industry ? ` · ${industry}` : ""
+      }`
+    : "Not completed yet"
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {devShim ? (
-        <section className="rounded-lg border border-border p-4">
+        <SettingDisclosure
+          title="Demo workspace mode"
+          summary={devOrgMode === "demo" ? "On - demo workspace" : "Off - your workspace"}
+        >
           <div className="flex items-start gap-3">
             <Checkbox
               id="demo-workspace-mode"
@@ -79,7 +89,7 @@ export function WorkspaceSettings({
             />
             <div className="space-y-1">
               <Label htmlFor="demo-workspace-mode" className="text-sm font-medium">
-                Demo workspace mode
+                Use the demo workspace
               </Label>
               <p className="text-xs text-muted-foreground">
                 On - load the fully-seeded Timbl demo workspace (its agents,
@@ -94,17 +104,11 @@ export function WorkspaceSettings({
               </Link>
             </div>
           </div>
-        </section>
+        </SettingDisclosure>
       ) : null}
 
-      <section className="rounded-lg border border-border p-4">
-        <h2 className="text-sm font-medium">Setup wizard</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {completedAt
-            ? `Completed ${new Date(completedAt).toLocaleDateString()}${
-                industry ? ` · ${industry}` : ""
-              }.`
-            : "Not completed yet."}{" "}
+      <SettingDisclosure title="Setup wizard" summary={setupSummary}>
+        <p className="text-xs text-muted-foreground">
           Re-running the wizard adds any newly-suggested categories without
           touching ones you already have, and re-tailors your agents to the
           profile you confirm.
@@ -115,11 +119,13 @@ export function WorkspaceSettings({
             {pending ? "Opening…" : "Re-run setup"}
           </Button>
         </div>
-      </section>
+      </SettingDisclosure>
 
-      <section className="rounded-lg border border-border p-4">
-        <h2 className="text-sm font-medium">Product tour</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+      <SettingDisclosure
+        title="Product tour"
+        summary="Guided walkthrough - replay any time"
+      >
+        <p className="text-xs text-muted-foreground">
           A guided walkthrough of the calendar, posts, kanban, studio, templates,
           and settings. New users see it once on first visit; replay it any time
           to brief teammates.
@@ -144,7 +150,7 @@ export function WorkspaceSettings({
             Reset auto-play
           </Button>
         </div>
-      </section>
+      </SettingDisclosure>
     </div>
   )
 }

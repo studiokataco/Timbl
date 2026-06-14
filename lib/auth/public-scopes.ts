@@ -8,6 +8,7 @@ export const publicScopeSchema = z.enum([
   "ideation:write",
   "approvals:read",
   "approvals:request",
+  "approvals:decide",
   "metrics:read",
   "channels:read",
   "categories:read",

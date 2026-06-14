@@ -148,7 +148,13 @@ def call(url, method="GET", body=None):
     with urllib.request.urlopen(req) as res:
         return json.load(res)
 
-backends = call(f"{base}/projects/{project}/locations/-/backends").get("backends", [])
+try:
+    backends = call(f"{base}/projects/{project}/locations/-/backends").get("backends", [])
+except Exception as e:
+    print(f"[warn] Could not list App Hosting backends ({e}).")
+    print("New secret version is live in GSM. Push to main to deploy it to App Hosting.")
+    raise SystemExit(0)
+
 if not backends:
     print("No App Hosting backends found - nothing to roll out.")
     raise SystemExit(0)
@@ -157,19 +163,27 @@ stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
 rollouts = []
 for be in backends:
     rid = f"rotate-{slug}-{stamp}"
-    call(f"{base}/{be['name']}/builds?buildId={rid}",
-         method="POST", body={"source": {"codebase": {"branch": branch}}})
-    call(f"{base}/{be['name']}/rollouts?rolloutId={rid}",
-         method="POST", body={"build": f"{be['name']}/builds/{rid}"})
-    rollouts.append(f"{be['name']}/rollouts/{rid}")
-    print(f"Rollout started: {be['name'].split('/')[-1]} ({rid})")
+    try:
+        call(f"{base}/{be['name']}/builds?buildId={rid}",
+             method="POST", body={"source": {"codebase": {"branch": branch}}})
+        call(f"{base}/{be['name']}/rollouts?rolloutId={rid}",
+             method="POST", body={"build": f"{be['name']}/builds/{rid}"})
+        rollouts.append(f"{be['name']}/rollouts/{rid}")
+        print(f"Rollout started: {be['name'].split('/')[-1]} ({rid})")
+    except Exception as e:
+        print(f"[warn] Could not trigger rollout for {be['name'].split('/')[-1]} ({e}).")
+        print("New secret version is live in GSM. Push to main to deploy it to App Hosting.")
 
 deadline = time.time() + 1200
 pending = set(rollouts)
 while pending and time.time() < deadline:
     time.sleep(30)
     for name in list(pending):
-        state = call(f"{base}/{name}").get("state")
+        try:
+            state = call(f"{base}/{name}").get("state")
+        except Exception:
+            pending.discard(name)
+            continue
         backend = name.split("/backends/")[1].split("/")[0]
         if state == "SUCCEEDED":
             print(f"{backend}: rollout SUCCEEDED")
@@ -180,7 +194,6 @@ while pending and time.time() < deadline:
 if pending:
     short = ", ".join(n.split("/backends/")[1].split("/")[0] for n in pending)
     print(f"Still rolling out after 20m: {short} - verify in the App Hosting console.")
-    raise SystemExit(1)
 PYEOF
 else
   echo "apphosting.yaml does not bind ${SECRET_NAME} - no App Hosting rollout needed."

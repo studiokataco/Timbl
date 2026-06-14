@@ -46,33 +46,24 @@ export default async function SettingsPlanPage() {
 
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
-      <div className="mb-2">
-        <h1 className="text-lg font-medium">Plan & Usage</h1>
-        <p className="text-xs text-muted-foreground">
-          What this workspace has used this month, and the plan it runs on.
-        </p>
-      </div>
+      <SettingsSection
+        title="Usage"
+        description="Consumption this month against your plan limits."
+        isFirst
+      >
+        <UsageOverview initial={usage} />
+      </SettingsSection>
 
-      <div className="max-w-6xl">
-        <SettingsSection
-          title="Usage"
-          description="Consumption this month against your plan limits."
-          isFirst
-        >
-          <UsageOverview initial={usage} />
-        </SettingsSection>
-
-        <SettingsSection
-          title="Billing"
-          description={
-            billingLive
-              ? "Manage your subscription and plan. Prices are in INR."
-              : "Plan changes and checkout are coming soon."
-          }
-        >
-          {billingLive ? <BillingLive /> : <BillingPageGate />}
-        </SettingsSection>
-      </div>
+      <SettingsSection
+        title="Billing"
+        description={
+          billingLive
+            ? "Manage your subscription and plan. Prices are in INR."
+            : "Plan changes and checkout are coming soon."
+        }
+      >
+        {billingLive ? <BillingLive /> : <BillingPageGate />}
+      </SettingsSection>
     </div>
   )
 }

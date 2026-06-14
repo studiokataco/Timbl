@@ -1,9 +1,10 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { memo, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
-import { MoreHorizontal, Palette, Pencil, Sparkles, Trash2 } from "lucide-react"
+import { MoreHorizontal, Palette, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,8 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { GenerateDraftsDialog } from "@/components/agents/generate-drafts-dialog"
 import { cn } from "@/lib/utils"
+import { isProtectedStatusId } from "@/lib/schemas"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, KanbanColumn, Post, PostStatus, User } from "@/lib/schemas"
 import { KanbanCard } from "./card"
@@ -32,9 +33,11 @@ type Props = {
   selectedIds?: ReadonlySet<string>
   selectionActive?: boolean
   onToggleSelect?: (post: WithId<Post>) => void
+  dragEnabled?: boolean
+  fullWidth?: boolean
 }
 
-export function KanbanColumn({
+export const KanbanColumnComponent = memo(function KanbanColumnComponent({
   column,
   allColumns,
   posts,
@@ -45,19 +48,26 @@ export function KanbanColumn({
   selectedIds,
   selectionActive,
   onToggleSelect,
+  dragEnabled = true,
+  fullWidth = false,
 }: Props) {
+  const router = useRouter()
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
     data: { type: "column" },
   })
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [generateOpen, setGenerateOpen] = useState(false)
 
   const columnIds = useMemo(() => allColumns.map((c) => c.id), [allColumns])
 
   return (
-    <div className="flex flex-col flex-1 min-w-[200px] min-h-full">
+    <div
+      className={cn(
+        "flex min-h-full flex-col flex-1",
+        fullWidth ? "w-full min-w-0" : "min-w-[200px]",
+      )}
+    >
       <div className="flex items-center gap-2 mb-2 px-1">
         <span
           aria-hidden
@@ -85,35 +95,24 @@ export function KanbanColumn({
             <MoreHorizontal aria-hidden className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setGenerateOpen(true)}>
-              <Sparkles aria-hidden className="size-3.5" />
-              Generate drafts
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
               <Pencil aria-hidden className="size-3.5" />
               Rename
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
               <Palette aria-hidden className="size-3.5" />
               Recolor
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onSelect={() => setDeleteOpen(true)}
-              disabled={allColumns.length <= 1}
+              onClick={() => setDeleteOpen(true)}
+              disabled={allColumns.length <= 1 || isProtectedStatusId(column.id)}
             >
               <Trash2 aria-hidden className="size-3.5" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <GenerateDraftsDialog
-          open={generateOpen}
-          onOpenChange={setGenerateOpen}
-          columnId={column.id}
-          columnLabel={column.label}
-        />
       </div>
       <SortableContext
         items={posts.map((p) => p.id)}
@@ -149,6 +148,7 @@ export function KanbanColumn({
               onToggleSelect={
                 onToggleSelect ? () => onToggleSelect(post) : undefined
               }
+              dragEnabled={dragEnabled}
             />
           ))}
           {posts.length === 0 && (
@@ -164,6 +164,7 @@ export function KanbanColumn({
         onOpenChange={setEditOpen}
         mode="edit"
         column={column}
+        onDone={() => router.refresh()}
       />
       <ColumnDeleteDialog
         open={deleteOpen}
@@ -171,7 +172,8 @@ export function KanbanColumn({
         column={column}
         allColumns={allColumns}
         postCount={posts.length}
+        onDone={() => router.refresh()}
       />
     </div>
   )
-}
+})

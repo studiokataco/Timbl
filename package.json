@@ -26,6 +26,7 @@
     "functions:build": "pnpm --dir functions build",
     "auth:configure": "bash scripts/configure-auth-domain.sh",
     "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh",
+    "secrets:pull": "bash scripts/pull-secrets.sh",
     "cutover:prod": "bash scripts/cutover-timbl-prod.sh",
     "secrets:rotate-resend": "bash scripts/rotate-secret.sh RESEND_API_KEY --env-local",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"

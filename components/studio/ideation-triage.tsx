@@ -212,13 +212,13 @@ export function IdeationTriage({ item, initialItems }: Props) {
   return (
     <div className="h-full overflow-y-auto px-5 py-5">
       {/* Hero card */}
-      <section className="rounded-lg border border-border bg-canvas p-5">
-        <div className="flex items-start gap-4">
+      <section className="rounded-lg border border-border bg-canvas p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="flex-1 min-w-0">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
               Idea {idx >= 0 ? `${idx + 1} of ${items.length}` : ""}
             </p>
-            <h2 className="mt-1 text-display-sm text-foreground leading-tight">
+            <h2 className="mt-1 text-title-md sm:text-display-sm text-foreground leading-tight">
               {item.title}
             </h2>
           </div>
@@ -254,7 +254,7 @@ export function IdeationTriage({ item, initialItems }: Props) {
       )}
 
       {/* Primary CTAs */}
-      <div className="mt-6 flex items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" onClick={promote} disabled={pending}>
           {pending ? (
             <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -279,7 +279,7 @@ export function IdeationTriage({ item, initialItems }: Props) {
           <X className="size-3.5" aria-hidden />
           Dismiss
         </Button>
-        <span className="flex-1" />
+        <span className="hidden sm:block flex-1" />
         <KbdHint />
       </div>
 

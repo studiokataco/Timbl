@@ -138,15 +138,15 @@ export function AgentPlayground({ agent, allAgentNames }: Props) {
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      <div className="px-5 pt-5 pb-3 border-b border-border">
+      <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-border">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
           Agent
         </p>
-        <div className="mt-1 flex items-start justify-between gap-3">
-          <h3 className="text-title-lg text-foreground truncate">
+        <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
+          <h3 className="text-title-lg text-foreground truncate min-w-0 flex-1">
             {agent.name}
           </h3>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
             {HEADLESS_AGENTS.has(agent.name) && (
               <Button
                 size="sm"
@@ -235,7 +235,7 @@ function TabList({
     <div
       role="tablist"
       aria-label="Agent playground sections"
-      className="mt-4 inline-flex items-center gap-1 rounded-pill bg-secondary p-0.5"
+      className="mt-4 max-w-full overflow-x-auto no-scrollbar"
       onKeyDown={(e) => {
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
         e.preventDefault()
@@ -247,6 +247,7 @@ function TabList({
         setTab(TABS[next].key)
       }}
     >
+      <div className="inline-flex min-w-max items-center gap-1 rounded-pill bg-secondary p-0.5">
       {TABS.map((t) => {
         const active = t.key === tab
         return (
@@ -267,6 +268,7 @@ function TabList({
           </button>
         )
       })}
+      </div>
     </div>
   )
 }
@@ -570,12 +572,12 @@ function TuneTab({
         </div>
       </details>
 
-      <div className="sticky bottom-0 -mx-5 px-5 py-3 border-t border-border bg-background flex items-center justify-between gap-2">
+      <div className="sticky bottom-0 -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 border-t border-border bg-background flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {anyDirty ? (
           <button
             type="button"
             onClick={reset}
-            className="text-[12px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            className="text-[12px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline text-left"
           >
             Discard changes
           </button>
@@ -584,7 +586,7 @@ function TuneTab({
             No unsaved changes
           </span>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Button
             type="button"
             variant="outline"
@@ -888,7 +890,7 @@ function HistoryTab({ agent }: { agent: AgentConfig }) {
 
   return (
     <div className="h-full overflow-y-auto px-5 py-5 space-y-4">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="Runs" value={stats.total.toString()} />
         <Stat
           label="Success"

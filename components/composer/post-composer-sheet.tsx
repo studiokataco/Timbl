@@ -23,7 +23,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { SegmentedTabs } from "@/components/ui/segmented-tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -159,6 +160,7 @@ export function PostComposerSheet({
   const [templateName, setTemplateName] = useState("")
   const [templateCadence, setTemplateCadence] =
     useState<TemplateCadence>("ad-hoc")
+  const [composerTab, setComposerTab] = useState("brief")
   const lastSavedRef = useRef<string>("")
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -169,6 +171,7 @@ export function PostComposerSheet({
     lastSavedRef.current = JSON.stringify(post ?? {})
     setSaveState("idle")
     setThumbnail(null)
+    setComposerTab("brief")
     if (post?.id) recordRecentPost(post.id)
   }, [post])
 
@@ -409,7 +412,7 @@ export function PostComposerSheet({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onSelect={openSaveAsTemplate}
+                      onClick={openSaveAsTemplate}
                       disabled={!post?.id}
                     >
                       Save as template
@@ -436,20 +439,32 @@ export function PostComposerSheet({
             </SheetDescription>
           </SheetHeader>
 
-          <Tabs defaultValue="brief" className="flex-1 overflow-y-auto">
-            <TabsList className="mx-6 mt-4 grid grid-cols-6 w-[calc(100%-3rem)]">
-              <TabsTrigger value="brief">Brief</TabsTrigger>
-              <TabsTrigger value="copy">Copy</TabsTrigger>
-              <TabsTrigger value="design">Design</TabsTrigger>
-              <TabsTrigger value="channels">Channels</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
+          <Tabs
+            value={composerTab}
+            onValueChange={setComposerTab}
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
+            <div className="shrink-0 px-4 pt-4 sm:px-6">
+              <SegmentedTabs
+                tabs={[
+                  { id: "brief", label: "Brief" },
+                  { id: "copy", label: "Copy" },
+                  { id: "design", label: "Design" },
+                  { id: "channels", label: "Channels" },
+                  { id: "notes", label: "Notes" },
+                  { id: "preview", label: "Preview" },
+                ]}
+                value={composerTab}
+                onChange={setComposerTab}
+                scrollable
+                className="w-full"
+              />
+            </div>
 
             {/* --- Brief --- */}
             <TabsContent
               value="brief"
-              className="px-6 py-5 flex flex-col gap-4"
+              className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 flex flex-col gap-4"
             >
               <div className="flex flex-col gap-1.5">
                 <Label>Title</Label>
@@ -695,7 +710,7 @@ export function PostComposerSheet({
             </TabsContent>
 
             {/* --- Copy --- */}
-            <TabsContent value="copy" className="px-6 py-5 flex flex-col gap-4">
+            <TabsContent value="copy" className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label>Caption</Label>
                 <Textarea
@@ -770,7 +785,7 @@ export function PostComposerSheet({
             {/* --- Design --- */}
             <TabsContent
               value="design"
-              className="px-6 py-5 flex flex-col gap-4"
+              className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 flex flex-col gap-4"
             >
               <div className="flex flex-col gap-1.5">
                 <Label>Post type</Label>
@@ -884,7 +899,7 @@ export function PostComposerSheet({
             </TabsContent>
 
             {/* --- Notes --- */}
-            <TabsContent value="notes" className="px-6 py-5 flex flex-col gap-2">
+            <TabsContent value="notes" className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 flex flex-col gap-2">
               <Label>Notes</Label>
               <Textarea
                 rows={8}
@@ -895,7 +910,7 @@ export function PostComposerSheet({
             </TabsContent>
 
             {/* --- Preview --- */}
-            <TabsContent value="preview" className="px-6 py-5">
+            <TabsContent value="preview" className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
               <NetworkPreview
                 post={{
                   brief: draft.brief,

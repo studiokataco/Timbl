@@ -82,13 +82,6 @@ const SECTIONS: Section[] = [
 export function SettingsOverview() {
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
-      <div className="mb-4">
-        <h1 className="text-lg font-medium">Settings</h1>
-        <p className="text-xs text-muted-foreground">
-          Everything you can configure for this workspace, in one place.
-        </p>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-2">
         {SECTIONS.map((s) => {
           const Icon = s.icon

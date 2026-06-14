@@ -14,6 +14,7 @@ const SCOPE_LABELS: Record<string, string> = {
   "ideation:write": "Create and manage ideas",
   "approvals:read": "View approval requests",
   "approvals:request": "Request post approvals",
+  "approvals:decide": "Approve or reject posts",
   "metrics:read": "Read publishing metrics",
   "channels:read": "List connected channels",
   "categories:read": "List content categories",

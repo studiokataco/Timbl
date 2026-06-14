@@ -27,7 +27,7 @@ export function registerApprovalsCommands(program) {
         }
         handle(() => call("approvals", "decide", {
             postId: opts.postId,
-            decision: opts.approved ? "approved" : "rejected",
+            approved: Boolean(opts.approved),
             ...(opts.feedback && { feedback: opts.feedback }),
         }));
     });

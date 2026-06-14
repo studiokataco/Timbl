@@ -277,7 +277,7 @@ export async function callMcpTool(
       const { postId } = requestApprovalInput.parse(args)
       const ref = db.doc(`${orgPostsPath(caller.orgId)}/${postId}`)
       if (!(await ref.get()).exists) throw Object.assign(new Error("Post not found"), { code: "not_found" })
-      await ref.set({ "agentMeta.reviewState": "pending", updatedAt: new Date().toISOString() }, { merge: true })
+      await ref.update({ "agentMeta.reviewState": "pending", updatedAt: new Date().toISOString() })
       return { ok: true, status: "pending", message: "Approval requested" }
     }
 

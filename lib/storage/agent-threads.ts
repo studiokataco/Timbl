@@ -123,10 +123,7 @@ export async function createThread(
 ): Promise<Thread> {
   const now = Date.now()
   const thread: Thread = {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `t_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    id: crypto.randomUUID(),
     organizationId,
     agentName,
     createdAt: now,
@@ -215,10 +212,7 @@ export async function importThread(
     ? filtered.reduce((acc, m) => (m.createdAt > acc ? m.createdAt : acc), 0)
     : now
   const thread: Thread = {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `t_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    id: crypto.randomUUID(),
     organizationId,
     agentName,
     title: deriveTitle(filtered),

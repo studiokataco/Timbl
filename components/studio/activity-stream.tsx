@@ -288,7 +288,7 @@ export function ActivityStream({
   }, [runs])
 
   return (
-    <section className="px-6 py-6">
+    <section className="px-4 sm:px-6 py-4 sm:py-6">
       <header className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="text-title-md text-foreground">Activity</h2>
         <p className="text-caption text-muted-foreground tabular-nums">
@@ -297,7 +297,8 @@ export function ActivityStream({
       </header>
 
       {/* Filter chip row - Cal.com category-tab styling */}
-      <div className="mb-4 inline-flex items-center gap-0.5 rounded-pill bg-secondary p-0.5">
+      <div className="mb-4 max-w-full overflow-x-auto no-scrollbar">
+        <div className="inline-flex min-w-max items-center gap-0.5 rounded-pill bg-secondary p-0.5">
         {FILTERS.map((f) => {
           const active = f.key === filter
           const count = counts[f.key]
@@ -308,7 +309,7 @@ export function ActivityStream({
               onClick={() => setFilter(f.key)}
               aria-pressed={active}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-[12px] transition-colors",
+                "inline-flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[12px] transition-colors",
                 active
                   ? "bg-background text-foreground shadow-[0_1px_2px_rgba(0,0,0,.05)]"
                   : "text-muted-foreground hover:text-foreground",
@@ -321,6 +322,7 @@ export function ActivityStream({
             </button>
           )
         })}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -451,36 +453,35 @@ function RunRow({
       )}
       aria-pressed={active}
     >
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm font-semibold text-foreground">
-          {run.agentName}
-        </span>
-        <Badge
-          variant="outline"
-          className="text-[10px] uppercase tracking-wide rounded-pill border-border bg-background text-muted-foreground capitalize"
-        >
-          {run.trigger}
-        </Badge>
-        <Badge
-          className={cn(
-            "text-[11px] capitalize rounded-pill border-transparent",
-            STATUS_TONE[run.status] ?? "",
-          )}
-        >
-          {run.status.replace("_", " ")}
-        </Badge>
-        <span className="flex-1" />
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {relTime(run.startedAt)}
-        </span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {tokens.toLocaleString()} tok
-        </span>
-        {isLive && (
-          <span className="text-[11px] tabular-nums text-foreground">
-            ${run.metrics.usdCost.toFixed(4)}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">
+            {run.agentName}
           </span>
-        )}
+          <Badge
+            variant="outline"
+            className="text-[10px] uppercase tracking-wide rounded-pill border-border bg-background text-muted-foreground capitalize"
+          >
+            {run.trigger}
+          </Badge>
+          <Badge
+            className={cn(
+              "text-[11px] capitalize rounded-pill border-transparent",
+              STATUS_TONE[run.status] ?? "",
+            )}
+          >
+            {run.status.replace("_", " ")}
+          </Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums sm:ml-auto">
+          <span>{relTime(run.startedAt)}</span>
+          <span>{tokens.toLocaleString()} tok</span>
+          {isLive && (
+            <span className="text-foreground">
+              ${run.metrics.usdCost.toFixed(4)}
+            </span>
+          )}
+        </div>
       </div>
       {run.inputSummary && (
         <p className="mt-1.5 text-[13px] text-muted-foreground line-clamp-1">
@@ -546,29 +547,28 @@ function IdeationRow({
       )}
       aria-pressed={active}
     >
-      <div className="flex items-center gap-3 flex-wrap">
-        <span
-          aria-hidden
-          className="size-6 shrink-0 rounded-md bg-secondary flex items-center justify-center"
-        >
-          <Lightbulb className="size-3.5 text-foreground" />
-        </span>
-        <span className="text-sm font-semibold text-foreground truncate max-w-[60%]">
-          {item.title}
-        </span>
-        <Badge
-          variant="outline"
-          className="text-[10px] uppercase tracking-wide rounded-pill border-border bg-background text-muted-foreground"
-        >
-          Idea
-        </Badge>
-        <span className="flex-1" />
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {confidencePct}%
-        </span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {relTime(item.createdAt)}
-        </span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span
+            aria-hidden
+            className="size-6 shrink-0 rounded-md bg-secondary flex items-center justify-center"
+          >
+            <Lightbulb className="size-3.5 text-foreground" />
+          </span>
+          <span className="text-sm font-semibold text-foreground truncate">
+            {item.title}
+          </span>
+          <Badge
+            variant="outline"
+            className="shrink-0 text-[10px] uppercase tracking-wide rounded-pill border-border bg-background text-muted-foreground"
+          >
+            Idea
+          </Badge>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground tabular-nums sm:shrink-0">
+          <span>{confidencePct}%</span>
+          <span>{relTime(item.createdAt)}</span>
+        </div>
       </div>
       {item.summary && (
         <p className="mt-1.5 text-[13px] text-muted-foreground line-clamp-1">
@@ -591,32 +591,33 @@ function ApprovalRowView({ entry }: { entry: ApprovalLogRow }) {
         "w-full overflow-hidden rounded-lg border border-border bg-background px-4 py-3 text-left",
       )}
     >
-      <div className="flex items-center gap-3 flex-wrap">
-        <span
-          aria-hidden
-          className="size-6 shrink-0 rounded-md bg-secondary flex items-center justify-center"
-        >
-          <CheckCircle2 className="size-3.5 text-foreground" />
-        </span>
-        <span className="text-sm font-semibold text-foreground truncate max-w-[60%]">
-          {label}
-        </span>
-        <Badge
-          variant="outline"
-          className="text-[10px] uppercase tracking-wide rounded-pill border-border bg-background text-muted-foreground"
-        >
-          Approved
-        </Badge>
-        {entry.sourceAgent ? (
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span
+            aria-hidden
+            className="size-6 shrink-0 rounded-md bg-secondary flex items-center justify-center"
+          >
+            <CheckCircle2 className="size-3.5 text-foreground" />
+          </span>
+          <span className="text-sm font-semibold text-foreground truncate">
+            {label}
+          </span>
           <Badge
             variant="outline"
-            className="text-[10px] tracking-wide rounded-pill border-border bg-background text-muted-foreground"
+            className="shrink-0 text-[10px] uppercase tracking-wide rounded-pill border-border bg-background text-muted-foreground"
           >
-            via {entry.sourceAgent}
+            Approved
           </Badge>
-        ) : null}
-        <span className="flex-1" />
-        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {entry.sourceAgent ? (
+            <Badge
+              variant="outline"
+              className="hidden sm:inline-flex text-[10px] tracking-wide rounded-pill border-border bg-background text-muted-foreground"
+            >
+              via {entry.sourceAgent}
+            </Badge>
+          ) : null}
+        </div>
+        <span className="text-[11px] text-muted-foreground tabular-nums sm:shrink-0">
           {relTime(entry.createdAt)}
         </span>
       </div>

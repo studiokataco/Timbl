@@ -54,14 +54,10 @@ const GROUPS: NavGroup[] = [
   },
 ]
 
-export function Sidebar() {
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   return (
-    <nav
-      aria-label="Primary"
-      className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1 overflow-y-auto"
-    >
-      <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-6" />
+    <>
       {GROUPS.map((group, gi) => (
         <div
           key={gi}
@@ -80,6 +76,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onNavigate}
                 className={cn(
                   "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   active
@@ -100,6 +97,18 @@ export function Sidebar() {
           })}
         </div>
       ))}
+    </>
+  )
+}
+
+export function Sidebar() {
+  return (
+    <nav
+      aria-label="Primary"
+      className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1 overflow-y-auto"
+    >
+      <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-6" />
+      <SidebarNav />
     </nav>
   )
 }

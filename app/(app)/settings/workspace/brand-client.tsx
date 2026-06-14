@@ -23,13 +23,13 @@ export function BrandWizardClient() {
   return (
     <div
       className={cn(
-        "grid gap-3 min-h-[min(28rem,60vh)]",
+        "grid gap-3 min-h-[min(24rem,55vh)]",
         previewOpen ? "lg:grid-cols-[1fr_17rem]" : "grid-cols-1",
       )}
     >
       <section
         aria-label="Brand wizard"
-        className="border border-border rounded-xl bg-background flex flex-col overflow-hidden min-h-[min(24rem,55vh)]"
+        className="border border-border rounded-xl bg-background flex flex-col overflow-hidden min-h-[min(20rem,48vh)]"
       >
         <AgentChat
           agentName="brand-wizard"

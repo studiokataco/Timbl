@@ -12,6 +12,7 @@ import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay } from "@/lib/schemas"
 import { CADENCE_LABELS, IMPORTANCE_LABELS, labelOr } from "@/lib/labels/enums"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
+import { StackedDeck } from "./stacked-deck"
 
 type Props = {
   awarenessDays: WithId<AwarenessDay>[]
@@ -28,13 +29,20 @@ const IMPORTANCE_VARIANT: Record<
   low: "outline",
 }
 
-/*
- * Right rail on the calendar surface. Two stacked panels:
- *   1. Awareness this period - upcoming awareness days within the visible
- *      calendar window. Promote-to-post inline.
- *   2. Reminders - collapsible; silent categories, cadence-due templates,
- *      campaigns ending soon. Computed server-side per render.
- */
+const KIND_LABEL: Record<string, string> = {
+  "silent-category": "Silent category",
+  "template-due": "Template due",
+  "campaign-ending": "Campaign ending",
+}
+
+function suggestionMetric(s: Suggestion): string {
+  if (s.kind === "silent-category") return `${s.daysSilent}d silent`
+  if (s.kind === "template-due") return labelOr(CADENCE_LABELS, s.cadence)
+  if (s.kind === "campaign-ending") return `${s.daysAway}d left`
+  return ""
+}
+
+
 export function CalendarAwarenessRail({
   awarenessDays,
   plannedAwarenessIds,
@@ -42,6 +50,7 @@ export function CalendarAwarenessRail({
 }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [awarenessOpen, setAwarenessOpen] = useState(false)
   const [remindersOpen, setRemindersOpen] = useState(false)
   const planned = new Set(plannedAwarenessIds)
 
@@ -63,60 +72,148 @@ export function CalendarAwarenessRail({
     })
   }
 
+  const FAN_MAX = 3
+
+  const awarenessCards: React.ReactNode[] = awarenessDays
+    .slice(0, FAN_MAX)
+    .map((d) => (
+      <div className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {format(parseISO(d.date), "EEE d MMM")}
+          </span>
+          <Badge
+            variant={IMPORTANCE_VARIANT[d.importance]}
+            className="font-normal text-[10px] px-1.5 py-0"
+          >
+            {IMPORTANCE_LABELS[d.importance]}
+          </Badge>
+        </div>
+        <div className="font-medium leading-snug">{d.name}</div>
+        {planned.has(d.id) && (
+          <span className="text-[var(--color-success)] text-[11px]">
+            ✓ planned
+          </span>
+        )}
+      </div>
+    ))
+
+  const awarenessRemainder = awarenessDays.length - FAN_MAX
+  if (awarenessRemainder > 0) {
+    awarenessCards.push(
+      <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
+        + {awarenessRemainder} more
+      </div>
+    )
+  }
+
+  const suggestionCards: React.ReactNode[] = suggestions
+    .slice(0, FAN_MAX)
+    .map((s) => (
+      <div className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {KIND_LABEL[s.kind] ?? s.kind}
+          </span>
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            {suggestionMetric(s)}
+          </span>
+        </div>
+        <div className="font-medium leading-snug">{s.name}</div>
+      </div>
+    ))
+
+  const suggestionsRemainder = suggestions.length - FAN_MAX
+  if (suggestionsRemainder > 0) {
+    suggestionCards.push(
+      <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
+        + {suggestionsRemainder} more
+      </div>
+    )
+  }
+
   return (
     <>
       <section className="flex flex-col gap-3 border-t border-border py-6">
-        <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          className="flex w-full items-center gap-1.5 text-left"
+          onClick={() => setAwarenessOpen((o) => !o)}
+          aria-expanded={awarenessOpen}
+        >
           <Sparkles aria-hidden className="size-3.5 text-muted-foreground" />
           <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Awareness this period
           </h2>
-        </div>
-        {awarenessDays.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            None in the visible window.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {awarenessDays.map((d) => {
-              const isPlanned = planned.has(d.id)
-              return (
-                <li
-                  key={d.id}
-                  className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {format(parseISO(d.date), "EEE d MMM")}
-                    </span>
-                    <Badge
-                      variant={IMPORTANCE_VARIANT[d.importance]}
-                      className="font-normal text-[10px] px-1.5 py-0"
-                    >
-                      {IMPORTANCE_LABELS[d.importance]}
-                    </Badge>
-                  </div>
-                  <div className="font-medium leading-snug">{d.name}</div>
-                  {isPlanned ? (
-                    <span className="text-[var(--color-success)] text-[11px]">
-                      ✓ planned
-                    </span>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs self-start"
-                      onClick={() => promote(d)}
-                      disabled={pending}
-                    >
-                      Promote to post
-                    </Button>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        )}
+          {awarenessDays.length > 0 && (
+            <Badge
+              variant="secondary"
+              className="font-normal text-[10px] px-1.5 py-0"
+            >
+              {awarenessDays.length}
+            </Badge>
+          )}
+          <ChevronDown
+            aria-hidden
+            className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
+              awarenessOpen ? "" : "rotate-180"
+            }`}
+          />
+        </button>
+
+        {awarenessOpen ? (
+          awarenessDays.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              None in the visible window.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {awarenessDays.map((d) => {
+                const isPlanned = planned.has(d.id)
+                return (
+                  <li
+                    key={d.id}
+                    className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {format(parseISO(d.date), "EEE d MMM")}
+                      </span>
+                      <Badge
+                        variant={IMPORTANCE_VARIANT[d.importance]}
+                        className="font-normal text-[10px] px-1.5 py-0"
+                      >
+                        {IMPORTANCE_LABELS[d.importance]}
+                      </Badge>
+                    </div>
+                    <div className="font-medium leading-snug">{d.name}</div>
+                    {isPlanned ? (
+                      <span className="text-[var(--color-success)] text-[11px]">
+                        ✓ planned
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs self-start"
+                        onClick={() => promote(d)}
+                        disabled={pending}
+                      >
+                        Promote to post
+                      </Button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        ) : awarenessDays.length > 0 ? (
+          <StackedDeck
+            cards={awarenessCards}
+            slotHeight={72}
+            onClick={() => setAwarenessOpen(true)}
+          />
+        ) : null}
       </section>
 
       <section className="flex flex-col gap-3 border-t border-border py-6">
@@ -141,65 +238,74 @@ export function CalendarAwarenessRail({
           <ChevronDown
             aria-hidden
             className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
-              remindersOpen ? "rotate-180" : ""
+              remindersOpen ? "" : "rotate-180"
             }`}
           />
         </button>
-        {!remindersOpen ? null : suggestions.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            All caught up - no reminders right now.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {suggestions.map((s, i) => (
-              <li
-                key={`${s.kind}-${i}`}
-                className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-1"
-              >
-                {s.kind === "silent-category" && (
-                  <>
-                    <div className="flex items-center gap-1.5">
-                      <TrendingDown
-                        aria-hidden
-                        className="size-3 text-muted-foreground"
-                      />
+
+        {remindersOpen ? (
+          suggestions.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              All caught up - no reminders right now.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {suggestions.map((s, i) => (
+                <li
+                  key={`${s.kind}-${i}`}
+                  className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-1"
+                >
+                  {s.kind === "silent-category" && (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <TrendingDown
+                          aria-hidden
+                          className="size-3 text-muted-foreground"
+                        />
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Silent category
+                        </span>
+                      </div>
+                      <div className="font-medium leading-snug">{s.name}</div>
+                      <div className="text-muted-foreground">
+                        No post in {s.daysSilent}+ days
+                      </div>
+                    </>
+                  )}
+                  {s.kind === "template-due" && (
+                    <>
                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Silent category
+                        Template due ({labelOr(CADENCE_LABELS, s.cadence)})
                       </span>
-                    </div>
-                    <div className="font-medium leading-snug">{s.name}</div>
-                    <div className="text-muted-foreground">
-                      No post in {s.daysSilent}+ days
-                    </div>
-                  </>
-                )}
-                {s.kind === "template-due" && (
-                  <>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Template due ({labelOr(CADENCE_LABELS, s.cadence)})
-                    </span>
-                    <div className="font-medium leading-snug">{s.name}</div>
-                    <div className="text-muted-foreground">
-                      Last used {s.daysSinceLast} days ago
-                    </div>
-                  </>
-                )}
-                {s.kind === "campaign-ending" && (
-                  <>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Campaign ending
-                    </span>
-                    <div className="font-medium leading-snug">{s.name}</div>
-                    <div className="text-muted-foreground">
-                      Ends {format(parseISO(s.endDate), "d MMM")} (
-                      {s.daysAway} {s.daysAway === 1 ? "day" : "days"})
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+                      <div className="font-medium leading-snug">{s.name}</div>
+                      <div className="text-muted-foreground">
+                        Last used {s.daysSinceLast} days ago
+                      </div>
+                    </>
+                  )}
+                  {s.kind === "campaign-ending" && (
+                    <>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Campaign ending
+                      </span>
+                      <div className="font-medium leading-snug">{s.name}</div>
+                      <div className="text-muted-foreground">
+                        Ends {format(parseISO(s.endDate), "d MMM")} (
+                        {s.daysAway} {s.daysAway === 1 ? "day" : "days"})
+                      </div>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )
+        ) : suggestions.length > 0 ? (
+          <StackedDeck
+            cards={suggestionCards}
+            slotHeight={60}
+            onClick={() => setRemindersOpen(true)}
+          />
+        ) : null}
       </section>
     </>
   )

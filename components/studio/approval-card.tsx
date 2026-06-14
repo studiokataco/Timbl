@@ -179,7 +179,7 @@ export function ApprovalCard({ run, active, onSelect }: Props) {
             aria-label="Approval comment"
           />
         )}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <Button
             type="button"
             size="sm"
@@ -231,13 +231,13 @@ export function ApprovalCard({ run, active, onSelect }: Props) {
               Cancel
             </button>
           )}
-          <span className="flex-1" />
+          <span className="hidden sm:block sm:flex-1" />
           <button
             type="button"
             onClick={viewRun}
-            className="text-[12px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            className="text-[12px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline text-left"
           >
-            View full run →
+            View full run
           </button>
         </div>
       </div>

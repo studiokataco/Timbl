@@ -73,47 +73,37 @@ export default async function SettingsIntegrationsPage() {
 
   return (
     <div className="px-4 sm:px-6 py-4 flex-1">
-      <div className="mb-2">
-        <h1 className="text-lg font-medium">Integrations & API</h1>
-        <p className="text-xs text-muted-foreground">
-          Social accounts that publish your posts, plus API keys and MCP access
-          for external apps and agents.
-        </p>
-      </div>
-
-      <div className="max-w-6xl">
-        <SettingsSection
-          title="Social channels"
-          description={
-            channelsLive
-              ? "Connect accounts so scheduled posts publish automatically at their slot. Reconnect any channel that needs re-auth."
-              : "Connecting social accounts is coming soon."
-          }
-          isFirst
-        >
-          {channelsLive ? (
-            <ChannelsClient
-              accounts={accounts}
-              configuredChannels={configured}
-              redirectUriByChannel={redirectUriByChannel}
-              isAdmin={user.role === "admin"}
-            />
-          ) : (
-            <SocialChannelsGate />
-          )}
-        </SettingsSection>
-
-        <SettingsSection
-          title="API keys & MCP"
-          description="Scoped keys that let external apps, agents, and MCP clients like Cursor and Claude drive this workspace."
-        >
-          <IntegrationsClient
-            apps={apps}
-            auditRows={auditRows}
-            revokeAction={revokePublicApp}
+      <SettingsSection
+        title="Social channels"
+        description={
+          channelsLive
+            ? "Connect accounts so scheduled posts publish automatically at their slot. Reconnect any channel that needs re-auth."
+            : "Connecting social accounts is coming soon."
+        }
+        isFirst
+      >
+        {channelsLive ? (
+          <ChannelsClient
+            accounts={accounts}
+            configuredChannels={configured}
+            redirectUriByChannel={redirectUriByChannel}
+            isAdmin={user.role === "admin"}
           />
-        </SettingsSection>
-      </div>
+        ) : (
+          <SocialChannelsGate />
+        )}
+      </SettingsSection>
+
+      <SettingsSection
+        title="API keys & MCP"
+        description="Scoped keys that let external apps, agents, and MCP clients like Cursor and Claude drive this workspace."
+      >
+        <IntegrationsClient
+          apps={apps}
+          auditRows={auditRows}
+          revokeAction={revokePublicApp}
+        />
+      </SettingsSection>
     </div>
   )
 }

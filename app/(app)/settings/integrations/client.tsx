@@ -11,6 +11,7 @@ import { createPublicApp, rotateKey } from "@/lib/actions/public-apps"
 import { publicScopeSchema, type PublicScope } from "@/lib/auth/public-scopes"
 import type { PublicApp } from "@/lib/schemas/publicApp"
 import { McpConnector } from "@/components/settings/mcp-connector"
+import { SettingDisclosure } from "@/components/settings/setting-disclosure"
 import type { AuditRow } from "./page"
 
 const ALL_SCOPES = publicScopeSchema.options as PublicScope[]
@@ -153,42 +154,55 @@ export function IntegrationsClient({ apps: initial, auditRows, revokeAction }: P
         )}
       </div>
 
-      <div className="space-y-4">
-        <p className="text-sm font-medium text-foreground">Create a key</p>
-        <div className="space-y-1.5">
-          <Label htmlFor="key-name">Name</Label>
-          <Input
-            id="key-name"
-            placeholder="e.g. My automation"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Scopes</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {ALL_SCOPES.map((scope) => (
-              <label key={scope} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={scopes.includes(scope)}
-                  onCheckedChange={() => toggleScope(scope)}
-                />
-                <span className="text-sm">{scope}</span>
-              </label>
-            ))}
+      <SettingDisclosure
+        title="Create a key"
+        summary="Generate a scoped key for an app or agent"
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="key-name">Name</Label>
+            <Input
+              id="key-name"
+              placeholder="e.g. My automation"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
+          <div className="space-y-2">
+            <Label>Scopes</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {ALL_SCOPES.map((scope) => (
+                <label key={scope} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={scopes.includes(scope)}
+                    onCheckedChange={() => toggleScope(scope)}
+                  />
+                  <span className="text-sm">{scope}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <Button onClick={handleCreate} disabled={creating}>
+            {creating ? "Creating..." : "Create key"}
+          </Button>
         </div>
-        <Button onClick={handleCreate} disabled={creating}>
-          {creating ? "Creating..." : "Create key"}
-        </Button>
-      </div>
+      </SettingDisclosure>
 
-      <div className="border-t border-border pt-8">
+      <SettingDisclosure
+        title="Connect via MCP"
+        summary="Cursor, Claude, VS Code, or CLI config"
+      >
         <McpConnector apiKey={newKey} />
-      </div>
+      </SettingDisclosure>
 
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-foreground">Recent API usage</p>
+      <SettingDisclosure
+        title="Recent API usage"
+        summary={
+          auditRows.length === 0
+            ? "No API calls recorded yet"
+            : `Last ${auditRows.length} calls`
+        }
+      >
         {auditRows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No API calls recorded yet.</p>
         ) : (
@@ -221,7 +235,7 @@ export function IntegrationsClient({ apps: initial, auditRows, revokeAction }: P
             </table>
           </div>
         )}
-      </div>
+      </SettingDisclosure>
     </div>
   )
 }

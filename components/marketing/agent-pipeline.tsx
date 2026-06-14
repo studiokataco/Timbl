@@ -1,4 +1,9 @@
+"use client"
+
+import { useRef } from "react"
 import { ArrowRight } from "lucide-react"
+
+import { ScrollTrigger, gsap, landingScroller, useGSAP } from "./gsap"
 
 const STAGES = [
   { label: "Plan", color: "#8b5cf6" },
@@ -9,8 +14,45 @@ const STAGES = [
 ]
 
 export function AgentPipeline() {
+  const root = useRef<HTMLElement>(null)
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia()
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const scroller = landingScroller(root.current)
+
+        gsap.from(".pipe-pill", {
+          y: 24,
+          autoAlpha: 0,
+          stagger: 0.1,
+          duration: 0.5,
+          ease: "power2.out",
+          scrollTrigger: { trigger: root.current, scroller, start: "top 78%" },
+        })
+
+        const pulse = gsap.timeline({ repeat: -1, repeatDelay: 0.6, paused: true })
+        pulse.to(".pipe-dot", {
+          keyframes: { scale: [1, 1.9, 1] },
+          duration: 0.5,
+          stagger: 0.28,
+          ease: "power1.inOut",
+        })
+
+        ScrollTrigger.create({
+          trigger: root.current,
+          scroller,
+          start: "top 80%",
+          end: "bottom 20%",
+          onToggle: (self) => (self.isActive ? pulse.play() : pulse.pause()),
+        })
+      })
+    },
+    { scope: root }
+  )
+
   return (
-    <section id="agents" className="scroll-mt-16 px-6 py-24">
+    <section ref={root} id="agents" className="scroll-mt-16 px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -20,19 +62,19 @@ export function AgentPipeline() {
             An agent crew, not another chatbot
           </h2>
           <p className="mt-4 text-pretty text-muted-foreground">
-            Timbl ships with a pipeline of specialised AI agents that work the
-            plan with you - one suggests ideas for empty slots, one drafts in
-            your brand voice, others keep the schedule honest. They propose,
-            you approve.
+            Timbl comes with a crew of specialised agents who work the plan
+            with you. One fills empty slots with ideas, one drafts in each
+            brand&apos;s voice, others keep the schedule honest. They propose.
+            You approve.
           </p>
         </div>
         <div className="mt-12 flex flex-wrap items-center justify-center gap-2 md:gap-3">
           {STAGES.map((stage, i) => (
             <div key={stage.label} className="flex items-center gap-2 md:gap-3">
               {i > 0 && <ArrowRight className="size-4 text-muted-foreground/60" />}
-              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <span className="pipe-pill glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
                 <span
-                  className="size-2 rounded-full"
+                  className="pipe-dot size-2 rounded-full"
                   style={{ backgroundColor: stage.color }}
                 />
                 {stage.label}

@@ -72,7 +72,7 @@ export function registerPostsCommands(program: Command) {
 
   posts
     .command("publish-now <id>")
-    .action((id: string) => handle(() => call("posts", "publishNow", { id })));
+    .action((id: string) => handle(() => call("posts", "publish_now", { id })));
 
   posts
     .command("delete <id>")

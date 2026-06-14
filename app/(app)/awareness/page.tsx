@@ -19,18 +19,18 @@ export default async function AwarenessPage() {
   ])
 
   return (
-    <>
-      <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
-        <div className="mx-auto w-full max-w-6xl space-y-8">
-          <PageHeader
-            title="Awareness days"
-            description="Research or schedule awareness days. Promote any to a draft post in one tap."
-            action={<FindAwarenessButton />}
-          />
-          <AwarenessProposalsStrip proposals={proposals} />
-          <AwarenessList days={days} plannedIds={plannedIds} />
-        </div>
+    <div className="flex-1 px-4 py-6 sm:px-10 lg:py-14">
+      <div className="w-full space-y-6 md:space-y-8">
+        <PageHeader
+          title="Awareness days"
+          description="Research awareness days and promote them to draft posts."
+          action={<FindAwarenessButton />}
+          size="sm"
+          className="flex-col items-stretch gap-4 sm:flex-row sm:items-end"
+        />
+        <AwarenessProposalsStrip proposals={proposals} />
+        <AwarenessList days={days} plannedIds={plannedIds} />
       </div>
-    </>
+    </div>
   )
 }

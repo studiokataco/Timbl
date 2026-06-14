@@ -200,7 +200,7 @@ export function OnboardingWizard({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-0 flex-1 flex-col bg-background">
       <header className="border-b border-border px-6 py-4">
         <div className="mx-auto flex max-w-3xl items-center gap-2">
           <Sparkles className="size-4 text-foreground" />

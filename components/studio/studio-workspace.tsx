@@ -1,37 +1,32 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { X } from "lucide-react"
+import { Plus, Sparkles, X } from "lucide-react"
 
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import type { IdeationItem } from "@/lib/schemas/ideationItem"
 import type { ApprovalLogRow } from "@/lib/actions/approvals"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { PageHeader } from "@/components/shared/page-header"
 import { useMediaQuery } from "@/lib/hooks/use-media-query"
+import { usePlanFeatures } from "@/lib/plans/client"
+import { AGENT_TEMPLATES } from "@/lib/agents/template-catalog"
+import { cn } from "@/lib/utils"
 
 import { Roster } from "./roster"
 import { PipelineGraph } from "./pipeline-graph"
 import { ActivityStream } from "./activity-stream"
 import { Inspector } from "./inspector"
 import { EmptyRosterCta } from "./empty-roster-cta"
+import { AddAgentSheet } from "./add-agent-sheet"
 import { agentsForStudioRoster } from "@/lib/onboarding/agent-catalog"
 
-/*
- * Three-column workspace for /studio.
- *
- *   ≥1280px   →  roster (260px) | center (flex) | inspector (380px)
- *   768-1279  →  roster | center; inspector collapses to a slide-over Sheet
- *                triggered automatically whenever `?focus=` is set.
- *   <768px    →  roster becomes a horizontal pill strip across the top of
- *                the center column; pipeline scrolls horizontally; inspector
- *                is a full-screen sheet.
- *
- * URL is the source of truth for selection - `?focus=agent:<name>` /
- * `?focus=run:<id>` / `?focus=ideation:<id>`. Components below read it
- * directly via useSearchParams.
- */
+const AGENT_LABELS: Record<string, string> = Object.fromEntries(
+  AGENT_TEMPLATES.map((t) => [t.name, t.label ?? t.name]),
+)
+
 type Props = {
   agents: AgentConfig[]
   runs: AgentRunDoc[]
@@ -51,17 +46,10 @@ export function StudioWorkspace({
   const params = useSearchParams()
   const focus = params.get("focus") ?? ""
   const hasFocus = focus.length > 0
-  // `xl` breakpoint matches Tailwind's default (1280px). At this width and
-  // above the inspector is rendered inline as the third column, so the
-  // Sheet must NOT mount - otherwise its backdrop portal dims the whole
-  // page even though SheetContent has `xl:hidden` (the overlay is a
-  // sibling element and ignores that class).
   const isWide = useMediaQuery("(min-width: 1280px)")
   const showSheet = hasFocus && !isWide
   const rosterAgents = useMemo(() => agentsForStudioRoster(agents), [agents])
 
-  // Inspector sheet (tablet/mobile) is open iff the URL carries `?focus=`.
-  // The persistent right rail (≥1280px) renders the same Inspector inline.
   function closeFocus() {
     const next = new URLSearchParams(params.toString())
     next.delete("focus")
@@ -70,20 +58,23 @@ export function StudioWorkspace({
   }
 
   return (
-    <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_380px] divide-x divide-border">
-      {/* Roster (left rail) */}
+    <div className="flex-1 min-h-0 min-w-0 grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_380px] divide-x divide-border">
       <aside className="hidden md:block min-h-0 overflow-hidden">
         <Roster rosterAgents={rosterAgents} installedAgents={agents} />
       </aside>
 
-      {/* Mobile roster - horizontal scroll strip */}
-      <div className="md:hidden border-b border-border bg-background overflow-x-auto">
-        <MobileRosterStrip agents={rosterAgents} />
-      </div>
+      <main className="min-h-0 min-w-0 overflow-y-auto flex flex-col pb-24 md:pb-0">
+        <div className="px-4 sm:px-6 pt-6 md:pt-8 pb-4 md:pb-2 border-b border-border md:border-b-0">
+          <PageHeader
+            size="sm"
+            title="Studio"
+            description="Control AI agents work from idea to schedule. Agents can be enabled/disabled, and their settings can be edited."
+          />
+          <div className="md:hidden mt-6">
+            <MobileAgentPicker agents={rosterAgents} installedAgents={agents} />
+          </div>
+        </div>
 
-      {/* Center column */}
-      <main className="min-h-0 overflow-y-auto flex flex-col">
-        <PageHero />
         {rosterAgents.length === 0 ? (
           <EmptyRosterCta agents={agents} />
         ) : (
@@ -102,13 +93,10 @@ export function StudioWorkspace({
         )}
       </main>
 
-      {/* Inspector - persistent on wide screens (≥1280px) */}
       <aside className="hidden xl:block min-h-0 overflow-hidden bg-background">
         <Inspector agents={rosterAgents} runs={runs} ideation={ideation} />
       </aside>
 
-      {/* Inspector - slide-over on tablet/mobile. Gated by JS media query
-          so the Sheet (and its backdrop portal) never mount at ≥1280px. */}
       {!isWide && (
         <Sheet
           open={showSheet}
@@ -142,27 +130,20 @@ export function StudioWorkspace({
   )
 }
 
-function PageHero() {
-  return (
-    <header className="px-6 pt-8 pb-2">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        AI Command Center
-      </p>
-      <h1 className="mt-2 text-display-sm text-foreground">Studio</h1>
-      <p className="mt-2 text-body-sm text-muted-foreground max-w-2xl">
-        Control AI agents work from idea to schedule. Agents can be enabled/disabled, and their settings can be edited.
-      </p>
-    </header>
-  )
-}
-
-/* ---------------- Mobile-only roster strip ---------------- */
-
-function MobileRosterStrip({ agents }: { agents: AgentConfig[] }) {
+function MobileAgentPicker({
+  agents,
+  installedAgents,
+}: {
+  agents: AgentConfig[]
+  installedAgents: AgentConfig[]
+}) {
   const router = useRouter()
   const params = useSearchParams()
+  const planFeatures = usePlanFeatures()
   const focus = params.get("focus") ?? ""
   const selected = focus.startsWith("agent:") ? focus.slice(6) : null
+  const [addOpen, setAddOpen] = useState(false)
+  const isFree = planFeatures.quotas.agents === 0
 
   function select(name: string) {
     const next = new URLSearchParams(params.toString())
@@ -173,30 +154,64 @@ function MobileRosterStrip({ agents }: { agents: AgentConfig[] }) {
   }
 
   return (
-    <div className="flex gap-1.5 px-4 py-3 min-w-max">
-      {agents.map((a) => {
-        const active = selected === a.name
-        return (
-          <button
-            key={a.name}
-            type="button"
-            onClick={() => select(a.name)}
-            className={`shrink-0 inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-[12px] transition-colors ${
-              active
-                ? "bg-foreground text-background border-foreground"
-                : "bg-background text-foreground border-border hover:bg-secondary/60"
-            }`}
+    <>
+      <nav aria-label="Agents" className="py-0">
+        <div className="grid grid-cols-2 gap-2">
+          {agents.map((a) => {
+            const active = selected === a.name
+            const label = AGENT_LABELS[a.name] ?? a.name
+            return (
+              <button
+                key={a.name}
+                type="button"
+                onClick={() => select(a.name)}
+                aria-pressed={active}
+                className={cn(
+                  "flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors",
+                  active
+                    ? "border-foreground/25 bg-secondary"
+                    : "border-border bg-background hover:bg-secondary/60",
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "size-1.5 shrink-0 rounded-full",
+                    a.enabled ? "bg-emerald-500" : "bg-border",
+                  )}
+                />
+                <span className="min-w-0 text-[13px] font-medium leading-tight text-foreground line-clamp-2">
+                  {label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {isFree ? (
+          <a
+            href="/settings/billing"
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-[13px] text-muted-foreground"
           >
-            <span
-              aria-hidden
-              className={`size-1.5 rounded-full ${
-                a.enabled ? "bg-emerald-500" : "bg-border"
-              }`}
-            />
-            {a.name}
+            <Sparkles className="size-3.5" aria-hidden />
+            Upgrade to add agents
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-[13px] text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+          >
+            <Plus className="size-3.5" aria-hidden />
+            Add agent
           </button>
-        )
-      })}
-    </div>
+        )}
+      </nav>
+      <AddAgentSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        installedAgents={installedAgents}
+      />
+    </>
   )
 }

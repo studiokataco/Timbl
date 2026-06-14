@@ -1,7 +1,9 @@
 "use server"
 
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
-import { orgSocialAccountsPath, orgUsersPath } from "@/lib/firebase/paths"
+import { isBoutiqueAgent } from "@/lib/agents/defaults"
+import { getAdminDb } from "@/lib/firebase/admin"
+import { orgAgentConfigsPath, orgSocialAccountsPath, orgUsersPath } from "@/lib/firebase/paths"
 import { getOrgPlan } from "@/lib/plans/gate"
 import { readUsageSnapshot } from "@/lib/telemetry/agent-events"
 
@@ -16,7 +18,7 @@ import { readUsageSnapshot } from "@/lib/telemetry/agent-events"
  * quota is enforced there as brands * channels-per-brand connectable accounts. */
 const CHANNELS_PER_BRAND = 4
 
-export type UsageMetricKey = "agentRuns" | "scheduledPosts" | "channels" | "seats"
+export type UsageMetricKey = "agentRuns" | "scheduledPosts" | "channels" | "seats" | "agents"
 
 export type OrgUsageMetric = {
   key: UsageMetricKey
@@ -44,15 +46,19 @@ export async function getUsageOverview(): Promise<OrgUsage> {
   const snapshot = await readUsageSnapshot(orgId)
 
   const db = getDb()
-  const [channelsSnap, usersSnap] = await Promise.all([
+  const [channelsSnap, usersSnap, agentConfigsSnap] = await Promise.all([
     db
       .collection(orgSocialAccountsPath(orgId))
       .where("status", "in", ["active", "needs_reauth"])
       .get(),
     db.collection(orgUsersPath(orgId)).get(),
+    getAdminDb().collection(orgAgentConfigsPath(orgId)).get(),
   ])
   const channelsUsed = channelsSnap.size
   const seatsUsed = usersSnap.docs.filter((d) => d.data().active !== false).length
+  const boutiqueActive = agentConfigsSnap.docs.filter(
+    (d) => isBoutiqueAgent(d.id) && d.data().enabled !== false,
+  ).length
 
   return {
     period: snapshot.period,
@@ -90,6 +96,14 @@ export async function getUsageOverview(): Promise<OrgUsage> {
         hint: "Active members in this workspace",
         used: seatsUsed,
         limit: plan.quotas.seats,
+        resets: false,
+      },
+      {
+        key: "agents",
+        label: "AI agents",
+        hint: "Agents switched on in Studio",
+        used: boutiqueActive,
+        limit: plan.quotas.agents,
         resets: false,
       },
     ],

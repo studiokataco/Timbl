@@ -41,7 +41,7 @@ export function UsageOverview({ initial }: { initial: OrgUsage }) {
             {data.planLabel} plan
           </span>
         </div>
-        <div className="mt-4 grid gap-x-6 gap-y-5 sm:grid-cols-2">
+        <div className="mt-4 grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
           {data.metrics.map((m) => (
             <UsageMeter
               key={m.key}
