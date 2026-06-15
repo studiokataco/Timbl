@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import { Check, Copy } from "lucide-react"
 import { toast } from "sonner"
 
@@ -17,6 +17,10 @@ const CLIENTS = [
 ] as const
 
 type ClientId = (typeof CLIENTS)[number]["id"]
+
+const subscribeOrigin = () => () => {}
+const getOriginSnapshot = () => window.location.origin
+const getOriginServerSnapshot = () => "https://app.timbl.co"
 
 function CopyBlock({ code, lang }: { code: string; lang?: string }) {
   const [copied, setCopied] = useState(false)
@@ -115,17 +119,19 @@ function clientPath(client: ClientId): string {
 }
 
 export function McpConnector({ apiKey }: { apiKey: string | null }) {
-  const [origin, setOrigin] = useState("https://app.timbl.co")
+  const origin = useSyncExternalStore(
+    subscribeOrigin,
+    getOriginSnapshot,
+    getOriginServerSnapshot,
+  )
   const [client, setClient] = useState<ClientId>("cursor")
   const [key, setKey] = useState(apiKey ?? "")
+  const [seededKey, setSeededKey] = useState(apiKey)
 
-  useEffect(() => {
-    if (typeof window !== "undefined") setOrigin(window.location.origin)
-  }, [])
-
-  useEffect(() => {
-    if (apiKey) setKey(apiKey)
-  }, [apiKey])
+  if (apiKey && apiKey !== seededKey) {
+    setSeededKey(apiKey)
+    setKey(apiKey)
+  }
 
   const url = `${origin}/api/mcp`
 

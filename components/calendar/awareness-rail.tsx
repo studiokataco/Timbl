@@ -77,7 +77,7 @@ export function CalendarAwarenessRail({
   const awarenessCards: React.ReactNode[] = awarenessDays
     .slice(0, FAN_MAX)
     .map((d) => (
-      <div className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2">
+      <div key={d.id} className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {format(parseISO(d.date), "EEE d MMM")}
@@ -101,7 +101,7 @@ export function CalendarAwarenessRail({
   const awarenessRemainder = awarenessDays.length - FAN_MAX
   if (awarenessRemainder > 0) {
     awarenessCards.push(
-      <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
+      <div key="more" className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
         + {awarenessRemainder} more
       </div>
     )
@@ -109,8 +109,8 @@ export function CalendarAwarenessRail({
 
   const suggestionCards: React.ReactNode[] = suggestions
     .slice(0, FAN_MAX)
-    .map((s) => (
-      <div className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-1.5">
+    .map((s, i) => (
+      <div key={i} className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {KIND_LABEL[s.kind] ?? s.kind}
@@ -126,7 +126,7 @@ export function CalendarAwarenessRail({
   const suggestionsRemainder = suggestions.length - FAN_MAX
   if (suggestionsRemainder > 0) {
     suggestionCards.push(
-      <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
+      <div key="more" className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
         + {suggestionsRemainder} more
       </div>
     )
