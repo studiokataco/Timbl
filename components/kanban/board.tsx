@@ -144,11 +144,12 @@ export function KanbanBoard({
     [selectedIds, pendingIds],
   )
 
-  useEffect(() => {
-    if (mobileColumnId && columns.some((c) => c.id === mobileColumnId)) return
-    const withPosts = columns.find((c) => (byStatus.get(c.id)?.length ?? 0) > 0)
-    setMobileColumnId(withPosts?.id ?? columns[0]?.id ?? null)
-  }, [columns, byStatus, mobileColumnId])
+  const activeMobileColumnId =
+    mobileColumnId && columns.some((c) => c.id === mobileColumnId)
+      ? mobileColumnId
+      : (columns.find((c) => (byStatus.get(c.id)?.length ?? 0) > 0)?.id ??
+        columns[0]?.id ??
+        null)
 
   const hasActiveFilters = !!(filterCategory || filterAssignee || filterCampaign)
   const filterSummary = [
@@ -167,7 +168,7 @@ export function KanbanBoard({
     setFilterCampaign("")
   }
 
-  const mobileColumn = columns.find((c) => c.id === mobileColumnId)
+  const mobileColumn = columns.find((c) => c.id === activeMobileColumnId)
 
   function toggleSelect(post: WithId<Post>) {
     if (!selectedIds.has(post.id) && activeSelection.length >= 50) {
@@ -321,7 +322,7 @@ export function KanbanBoard({
       <SegmentedTabs
         className="mb-3 w-full md:hidden"
         scrollable
-        value={mobileColumnId ?? ""}
+        value={activeMobileColumnId ?? ""}
         onChange={setMobileColumnId}
         tabs={columns.map((col) => {
           const count = byStatus.get(col.id)?.length ?? 0

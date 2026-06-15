@@ -36,7 +36,7 @@ export function CampaignTracker({ campaigns }: Props) {
         ? Math.round((c.scheduledOrPosted / c.postCount) * 100)
         : 0
     return (
-      <div className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2">
+      <div key={c.id} className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <span
             aria-hidden
@@ -70,7 +70,7 @@ export function CampaignTracker({ campaigns }: Props) {
   const remainder = active.length - FAN_MAX
   if (remainder > 0) {
     fanCards.push(
-      <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
+      <div key="more" className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground flex items-center justify-center h-full">
         + {remainder} more
       </div>
     )
