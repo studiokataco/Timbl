@@ -5,6 +5,7 @@ import {
   AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
   Pie,
   PieChart,
@@ -84,6 +85,60 @@ export function SpendTrendChart({ data }: { data: TrendPoint[] }) {
           stroke="var(--color-chart-5)"
           strokeWidth={2}
           fill="url(#spendFill)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+export interface ActivePoint {
+  month: string
+  active: number
+}
+
+export function ActiveOrgChart({ data }: { data: ActivePoint[] }) {
+  if (!data.some((d) => d.active > 0)) {
+    return <EmptyChart label="No active orgs recorded yet" />
+  }
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <defs>
+          <linearGradient id="activeFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-chart-4)" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="var(--color-chart-4)" stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid
+          vertical={false}
+          strokeDasharray="3 3"
+          stroke="color-mix(in oklab, currentColor 8%, transparent)"
+        />
+        <XAxis
+          dataKey="month"
+          tickFormatter={(d: string) => d.slice(5)}
+          tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+          tickLine={false}
+          axisLine={false}
+          minTickGap={16}
+        />
+        <YAxis
+          allowDecimals={false}
+          tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+          tickLine={false}
+          axisLine={false}
+          width={32}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          formatter={(v) => [`${Number(v) || 0}`, "active orgs"] as [string, string]}
+        />
+        <Area
+          type="monotone"
+          dataKey="active"
+          stroke="var(--color-chart-4)"
+          strokeWidth={2}
+          fill="url(#activeFill)"
         />
       </AreaChart>
     </ResponsiveContainer>
