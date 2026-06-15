@@ -7,10 +7,14 @@ import { gsap, landingScroller, useGSAP } from "./gsap"
 export function Reveal({
   children,
   delay = 0,
+  y = 28,
+  stagger = false,
   className,
 }: {
   children: ReactNode
   delay?: number
+  y?: number
+  stagger?: boolean
   className?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -19,15 +23,19 @@ export function Reveal({
     () => {
       const mm = gsap.matchMedia()
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from(ref.current, {
-          y: 28,
+        const node = ref.current
+        if (!node) return
+        const targets = stagger ? Array.from(node.children) : node
+        gsap.from(targets, {
+          y,
           autoAlpha: 0,
           duration: 0.7,
           delay,
           ease: "power2.out",
+          stagger: stagger ? 0.1 : 0,
           scrollTrigger: {
-            trigger: ref.current,
-            scroller: landingScroller(ref.current),
+            trigger: node,
+            scroller: landingScroller(node),
             start: "top 88%",
           },
         })

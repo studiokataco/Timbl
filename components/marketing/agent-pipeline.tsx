@@ -4,6 +4,7 @@ import { useRef } from "react"
 import { ArrowRight } from "lucide-react"
 
 import { ScrollTrigger, gsap, landingScroller, useGSAP } from "./gsap"
+import { Reveal } from "./reveal"
 
 const STAGES = [
   { label: "Plan", color: "#8b5cf6" },
@@ -54,7 +55,7 @@ export function AgentPipeline() {
   return (
     <section ref={root} id="agents" className="scroll-mt-16 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
             New in Timbl
           </p>
@@ -62,17 +63,17 @@ export function AgentPipeline() {
             An agent crew, not another chatbot
           </h2>
           <p className="mt-4 text-pretty text-muted-foreground">
-            Timbl comes with a crew of specialised agents who work the plan
-            with you. One fills empty slots with ideas, one drafts in each
-            brand&apos;s voice, others keep the schedule honest. They propose.
-            You approve.
+            Timbl ships with a pipeline of specialised AI agents that work the
+            plan with you - one suggests ideas for empty slots, one drafts in
+            your brand voice, others keep the schedule honest. They propose,
+            you approve.
           </p>
-        </div>
+        </Reveal>
         <div className="mt-12 flex flex-wrap items-center justify-center gap-2 md:gap-3">
           {STAGES.map((stage, i) => (
             <div key={stage.label} className="flex items-center gap-2 md:gap-3">
               {i > 0 && <ArrowRight className="size-4 text-muted-foreground/60" />}
-              <span className="pipe-pill glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
+              <span className="pipe-pill inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                 <span
                   className="pipe-dot size-2 rounded-full"
                   style={{ backgroundColor: stage.color }}

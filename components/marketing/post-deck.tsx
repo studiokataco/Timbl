@@ -106,11 +106,11 @@ export function PostDeck() {
     <section
       ref={root}
       id="posts"
-      className="relative scroll-mt-16 overflow-hidden bg-[#0c1224] px-6 text-white"
+      className="relative scroll-mt-16 overflow-hidden bg-[#0e2117] px-6 text-white"
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(123,94,255,0.18),transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,211,153,0.18),transparent_55%)]"
       />
       <div
         ref={pin}

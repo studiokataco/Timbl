@@ -2,10 +2,12 @@ import Link from "next/link"
 
 import { TimblWordmark } from "@/components/brand/timbl-logo"
 
+import { Reveal } from "./reveal"
+
 export function MarketingFooter() {
   return (
     <footer className="bg-surface-dark px-6 py-16 text-zinc-400">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-start md:justify-between">
+      <Reveal className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-start md:justify-between">
         <div>
           <TimblWordmark className="text-white" />
           <p className="mt-3 max-w-xs text-sm">
@@ -20,7 +22,7 @@ export function MarketingFooter() {
             Sign up
           </Link>
         </nav>
-      </div>
+      </Reveal>
       <div className="mx-auto mt-12 max-w-6xl border-t border-white/10 pt-6">
         <p className="text-[13px] text-zinc-500">
           © {new Date().getFullYear()} Timbl

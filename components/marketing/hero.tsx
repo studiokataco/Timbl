@@ -4,41 +4,40 @@ import { useRef } from "react"
 import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 
-import { ShaderBackground } from "@/components/auth/shader-background"
 import { Button } from "@/components/ui/button"
 
 import { CalendarPreview } from "./calendar-preview"
 import { gsap, landingScroller, useGSAP } from "./gsap"
 
 const FLOATERS = [
-  { label: "Instagram", short: "Ig", color: "#E1306C", pos: "left-[1%] top-[8%]", from: { x: 150, y: 60 } },
-  { label: "Facebook", short: "f", color: "#1877F2", pos: "right-[2%] top-[5%]", from: { x: -150, y: 70 } },
-  { label: "LinkedIn", short: "in", color: "#0A66C2", pos: "left-[4%] top-[52%]", from: { x: 120, y: -10 } },
-  { label: "X", short: "X", color: "#0f0f0f", pos: "right-[3%] top-[48%]", from: { x: -120, y: -10 } },
+  { label: "Instagram", short: "Ig", color: "#E1306C", pos: "left-[1%] top-[10%]", from: { x: 150, y: 60 } },
+  { label: "Facebook", short: "f", color: "#1877F2", pos: "right-[2%] top-[6%]", from: { x: -150, y: 70 } },
+  { label: "LinkedIn", short: "in", color: "#0A66C2", pos: "left-[3%] top-[58%]", from: { x: 120, y: -10 } },
+  { label: "X", short: "X", color: "#0f0f0f", pos: "right-[3%] top-[54%]", from: { x: -120, y: -10 } },
 ]
 
 function PostFragment() {
   return (
-    <div className="glass-dark w-[190px] rounded-2xl p-3 text-white shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium">
+    <div className="w-[190px] rounded-2xl border border-border bg-card p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)]">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
         <span className="size-1.5 rounded-full bg-[#fb923c]" />
         Announcements
       </span>
       <p className="mt-2 text-[13px] font-semibold">Launch teaser</p>
-      <p className="mt-1 text-[11px] text-white/55">Instagram · Tue 9:00</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">Instagram · Tue 9:00</p>
     </div>
   )
 }
 
 function AgentFragment() {
   return (
-    <div className="glass-dark flex w-[210px] items-center gap-2.5 rounded-2xl p-3 text-white shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-      <span className="flex size-8 items-center justify-center rounded-xl bg-white/10">
+    <div className="flex w-[210px] items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)]">
+      <span className="flex size-8 items-center justify-center rounded-xl bg-secondary">
         <Sparkles className="size-4" />
       </span>
       <div className="min-w-0">
         <p className="text-[12px] font-semibold">Drafter agent</p>
-        <p className="text-[11px] text-white/55">2 drafts ready for review</p>
+        <p className="text-[11px] text-muted-foreground">2 drafts ready for review</p>
       </div>
     </div>
   )
@@ -53,10 +52,11 @@ export function Hero() {
     () => {
       const mm = gsap.matchMedia()
       mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const scroller = landingScroller(root.current)
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: root.current,
-            scroller: landingScroller(root.current),
+            scroller,
             start: "top top",
             end: "+=110%",
             scrub: 0.6,
@@ -106,8 +106,10 @@ export function Hero() {
           tl.from(
             ".cal-post",
             {
-              x: (_i: number, el: Element) => (el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2 - cx) * 0.7,
-              y: (_i: number, el: Element) => (el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2 - cy) * 0.7,
+              x: (_i: number, el: Element) =>
+                (el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2 - cx) * 0.7,
+              y: (_i: number, el: Element) =>
+                (el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2 - cy) * 0.7,
               scale: 0.5,
               autoAlpha: 0,
               stagger: { each: 0.06, from: "center" },
@@ -122,51 +124,39 @@ export function Hero() {
   )
 
   return (
-    <section
-      ref={root}
-      className="relative isolate min-h-screen overflow-hidden bg-[#0c1224] px-6 text-white"
-    >
-      <ShaderBackground className="opacity-90" />
-
+    <section ref={root} className="relative min-h-screen px-6">
       <div
         ref={pin}
-        className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center pb-24 pt-28 md:pt-32"
+        className="mx-auto flex min-h-screen max-w-6xl flex-col items-center pb-24 pt-20 md:pt-28"
         style={{ perspective: "1400px" }}
       >
-        <div className="mx-auto max-w-3xl text-center">
-          <span className="glass-dark inline-flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-medium text-white/80">
-            <span className="size-1.5 rounded-full bg-[#00E89A]" />
+        <div className="hero-lead mx-auto max-w-3xl text-center">
+          <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-[13px] font-medium text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-success" />
             AI agents now draft alongside you
           </span>
-          <h1 className="mt-6 text-balance text-5xl font-medium leading-[1.04] tracking-tight md:text-7xl">
-            Every brand&apos;s{" "}
-            <span className="bg-gradient-to-r from-[#00E89A] via-[#7B5EFF] to-[#FF5040] bg-clip-text text-transparent">
-              social
-            </span>
-            , one calm calendar
+          <h1 className="mt-6 text-balance text-5xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
+            Run every brand&apos;s social from one calendar
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-white/65">
-            Timbl brings every client, channel and campaign into a single
-            drag-and-drop calendar. Your AI agents handle the ideas, the first
-            drafts and the scheduling - you keep the seat that matters,
-            approving what goes live.
+          <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
+            Timbl is a calendar-first social media planner for agencies and
+            multi-brand teams. Drag posts into place, keep campaigns on track,
+            and let AI agents handle the ideas, drafts and scheduling.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              className="h-11 bg-white px-6 text-sm text-[#0c1224] hover:bg-white/90"
-              render={<Link href="/signup" />}
-            >
+            <Button className="h-11 px-6 text-sm" render={<Link href="/signup" />}>
               Get started free
               <ArrowRight data-icon="inline-end" />
             </Button>
             <Button
-              className="glass-dark h-11 px-6 text-sm text-white hover:bg-white/15"
+              variant="outline"
+              className="h-11 px-6 text-sm"
               render={<Link href="/login" />}
             >
               Log in
             </Button>
           </div>
-          <p className="mt-4 text-[13px] text-white/45">
+          <p className="mt-4 text-[13px] text-muted-foreground">
             Free plan included. No credit card required.
           </p>
         </div>
@@ -176,7 +166,7 @@ export function Hero() {
             <div
               key={i}
               aria-label={label}
-              className={`hero-floater pointer-events-none absolute z-30 hidden size-12 items-center justify-center rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] md:flex ${pos}`}
+              className={`hero-floater pointer-events-none absolute z-30 hidden size-12 items-center justify-center rounded-2xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:flex ${pos}`}
             >
               <span
                 className="flex size-7 items-center justify-center rounded-full text-xs font-bold lowercase text-white"
@@ -196,14 +186,12 @@ export function Hero() {
 
           <div
             ref={device}
-            className="glass-dark relative z-10 mx-auto max-w-4xl rounded-2xl p-2 shadow-[0_40px_120px_rgba(0,0,0,0.5)]"
+            className="hero-device relative z-10 mx-auto max-w-4xl rounded-2xl border border-border bg-card p-2 shadow-[0_40px_120px_rgba(0,0,0,0.14)]"
           >
             <CalendarPreview />
           </div>
         </div>
       </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-b from-transparent to-background" />
     </section>
   )
 }
