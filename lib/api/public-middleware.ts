@@ -37,11 +37,17 @@ async function resolveApiKey(key: string): Promise<AuthResult> {
   const prefix = key.slice(0, 14)
   const db = getAdminDb()
 
-  const snap = await db
-    .collectionGroup("publicApps")
-    .where("keyPrefix", "==", prefix)
-    .limit(1)
-    .get()
+  let snap
+  try {
+    snap = await db
+      .collectionGroup("publicApps")
+      .where("keyPrefix", "==", prefix)
+      .limit(1)
+      .get()
+  } catch (err) {
+    console.error("[public-auth] api key lookup failed:", err)
+    return { error: "auth_unavailable", status: 503 }
+  }
 
   if (snap.empty) return { error: "invalid_token", status: 401 }
 
@@ -62,7 +68,13 @@ async function resolveApiKey(key: string): Promise<AuthResult> {
 }
 
 async function resolveOauthToken(token: string): Promise<AuthResult> {
-  const tokenDoc = await introspectToken(token)
+  let tokenDoc
+  try {
+    tokenDoc = await introspectToken(token)
+  } catch (err) {
+    console.error("[public-auth] oauth introspection failed:", err)
+    return { error: "auth_unavailable", status: 503 }
+  }
   if (!tokenDoc) return { error: "invalid_token", status: 401 }
   return {
     caller: {
