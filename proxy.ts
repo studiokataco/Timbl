@@ -41,6 +41,12 @@ const PUBLIC_PREFIXES = [
   "/api/agents/cron/",
   "/api/social/",
   "/api/publish/",
+  // Machine surfaces with their own bearer-token auth, plus OAuth discovery
+  // which must be reachable unauthenticated per RFC 9728/8414. The session
+  // cookie gate would 307 their clients into an HTML login page.
+  "/api/public/",
+  "/api/mcp",
+  "/.well-known/",
 ]
 const SESSION_COOKIE = "__session"
 
