@@ -63,10 +63,7 @@ export function AgentPipeline() {
             An agent crew, not another chatbot
           </h2>
           <p className="mt-4 text-pretty text-muted-foreground">
-            Timbl ships with a pipeline of specialised AI agents that work the
-            plan with you - one suggests ideas for empty slots, one drafts in
-            your brand voice, others keep the schedule honest. They propose,
-            you approve.
+            Timbl ships with a pipeline of specialised AI agents that work and plan together with you - suggesting ideas, searching the web for ideas, drafting in your brand voice and more.
           </p>
         </Reveal>
         <div className="mt-12 flex flex-wrap items-center justify-center gap-2 md:gap-3">
@@ -84,8 +81,7 @@ export function AgentPipeline() {
           ))}
         </div>
         <p className="mx-auto mt-8 max-w-xl text-center text-sm text-muted-foreground">
-          Every agent run lands as a draft for review - nothing reaches your
-          channels until someone on the team says so.
+          Every agent run lands as a draft for review - AI proposes, you approve.
         </p>
       </div>
     </section>

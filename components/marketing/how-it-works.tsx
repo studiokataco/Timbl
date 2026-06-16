@@ -4,16 +4,16 @@ import { Reveal } from "./reveal"
 
 const STEPS = [
   {
-    title: "Connect your channels",
-    body: "Bring every brand's accounts into one workspace and post to all of them from a single plan.",
+    title: "Setup your brand's workspace",
+    body: "Set up your AI agents, categories, campaigns and templates to help you plan your content faster.",
   },
   {
     title: "Shape the plan",
-    body: "Lay out categories, campaigns and templates on a drag-and-drop calendar. Gaps and clashes show up before they cost you.",
+    body: "Drag-and-drop posts to the Calendar or Kanban view to manage ideas, statuses and seamlessly connect across teams.",
   },
   {
     title: "Let the agents run",
-    body: "Drafts arrive for review in your brand voice. Approved posts publish on schedule, channel by channel.",
+    body: "Drafts and research arrives for review in your brand voice. Approved posts create drafts on your calendar.",
   },
 ]
 
@@ -23,18 +23,8 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-balance text-4xl font-semibold tracking-tight">
-            Up and running in an afternoon
+            How it Works
           </h2>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-            {Object.values(CHANNEL_LABELS).map((label) => (
-              <span
-                key={label}
-                className="rounded-full border border-border bg-card px-3 py-1 text-[13px] font-medium text-muted-foreground"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
         </Reveal>
         <Reveal stagger className="mt-14 grid gap-6 md:grid-cols-3">
           {STEPS.map((step, i) => (

@@ -13,7 +13,7 @@ export function CtaBand() {
           Bring next month&apos;s content to Timbl
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-pretty text-muted-foreground">
-          Start on the free plan and upgrade when the team does. No credit
+          Try the free plan for 30 days. No credit
           card required.
         </p>
         <div className="mt-8 flex justify-center">

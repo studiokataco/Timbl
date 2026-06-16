@@ -179,12 +179,12 @@ export function PostDeck() {
             Every post, every brand
           </p>
           <h2 className="mt-3 text-balance text-4xl font-semibold tracking-tight">
-            A month of content, fanned out in one calm deck
+            Months of content, accessible in one simple space.
           </h2>
           <p className="mt-4 text-pretty text-white/60">
-            Plan across every channel, colour-coded by category. Scroll and watch
-            the whole queue spread out - drafted, scheduled and waiting on the one
-            approval that matters: yours.
+            Plan across channels, colour-coded categories, drag-and-drop to plan faster and use AI agents to draft and schedule but always waiting on the one
+            approval that matters: <span className="font-bold">yours</span>.
+       
           </p>
         </div>
 

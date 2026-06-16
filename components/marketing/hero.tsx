@@ -195,32 +195,46 @@ export function Hero() {
       >
         <div className="hero-lead mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-[13px] font-medium text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-success" />
-            AI agents now draft alongside you
+            <span className="font-semibold">
+              A Planner that works{' '}
+              <span className="font-extrabold">with</span>
+              {' '}you
+            </span>
           </span>
+     
           <h1 className="mt-6 text-balance text-5xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
-            Run every brand&apos;s social from one calendar
+            Built for those who multitask with Creators and Content
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-            Timbl is a calendar-first social media planner for agencies and
-            multi-brand teams. Drag posts into place, keep campaigns on track,
-            and let AI agents handle the ideas, drafts and scheduling.
-          </p>
+            Timbl is an Agentic Planner with highly efficient workflows and tools to manage your projects, campaigns and media planning. </p>
+            <div className="flex flex-col items-center mt-8">
+              <hr className="h-px border-0 bg-muted-foreground/20 w-[340px] md:w-[430px]" />
+            </div>
+            <h2 className="mt-8 text-2xl font-semibold">
+       
+              While you focus on the big picture,
+              <br />
+              Timbl handles the details.
+            </h2>
+       
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button className="h-11 px-6 text-sm" render={<Link href="/signup" />}>
-              Get started free
-              <ArrowRight data-icon="inline-end" />
+            <Button className="h-11 ps-6 text-sm flex items-center" render={<Link href="/signup" />}>
+            Request a Free Workspace
+              <span className="ms-2 flex items-center pe-[17.6px]">
+                <ArrowRight data-icon="inline-end" />
+              </span>
             </Button>
             <Button
               variant="outline"
               className="h-11 px-6 text-sm"
               render={<Link href="/login" />}
             >
-              Log in
+       
+              Log In
             </Button>
           </div>
           <p className="mt-4 text-[13px] text-muted-foreground">
-            Free plan included. No credit card required.
+            No credit card required. 30-day free trial included on signup.
           </p>
         </div>
 
