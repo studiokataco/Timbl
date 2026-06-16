@@ -42,21 +42,25 @@ const WEEK: Array<{
 
 export function CalendarPreview() {
   return (
-    <div className="relative">
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-      <div className="min-w-[680px]">
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] md:overflow-x-auto">
+      <div className="md:min-w-[680px]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
           <span className="text-sm font-semibold">This week</span>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
             <Sparkles className="size-3.5" />
             Drafter agent: 2 drafts ready for review
           </span>
         </div>
-        <div className="cal-grid grid grid-cols-7 divide-x divide-border">
+        <div className="cal-grid grid grid-cols-1 divide-y divide-border md:grid-cols-7 md:divide-x md:divide-y-0">
           {WEEK.map(({ day, posts }) => (
-            <div key={day} className="min-h-36 p-2">
-              <p className="px-1 pb-2 text-xs font-medium text-muted-foreground">{day}</p>
-              <div className="space-y-1.5">
+            <div
+              key={day}
+              className="flex gap-3 p-3 md:min-h-36 md:flex-col md:gap-0 md:p-2"
+            >
+              <p className="w-10 shrink-0 pt-0.5 text-xs font-medium text-muted-foreground md:w-auto md:px-1 md:pb-2 md:pt-0">
+                {day}
+              </p>
+              <div className="flex-1 space-y-1.5">
                 {posts.map((post) => {
                   const color = CATEGORY_COLORS[post.slug]
                   return (
@@ -89,8 +93,6 @@ export function CalendarPreview() {
           ))}
         </div>
       </div>
-      </div>
-      <div className="pointer-events-none absolute inset-y-px right-px w-12 rounded-r-2xl bg-gradient-to-l from-card to-transparent md:hidden" />
     </div>
   )
 }

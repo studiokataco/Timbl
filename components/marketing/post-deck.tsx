@@ -2,7 +2,7 @@
 
 import { useRef } from "react"
 
-import { gsap, landingScroller, useGSAP } from "./gsap"
+import { PIN_QUERY, gsap, landingScroller, useGSAP } from "./gsap"
 
 type DeckPost = {
   category: string
@@ -64,40 +64,97 @@ function PostCard({ post }: { post: DeckPost }) {
 export function PostDeck() {
   const root = useRef<HTMLElement>(null)
   const pin = useRef<HTMLDivElement>(null)
+  const deck = useRef<HTMLDivElement>(null)
 
   useGSAP(
     () => {
       const mid = (DECK.length - 1) / 2
-
-      gsap.set(".deck-card", {
-        xPercent: -50,
-        transformOrigin: "bottom center",
-        x: (i: number) => (i - mid) * 64,
-        y: (i: number) => Math.abs(i - mid) * 18,
-        rotate: (i: number) => (i - mid) * 7,
-        zIndex: (i: number) => 20 - Math.round(Math.abs(i - mid)),
-      })
-
       const mm = gsap.matchMedia()
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from(".deck-card", {
-          x: 0,
-          y: 28,
-          rotate: 0,
-          scale: 0.9,
-          autoAlpha: 0,
-          ease: "power3.out",
-          stagger: { each: 0.05, from: "center" },
-          scrollTrigger: {
-            trigger: root.current,
-            scroller: landingScroller(root.current),
-            start: "top top",
-            end: "+=120%",
-            scrub: 0.6,
-            pin: pin.current,
-          },
-        })
-      })
+
+      mm.add(
+        {
+          base: "(min-width: 0px)",
+          canPin: PIN_QUERY,
+          motion: "(prefers-reduced-motion: no-preference)",
+        },
+        (ctx) => {
+          const { canPin, motion } = ctx.conditions as {
+            base: boolean
+            canPin: boolean
+            motion: boolean
+          }
+          const zStack = (i: number) => 20 - Math.round(Math.abs(i - mid))
+
+          if (canPin) {
+            // Desktop: wide horizontal fan, pinned and scrubbed.
+            gsap.set(".deck-card", {
+              xPercent: -50,
+              transformOrigin: "bottom center",
+              x: (i: number) => (i - mid) * 64,
+              y: (i: number) => Math.abs(i - mid) * 18,
+              rotate: (i: number) => (i - mid) * 7,
+              zIndex: zStack,
+            })
+          } else {
+            // Touch: a vertical fan suits a portrait canvas - cards cascade from
+            // the top downwards (each peeking below the last) with a slight bow,
+            // instead of spilling off the sides or splitting around the middle.
+            gsap.set(".deck-card", {
+              xPercent: -50,
+              transformOrigin: "top center",
+              x: (i: number) => (i - mid) * 8,
+              y: (i: number) => i * 48,
+              rotate: (i: number) => (i - mid) * 3,
+              zIndex: (i: number) => i + 1,
+            })
+          }
+
+          if (!motion) return
+
+          const scroller = landingScroller(root.current)
+
+          if (!canPin) {
+            // Scroll-linked but NOT pinned: scrub ties the fan-in to scroll
+            // position so the user drives it, while no pin keeps native momentum
+            // scrolling smooth. Cards fly in from alternating sides and settle
+            // into the vertical fan as the deck moves up the viewport.
+            gsap.from(".deck-card", {
+              x: (i: number) => (i % 2 === 0 ? -180 : 180),
+              rotate: 0,
+              scale: 0.9,
+              autoAlpha: 0,
+              ease: "power3.out",
+              stagger: { each: 0.06, from: "start" },
+              scrollTrigger: {
+                trigger: deck.current,
+                scroller,
+                start: "top 88%",
+                end: "top 28%",
+                scrub: 0.5,
+              },
+            })
+            return
+          }
+
+          gsap.from(".deck-card", {
+            x: 0,
+            y: 28,
+            rotate: 0,
+            scale: 0.9,
+            autoAlpha: 0,
+            ease: "power3.out",
+            stagger: { each: 0.05, from: "center" },
+            scrollTrigger: {
+              trigger: root.current,
+              scroller,
+              start: "top top",
+              end: "+=120%",
+              scrub: 0.6,
+              pin: pin.current,
+            },
+          })
+        }
+      )
     },
     { scope: root }
   )
@@ -131,7 +188,7 @@ export function PostDeck() {
           </p>
         </div>
 
-        <div className="relative mt-16 h-[320px] w-full">
+        <div ref={deck} className="relative mt-12 h-[480px] w-full md:mt-16 md:h-[320px]">
           {DECK.map((post, i) => (
             <div key={i} className="deck-card absolute left-1/2 top-0">
               <PostCard post={post} />

@@ -6,7 +6,18 @@ import { ScrollTrigger } from "gsap/ScrollTrigger"
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP)
+  // Mobile browsers fire resize on every URL-bar show/hide; without this the
+  // scroller recalculates mid-gesture and pinned sections jump.
+  ScrollTrigger.config({ ignoreMobileResize: true })
 }
+
+/**
+ * Pinning + scrub only behaves on a precise pointer that can drive the scroll
+ * frame-by-frame. On touch (any width - phones AND tablets) the pin fights
+ * momentum scrolling and the section feels like it sticks and loops, so those
+ * devices get a plain reveal instead. Width alone can't tell the two apart.
+ */
+export const PIN_QUERY = "(min-width: 768px) and (hover: hover) and (pointer: fine)"
 
 /**
  * The landing page scrolls inside its own overflow container, not the window

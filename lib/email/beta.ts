@@ -2,6 +2,7 @@ import "server-only"
 
 import { Resend } from "resend"
 
+import { ROOT_PLATFORM_ADMIN_EMAIL } from "@/lib/platform/schema"
 import { appBaseUrl } from "@/lib/publishing/oauth"
 
 function getResend() {
@@ -28,6 +29,103 @@ function escapeHtml(s: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+}
+
+function controlSignupsUrl(): string {
+  const adminHost = process.env.NEXT_PUBLIC_ADMIN_HOST
+  if (!adminHost) return `${appBaseUrl()}/control/signups`
+  const proto = adminHost.startsWith("localhost") || adminHost.startsWith("admin.localhost")
+    ? "http"
+    : "https"
+  return `${proto}://${adminHost}/control/signups`
+}
+
+export async function sendSignupRequestedEmail(opts: {
+  name: string
+  email: string
+  company?: string
+  useCase?: string
+}): Promise<{ success: boolean; error?: string }> {
+  const resend = getResend()
+  if (!resend) return { success: false, error: "Resend not configured" }
+
+  const reviewUrl = controlSignupsUrl()
+  const rows = [
+    ["Name", opts.name],
+    ["Email", opts.email],
+    ...(opts.company ? [["Company", opts.company]] : []),
+    ...(opts.useCase ? [["Use case", opts.useCase]] : []),
+  ]
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#666;vertical-align:top;white-space:nowrap">${escapeHtml(label)}</td><td style="padding:4px 0;color:#111">${escapeHtml(value)}</td></tr>`,
+    )
+    .join("")
+
+  try {
+    await resend.emails.send({
+      from: from(),
+      to: resolveRecipient(ROOT_PLATFORM_ADMIN_EMAIL),
+      replyTo: opts.email,
+      subject: `New Timbl signup request - ${opts.name}`,
+      html: `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.6;color:#111;max-width:560px;margin:0 auto;padding:24px">
+<p>A new early access request just landed.</p>
+<table style="border-collapse:collapse;margin:8px 0 20px">${rows}</table>
+<p>
+  <a href="${reviewUrl}" style="display:inline-block;padding:11px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-weight:500">
+    Review and approve
+  </a>
+</p>
+<p style="font-size:13px;color:#666">Or open: ${reviewUrl}</p>
+<p style="font-size:12px;color:#bbb;margin-top:32px">Timbl.app</p>
+</body></html>`,
+    })
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Send failed"
+    console.warn("[email] signup-requested send failed:", message)
+    return { success: false, error: message }
+  }
+}
+
+export async function sendNewWorkspaceEmail(opts: {
+  name: string
+  email: string
+  orgName: string
+}): Promise<{ success: boolean; error?: string }> {
+  const resend = getResend()
+  if (!resend) return { success: false, error: "Resend not configured" }
+
+  const reviewUrl = controlSignupsUrl().replace(/\/signups$/, "/tenants")
+
+  try {
+    await resend.emails.send({
+      from: from(),
+      to: resolveRecipient(ROOT_PLATFORM_ADMIN_EMAIL),
+      replyTo: opts.email,
+      subject: `New Timbl workspace - ${opts.orgName}`,
+      html: `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.6;color:#111;max-width:560px;margin:0 auto;padding:24px">
+<p>A new workspace was just created via open signup.</p>
+<table style="border-collapse:collapse;margin:8px 0 20px">
+<tr><td style="padding:4px 12px 4px 0;color:#666;white-space:nowrap">Workspace</td><td style="padding:4px 0;color:#111">${escapeHtml(opts.orgName)}</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#666;white-space:nowrap">Admin</td><td style="padding:4px 0;color:#111">${escapeHtml(opts.name)}</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#666;white-space:nowrap">Email</td><td style="padding:4px 0;color:#111">${escapeHtml(opts.email)}</td></tr>
+</table>
+<p>
+  <a href="${reviewUrl}" style="display:inline-block;padding:11px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-weight:500">
+    View tenants
+  </a>
+</p>
+<p style="font-size:13px;color:#666">Or open: ${reviewUrl}</p>
+<p style="font-size:12px;color:#bbb;margin-top:32px">Timbl.app</p>
+</body></html>`,
+    })
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Send failed"
+    console.warn("[email] new-workspace send failed:", message)
+    return { success: false, error: message }
+  }
 }
 
 export async function sendInviteAcceptedEmail(opts: {

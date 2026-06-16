@@ -7,18 +7,18 @@ import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import { CalendarPreview } from "./calendar-preview"
-import { gsap, landingScroller, useGSAP } from "./gsap"
+import { PIN_QUERY, gsap, landingScroller, useGSAP } from "./gsap"
 
 const FLOATERS = [
-  { label: "Instagram", short: "Ig", color: "#E1306C", pos: "left-[1%] top-[10%]", from: { x: 150, y: 60 } },
-  { label: "Facebook", short: "f", color: "#1877F2", pos: "right-[2%] top-[6%]", from: { x: -150, y: 70 } },
-  { label: "LinkedIn", short: "in", color: "#0A66C2", pos: "left-[3%] top-[58%]", from: { x: 120, y: -10 } },
-  { label: "X", short: "X", color: "#0f0f0f", pos: "right-[3%] top-[54%]", from: { x: -120, y: -10 } },
+  { label: "Instagram", short: "Ig", color: "#E1306C", pos: "-right-1 top-[8%] md:left-[1%] md:right-auto md:top-[10%]", from: { x: 150, y: 60 } },
+  { label: "Facebook", short: "f", color: "#1877F2", pos: "-right-1 top-[33%] md:right-[2%] md:top-[6%]", from: { x: -150, y: 70 } },
+  { label: "LinkedIn", short: "in", color: "#0A66C2", pos: "-right-1 top-[60%] md:left-[3%] md:right-auto md:top-[58%]", from: { x: 120, y: -10 } },
+  { label: "X", short: "X", color: "#0f0f0f", pos: "-right-1 top-[85%] md:right-[3%] md:top-[54%]", from: { x: -120, y: -10 } },
 ]
 
 function PostFragment() {
   return (
-    <div className="w-[190px] rounded-2xl border border-border bg-card p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)]">
+    <div className="w-[190px] origin-top-left scale-[0.62] rounded-2xl border border-border bg-card p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)] sm:scale-75 lg:scale-100">
       <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
         <span className="size-1.5 rounded-full bg-[#fb923c]" />
         Announcements
@@ -31,7 +31,7 @@ function PostFragment() {
 
 function AgentFragment() {
   return (
-    <div className="flex w-[210px] items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)]">
+    <div className="flex w-[210px] origin-bottom-right scale-[0.62] items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)] sm:scale-75 lg:scale-100">
       <span className="flex size-8 items-center justify-center rounded-xl bg-secondary">
         <Sparkles className="size-4" />
       </span>
@@ -46,14 +46,76 @@ function AgentFragment() {
 export function Hero() {
   const root = useRef<HTMLElement>(null)
   const pin = useRef<HTMLDivElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
   const device = useRef<HTMLDivElement>(null)
 
   useGSAP(
     () => {
       const mm = gsap.matchMedia()
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const scroller = landingScroller(root.current)
-        const tl = gsap.timeline({
+
+      mm.add(
+        { canPin: PIN_QUERY, motion: "(prefers-reduced-motion: no-preference)" },
+        (ctx) => {
+          const { canPin, motion } = ctx.conditions as { canPin: boolean; motion: boolean }
+          if (!motion) return
+
+          const scroller = landingScroller(root.current)
+
+          if (!canPin) {
+            // Touch / no precise pointer: scroll-linked but NOT pinned. The scrub
+            // ties the entrance to scroll position so the user drives it; dropping
+            // the pin is what keeps native momentum scrolling smooth. Triggered off
+            // the untransformed stage so the device's own tween can't skew the
+            // measurement.
+            const scrubbed = (start: string, end: string) => ({
+              trigger: stage.current,
+              scroller,
+              start,
+              end,
+              scrub: 0.5,
+            })
+
+            const tlm = gsap.timeline({ scrollTrigger: scrubbed("top 92%", "top 45%") })
+            tlm
+              .from(device.current, {
+                y: 36,
+                scale: 0.94,
+                autoAlpha: 0,
+                duration: 0.7,
+                ease: "power2.out",
+              })
+              .from(
+                ".hero-floater",
+                { x: 80, scale: 0.5, autoAlpha: 0, duration: 0.5, stagger: 0.07, ease: "power2.out" },
+                0.15
+              )
+              .from(
+                ".hero-fragment",
+                {
+                  x: (i: number) => (i % 2 === 0 ? -150 : 150),
+                  y: 10,
+                  scale: 0.85,
+                  autoAlpha: 0,
+                  duration: 0.55,
+                  stagger: 0.12,
+                  ease: "power2.out",
+                },
+                0.2
+              )
+
+            gsap.from(".cal-post", {
+              y: 14,
+              scale: 0.8,
+              autoAlpha: 0,
+              duration: 0.5,
+              ease: "power2.out",
+              stagger: { each: 0.04, from: "center" },
+              scrollTrigger: scrubbed("top 85%", "top 40%"),
+            })
+            return
+          }
+
+          const tl = gsap.timeline({
           scrollTrigger: {
             trigger: root.current,
             scroller,
@@ -117,14 +179,15 @@ export function Hero() {
             },
             0.3
           )
+          }
         }
-      })
+      )
     },
     { scope: root }
   )
 
   return (
-    <section ref={root} className="relative min-h-screen px-6">
+    <section ref={root} className="relative min-h-screen px-6 max-md:overflow-x-clip">
       <div
         ref={pin}
         className="mx-auto flex min-h-screen max-w-6xl flex-col items-center pb-24 pt-20 md:pt-28"
@@ -161,15 +224,15 @@ export function Hero() {
           </p>
         </div>
 
-        <div className="relative mt-16 w-full">
+        <div ref={stage} className="relative mt-16 w-full">
           {FLOATERS.map(({ label, short, color, pos }, i) => (
             <div
               key={i}
               aria-label={label}
-              className={`hero-floater pointer-events-none absolute z-30 hidden size-12 items-center justify-center rounded-2xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:flex ${pos}`}
+              className={`hero-floater pointer-events-none absolute z-30 flex size-10 items-center justify-center rounded-2xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:size-12 ${pos}`}
             >
               <span
-                className="flex size-7 items-center justify-center rounded-full text-xs font-bold lowercase text-white"
+                className="flex size-6 items-center justify-center rounded-full text-xs font-bold lowercase text-white md:size-7"
                 style={{ backgroundColor: color }}
               >
                 {short}
@@ -177,10 +240,10 @@ export function Hero() {
             </div>
           ))}
 
-          <div className="hero-fragment pointer-events-none absolute -left-2 top-12 z-20 hidden lg:block">
+          <div className="hero-fragment pointer-events-none absolute -left-2 -top-9 z-20 block lg:top-12">
             <PostFragment />
           </div>
-          <div className="hero-fragment pointer-events-none absolute -right-3 bottom-8 z-20 hidden lg:block">
+          <div className="hero-fragment pointer-events-none absolute -right-3 -bottom-9 z-20 block lg:bottom-8">
             <AgentFragment />
           </div>
 

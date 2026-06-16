@@ -1,5 +1,6 @@
 "use server"
 
+import { sendSignupRequestedEmail } from "@/lib/email/beta"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { platformSignupRequestsPath } from "@/lib/platform/schema"
 import { signupRequestFormSchema } from "@/lib/schemas/signupRequest"
@@ -35,5 +36,13 @@ export async function submitInviteRequest(raw: unknown): Promise<ServerActionRes
     status: "pending",
     requestedAt: now,
   })
+
+  await sendSignupRequestedEmail({
+    name: name.trim(),
+    email: norm,
+    ...(company?.trim() ? { company: company.trim() } : {}),
+    ...(useCase?.trim() ? { useCase: useCase.trim() } : {}),
+  })
+
   return { ok: true, id: ref.id }
 }
