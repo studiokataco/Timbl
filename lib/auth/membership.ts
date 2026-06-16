@@ -7,6 +7,7 @@ import {
   orgPath,
   orgUsersPath,
 } from "@/lib/firebase/paths"
+import { sendNewWorkspaceEmail } from "@/lib/email/beta"
 import { bootstrapNewOrg } from "@/lib/org/bootstrap"
 import {
   defaultOrgNameForNewWorkspace,
@@ -184,29 +185,36 @@ export async function provisionNewWorkspace(opts: {
       )
     }
     await bootstrapNewOrg({ orgId, name: orgName })
-    return provisionOrgMember({
+    const claims = await provisionOrgMember({
       orgId,
       email,
       displayName: opts.displayName ?? email.split("@")[0],
       role: "admin",
       via: "signup",
     })
+    await sendNewWorkspaceEmail({ name: opts.displayName ?? email, email, orgName })
+    return claims
   }
 
-  if (!orgSnap.exists) {
+  const createdNewOrg = !orgSnap.exists
+  if (createdNewOrg) {
     await bootstrapNewOrg({ orgId, name: orgName })
   }
 
   const hasMembers = !(await orgRef.collection("users").limit(1).get()).empty
   const role: MembershipRole = hasMembers ? "contributor" : "admin"
 
-  return provisionOrgMember({
+  const claims = await provisionOrgMember({
     orgId,
     email,
     displayName: opts.displayName ?? email.split("@")[0],
     role,
     via: "signup",
   })
+  if (createdNewOrg) {
+    await sendNewWorkspaceEmail({ name: opts.displayName ?? email, email, orgName })
+  }
+  return claims
 }
 
 async function provisionOrgMember(opts: {
