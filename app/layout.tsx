@@ -3,17 +3,11 @@ import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { siteUrl } from "@/lib/seo"
 import { Toaster } from "@/components/ui/sonner"
-import { AiTestingBanner } from "@/components/shared/ai-testing-banner"
 import { DevBanner } from "@/components/shared/dev-banner"
 import { ThemeProvider, ThemeNoFlashScript } from "@/components/shared/theme-provider"
 import { PostHogProvider } from "@/components/shared/posthog-provider"
 
-/*
- * Cal.com's brand voice splits into Cal Sans (custom display) + Inter (everything
- * else). Cal Sans is proprietary; per DESIGN.md the recommended substitute is
- * Inter at weight 600 with -0.04em tracking (applied via Tailwind's `tracking-tight`
- * on display headings). JetBrains Mono is Cal's stated mono.
- */
+
 const interSans = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -25,38 +19,55 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 const description =
-  "Timbl is a calendar-first social media planner for agencies and brands - AI agents help plan, draft and schedule posts across every channel."
+  "An AI Social planner that works with you. Plan campaigns and posts across Instagram, Facebook, LinkedIn and X from one calendar or kanban. Timbl's agents draft and schedule - you approve every post before it ships."
+
+const TITLE = "Timbl - AI Social Media Planner"
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "Timbl",
+    default: TITLE,
     template: "%s · Timbl",
   },
   description,
   applicationName: "Timbl",
   keywords: [
     "social media planner",
-    "content calendar",
     "social media scheduler",
     "social media management",
-    "agency",
-    "AI social media",
-    "content planning",
+    "content calendar",
+    "social media scheduling tool",
+    "AI social media planner",
+    "social media calendar for agencies",
+    "kanban content planner",
+    "campaign planning",
+    "agentic planner",
   ],
   openGraph: {
     siteName: "Timbl",
     type: "website",
     locale: "en_US",
     url: siteUrl(),
-    title: "Timbl",
+    title: TITLE,
     description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Timbl",
+    title: TITLE,
     description,
   },
+}
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Timbl",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: siteUrl(),
+  description,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  publisher: { "@type": "Organization", name: "Timbl", url: siteUrl() },
 }
 
 export default function RootLayout({
@@ -66,16 +77,19 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${interSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${interSans.variable} ${jetbrainsMono.variable} h-full motion-safe:scroll-smooth antialiased`}
     >
       <head>
         <ThemeNoFlashScript />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body className="h-screen overflow-hidden flex flex-col bg-background text-foreground">
         <PostHogProvider>
           <ThemeProvider defaultTheme="system">
             <DevBanner />
-            <AiTestingBanner />
             {children}
             <Toaster richColors position="bottom-right" />
           </ThemeProvider>

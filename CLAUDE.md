@@ -72,4 +72,4 @@ File-based memory lives in the Obsidian vault. Read the relevant note only when 
 - /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Decisions/  — durable architectural & product decisions
 - /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Mistakes/   — gotchas worth not repeating
 - /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Context/    — infra/setup facts (where things live, how to run them)
-This project: /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Decisions/safe.md
+This project: /Users/kataco/Documents/Development/claude-obsidian/ClaudeMemory/Decisions/timbl.md

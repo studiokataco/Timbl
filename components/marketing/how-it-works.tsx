@@ -1,19 +1,21 @@
-import { CHANNEL_LABELS } from "@/lib/channels"
-
 import { Reveal } from "./reveal"
+import { SceneAgents, ScenePlan, SceneSetup } from "./how-it-works-scenes"
 
 const STEPS = [
   {
     title: "Setup your brand's workspace",
     body: "Set up your AI agents, categories, campaigns and templates to help you plan your content faster.",
+    Scene: SceneSetup,
   },
   {
     title: "Shape the plan",
     body: "Drag-and-drop posts to the Calendar or Kanban view to manage ideas, statuses and seamlessly connect across teams.",
+    Scene: ScenePlan,
   },
   {
     title: "Let the agents run",
     body: "Drafts and research arrives for review in your brand voice. Approved posts create drafts on your calendar.",
+    Scene: SceneAgents,
   },
 ]
 
@@ -27,17 +29,23 @@ export function HowItWorks() {
           </h2>
         </Reveal>
         <Reveal stagger className="mt-14 grid gap-6 md:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <div key={step.title} className="rounded-xl border border-border bg-card p-8">
-              <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                {i + 1}
-              </span>
-              <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-                {step.body}
-              </p>
-            </div>
-          ))}
+          {STEPS.map((step, i) => {
+            const Scene = step.Scene
+            return (
+              <div key={step.title} className="rounded-2xl border border-border bg-card p-3">
+                <Scene />
+                <div className="px-3 pb-3 pt-5">
+                  <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <h3 className="mt-3 text-lg font-semibold">{step.title}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+                    {step.body}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
         </Reveal>
       </div>
     </section>

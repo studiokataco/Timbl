@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og"
 
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
-export const alt = "Timbl - calendar-first social media planning"
+export const alt = "Timbl - AI Social Media Planner"
 
 const BARS = [
   ["#00E89A", "#161624", "#FF5040"],
@@ -67,7 +67,7 @@ export default function OpengraphImage() {
           </div>
         </div>
         <div style={{ fontSize: 38, color: "#6b7280" }}>
-          Calendar-first social media planning
+          The AI social media planner for marketers and creators
         </div>
         <div style={{ display: "flex", gap: 14 }}>
           {CHIPS.map((fill) => (

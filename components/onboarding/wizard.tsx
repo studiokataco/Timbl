@@ -449,7 +449,7 @@ function ProfileStep({
         <Label htmlFor="onb-audience">Who&apos;s your audience? (optional)</Label>
         <Input
           id="onb-audience"
-          placeholder="Independent agencies, in-house marketers, …"
+          placeholder="Independent creators, in-house marketers, …"
           value={audience}
           onChange={(e) => onAudienceChange(e.target.value)}
         />

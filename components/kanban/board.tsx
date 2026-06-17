@@ -8,6 +8,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  pointerWithin,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -219,7 +220,7 @@ export function KanbanBoard({
 
   function onDragEnd({ active, over }: DragEndEvent) {
     setActiveId(null)
-    if (!over || active.id === over.id) return
+    if (!over) return
     const newStatus = over.id as PostStatus
     if (!columnIdSet.has(newStatus)) return
     const post = posts.find((p) => p.id === active.id)
@@ -348,6 +349,7 @@ export function KanbanBoard({
       <div className="min-h-0 flex-1 overflow-x-hidden pb-24 md:overflow-x-auto md:scrollbar-subtle md:pb-4">
         <DndContext
           sensors={sensors}
+          collisionDetection={pointerWithin}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
         >
@@ -405,6 +407,9 @@ export function KanbanBoard({
                 post={activePost}
                 category={categoryById.get(activePost.categoryId ?? "")}
                 assignee={userById.get(activePost.assigneeId ?? "")}
+                statusColor={
+                  columns.find((c) => c.id === activePost.status)?.color
+                }
                 onClick={() => {}}
                 isDragging
               />

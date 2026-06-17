@@ -1,9 +1,8 @@
 "use client"
 
-import { memo, useMemo, useState } from "react"
+import { memo, useMemo, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { useDroppable } from "@dnd-kit/core"
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { MoreHorizontal, Palette, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +36,59 @@ type Props = {
   fullWidth?: boolean
 }
 
+const laneClass = (isOver: boolean) =>
+  cn(
+    "flex flex-col gap-2 flex-1 rounded-lg p-2 transition-colors",
+    isOver ? "bg-secondary/80 ring-1 ring-border" : "bg-secondary/40",
+  )
+
+function Lane({
+  droppableId,
+  color,
+  children,
+}: {
+  droppableId?: string
+  color: string
+  children: ReactNode
+}) {
+  if (droppableId) {
+    return (
+      <DroppableLane droppableId={droppableId} color={color}>
+        {children}
+      </DroppableLane>
+    )
+  }
+  return (
+    <div className={laneClass(false)} style={{ borderLeft: `2px solid ${color}` }}>
+      {children}
+    </div>
+  )
+}
+
+function DroppableLane({
+  droppableId,
+  color,
+  children,
+}: {
+  droppableId: string
+  color: string
+  children: ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: droppableId,
+    data: { type: "column" },
+  })
+  return (
+    <div
+      ref={setNodeRef}
+      className={laneClass(isOver)}
+      style={{ borderLeft: `2px solid ${color}` }}
+    >
+      {children}
+    </div>
+  )
+}
+
 export const KanbanColumnComponent = memo(function KanbanColumnComponent({
   column,
   allColumns,
@@ -52,10 +104,6 @@ export const KanbanColumnComponent = memo(function KanbanColumnComponent({
   fullWidth = false,
 }: Props) {
   const router = useRouter()
-  const { setNodeRef, isOver } = useDroppable({
-    id: column.id,
-    data: { type: "column" },
-  })
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -114,50 +162,35 @@ export const KanbanColumnComponent = memo(function KanbanColumnComponent({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <SortableContext
-        items={posts.map((p) => p.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        <div
-          ref={setNodeRef}
-          className={cn(
-            "flex flex-col gap-2 flex-1 rounded-lg p-2 transition-colors",
-            isOver
-              ? "bg-secondary/80 ring-1 ring-border"
-              : "bg-secondary/40",
-          )}
-          style={{
-            borderLeft: `2px solid ${column.color}`,
-          }}
-        >
-          {posts.map((post) => (
-            <KanbanCard
-              key={post.id}
-              post={post}
-              category={categoryById.get(post.categoryId ?? "")}
-              assignee={userById.get(post.assigneeId ?? "")}
-              columnIds={columnIds}
-              onClick={() => onCardClick(post)}
-              onStatusChange={
-                onCardStatusChange
-                  ? (next) => onCardStatusChange(post, next)
-                  : undefined
-              }
-              selected={selectedIds?.has(post.id)}
-              selectionActive={selectionActive}
-              onToggleSelect={
-                onToggleSelect ? () => onToggleSelect(post) : undefined
-              }
-              dragEnabled={dragEnabled}
-            />
-          ))}
-          {posts.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center mt-4 select-none">
-              Drop here
-            </p>
-          )}
-        </div>
-      </SortableContext>
+      <Lane droppableId={dragEnabled ? column.id : undefined} color={column.color}>
+        {posts.map((post) => (
+          <KanbanCard
+            key={post.id}
+            post={post}
+            category={categoryById.get(post.categoryId ?? "")}
+            assignee={userById.get(post.assigneeId ?? "")}
+            columnIds={columnIds}
+            statusColor={column.color}
+            onClick={() => onCardClick(post)}
+            onStatusChange={
+              onCardStatusChange
+                ? (next) => onCardStatusChange(post, next)
+                : undefined
+            }
+            selected={selectedIds?.has(post.id)}
+            selectionActive={selectionActive}
+            onToggleSelect={
+              onToggleSelect ? () => onToggleSelect(post) : undefined
+            }
+            dragEnabled={dragEnabled}
+          />
+        ))}
+        {posts.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center mt-4 select-none">
+            Drop here
+          </p>
+        )}
+      </Lane>
 
       <ColumnEditDialog
         open={editOpen}
