@@ -1,8 +1,7 @@
 "use client"
 
 import { memo } from "react"
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
+import { useDraggable } from "@dnd-kit/core"
 import { format, parseISO } from "date-fns"
 import { Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +21,7 @@ type Props = {
   category: WithId<Category> | undefined
   assignee: WithId<User> | undefined
   columnIds?: readonly string[]
+  statusColor?: string
   onClick: () => void
   onStatusChange?: (status: PostStatus) => void
   isDragging?: boolean
@@ -36,6 +36,7 @@ export const KanbanCard = memo(function KanbanCard({
   category,
   assignee,
   columnIds,
+  statusColor,
   onClick,
   onStatusChange,
   isDragging,
@@ -46,29 +47,26 @@ export const KanbanCard = memo(function KanbanCard({
 }: Props) {
   const statuses =
     columnIds && columnIds.length > 0 ? columnIds : LEGACY_POST_STATUSES
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: post.id, disabled: !dragEnabled })
+  const { attributes, listeners, setNodeRef, isDragging: sourceDragging } =
+    useDraggable({
+      id: post.id,
+      disabled: !dragEnabled,
+    })
   const pendingReview = post.agentMeta?.reviewState === "pending"
   const selectable = pendingReview && !!onToggleSelect
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
 
   return (
     <div
       ref={setNodeRef}
       style={{
-        ...style,
-        borderLeftColor: category?.color ?? undefined,
+        borderLeftColor: statusColor ?? category?.color ?? undefined,
       }}
       {...(dragEnabled ? { ...attributes, ...listeners } : {})}
       className={cn(
         "group relative rounded-lg border border-border border-l-4 bg-background p-3 transition-shadow select-none",
         dragEnabled && "md:cursor-grab md:active:cursor-grabbing",
         "hover:shadow-sm",
-        isDragging && "opacity-40",
+        (isDragging || sourceDragging) && "opacity-40",
         selected && "ring-2 ring-primary/40",
       )}
       onClick={onClick}

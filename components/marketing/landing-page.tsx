@@ -11,7 +11,7 @@ export function LandingPage() {
   return (
     <div
       id="landing-scroll"
-      className="landing-light flex-1 overflow-y-auto bg-background text-foreground"
+      className="landing-light flex-1 overflow-y-auto motion-safe:scroll-smooth bg-background text-foreground"
     >
       <MarketingNav />
       <main>

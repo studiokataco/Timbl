@@ -1,25 +1,93 @@
+"use client"
+
 import Link from "next/link"
+import { useRef } from "react"
 import { ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
+import { gsap, useGSAP } from "./gsap"
 import { Reveal } from "./reveal"
+
+const RING_COUNT = 7
+const RING_DURATION = 11
+const RING_COLORS = ["#fb923c", "#10b981", "#f59e0b"]
+
+function RippleRings() {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia()
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const rings = ref.current?.querySelectorAll<HTMLElement>("[data-ring]")
+        if (!rings?.length) return
+        rings.forEach((ring, i) => {
+          gsap.to(ring, {
+            keyframes: {
+              scale: [0.08, 1],
+              opacity: [0, 0.85, 0.85, 0],
+            },
+            duration: RING_DURATION,
+            ease: "none",
+            repeat: -1,
+            delay: (-RING_DURATION / RING_COUNT) * i,
+          })
+        })
+      })
+    },
+    { scope: ref }
+  )
+
+  return (
+    <div ref={ref} aria-hidden className="pointer-events-none absolute inset-0">
+      {Array.from({ length: RING_COUNT }).map((_, i) => (
+        <div
+          key={i}
+          data-ring
+          className="absolute inset-0 m-auto aspect-square w-[min(120vw,1100px)] rounded-full will-change-transform"
+          style={{
+            border: `2px solid ${RING_COLORS[i % RING_COLORS.length]}`,
+            transform: `scale(${0.18 + i * 0.13})`,
+            opacity: 0.55 - i * 0.05,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
 
 export function CtaBand() {
   return (
-    <section className="px-6 py-24">
-      <Reveal className="mx-auto max-w-6xl rounded-2xl bg-secondary px-8 py-16 text-center">
-        <h2 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+    <section className="relative overflow-hidden px-6 py-32 md:py-48">
+      <RippleRings />
+      <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[40rem] max-w-full -translate-x-1/2 rounded-full bg-foreground/[0.06] blur-3xl" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-32"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+          maskImage: "linear-gradient(to top, black, transparent)",
+          WebkitMaskImage: "linear-gradient(to top, black, transparent)",
+          opacity: 0.4,
+        }}
+      />
+
+      <Reveal stagger className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
+        <h2 className="text-balance text-3xl font-bold tracking-tight md:text-5xl">
           Bring next month&apos;s content to Timbl
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-pretty text-muted-foreground">
-          Try the free plan for 30 days. No credit
-          card required.
+        <p className="mt-3 text-sm text-muted-foreground md:text-base">
+          Try the free trial. No credit card required.
         </p>
-        <div className="mt-8 flex justify-center">
-          <Button className="h-11 px-6 text-sm" render={<Link href="/signup" />}>
-            Get started free
-            <ArrowRight data-icon="inline-end" />
+        <div className="mt-8">
+          <Button className="h-11 ps-6 text-sm flex items-center" render={<Link href="/signup" />}>
+            Request a Free Workspace
+            <span className="ms-2 flex items-center pe-[17.6px]">
+              <ArrowRight data-icon="inline-end" />
+            </span>
           </Button>
         </div>
       </Reveal>

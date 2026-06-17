@@ -11,7 +11,7 @@ export function MarketingFooter() {
         <div>
           <TimblWordmark className="text-white" />
           <p className="mt-3 max-w-xs text-sm">
-            Calendar-first social media planning for agencies and brands.
+            An AI Planner that works with you.
           </p>
         </div>
         <nav className="flex gap-8 text-sm">

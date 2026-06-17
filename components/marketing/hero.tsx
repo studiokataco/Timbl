@@ -7,13 +7,17 @@ import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import { CalendarPreview } from "./calendar-preview"
+import { FacebookIcon, InstagramIcon, LinkedInIcon, XIcon } from "./brand-icons"
 import { PIN_QUERY, gsap, landingScroller, useGSAP } from "./gsap"
+import { TypewriterWord } from "./typewriter-word"
+
+const HERO_AUDIENCES = ["Creators", "Agencies", "Studios", "Organisations", "Teams"]
 
 const FLOATERS = [
-  { label: "Instagram", short: "Ig", color: "#E1306C", pos: "-right-1 top-[8%] md:left-[1%] md:right-auto md:top-[10%]", from: { x: 150, y: 60 } },
-  { label: "Facebook", short: "f", color: "#1877F2", pos: "-right-1 top-[33%] md:right-[2%] md:top-[6%]", from: { x: -150, y: 70 } },
-  { label: "LinkedIn", short: "in", color: "#0A66C2", pos: "-right-1 top-[60%] md:left-[3%] md:right-auto md:top-[58%]", from: { x: 120, y: -10 } },
-  { label: "X", short: "X", color: "#0f0f0f", pos: "-right-1 top-[85%] md:right-[3%] md:top-[54%]", from: { x: -120, y: -10 } },
+  { label: "Instagram", Icon: InstagramIcon, pos: "-right-1 top-[8%] md:left-[1%] md:right-auto md:top-[10%]", from: { x: 150, y: 60 } },
+  { label: "Facebook", Icon: FacebookIcon, pos: "-right-1 top-[33%] md:right-[2%] md:top-[6%]", from: { x: -150, y: 70 } },
+  { label: "LinkedIn", Icon: LinkedInIcon, pos: "-right-1 top-[60%] md:left-[3%] md:right-auto md:top-[58%]", from: { x: 120, y: -10 } },
+  { label: "X", Icon: XIcon, pos: "-right-1 top-[85%] md:right-[3%] md:top-[54%]", from: { x: -120, y: -10 } },
 ]
 
 function PostFragment() {
@@ -203,7 +207,9 @@ export function Hero() {
           </span>
      
           <h1 className="mt-6 text-balance text-5xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
-            Built for those who multitask with Creators and Content
+            Built for those who multitask with
+            <br className="hidden md:block" />{' '}
+            <TypewriterWord words={HERO_AUDIENCES} /> and Content
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
             Timbl is an Agentic Planner with highly efficient workflows and tools to manage your projects, campaigns and media planning. </p>
@@ -212,7 +218,7 @@ export function Hero() {
             </div>
             <h2 className="mt-8 text-2xl font-semibold">
        
-              While you focus on the big picture,
+              You focus on the big picture,
               <br />
               Timbl handles the details.
             </h2>
@@ -234,23 +240,18 @@ export function Hero() {
             </Button>
           </div>
           <p className="mt-4 text-[13px] text-muted-foreground">
-            No credit card required. 30-day free trial included on signup.
+            No credit card required. Free trial included on signup.
           </p>
         </div>
 
         <div ref={stage} className="relative mt-16 w-full">
-          {FLOATERS.map(({ label, short, color, pos }, i) => (
+          {FLOATERS.map(({ label, Icon, pos }, i) => (
             <div
               key={i}
               aria-label={label}
               className={`hero-floater pointer-events-none absolute z-30 flex size-10 items-center justify-center rounded-2xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:size-12 ${pos}`}
             >
-              <span
-                className="flex size-6 items-center justify-center rounded-full text-xs font-bold lowercase text-white md:size-7"
-                style={{ backgroundColor: color }}
-              >
-                {short}
-              </span>
+              <Icon className="size-6 md:size-7" />
             </div>
           ))}
 

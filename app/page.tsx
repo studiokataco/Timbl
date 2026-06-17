@@ -8,9 +8,9 @@ import { readSessionAuth } from "@/lib/auth/session"
 
 export const dynamic = "force-dynamic"
 
-const TITLE = "Timbl - the calendar-first social media planner for agencies and brands"
+const TITLE = "Timbl - AI Social Media Planner"
 const DESCRIPTION =
-  "Plan, draft and schedule posts across Instagram, Facebook, LinkedIn and X from one calendar. AI agents handle ideas and drafts - you approve what ships."
+  "Plan campaigns and posts across Instagram, Facebook, LinkedIn and X from one calendar or kanban. Timbl's agents draft and schedule - you approve every post before it ships."
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
