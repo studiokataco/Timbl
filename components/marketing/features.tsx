@@ -3,8 +3,8 @@ import { Reveal } from "./reveal"
 
 const FEATURES = [
   {
-    title: "Planning Environment",
-    body: "Plan in the same view you publish from. Months, campaigns and gaps are visible at a glance; and a Kanban view to plan faster.",
+    title: "Calendar Planning",
+    body: "Use the calendar to plan and manage your content. Timelines, campaigns and progress are visible at a glance.",
     Scene: SceneCalendar,
   },
   {
@@ -14,7 +14,7 @@ const FEATURES = [
   },
   {
     title: "Agents do the busywork",
-    body: "Ideation, drafting and scheduling agents work the plan you set. You approve what ships - nothing publishes without you.",
+    body: "Ideation, drafting, scheduling and more, let the agents work the plan. Review the results - nothing publishes without you.",
     Scene: SceneAgents,
   },
 ]

@@ -13,8 +13,8 @@ const STEPS = [
     Scene: ScenePlan,
   },
   {
-    title: "Let the agents run",
-    body: "Drafts and research arrives for review in your brand voice. Approved posts create drafts on your calendar.",
+    title: "MCP and CLI Integration",
+    body: "AI makes drafts and research, you review and approve. Approved posts create drafts on your calendar.",
     Scene: SceneAgents,
   },
 ]
