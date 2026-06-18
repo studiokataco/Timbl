@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     title: "MCP and CLI Integration",
-    body: "AI makes drafts and research, you review and approve. Approved posts create drafts on your calendar.",
+    body: "Connect your AI to make autonomous drafts, research, reviews and approvals via our native AI integration capabilities.",
     Scene: SceneAgents,
   },
 ]

@@ -85,18 +85,25 @@ export function TypewriterWord({
     }
   }, [typingSpeed, deleteSpeed, pauseBeforeDelete, startDelay, naturalVariance])
 
+  const sizer = words.reduce((a, b) => (b.length > a.length ? b : a), "")
+
   return (
     <span
-      className="inline-flex items-baseline whitespace-nowrap transition-colors duration-300"
+      className="relative inline-flex items-baseline whitespace-nowrap transition-colors duration-300"
       style={{ color: WORD_COLORS[wordIndex % WORD_COLORS.length] }}
     >
-      <span>{displayText}</span>
-      <motion.span
-        aria-hidden
-        animate={{ opacity: [1, 1, 0, 0] }}
-        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, repeatType: "loop", ease: "linear" }}
-        className="ms-0.5 inline-block h-[0.85em] w-[3px] translate-y-[0.08em] bg-current"
-      />
+      <span aria-hidden className="invisible md:hidden">
+        {sizer}
+      </span>
+      <span className="absolute inset-0 flex items-baseline justify-center md:static md:inset-auto">
+        <span>{displayText}</span>
+        <motion.span
+          aria-hidden
+          animate={{ opacity: [1, 1, 0, 0] }}
+          transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, repeatType: "loop", ease: "linear" }}
+          className="ms-0.5 inline-block h-[0.85em] w-[3px] translate-y-[0.08em] bg-current"
+        />
+      </span>
     </span>
   )
 }

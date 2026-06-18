@@ -12,6 +12,7 @@ import { Reveal } from "./reveal"
 const RING_COUNT = 7
 const RING_DURATION = 11
 const RING_COLORS = ["#fb923c", "#10b981", "#f59e0b"]
+const RING_SIZE = "min(120vw, 1100px)"
 
 function RippleRings() {
   const ref = useRef<HTMLDivElement>(null)
@@ -26,7 +27,7 @@ function RippleRings() {
           gsap.to(ring, {
             keyframes: {
               scale: [0.08, 1],
-              opacity: [0, 0.85, 0.85, 0],
+              opacity: [0, 0.4, 0.4, 0],
             },
             duration: RING_DURATION,
             ease: "none",
@@ -40,16 +41,29 @@ function RippleRings() {
   )
 
   return (
-    <div ref={ref} aria-hidden className="pointer-events-none absolute inset-0">
+    <div
+      ref={ref}
+      aria-hidden
+      className="pointer-events-none absolute inset-0"
+      style={{
+        maskImage:
+          "radial-gradient(ellipse 60% 55% at center, transparent 30%, black 70%)",
+        WebkitMaskImage:
+          "radial-gradient(ellipse 60% 55% at center, transparent 30%, black 70%)",
+      }}
+    >
       {Array.from({ length: RING_COUNT }).map((_, i) => (
         <div
           key={i}
           data-ring
-          className="absolute inset-0 m-auto aspect-square w-[min(120vw,1100px)] rounded-full will-change-transform"
+          className="absolute left-1/2 top-1/2 aspect-square rounded-full will-change-transform"
           style={{
-            border: `2px solid ${RING_COLORS[i % RING_COLORS.length]}`,
+            width: RING_SIZE,
+            marginLeft: `calc(${RING_SIZE} / -2)`,
+            marginTop: `calc(${RING_SIZE} / -2)`,
+            border: `1.5px solid ${RING_COLORS[i % RING_COLORS.length]}`,
             transform: `scale(${0.18 + i * 0.13})`,
-            opacity: 0.55 - i * 0.05,
+            opacity: 0.3 - i * 0.03,
           }}
         />
       ))}
