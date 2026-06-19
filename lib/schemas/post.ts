@@ -6,6 +6,7 @@ import {
   isoDate,
   isoTime,
   isoTimestamp,
+  linkProvider,
   nextActionSchema,
   postStatus,
   postType,
@@ -57,6 +58,23 @@ export const agentMetaSchema = z.object({
 })
 export type AgentMeta = z.infer<typeof agentMetaSchema>
 
+/*
+ * A design or reference link attached to a post - a Canva design, or a file
+ * shared from the org's own Google Drive / Dropbox / OneDrive. Distinct from
+ * `assetUrls`, which is publishable media the pipeline splits by file
+ * extension; design links are references for the team and never published.
+ * `provider` is derived from the URL host; `source` records whether the link
+ * was pasted or chosen through a connected storage app's picker.
+ */
+export const designLinkSchema = z.object({
+  url: z.string().url(),
+  provider: linkProvider.default("link"),
+  label: z.string().max(200).optional(),
+  thumbnailUrl: z.string().url().optional(),
+  source: z.enum(["paste", "picker"]).default("paste"),
+})
+export type DesignLink = z.infer<typeof designLinkSchema>
+
 export const postSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
@@ -87,6 +105,7 @@ export const postSchema = audit.extend({
 
   canvaUrl: z.string().url().optional(),
   assetUrls: z.array(z.string().url()).default([]),
+  designLinks: z.array(designLinkSchema).default([]),
 
   channelStatuses: channelStatusesSchema.default({}),
 

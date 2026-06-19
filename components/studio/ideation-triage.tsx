@@ -18,6 +18,7 @@ import { approveAgentDraft } from "@/lib/actions/agent-suggestions"
 import { Button } from "@/components/ui/button"
 import { SchedulePostPopover } from "@/components/shared/schedule-post-popover"
 import { cn } from "@/lib/utils"
+import { faviconUrl, hostname } from "@/lib/url"
 
 /*
  * Ideation triage - the inspector's focused single-item view.
@@ -383,7 +384,7 @@ function DateStrip({ iso }: { iso: string }) {
 
 function SourceCard({ url }: { url: string }) {
   const host = hostname(url)
-  const fav = `https://www.google.com/s2/favicons?domain=${host}&sz=32`
+  const fav = faviconUrl(url, 32)
   return (
     <a
       href={url}
@@ -447,12 +448,4 @@ function Kbd({ children }: { children: React.ReactNode }) {
       {children}
     </kbd>
   )
-}
-
-function hostname(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "")
-  } catch {
-    return url
-  }
 }

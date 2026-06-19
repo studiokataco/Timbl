@@ -56,6 +56,7 @@ export async function promoteAwarenessDay(
     leadUserId: undefined,
     assigneeId: user.id,
     assetUrls: [],
+    designLinks: [],
     channelStatuses: {},
     createdAt: now,
     updatedAt: now,
