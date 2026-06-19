@@ -90,6 +90,7 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
     leadUserId: category.defaultLeadId,
     assigneeId: user.id,
     assetUrls: [],
+    designLinks: [],
     channelStatuses: {},
     createdAt: now,
     updatedAt: now,

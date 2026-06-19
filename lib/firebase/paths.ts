@@ -26,6 +26,10 @@ export const orgPublishRunsPath = (orgId: string) => `${orgPath(orgId)}/publishR
 /* Per-org OAuth app credentials, encrypted with SOCIAL_TOKEN_KEY. doc id = channel. */
 export const orgOauthAppsPath = (orgId: string) => `${orgPath(orgId)}/oauthApps`
 
+/* Cloud-storage token vault - connected accounts with encrypted tokens. The
+ * provider OAuth apps are platform-owned (Secret Manager), not per-org. */
+export const orgStorageAccountsPath = (orgId: string) => `${orgPath(orgId)}/storageAccounts`
+
 export const awarenessDaysPath = "awarenessDays"
 
 /* Agent runtime collections - see lib/agents/** and plan §2. */

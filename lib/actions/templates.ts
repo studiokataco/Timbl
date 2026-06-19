@@ -191,6 +191,7 @@ export async function useTemplate(input: unknown): Promise<ServerActionResult> {
     assigneeId: user.id,
     canvaUrl: tmpl.designTemplateCanvaUrl,
     assetUrls: [],
+    designLinks: [],
     channelStatuses: {},
     createdAt: now,
     updatedAt: now,

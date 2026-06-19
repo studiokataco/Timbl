@@ -90,6 +90,7 @@ import { getPostTypes, withSyncedPostTypes } from "@/lib/post-types"
 import { channelsForComposer } from "@/lib/channels"
 import { recordRecentPost } from "@/components/shared/command-palette"
 import { HashtagInput } from "./hashtag-input"
+import { DesignLinksInput } from "./design-links-input"
 import { CategoryDialog } from "@/components/settings/category-dialog"
 
 const POST_TYPE_OPTIONS: PostType[] = [
@@ -846,6 +847,19 @@ export function PostComposerSheet({
                     No preview available - open in Canva to view.
                   </p>
                 ) : null}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>Links &amp; files</Label>
+                <DesignLinksInput
+                  key={post?.id}
+                  value={draft.designLinks ?? []}
+                  onChange={(next) => setField("designLinks", next)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Add Canva, Google Drive, Dropbox or OneDrive links - paste a
+                  share link for each file.
+                </p>
               </div>
             </TabsContent>
 

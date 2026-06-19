@@ -62,6 +62,28 @@ export const channelStatus = z.enum([
 export type ChannelStatus = z.infer<typeof channelStatus>
 
 /*
+ * Where a design/reference link points. Detected from the pasted URL host in
+ * lib/url.ts; `link` is the catch-all for anything that isn't a recognized
+ * storage app. Storage-app connections key off the same provider slugs.
+ */
+export const linkProvider = z.enum([
+  "canva",
+  "gdrive",
+  "dropbox",
+  "onedrive",
+  "link",
+])
+export type LinkProvider = z.infer<typeof linkProvider>
+
+/*
+ * Cloud-storage apps an org can connect via OAuth. Slugs intentionally
+ * overlap with linkProvider so a connected account and a pasted link from the
+ * same app share an identity.
+ */
+export const storageProvider = z.enum(["gdrive", "dropbox", "onedrive"])
+export type StorageProvider = z.infer<typeof storageProvider>
+
+/*
  * Firestore stores dates as Timestamps; at the application boundary we use
  * ISO strings (`YYYY-MM-DD` for dates, full ISO for timestamps) so schemas are
  * portable to and from forms/URLs without converter gymnastics.

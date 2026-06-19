@@ -14,7 +14,11 @@ import type { ChannelKey } from "@/lib/schemas/_shared"
 import { SettingsSection } from "@/components/settings/settings-section"
 import { SocialChannelsGate } from "@/components/settings/social-channels-gate"
 import { socialChannelsEnabled } from "@/lib/integrations/social-channels"
+import { storageProvidersEnabled } from "@/lib/integrations/storage-providers"
+import { listStorageAccounts } from "@/lib/actions/storage-accounts"
+import { listAvailableStorageProviders } from "@/lib/actions/storage-apps"
 import { ChannelsClient } from "./channels-client"
+import { StorageClient } from "./storage-client"
 import { IntegrationsClient } from "./client"
 
 export interface AuditRow {
@@ -51,6 +55,12 @@ export default async function SettingsIntegrationsPage() {
   const redirectUriByChannel = Object.fromEntries(
     PLATFORMS.map((p, i) => [p, redirectUris[i] ?? ""] as const),
   ) as Record<ChannelKey, string>
+
+  const storageLive = storageProvidersEnabled()
+  const storageAccounts = storageLive ? await listStorageAccounts() : []
+  const availableProviders = storageLive
+    ? await listAvailableStorageProviders()
+    : []
 
   const auditSnap = await getAdminDb()
     .collection(orgPublicApiAuditPath(orgId))
@@ -91,6 +101,22 @@ export default async function SettingsIntegrationsPage() {
           />
         ) : (
           <SocialChannelsGate />
+        )}
+      </SettingsSection>
+
+      <SettingsSection
+        title="Storage"
+        description="Connect Google Drive, Dropbox or OneDrive so your team can attach files from their own storage to posts."
+      >
+        {storageLive ? (
+          <StorageClient
+            accounts={storageAccounts}
+            availableProviders={availableProviders}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Connecting storage apps is coming soon.
+          </p>
         )}
       </SettingsSection>
 
