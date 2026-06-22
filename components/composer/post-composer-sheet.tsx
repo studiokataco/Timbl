@@ -487,7 +487,7 @@ export function PostComposerSheet({
                     <CalendarIcon aria-hidden className="size-4" />
                     {format(date, "EEE d MMM yyyy")}
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="start">
+                  <PopoverContent className="w-[min(20rem,calc(100vw-2rem))] p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={date}
@@ -632,7 +632,7 @@ export function PostComposerSheet({
                 </Popover>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
                   <Label>Lead</Label>
                   <Select

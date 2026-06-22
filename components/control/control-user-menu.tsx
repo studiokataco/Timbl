@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ControlNotifications } from "@/components/control/control-notifications"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 
 /*
@@ -37,6 +38,7 @@ export function ControlUserMenu({ email }: { email: string }) {
 
   return (
     <div className="flex items-center gap-2">
+      <ControlNotifications />
       <ThemeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger

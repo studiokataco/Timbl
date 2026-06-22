@@ -93,7 +93,8 @@ export function WeekView({
     // doesn't cause column misalignment. No overflow-hidden on the outer so
     // position:sticky on the header row works correctly.
     <div className="rounded-lg border border-border bg-background" data-cal-reveal>
-      <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 14rem)" }}>
+      <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 14rem)" }}>
+        <div className="min-w-[44rem]">
         {/* Day headers - sticky inside the scroll container */}
         <div
           className="grid border-b border-border bg-background sticky top-0 z-10"
@@ -183,6 +184,7 @@ export function WeekView({
             })}
           </div>
         ))}
+        </div>
       </div>
     </div>
   )

@@ -29,7 +29,7 @@ export default async function SignupsPage({
         />
       </div>
 
-      <StatStrip className="mb-6 grid-cols-3">
+      <StatStrip className="mb-6 grid-cols-3 sm:grid-cols-3">
         <StatItem label="Pending" value={String(pending.length)} />
         <StatItem label="Status filter" value={safeStatus} />
         <StatItem label="Shown" value={String(requests.length)} />

@@ -10,6 +10,7 @@ import { z } from "zod"
  *   platform/config                                  singleton settings doc
  *   platform/state/admins/{emailSlug}                allowlist (source of truth)
  *   platform/state/auditLog/{autoId}                 god-mode forensic trail
+ *   platform/state/signals/{autoId}                  tenant-side ops signals
  *   platform/state/impersonationSessions/{id}        active impersonations
  *   platform/state/rollups/{YYYY-MM}                 global usage rollup
  *   platform/state/orgRollups/{orgId}                per-org snapshot (tenant list)
@@ -34,6 +35,7 @@ export const platformConfigDocPath = "platform/config"
 export const platformAdminsPath = `${ROOT}/admins`
 export const platformAdminDocPath = (slug: string) => `${platformAdminsPath}/${slug}`
 export const platformAuditLogPath = `${ROOT}/auditLog`
+export const platformSignalsPath = `${ROOT}/signals`
 export const platformImpersonationPath = `${ROOT}/impersonationSessions`
 export const platformImpersonationDocPath = (id: string) =>
   `${platformImpersonationPath}/${id}`
@@ -108,6 +110,11 @@ export const platformAuditAction = z.enum([
   "quota.override",
   "agent.force_run",
   "agent.cancel",
+  "trial.start",
+  "trial.extend",
+  "trial.cancel",
+  "grandfather.set",
+  "feature_flag.set",
   "impersonation.start",
   "impersonation.end",
   "admin.grant",
@@ -132,6 +139,23 @@ export const platformAuditEntrySchema = z.object({
   createdAt: z.string(),
 })
 export type PlatformAuditEntry = z.infer<typeof platformAuditEntrySchema>
+
+export const platformSignalKind = z.enum([
+  "signup.requested",
+  "agent.failed",
+  "quota.breached",
+])
+export type PlatformSignalKind = z.infer<typeof platformSignalKind>
+
+export const platformSignalSchema = z.object({
+  id: z.string(),
+  kind: platformSignalKind,
+  orgId: z.string().nullable().optional(),
+  summary: z.string(),
+  meta: z.record(z.string(), z.unknown()).default({}),
+  createdAt: z.string(),
+})
+export type PlatformSignal = z.infer<typeof platformSignalSchema>
 
 export const impersonationSessionSchema = z.object({
   id: z.string(),

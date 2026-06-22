@@ -4,6 +4,7 @@ import type { Content } from "@google/genai"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
 import { requireActiveBilling, requireQuota } from "@/lib/plans/gate"
+import { writePlatformSignal } from "@/lib/platform/signals"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
 import { estimateUsdCost } from "@/lib/agents/pricing"
 
@@ -223,6 +224,22 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
         provider: (data.provider as string | null | undefined) ?? null,
         model: (data.model as string | null | undefined) ?? null,
       })
+      if (input.status === "failed") {
+        const agentName = (data.agentName as string) ?? "unknown"
+        void writePlatformSignal({
+          id: `agent-fail-${input.runId}`,
+          kind: "agent.failed",
+          orgId: input.orgId,
+          summary: `${agentName} run failed`,
+          meta: {
+            runId: input.runId,
+            agentName,
+            error: input.error?.message ?? null,
+            model: (data.model as string | null | undefined) ?? null,
+            provider: (data.provider as string | null | undefined) ?? null,
+          },
+        }).catch(() => {})
+      }
     } catch (err) {
       console.warn(
         `[agent-events] emit failed for run=${input.runId}: ${err instanceof Error ? err.message : err}`,

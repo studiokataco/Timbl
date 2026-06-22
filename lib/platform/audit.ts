@@ -43,26 +43,58 @@ export async function writePlatformAudit(input: PlatformAuditInput): Promise<voi
   })
 }
 
+export interface PlatformAuditQuery {
+  action?: PlatformAuditAction
+  org?: string
+  actorEmail?: string
+  after?: string
+  before?: string
+  sort?: "asc" | "desc"
+  cursor?: string
+  limit?: number
+}
+
 export interface PlatformAuditFeed {
   entries: PlatformAuditEntry[]
   hasMore: boolean
+  nextCursor: string | null
 }
 
-/* Newest-first window for the control-centre viewer. Re-asserts platform
- * admin like every read model in lib/platform/queries.ts. */
-export async function getPlatformAuditFeed(limit = 100): Promise<PlatformAuditFeed> {
+const FEED_DEFAULT_LIMIT = 50
+const FEED_MAX_LIMIT = 200
+
+/* Server-side filtered, cursor-paginated window for the control-centre viewer.
+ * Every filter pushes a Firestore where() so we never filter a fetched page in
+ * memory - the dataset, not the window, is what gets narrowed. Equality filters
+ * combined with the createdAt orderBy require the composite indexes declared in
+ * firestore/firestore.indexes.json. Re-asserts platform admin like every read
+ * model in lib/platform/queries.ts. */
+export async function getPlatformAuditFeed(
+  query: PlatformAuditQuery = {},
+): Promise<PlatformAuditFeed> {
   await requirePlatformAdmin()
-  const snap = await getAdminDb()
-    .collection(platformAuditLogPath)
-    .orderBy("createdAt", "desc")
-    .limit(limit)
-    .get()
+  const limit = Math.min(FEED_MAX_LIMIT, Math.max(1, query.limit ?? FEED_DEFAULT_LIMIT))
+  const dir = query.sort === "asc" ? "asc" : "desc"
+
+  let q: FirebaseFirestore.Query = getAdminDb().collection(platformAuditLogPath)
+  if (query.action) q = q.where("action", "==", query.action)
+  if (query.org) q = q.where("targetOrgId", "==", query.org)
+  if (query.actorEmail) q = q.where("actorEmail", "==", query.actorEmail)
+  if (query.after) q = q.where("createdAt", ">=", query.after)
+  if (query.before) q = q.where("createdAt", "<=", query.before)
+  q = q.orderBy("createdAt", dir)
+  if (query.cursor) q = q.startAfter(query.cursor)
+
+  const snap = await q.limit(limit + 1).get()
+  const page = snap.docs.slice(0, limit)
   const entries: PlatformAuditEntry[] = []
-  for (const d of snap.docs) {
+  for (const d of page) {
     const parsed = platformAuditEntrySchema.safeParse({ ...d.data(), id: d.id })
     if (parsed.success) entries.push(parsed.data)
   }
-  return { entries, hasMore: snap.size === limit }
+  const hasMore = snap.size > limit
+  const last = entries[entries.length - 1]
+  return { entries, hasMore, nextCursor: hasMore && last ? last.createdAt : null }
 }
 
 export async function listPlatformAudit(limit = 100): Promise<PlatformAuditEntry[]> {

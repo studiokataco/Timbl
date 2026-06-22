@@ -37,7 +37,7 @@ export default async function ControlDashboardPage() {
         description={`Platform-wide for ${rollup.period}. Cost and usage update live; tenant health reconciles hourly.`}
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard icon={DollarSign} label="AI spend (MTD)" value={usd(rollup.usdCost)} sub={`${compact(rollup.agentRuns)} runs`} />
         <StatCard icon={DollarSign} label="Est. MRR" value={inr(revenue.estMrrInr)} sub={`${revenue.payingOrgs} paying`} />
         <StatCard icon={Building2} label="Active orgs" value={`${rollup.activeOrgs}`} sub={`${orgs.length} total`} />

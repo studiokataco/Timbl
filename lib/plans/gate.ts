@@ -13,6 +13,7 @@ import {
   type QuotaMetric,
   toPlanFeatures,
 } from "./plans"
+import { writePlatformSignal } from "@/lib/platform/signals"
 
 /*
  * Plan gating. Server-only - the client never calls these. UI affordances
@@ -46,6 +47,21 @@ function formatGateMessage(reason: PlanGateReason): string {
     return `Feature "${reason.feature}" is not available on the ${reason.currentTier} plan.`
   }
   return `Quota exceeded: ${reason.metric} (${reason.used}/${reason.limit}) on the ${reason.currentTier} plan.`
+}
+
+function emitQuotaBreachSignal(
+  orgId: string,
+  metric: QuotaMetric,
+  used: number,
+  limit: number,
+  tier: string,
+): void {
+  void writePlatformSignal({
+    kind: "quota.breached",
+    orgId,
+    summary: `Quota exceeded: ${metric} (${used}/${limit})`,
+    meta: { metric, used, limit, tier },
+  }).catch(() => {})
 }
 
 /* Read the org's plan + billing status from /organizations/{orgId} in one get.
@@ -130,6 +146,7 @@ export async function requireAgentCapacity(orgId: string): Promise<void> {
     (d) => isBoutiqueAgent(d.id) && d.data().enabled !== false,
   ).length
   if (used >= limit) {
+    emitQuotaBreachSignal(orgId, "agents", used, limit, plan.tier)
     throw new PlanGateError({
       kind: "quota",
       metric: "agents",
@@ -190,6 +207,7 @@ export async function requireQuota(
   if (limit === null) return { plan, used: 0, limit: null }
   const used = await readUsage(orgId, metric)
   if (used + cost > limit) {
+    emitQuotaBreachSignal(orgId, metric, used, limit, plan.tier)
     throw new PlanGateError({
       kind: "quota",
       metric,

@@ -1,22 +1,32 @@
 import Link from "next/link"
 
-import { ACTION_LABEL, AuditTable } from "@/components/control/audit-table"
+import { AuditFilters } from "@/components/control/audit-filters"
+import { AuditTable } from "@/components/control/audit-table"
 import { PageHeading } from "@/components/control/widgets"
 import { compact } from "@/lib/platform/format"
 import { getPlatformAuditFeed } from "@/lib/platform/audit"
-import { platformAuditAction, type PlatformAuditAction } from "@/lib/platform/schema"
-import { cn } from "@/lib/utils"
+import { listOrgRows } from "@/lib/platform/queries"
+import { platformAuditAction } from "@/lib/platform/schema"
 
 export const dynamic = "force-dynamic"
 
-const DEFAULT_LIMIT = 100
-const MAX_LIMIT = 1000
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
-function auditHref(params: { action?: string; org?: string; limit?: number }) {
+type AuditSearchParams = {
+  action?: string
+  org?: string
+  actor?: string
+  after?: string
+  before?: string
+  sort?: string
+  cursor?: string
+}
+
+function auditHref(params: AuditSearchParams) {
   const sp = new URLSearchParams()
-  if (params.action) sp.set("action", params.action)
-  if (params.org) sp.set("org", params.org)
-  if (params.limit && params.limit !== DEFAULT_LIMIT) sp.set("limit", String(params.limit))
+  for (const [key, value] of Object.entries(params)) {
+    if (value) sp.set(key, value)
+  }
   const qs = sp.toString()
   return qs ? `/audit?${qs}` : "/audit"
 }
@@ -24,31 +34,46 @@ function auditHref(params: { action?: string; org?: string; limit?: number }) {
 export default async function AuditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ action?: string; org?: string; limit?: string }>
+  searchParams: Promise<AuditSearchParams>
 }) {
   const raw = await searchParams
+
   const parsedAction = platformAuditAction.safeParse(raw.action)
-  const activeAction = parsedAction.success ? parsedAction.data : undefined
-  const activeOrg = raw.org || undefined
-  const limit = Math.min(
-    MAX_LIMIT,
-    Math.max(DEFAULT_LIMIT, Number.parseInt(raw.limit ?? "", 10) || DEFAULT_LIMIT),
-  )
+  const action = parsedAction.success ? parsedAction.data : undefined
+  const org = raw.org || undefined
+  const actor = raw.actor?.trim() || undefined
+  const after = DATE_RE.test(raw.after ?? "") ? raw.after : undefined
+  const before = DATE_RE.test(raw.before ?? "") ? raw.before : undefined
+  const sort: "asc" | "desc" = raw.sort === "asc" ? "asc" : "desc"
+  const cursor = raw.cursor || undefined
 
-  const { entries, hasMore } = await getPlatformAuditFeed(limit)
+  const [{ entries, hasMore, nextCursor }, orgRows] = await Promise.all([
+    getPlatformAuditFeed({
+      action,
+      org,
+      actorEmail: actor,
+      after: after ? `${after}T00:00:00.000Z` : undefined,
+      before: before ? `${before}T23:59:59.999Z` : undefined,
+      sort,
+      cursor,
+    }),
+    listOrgRows(),
+  ])
 
-  const actionCounts = new Map<PlatformAuditAction, number>()
-  const orgCounts = new Map<string, number>()
-  for (const e of entries) {
-    actionCounts.set(e.action, (actionCounts.get(e.action) ?? 0) + 1)
-    if (e.targetOrgId) orgCounts.set(e.targetOrgId, (orgCounts.get(e.targetOrgId) ?? 0) + 1)
+  const orgNames = Object.fromEntries(orgRows.map((r) => [r.orgId, r.name]))
+  const orgOptions = orgRows
+    .map((r) => ({ id: r.orgId, name: r.name }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const actorSuggestions = [...new Set(entries.map((e) => e.actorEmail))].sort()
+
+  const baseParams: AuditSearchParams = {
+    action,
+    org,
+    actor,
+    after,
+    before,
+    sort: sort === "asc" ? "asc" : undefined,
   }
-
-  const visible = entries.filter(
-    (e) =>
-      (!activeAction || e.action === activeAction) &&
-      (!activeOrg || e.targetOrgId === activeOrg),
-  )
 
   return (
     <div>
@@ -57,84 +82,42 @@ export default async function AuditPage({
         description="Forensic trail of every god-mode action across the platform."
       />
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        <FilterChip
-          label="All actions"
-          href={auditHref({ org: activeOrg, limit })}
-          count={entries.length}
-          active={!activeAction}
-        />
-        {[...actionCounts.entries()].map(([action, count]) => (
-          <FilterChip
-            key={action}
-            label={ACTION_LABEL[action]}
-            href={auditHref({ action, org: activeOrg, limit })}
-            count={count}
-            active={activeAction === action}
-          />
-        ))}
-      </div>
+      <AuditFilters
+        action={action}
+        org={org}
+        actor={actor}
+        after={after}
+        before={before}
+        sort={sort}
+        orgOptions={orgOptions}
+        actorSuggestions={actorSuggestions}
+      />
 
-      {orgCounts.size > 0 ? (
-        <div className="mb-5 flex flex-wrap gap-2">
-          <FilterChip
-            label="All orgs"
-            href={auditHref({ action: activeAction, limit })}
-            count={entries.length}
-            active={!activeOrg}
-          />
-          {[...orgCounts.entries()].map(([org, count]) => (
-            <FilterChip
-              key={org}
-              label={org}
-              href={auditHref({ action: activeAction, org, limit })}
-              count={count}
-              active={activeOrg === org}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      <AuditTable entries={visible} />
+      <AuditTable entries={entries} orgNames={orgNames} />
 
       <div className="mt-3 flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          {compact(visible.length)} shown · newest {compact(entries.length)} entries scanned
+          {compact(entries.length)} {entries.length === 1 ? "entry" : "entries"} shown
         </p>
-        {hasMore ? (
-          <Link
-            href={auditHref({ action: activeAction, org: activeOrg, limit: Math.min(MAX_LIMIT, limit * 2) })}
-            className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
-          >
-            Load more
-          </Link>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {cursor ? (
+            <Link
+              href={auditHref(baseParams)}
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+            >
+              First page
+            </Link>
+          ) : null}
+          {hasMore && nextCursor ? (
+            <Link
+              href={auditHref({ ...baseParams, cursor: nextCursor })}
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+            >
+              Next page
+            </Link>
+          ) : null}
+        </div>
       </div>
     </div>
-  )
-}
-
-function FilterChip({
-  label,
-  href,
-  count,
-  active,
-}: {
-  label: string
-  href: string
-  count: number
-  active: boolean
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-        active ? "border-foreground bg-foreground text-background" : "hover:bg-muted",
-      )}
-    >
-      {label}
-      <span className={cn("tabular-nums", active ? "opacity-80" : "text-muted-foreground")}>{count}</span>
-    </Link>
   )
 }
