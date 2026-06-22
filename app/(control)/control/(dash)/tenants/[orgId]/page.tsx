@@ -5,7 +5,12 @@ import { ArrowLeft, CreditCard } from "lucide-react"
 import type { BillingProfile } from "@/lib/schemas/billing"
 import { TenantBilling } from "@/components/control/tenant-billing"
 import { TenantControls } from "@/components/control/tenant-controls"
-import { CostDonut } from "@/components/control/charts"
+import { TenantOverview } from "@/components/control/tenant-overview"
+import { TenantTeam } from "@/components/control/tenant-team"
+import { TenantInventory } from "@/components/control/tenant-inventory"
+import { TenantUsage } from "@/components/control/tenant-usage"
+import { TenantActivity } from "@/components/control/tenant-activity"
+import { CostDonut, SpendTrendChart } from "@/components/control/charts"
 import { OrgKey } from "@/components/control/org-key"
 import {
   OrgAvatar,
@@ -19,6 +24,16 @@ import { getBillingProfile } from "@/lib/actions/platform/billing"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
 import { compact, duration, inr, pct, relativeTime } from "@/lib/platform/format"
 import { getOrgPeriod, getOrgRow, listOrgRuns } from "@/lib/platform/queries"
+import {
+  getOrgAuditFeed,
+  getOrgImpersonations,
+  getOrgInventory,
+  getOrgPeriods,
+  getOrgProfile,
+  getOrgTeam,
+  getOrgUsage,
+  orgDailyTrend,
+} from "@/lib/platform/tenant-detail"
 import { tenantFinancials } from "@/lib/platform/revenue"
 
 export const dynamic = "force-dynamic"
@@ -29,14 +44,36 @@ export default async function TenantDetailPage({
   params: Promise<{ orgId: string }>
 }) {
   const { orgId } = await params
-  const [actor, row, period, runs, billing] = await Promise.all([
+  const [
+    actor,
+    row,
+    profile,
+    period,
+    runs,
+    billing,
+    team,
+    inventory,
+    trend,
+    periods,
+    audit,
+    impersonations,
+  ] = await Promise.all([
     requirePlatformAdmin(),
     getOrgRow(orgId),
+    getOrgProfile(orgId),
     getOrgPeriod(orgId),
     listOrgRuns(orgId, 20),
     getBillingProfile(orgId),
+    getOrgTeam(orgId),
+    getOrgInventory(orgId),
+    orgDailyTrend(orgId),
+    getOrgPeriods(orgId),
+    getOrgAuditFeed(orgId),
+    getOrgImpersonations(orgId),
   ])
   if (!row) notFound()
+
+  const usage = await getOrgUsage(orgId, row.plan, profile?.quotaOverrides ?? {})
 
   const isOwner = actor.role === "owner"
   const fin = tenantFinancials(row.plan, row.mtdUsdCost)
@@ -58,6 +95,11 @@ export default async function TenantDetailPage({
             <h1 className="font-heading text-2xl font-semibold tracking-tight">{row.name}</h1>
             <StatusPill status={row.status} />
             <TierPill tier={fin.tier} />
+            {row.grandfathered ? (
+              <span className="inline-flex items-center rounded-full bg-violet-500/15 px-2 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-400">
+                Grandfathered
+              </span>
+            ) : null}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             <OrgKey orgId={row.orgId} className="-ml-1.5" />
@@ -66,7 +108,7 @@ export default async function TenantDetailPage({
         </div>
       </div>
 
-      <StatStrip className="grid-cols-2 lg:grid-cols-6">
+      <StatStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <StatItem
           label="MRR"
           value={fin.mrrInr === null ? "custom" : inr(fin.mrrInr)}
@@ -93,6 +135,12 @@ export default async function TenantDetailPage({
 
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-5">
         <div className="flex flex-col gap-6 lg:col-span-3">
+          <Panel title="Spend trend" sub="last 14 days">
+            <SpendTrendChart data={trend} />
+          </Panel>
+
+          <TenantUsage usage={usage} periods={periods} />
+
           <Panel title="Recent runs" sub={`${pct(row.failureRate)} failure rate`} bodyClassName="p-2">
             <ul className="flex flex-col">
               {runs.slice(0, 10).map((run) => (
@@ -126,6 +174,8 @@ export default async function TenantDetailPage({
             <CostDonut data={modelSlices} />
           </Panel>
 
+          <TenantActivity entries={audit} impersonations={impersonations} />
+
           {isOwner ? (
             <TenantBilling orgId={orgId} profile={billing} />
           ) : (
@@ -141,8 +191,17 @@ export default async function TenantDetailPage({
               plan={row.plan}
               status={row.status}
               suspendedAt={row.suspendedAt}
+              billingStatus={row.billingStatus}
+              trialEndsAt={row.trialEndsAt}
+              featureFlags={profile?.featureFlags ?? {}}
             />
           ) : null}
+
+          {profile ? <TenantOverview profile={profile} /> : null}
+
+          <TenantTeam team={team} />
+
+          <TenantInventory inventory={inventory} />
 
           <Panel title="Invoices & payments">
             <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-10 text-center">

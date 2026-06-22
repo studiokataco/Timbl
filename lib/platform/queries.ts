@@ -117,6 +117,28 @@ export interface OrgRow {
   failureRate: number
   onboardingCompletedAt: string | null
   lastRunAt: string | null
+  /* Lifecycle fields joined from the authoritative org doc (the rollup
+   * snapshot does not carry them). */
+  createdAt: string | null
+  trialEndsAt: string | null
+  billingStatus: string | null
+  grandfathered: boolean
+}
+
+interface Lifecycle {
+  createdAt: string | null
+  trialEndsAt: string | null
+  billingStatus: string | null
+  grandfathered: boolean
+}
+
+function lifecycleFromOrgDoc(d: FirebaseFirestore.DocumentData): Lifecycle {
+  return {
+    createdAt: (d.createdAt as string | null) ?? null,
+    trialEndsAt: (d.trialEndsAt as string | null) ?? null,
+    billingStatus: (d.billingStatus as string | null) ?? null,
+    grandfathered: d.grandfathered === true,
+  }
 }
 
 function rowFromRollup(orgId: string, d: FirebaseFirestore.DocumentData): OrgRow {
@@ -132,6 +154,10 @@ function rowFromRollup(orgId: string, d: FirebaseFirestore.DocumentData): OrgRow
     failureRate: num(d.failureRate),
     onboardingCompletedAt: (d.onboardingCompletedAt as string | null) ?? null,
     lastRunAt: (d.lastRunAt as string | null) ?? null,
+    createdAt: null,
+    trialEndsAt: null,
+    billingStatus: null,
+    grandfathered: false,
   }
 }
 
@@ -157,6 +183,7 @@ function rowFromOrgDoc(
     failureRate: 0,
     onboardingCompletedAt: onboarding.completedAt ?? null,
     lastRunAt: null,
+    ...lifecycleFromOrgDoc(d),
   }
 }
 
@@ -169,6 +196,16 @@ export async function listOrgRows(): Promise<OrgRow[]> {
   ])
   const rows = new Map<string, OrgRow>()
   for (const doc of rollupSnap.docs) rows.set(doc.id, rowFromRollup(doc.id, doc.data()))
+  /* The org doc is authoritative for lifecycle + status fields the rollup
+   * snapshot doesn't carry; join it onto every rollup-derived row. */
+  for (const doc of orgsSnap.docs) {
+    const row = rows.get(doc.id)
+    if (!row) continue
+    const d = doc.data()
+    row.status = (d.status as "active" | "suspended") ?? row.status
+    row.suspendedAt = (d.suspendedAt as string | null) ?? null
+    Object.assign(row, lifecycleFromOrgDoc(d))
+  }
   const missing = orgsSnap.docs.filter((doc) => !rows.has(doc.id))
   const seatCounts = await Promise.all(
     missing.map((doc) => db.collection(orgUsersPath(doc.id)).count().get()),
@@ -204,6 +241,7 @@ export async function getOrgRow(orgId: string): Promise<OrgRow | null> {
     row.plan = (d.plan as string) ?? row.plan
     row.status = (d.status as "active" | "suspended") ?? "active"
     row.suspendedAt = (d.suspendedAt as string | null) ?? null
+    Object.assign(row, lifecycleFromOrgDoc(d))
   }
   return row
 }

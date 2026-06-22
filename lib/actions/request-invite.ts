@@ -3,6 +3,7 @@
 import { sendSignupRequestedEmail } from "@/lib/email/beta"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { platformSignupRequestsPath } from "@/lib/platform/schema"
+import { writePlatformSignal } from "@/lib/platform/signals"
 import { signupRequestFormSchema } from "@/lib/schemas/signupRequest"
 import type { ServerActionResult } from "@/lib/schemas"
 
@@ -36,6 +37,19 @@ export async function submitInviteRequest(raw: unknown): Promise<ServerActionRes
     status: "pending",
     requestedAt: now,
   })
+
+  void writePlatformSignal({
+    id: `signup-${ref.id}`,
+    kind: "signup.requested",
+    summary: `New signup request from ${norm}`,
+    meta: {
+      requestId: ref.id,
+      email: norm,
+      name: name.trim(),
+      ...(company?.trim() ? { company: company.trim() } : {}),
+      ...(useCase?.trim() ? { useCase: useCase.trim() } : {}),
+    },
+  }).catch(() => {})
 
   await sendSignupRequestedEmail({
     name: name.trim(),

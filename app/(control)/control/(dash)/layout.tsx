@@ -30,7 +30,7 @@ export default async function ControlLayout({
   ])
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
-      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b bg-background/95 px-6 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
         <div className="flex items-center gap-2">
           <ShieldCheck className="size-5" />
           <span className="font-heading text-sm font-semibold tracking-tight">

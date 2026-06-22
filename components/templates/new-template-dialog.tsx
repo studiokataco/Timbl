@@ -195,7 +195,7 @@ export function NewTemplateDialog({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="template-category">Category</Label>
                 <Select
@@ -283,7 +283,7 @@ export function NewTemplateDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="template-cta">
                   Default CTA <span className="text-muted-foreground">(optional)</span>

@@ -1,16 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Menu, ShieldCheck, X } from "lucide-react"
 
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-
-/*
- * Control-centre top nav. Links use clean paths (/dashboard, /tenants, ...)
- * because the admin-host proxy rewrites them into the (control) group - the
- * browser URL never shows /control. Active state matches on suffix so it
- * works whether usePathname returns the browser path or the rewritten one.
- */
 
 const LINKS = [
   { href: "/dashboard", label: "Overview" },
@@ -25,35 +21,100 @@ const LINKS = [
   { href: "/team", label: "Team" },
 ]
 
+function NavLink({
+  href,
+  label,
+  active,
+  pendingSignups,
+  onClick,
+  mobile,
+}: {
+  href: string
+  label: string
+  active: boolean
+  pendingSignups?: number
+  onClick?: () => void
+  mobile?: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "relative inline-flex items-center gap-1.5 rounded-md font-medium transition-colors",
+        mobile
+          ? "w-full px-3 py-2.5 text-base"
+          : "px-3 py-1.5 text-sm",
+        active
+          ? "bg-foreground text-background"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      {label}
+      {href === "/signups" && pendingSignups && pendingSignups > 0 ? (
+        <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-semibold text-white">
+          {pendingSignups > 99 ? "99+" : pendingSignups}
+        </span>
+      ) : null}
+    </Link>
+  )
+}
+
 export function ControlNav({ pendingSignups = 0 }: { pendingSignups?: number }) {
   const pathname = usePathname() ?? ""
+  const [open, setOpen] = useState(false)
+
+  function isActive(href: string) {
+    return (
+      pathname === href ||
+      pathname.endsWith(href) ||
+      (href === "/dashboard" && pathname.endsWith("/control"))
+    )
+  }
+
   return (
-    <nav className="flex items-center gap-1">
-      {LINKS.map((link) => {
-        const active =
-          pathname === link.href ||
-          pathname.endsWith(link.href) ||
-          (link.href === "/dashboard" && pathname.endsWith("/control"))
-        return (
-          <Link
+    <>
+      <nav className="hidden items-center gap-1 md:flex">
+        {LINKS.map((link) => (
+          <NavLink
             key={link.href}
             href={link.href}
-            className={cn(
-              "relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              active
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {link.label}
-            {link.href === "/signups" && pendingSignups > 0 ? (
-              <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-semibold text-white">
-                {pendingSignups > 99 ? "99+" : pendingSignups}
-              </span>
-            ) : null}
-          </Link>
-        )
-      })}
-    </nav>
+            label={link.label}
+            active={isActive(link.href)}
+            pendingSignups={pendingSignups}
+          />
+        ))}
+      </nav>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger
+          aria-label="Open navigation"
+          className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"
+        >
+          {open ? <X className="size-5" /> : <Menu className="size-5" />}
+        </SheetTrigger>
+        <SheetContent side="left" className="w-72 max-w-[80vw] p-0">
+          <div className="flex items-center gap-2 border-b px-4 py-3">
+            <ShieldCheck className="size-5" />
+            <span className="font-heading text-sm font-semibold tracking-tight">
+              Control centre
+            </span>
+          </div>
+          <nav className="flex flex-col gap-1 p-3">
+            {LINKS.map((link) => (
+              <NavLink
+                key={link.href}
+                href={link.href}
+                label={link.label}
+                active={isActive(link.href)}
+                pendingSignups={pendingSignups}
+                onClick={() => setOpen(false)}
+                mobile
+              />
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }

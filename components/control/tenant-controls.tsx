@@ -13,8 +13,13 @@ import {
 } from "@/lib/actions/platform/orgs"
 import { setOrgPlan } from "@/lib/actions/platform/plans"
 import { setOrgQuotaOverride } from "@/lib/actions/platform/quotas"
-import { forceRunAgent } from "@/lib/actions/platform/agents"
 import { startImpersonation } from "@/lib/actions/platform/impersonation"
+import { setTrial } from "@/lib/actions/platform/lifecycle"
+import { setFeatureFlag } from "@/lib/actions/platform/flags"
+import {
+  FEATURE_FLAG_LABEL,
+  KNOWN_FEATURE_FLAGS,
+} from "@/lib/plans/feature-flags"
 
 type Result = { ok: boolean; error?: string }
 
@@ -28,12 +33,18 @@ export function TenantControls({
   plan,
   status,
   suspendedAt,
+  billingStatus,
+  trialEndsAt,
+  featureFlags,
 }: {
   orgId: string
   name: string
   plan: string
   status: "active" | "suspended"
   suspendedAt: string | null
+  billingStatus: string | null
+  trialEndsAt: string | null
+  featureFlags: Record<string, boolean>
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -41,14 +52,21 @@ export function TenantControls({
   const [planId, setPlanId] = useState(plan)
   const [metric, setMetric] = useState<(typeof METRICS)[number]>("agentRuns")
   const [quotaValue, setQuotaValue] = useState("")
-  const [agentName, setAgentName] = useState("")
-  const [agentInput, setAgentInput] = useState("")
   const [deleteConfirm, setDeleteConfirm] = useState("")
 
   const autoDeleteDate = suspendedAt
     ? new Date(
         new Date(suspendedAt).getTime() + RETENTION_DAYS * 86_400_000,
       ).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : null
+
+  const isTrialing = billingStatus === "trialing"
+  const trialEndsLabel = trialEndsAt
+    ? new Date(trialEndsAt).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
     : null
 
   const run = (label: string, fn: () => Promise<Result>) =>
@@ -197,6 +215,74 @@ export function TenantControls({
         </ControlRow>
 
         <ControlRow
+          title="Trial"
+          hint={
+            isTrialing && trialEndsAt
+              ? `Trialing - ends ${trialEndsLabel}. Extend adds another 30 days; cancel reverts to Free now.`
+              : "Grant a 30-day Agency trial. Reverts to Free at expiry."
+          }
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            {isTrialing ? (
+              <>
+                <Button
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => run("Trial extend", () => setTrial({ orgId, action: "extend" }))}
+                >
+                  Extend 30 days
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => run("Trial cancel", () => setTrial({ orgId, action: "cancel" }))}
+                >
+                  Cancel trial
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                disabled={pending}
+                onClick={() => run("Trial start", () => setTrial({ orgId, action: "start" }))}
+              >
+                Start 30-day trial
+              </Button>
+            )}
+          </div>
+        </ControlRow>
+
+        <ControlRow
+          title="Feature flags"
+          hint="Per-org overrides. A missing flag is off."
+        >
+          <div className="flex flex-col gap-2">
+            {KNOWN_FEATURE_FLAGS.map((flag) => {
+              const enabled = featureFlags[flag] === true
+              return (
+                <div key={flag} className="flex items-center justify-between gap-3">
+                  <span className="text-sm">{FEATURE_FLAG_LABEL[flag]}</span>
+                  <Button
+                    size="sm"
+                    variant={enabled ? "destructive" : "default"}
+                    disabled={pending}
+                    onClick={() =>
+                      run(
+                        enabled ? "Flag disable" : "Flag enable",
+                        () => setFeatureFlag({ orgId, flag, enabled: !enabled }),
+                      )
+                    }
+                  >
+                    {enabled ? "Disable" : "Enable"}
+                  </Button>
+                </div>
+              )
+            })}
+          </div>
+        </ControlRow>
+
+        <ControlRow
           title="Support"
           hint="Opens the tenant app as this org on the main host. Exit from the banner there."
         >
@@ -216,33 +302,6 @@ export function TenantControls({
           </Button>
         </ControlRow>
 
-        <ControlRow title="Force agent run">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              placeholder="agent name (e.g. drafter)"
-              value={agentName}
-              onChange={(e) => setAgentName(e.target.value)}
-              className="h-9 w-44"
-            />
-            <Input
-              placeholder="input"
-              value={agentInput}
-              onChange={(e) => setAgentInput(e.target.value)}
-              className="h-9 min-w-32 flex-1"
-            />
-            <Button
-              size="sm"
-              disabled={pending || !agentName}
-              onClick={() =>
-                run("Force run", () =>
-                  forceRunAgent({ orgId, agentName, input: agentInput || undefined }),
-                )
-              }
-            >
-              Run
-            </Button>
-          </div>
-        </ControlRow>
       </section>
 
       {status === "suspended" ? (
