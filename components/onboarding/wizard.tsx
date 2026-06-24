@@ -2,13 +2,18 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Check, ChevronLeft, ChevronRight, Sparkles } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, HelpCircle, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   applyOnboardingSelections,
   completeOnboarding,
@@ -365,6 +370,36 @@ function Stepper({
   )
 }
 
+function FieldLabel({
+  children,
+  htmlFor,
+  hint,
+}: {
+  children: React.ReactNode
+  htmlFor?: string
+  hint: string
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label htmlFor={htmlFor}>{children}</Label>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              aria-label="More info"
+              className="text-muted-foreground/70 transition-colors hover:text-foreground"
+            />
+          }
+        >
+          <HelpCircle className="size-3.5" aria-hidden />
+        </TooltipTrigger>
+        <TooltipContent>{hint}</TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
 function ProfileStep({
   industries,
   workspaceName,
@@ -399,7 +434,12 @@ function ProfileStep({
       </header>
 
       <div className="space-y-1.5">
-        <Label htmlFor="onb-workspace-name">Workspace name</Label>
+        <FieldLabel
+          htmlFor="onb-workspace-name"
+          hint="The name of your brand or team. Shown across the app and used to tailor your AI agents."
+        >
+          Workspace name
+        </FieldLabel>
         <Input
           id="onb-workspace-name"
           placeholder="Acme Studio"
@@ -412,7 +452,9 @@ function ProfileStep({
       </div>
 
       <div className="space-y-1.5">
-        <Label>What kind of work is this for?</Label>
+        <FieldLabel hint="Sets your starting categories, templates, and agent defaults. You can change everything later.">
+          What kind of work is this for?
+        </FieldLabel>
         <div className="grid gap-2 sm:grid-cols-2">
           {industries.map((opt) => {
             const selected = opt.id === industry
@@ -446,7 +488,12 @@ function ProfileStep({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="onb-audience">Who&apos;s your audience? (optional)</Label>
+        <FieldLabel
+          htmlFor="onb-audience"
+          hint="Who you create content for. Agents use this to pitch ideas at the right level and tone."
+        >
+          Who&apos;s your audience? (optional)
+        </FieldLabel>
         <Input
           id="onb-audience"
           placeholder="Independent creators, in-house marketers, …"
@@ -456,7 +503,12 @@ function ProfileStep({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="onb-tone">Voice & tone (optional)</Label>
+        <FieldLabel
+          htmlFor="onb-tone"
+          hint="How your posts should sound - e.g. warm and playful, or sharp and direct. Agents match this voice when drafting."
+        >
+          Voice & tone (optional)
+        </FieldLabel>
         <Textarea
           id="onb-tone"
           rows={3}

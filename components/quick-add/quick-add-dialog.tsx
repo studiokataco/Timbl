@@ -141,7 +141,7 @@ export function QuickAddDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Quick add</DialogTitle>
+          <DialogTitle>Create</DialogTitle>
           <DialogDescription>
             Three fields. Flesh out the rest later.
           </DialogDescription>

@@ -14,7 +14,6 @@ const firestoreSettingsApplied = new WeakSet<Firestore>()
  * Server-side Firebase Admin SDK. Used by:
  *   - Next.js server actions (lib/actions/*) during the dev-shim phase
  *   - Seed scripts (firestore/seeds/*)
- *   - The CSV migration script (scripts/migrate-from-csv.ts)
  *
  * Admin SDK BYPASSES Firestore Security Rules. App-layer scoping
  * via getCurrentOrgId() is the ONLY isolation guarantee until Phase 7,

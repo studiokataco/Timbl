@@ -10,10 +10,17 @@
  */
 export const PASTEL_PILL_TEXT = "#181d26"
 
+/*
+ * No-colour fallback must stay light in both themes - var(--color-secondary)
+ * is dark in dark mode, which paired with the always-dark pill text rendered
+ * the entry dark-on-dark and illegible.
+ */
+const PASTEL_PILL_BG_FALLBACK = "#ececee"
+
 export function lightenForBg(hex: string | null | undefined, amount = 0.8): string {
-  if (!hex) return "var(--color-secondary)"
+  if (!hex) return PASTEL_PILL_BG_FALLBACK
   const m = hex.replace("#", "")
-  if (m.length !== 6) return "var(--color-secondary)"
+  if (m.length !== 6) return PASTEL_PILL_BG_FALLBACK
   const r = parseInt(m.slice(0, 2), 16)
   const g = parseInt(m.slice(2, 4), 16)
   const b = parseInt(m.slice(4, 6), 16)

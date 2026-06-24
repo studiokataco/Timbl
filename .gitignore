@@ -53,11 +53,6 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 
-# Migration source CSVs (manual exports, not source of truth)
-migration/source/
-# Migration audit output (regenerated on every run)
-migration/report.csv
-
 # Local-only walkthroughs / docs (not source of truth - those live in PRD/plan files)
 docs/AGENTS_WALKTHROUGH.md
 docs/*

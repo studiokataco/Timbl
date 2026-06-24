@@ -65,7 +65,7 @@ export function EventPill({ post, category, onClick }: Props) {
           aria-label="Edit post"
           className="absolute top-0 right-0 opacity-0 group-hover/pill:opacity-100 transition-opacity p-0.5"
         >
-          <Pencil aria-hidden className="h-4 w-4 text-[#111111]/60" />
+          <Pencil aria-hidden className="h-4 w-4 text-[#181d26]/70" />
         </button>
       )}
 

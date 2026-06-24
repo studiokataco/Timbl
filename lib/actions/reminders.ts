@@ -159,22 +159,28 @@ export async function getWorkspaceReminders(
     }
   }
 
-  const silentCandidates: { categoryId: string; name: string; daysSilent: number }[] =
-    []
+  const silentCandidates: {
+    categoryId: string
+    name: string
+    daysSilent: number
+    neverUsed: boolean
+  }[] = []
   for (const cat of categories) {
     const last = recentByCategory.get(cat.id)
-    const daysSilent = last
-      ? differenceInDays(today, parseISO(last))
-      : silentThreshold
-    if (daysSilent >= silentThreshold) {
+    const daysSilent = last ? differenceInDays(today, parseISO(last)) : 0
+    if (!last || daysSilent >= silentThreshold) {
       silentCandidates.push({
         categoryId: cat.id,
         name: cat.name,
-        daysSilent: Number.isFinite(daysSilent) ? daysSilent : silentThreshold,
+        daysSilent: Number.isFinite(daysSilent) ? daysSilent : 0,
+        neverUsed: !last,
       })
     }
   }
-  silentCandidates.sort((a, b) => b.daysSilent - a.daysSilent)
+  silentCandidates.sort((a, b) => {
+    if (a.neverUsed !== b.neverUsed) return a.neverUsed ? -1 : 1
+    return b.daysSilent - a.daysSilent
+  })
   const topSilent = silentCandidates[0]
   if (topSilent) {
     reminders.push({
@@ -182,7 +188,9 @@ export async function getWorkspaceReminders(
       kind: "silent-category",
       categoryId: topSilent.categoryId,
       title: `Plan a ${topSilent.name} post`,
-      description: `No posts in ${topSilent.daysSilent}+ days`,
+      description: topSilent.neverUsed
+        ? "Not posted yet"
+        : `No posts in ${topSilent.daysSilent}+ days`,
     })
   }
 

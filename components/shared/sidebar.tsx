@@ -33,7 +33,7 @@ const GROUPS: NavGroup[] = [
       { href: "/posts", label: "All posts", icon: LayoutList },
       { href: "/kanban", label: "Kanban", icon: KanbanSquare },
       { href: "/campaigns", label: "Campaigns", icon: Megaphone },
-      { href: "/studio", label: "Studio", icon: Sparkles },
+      { href: "/studio", label: "AI Studio", icon: Sparkles },
     ],
   },
   {

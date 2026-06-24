@@ -145,23 +145,25 @@ export function AgentThreadRail({
                             {deriveTitle(thread)}
                           </p>
                         </div>
-                        <span className="text-[10px] text-muted-foreground shrink-0 group-hover:hidden">
-                          {formatDistanceToNowStrict(
-                            new Date(thread.lastMessageAt),
-                            { addSuffix: false },
-                          )}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label="Delete thread"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            deleteMut.mutate(thread.id)
-                          }}
-                          className="hidden group-hover:inline-flex items-center justify-center size-6 rounded-md text-muted-foreground hover:text-rose-600 hover:bg-background transition-colors"
-                        >
-                          <Trash2 className="size-3.5" aria-hidden />
-                        </button>
+                        <div className="relative shrink-0 h-6 w-9">
+                          <span className="absolute inset-y-0 right-0 flex items-center text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0">
+                            {formatDistanceToNowStrict(
+                              new Date(thread.lastMessageAt),
+                              { addSuffix: false },
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label="Delete thread"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteMut.mutate(thread.id)
+                            }}
+                            className="absolute inset-y-0 right-0 inline-flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-rose-600 group-hover:opacity-100"
+                          >
+                            <Trash2 className="size-3.5" aria-hidden />
+                          </button>
+                        </div>
                       </div>
                     </li>
                   )

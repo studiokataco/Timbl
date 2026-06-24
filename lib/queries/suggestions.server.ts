@@ -22,8 +22,8 @@ import type { Campaign, Category, Template } from "@/lib/schemas"
  */
 
 export type Suggestion =
-  | { kind: "silent-category"; categoryId: string; name: string; daysSilent: number }
-  | { kind: "template-due"; templateId: string; name: string; daysSinceLast: number; cadence: Template["cadence"] }
+  | { kind: "silent-category"; categoryId: string; name: string; daysSilent: number; neverUsed: boolean }
+  | { kind: "template-due"; templateId: string; name: string; daysSinceLast: number; cadence: Template["cadence"]; neverUsed: boolean }
   | { kind: "campaign-ending"; campaignId: string; name: string; endDate: string; daysAway: number }
 
 const CADENCE_DAYS: Record<Template["cadence"], number | null> = {
@@ -102,7 +102,8 @@ export async function fetchSuggestions(): Promise<Suggestion[]> {
         kind: "silent-category",
         categoryId: cat.id,
         name: cat.name,
-        daysSilent: Number.isFinite(daysSilent) ? daysSilent : 90,
+        daysSilent: Number.isFinite(daysSilent) ? daysSilent : 0,
+        neverUsed: !last,
       })
     }
   }
@@ -120,24 +121,23 @@ export async function fetchSuggestions(): Promise<Suggestion[]> {
     const interval = CADENCE_DAYS[t.cadence]
     if (interval == null) continue
     const last = lastByTemplate.get(t.id)
-    const daysSinceLast = last
-      ? differenceInDays(today, parseISO(last))
-      : 999
-    if (daysSinceLast >= interval) {
+    const daysSinceLast = last ? differenceInDays(today, parseISO(last)) : 0
+    if (!last || daysSinceLast >= interval) {
       templateDue.push({
         kind: "template-due",
         templateId: t.id,
         name: t.name,
         daysSinceLast,
         cadence: t.cadence,
+        neverUsed: !last,
       })
     }
   }
-  templateDue.sort((a, b) =>
-    a.kind === "template-due" && b.kind === "template-due"
-      ? b.daysSinceLast - a.daysSinceLast
-      : 0,
-  )
+  templateDue.sort((a, b) => {
+    if (a.kind !== "template-due" || b.kind !== "template-due") return 0
+    if (a.neverUsed !== b.neverUsed) return a.neverUsed ? -1 : 1
+    return b.daysSinceLast - a.daysSinceLast
+  })
 
   // Campaigns ending within 14 days.
   const campaignEnding: Suggestion[] = []
