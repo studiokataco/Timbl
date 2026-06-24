@@ -36,7 +36,7 @@ const KIND_LABEL: Record<string, string> = {
 }
 
 function suggestionMetric(s: Suggestion): string {
-  if (s.kind === "silent-category") return `${s.daysSilent}d silent`
+  if (s.kind === "silent-category") return s.neverUsed ? "new" : `${s.daysSilent}d silent`
   if (s.kind === "template-due") return labelOr(CADENCE_LABELS, s.cadence)
   if (s.kind === "campaign-ending") return `${s.daysAway}d left`
   return ""
@@ -268,7 +268,9 @@ export function CalendarAwarenessRail({
                       </div>
                       <div className="font-medium leading-snug">{s.name}</div>
                       <div className="text-muted-foreground">
-                        No post in {s.daysSilent}+ days
+                        {s.neverUsed
+                          ? "Not posted yet"
+                          : `No post in ${s.daysSilent}+ days`}
                       </div>
                     </>
                   )}
@@ -279,7 +281,9 @@ export function CalendarAwarenessRail({
                       </span>
                       <div className="font-medium leading-snug">{s.name}</div>
                       <div className="text-muted-foreground">
-                        Last used {s.daysSinceLast} days ago
+                        {s.neverUsed
+                          ? "Not used yet"
+                          : `Last used ${s.daysSinceLast} days ago`}
                       </div>
                     </>
                   )}

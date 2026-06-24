@@ -67,7 +67,7 @@ export function StudioWorkspace({
         <div className="px-4 sm:px-6 pt-6 md:pt-8 pb-4 md:pb-2 border-b border-border md:border-b-0">
           <PageHeader
             size="sm"
-            title="Studio"
+            title="AI Studio"
             description="Control AI agents work from idea to schedule. Agents can be enabled/disabled, and their settings can be edited."
           />
           <div className="md:hidden mt-6">

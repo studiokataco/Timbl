@@ -19,7 +19,6 @@
 
 ## Production Firebase (Phase 7+)
 - Prod GCP/Firebase project ID: `timbl-prod` (`.firebaserc` `prod`, `apphosting.yaml`). App Hosting backend `timbl-backend` in `asia-southeast1`, auto-deploys from `main` of github.com/studiokataco/Timbl.
-- Legacy project `sm-dashboard-e7641` (`.firebaserc` `legacy`) is cut over and pending decommission; its `safe-planner` backend holds no domains.
 - Dev/emulator project alias: `timbl-dev` (`.firebaserc` `default`).
 - Technical identifiers live in `lib/constants/timbl.ts`.
 
@@ -36,7 +35,7 @@
 
 ## Local-first execution
 - Phases 0-6 + 8 run entirely against the Firebase Emulator Suite. Do not deploy. Do not create a production Firebase project. Do not point the app at any cloud Firebase backend until the user explicitly approves Phase 7.
-- Seed scripts in `firestore/seeds/` target the emulator. The CSV migration runs locally first.
+- Seed scripts in `firestore/seeds/` target the emulator.
 
 ### Local dev workflow
 

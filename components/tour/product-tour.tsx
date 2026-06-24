@@ -45,7 +45,7 @@ const STEPS = [
   {
     element: 'a[href="/studio"]',
     popover: {
-      title: "Studio",
+      title: "AI Studio",
       description:
         "Where your AI agents live. Ideate, draft, review, and schedule.",
     },

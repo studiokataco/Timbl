@@ -173,10 +173,10 @@ export function CommandPalette() {
         <CommandGroup heading="Actions">
           <CommandItem
             onSelect={() => go("/calendar?quickAdd=1")}
-            value="quick add new post"
+            value="create new post"
           >
             <Plus />
-            <span>Quick add post</span>
+            <span>Create post</span>
             <CommandShortcut>⌘N</CommandShortcut>
           </CommandItem>
           <CommandItem

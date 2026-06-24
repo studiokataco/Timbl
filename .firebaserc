@@ -2,7 +2,6 @@
   "projects": {
     "default": "timbl-dev",
     "prod": "timbl-prod",
-    "timbl-prod": "timbl-prod",
-    "legacy": "sm-dashboard-e7641"
+    "timbl-prod": "timbl-prod"
   }
 }

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { MobileNav } from "@/components/shared/mobile-nav"
+import { NotificationsMenu } from "@/components/shared/notifications-menu"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 
 export function TopBar({
@@ -60,6 +61,8 @@ export function TopBar({
           <Sparkles aria-hidden className="size-4" />
         </button>
 
+        <NotificationsMenu />
+
         <ThemeToggle />
 
         <Button
@@ -67,13 +70,13 @@ export function TopBar({
           className="hidden sm:inline-flex"
         >
           <Plus aria-hidden className="size-4" />
-          Quick add
+          Create
         </Button>
         <Button
           onClick={() => openQuickAdd({ source: "topbar" })}
           size="icon"
           className="rounded-full sm:hidden"
-          aria-label="Quick add"
+          aria-label="Create"
         >
           <Plus aria-hidden className="size-4" />
         </Button>

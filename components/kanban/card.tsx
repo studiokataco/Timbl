@@ -66,7 +66,8 @@ export const KanbanCard = memo(function KanbanCard({
         "group relative rounded-lg border border-border border-l-4 bg-background p-3 transition-shadow select-none",
         dragEnabled && "md:cursor-grab md:active:cursor-grabbing",
         "hover:shadow-sm",
-        (isDragging || sourceDragging) && "opacity-40",
+        sourceDragging && "opacity-40",
+        isDragging && "rotate-1 shadow-lg ring-1 ring-border",
         selected && "ring-2 ring-primary/40",
       )}
       onClick={onClick}

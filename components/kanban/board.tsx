@@ -22,6 +22,14 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { SegmentedTabs } from "@/components/ui/segmented-tabs"
 import { SettingDisclosure } from "@/components/settings/setting-disclosure"
 import {
@@ -78,6 +86,11 @@ export function KanbanBoard({
   })
   usePostsRealtime({ orgId, ...range, queryClient })
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [dragWidth, setDragWidth] = useState<number | undefined>(undefined)
+  const [pendingMove, setPendingMove] = useState<{
+    post: WithId<Post>
+    next: PostStatus
+  } | null>(null)
   const [filterCategory, setFilterCategory] = useState("")
   const [filterAssignee, setFilterAssignee] = useState("")
   const [filterCampaign, setFilterCampaign] = useState("")
@@ -214,8 +227,17 @@ export function KanbanBoard({
     })
   }
 
+  const columnLabel = (id: string) =>
+    columns.find((c) => c.id === id)?.label ?? id
+
+  function requestStatusChange(post: WithId<Post>, next: PostStatus) {
+    if (post.status === next) return
+    setPendingMove({ post, next })
+  }
+
   function onDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string)
+    setDragWidth(active.rect.current.initial?.width)
   }
 
   function onDragEnd({ active, over }: DragEndEvent) {
@@ -225,7 +247,7 @@ export function KanbanBoard({
     if (!columnIdSet.has(newStatus)) return
     const post = posts.find((p) => p.id === active.id)
     if (!post || post.status === newStatus) return
-    commitStatus(post, newStatus)
+    requestStatusChange(post, newStatus)
   }
 
   const openComposer = (p: WithId<Post>) => {
@@ -233,9 +255,15 @@ export function KanbanBoard({
   }
 
   const onStatusChange = (post: WithId<Post>, next: PostStatus) => {
-    if (post.status === next) return
+    requestStatusChange(post, next)
+  }
+
+  function confirmPendingMove() {
+    if (!pendingMove) return
+    const { post, next } = pendingMove
+    setPendingMove(null)
     commitStatus(post, next)
-    toast.success(`Moved to ${next}`)
+    toast.success(`Moved to ${columnLabel(next)}`)
   }
 
   return (
@@ -401,18 +429,20 @@ export function KanbanBoard({
             </Button>
           </div>
 
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activePost ? (
-              <KanbanCard
-                post={activePost}
-                category={categoryById.get(activePost.categoryId ?? "")}
-                assignee={userById.get(activePost.assigneeId ?? "")}
-                statusColor={
-                  columns.find((c) => c.id === activePost.status)?.color
-                }
-                onClick={() => {}}
-                isDragging
-              />
+              <div style={{ width: dragWidth }}>
+                <KanbanCard
+                  post={activePost}
+                  category={categoryById.get(activePost.categoryId ?? "")}
+                  assignee={userById.get(activePost.assigneeId ?? "")}
+                  statusColor={
+                    columns.find((c) => c.id === activePost.status)?.color
+                  }
+                  onClick={() => {}}
+                  isDragging
+                />
+              </div>
             ) : null}
           </DragOverlay>
         </DndContext>
@@ -429,6 +459,34 @@ export function KanbanBoard({
         mode="create"
         onDone={() => router.refresh()}
       />
+
+      <Dialog
+        open={pendingMove !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingMove(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Move this post?</DialogTitle>
+            <DialogDescription>
+              {pendingMove ? (
+                <>
+                  &ldquo;{pendingMove.post.brief ?? "Untitled"}&rdquo; will move
+                  from {columnLabel(pendingMove.post.status)} to{" "}
+                  {columnLabel(pendingMove.next)}. This updates its status.
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingMove(null)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmPendingMove}>Move post</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
