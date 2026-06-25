@@ -56,7 +56,6 @@ import { Switch } from "@/components/ui/switch"
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import { usePlanFeatures } from "@/lib/plans/client"
 import { stageForAgent, STAGES, type Stage } from "./stage-map"
-import { PROVIDER_TONE } from "./status-tone"
 
 /*
  * Sheet for installing a boutique agent template into the current org.
@@ -378,15 +377,6 @@ function TemplateRow({
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground truncate">
               {template.label ?? template.name}
-            </span>
-            <span
-              className={cn(
-                "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                PROVIDER_TONE[template.provider] ??
-                  "bg-secondary text-muted-foreground",
-              )}
-            >
-              {template.provider}
             </span>
           </div>
           <p className="mt-1 text-[13px] leading-snug text-muted-foreground">

@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils"
 import { usePlanFeatures } from "@/lib/plans/client"
 import { AGENT_TEMPLATES } from "@/lib/agents/template-catalog"
 import { STAGES, stageForAgent, type Stage } from "./stage-map"
-import { PROVIDER_TONE } from "./status-tone"
 import { AddAgentSheet } from "./add-agent-sheet"
 
 const AGENT_LABELS: Record<string, string> = Object.fromEntries(
@@ -102,15 +101,6 @@ export function Roster({ rosterAgents, installedAgents }: Props) {
                   />
                   <span className="flex-1 truncate text-[13px] font-medium text-foreground/90">
                     {AGENT_LABELS[agent.name] ?? agent.name}
-                  </span>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
-                      PROVIDER_TONE[agent.provider] ??
-                        "bg-secondary text-muted-foreground",
-                    )}
-                  >
-                    {agent.provider}
                   </span>
                 </button>
               )

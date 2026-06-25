@@ -47,9 +47,14 @@ export const KanbanCard = memo(function KanbanCard({
 }: Props) {
   const statuses =
     columnIds && columnIds.length > 0 ? columnIds : LEGACY_POST_STATUSES
+  /* The board renders columns twice (desktop drag tree + hidden mobile tree).
+   * Both mount a card per post, so sharing `post.id` as the draggable id makes
+   * the hidden (display:none) mobile node win dnd-kit's id slot and measure as a
+   * zero rect - the drag overlay then collapses to a sliver pinned at 0,0. Only
+   * the real draggable card claims `post.id`; the inert tree gets a dead id. */
   const { attributes, listeners, setNodeRef, isDragging: sourceDragging } =
     useDraggable({
-      id: post.id,
+      id: dragEnabled ? post.id : `inactive-${post.id}`,
       disabled: !dragEnabled,
     })
   const pendingReview = post.agentMeta?.reviewState === "pending"

@@ -14,8 +14,8 @@ export default async function CampaignsPage() {
   const campaigns = await fetchCampaignWithPostCount(orgId)
 
   return (
-    <div className="flex-1 px-6 sm:px-10 py-10 lg:py-14">
-      <div className="mx-auto w-full max-w-6xl space-y-8">
+    <div className="flex-1 px-4 py-6 sm:px-10 lg:py-14">
+      <div className="w-full space-y-8">
         <CampaignsBoard campaigns={campaigns} />
       </div>
     </div>

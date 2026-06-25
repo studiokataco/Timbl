@@ -1,16 +1,18 @@
 "use client"
 
-import { LogOut, Plus, Search, Sparkles } from "lucide-react"
+import { LogOut, Monitor, Moon, Plus, Search, Sparkles, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ThemeToggle } from "@/components/shared/theme-toggle"
+import { useTheme } from "@/components/shared/theme-provider"
 import { MobileNav } from "@/components/shared/mobile-nav"
 import { NotificationsMenu } from "@/components/shared/notifications-menu"
 import { RealtimeDegradedBadge } from "@/components/shared/realtime-degraded-badge"
@@ -24,6 +26,7 @@ export function TopBar({
   workspaceName: string
 }) {
   const { openQuickAdd } = useDialogs()
+  const { theme, setTheme } = useTheme()
   const initials = userName
     .split(/[\s_-]+/)
     .map((p) => p[0])
@@ -66,8 +69,6 @@ export function TopBar({
 
         <RealtimeDegradedBadge />
 
-        <ThemeToggle />
-
         <Button
           onClick={() => openQuickAdd({ source: "topbar" })}
           className="hidden sm:inline-flex"
@@ -96,6 +97,27 @@ export function TopBar({
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               {userName}
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Theme
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={theme}
+              onValueChange={(value) => setTheme(value as typeof theme)}
+            >
+              <DropdownMenuRadioItem value="system">
+                <Monitor aria-hidden />
+                System
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="light">
+                <Sun aria-hidden />
+                Light
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">
+                <Moon aria-hidden />
+                Dark
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"

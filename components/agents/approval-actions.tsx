@@ -7,14 +7,6 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -179,8 +171,7 @@ export function ApprovalActions({
     <div className={className} onClick={(e) => e.stopPropagation()}>
       <Button
         size="sm"
-        variant="outline"
-        className="h-7 w-full justify-center px-2 text-xs"
+        className="h-8 w-full justify-center gap-1.5 px-2 text-xs"
         onClick={approve}
         disabled={pending}
         aria-label={APPROVE_LABEL[kind]}
@@ -199,8 +190,8 @@ export function ApprovalActions({
           render={
             <Button
               size="sm"
-              variant="ghost"
-              className="h-7 w-full justify-center px-2 text-xs text-muted-foreground"
+              variant="outline"
+              className="h-8 w-full justify-center gap-1.5 px-2 text-xs"
               disabled={pending}
               aria-label="Reject draft"
             />
@@ -264,13 +255,6 @@ export function ApprovalActions({
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* Reserved: contextual menu for non-default kinds (e.g. pick a
-       * different channel before approving). Mounts only when there's
-       * something useful to offer. */}
-      {kind === "schedule_post" && !nextAction?.targetTime && (
-        <SchedulePicker postId={postId} disabled={pending} />
-      )}
     </div>
   )
 }
@@ -298,46 +282,4 @@ function composeFeedback(reason: RejectReason | null, note: string): string {
   const trimmed = note.trim()
   if (trimmed) parts.push(trimmed)
   return parts.join(" - ")
-}
-
-/* Small dropdown that lets the approver pick "Auto-slot" vs "Pick time"
- * for posts that don't carry a targetTime in their next_action. Auto-slot
- * is the default approve path; pick-time opens the existing composer at
- * the post id. */
-function SchedulePicker({
-  postId,
-  disabled,
-}: {
-  postId: string
-  disabled: boolean
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-1.5 text-xs text-muted-foreground"
-            disabled={disabled}
-            aria-label="Schedule options"
-          />
-        }
-      >
-        ▾
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="text-xs">
-        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider">
-          When approved
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
-          Auto-slot via category cadence (default)
-        </DropdownMenuItem>
-        <DropdownMenuItem render={<a href={`/calendar?post=${postId}`} />}>
-          Pick time in calendar…
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
 }

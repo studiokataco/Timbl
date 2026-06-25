@@ -152,28 +152,30 @@ export function AwarenessSkeleton() {
 
 export function CampaignsSkeleton() {
   return (
-    <div className="px-4 sm:px-6 py-4 flex-1">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <Skeleton className="h-5 w-28 mb-1" />
-          <Skeleton className="h-3 w-72" />
-        </div>
-        <Skeleton className="h-8 w-24" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-lg border border-border bg-background p-4">
-            <div className="flex items-start gap-2 mb-3">
-              <Skeleton className="size-3 rounded-full mt-0.5" />
-              <Skeleton className="h-4 w-3/5" />
-            </div>
-            <Skeleton className="h-3 w-full mb-1" />
-            <Skeleton className="h-3 w-4/5 mb-3" />
-            <Skeleton className="h-3 w-32 mb-3" />
-            <Skeleton className="h-1.5 w-full mb-3" />
-            <Skeleton className="h-5 w-16 rounded-full" />
+    <div className="flex-1 px-4 py-6 sm:px-10 lg:py-14">
+      <div className="w-full">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <Skeleton className="h-5 w-28 mb-1" />
+            <Skeleton className="h-3 w-72" />
           </div>
-        ))}
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-border bg-background p-6">
+              <div className="flex items-start gap-2 mb-2">
+                <Skeleton className="size-3 rounded-full mt-0.5" />
+                <Skeleton className="h-4 w-3/5" />
+              </div>
+              <Skeleton className="h-3 w-full mb-1" />
+              <Skeleton className="h-3 w-4/5 mb-3" />
+              <Skeleton className="h-3 w-32 mb-3" />
+              <Skeleton className="h-1.5 w-full mb-3" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

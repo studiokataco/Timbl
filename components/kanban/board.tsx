@@ -51,6 +51,8 @@ import { KanbanColumnComponent as KanbanColumn } from "./column"
 import { KanbanColumnAddButton } from "./column-add-button"
 import { ColumnEditDialog } from "./column-edit-dialog"
 
+const DRAG_CARD_WIDTH = 264
+
 type Props = {
   orgId: string
   initialPosts: WithId<Post>[]
@@ -239,7 +241,10 @@ export function KanbanBoard({
 
   function onDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string)
-    setDragWidth(active.rect.current.initial?.width)
+    /* Without a real measurement the overlay's `w-full` card collapses to
+     * min-content (a warped vertical sliver), so floor to a sane card width. */
+    const measured = active.rect.current.initial?.width
+    setDragWidth(measured && measured > 80 ? measured : DRAG_CARD_WIDTH)
   }
 
   function onDragEnd({ active, over }: DragEndEvent) {
@@ -433,7 +438,7 @@ export function KanbanBoard({
 
           <DragOverlay dropAnimation={null}>
             {activePost ? (
-              <div style={{ width: dragWidth }}>
+              <div style={{ width: dragWidth ?? DRAG_CARD_WIDTH }}>
                 <KanbanCard
                   post={activePost}
                   category={categoryById.get(activePost.categoryId ?? "")}

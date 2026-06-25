@@ -46,7 +46,7 @@ import {
   getTool,
   listToolKeys,
 } from "./tool-catalog"
-import { STATUS_TONE, PROVIDER_TONE } from "./status-tone"
+import { STATUS_TONE } from "./status-tone"
 
 /*
  * Agent playground - the 4-tab inspector panel that opens when the
@@ -169,14 +169,6 @@ export function AgentPlayground({ agent, allAgentNames }: Props) {
                 <span className="ml-1">Run now</span>
               </Button>
             )}
-            <span
-              className={cn(
-                "text-[10px] uppercase tracking-wide rounded-pill px-1.5 py-0.5",
-                PROVIDER_TONE[agent.provider] ?? "bg-secondary",
-              )}
-            >
-              {agent.provider}
-            </span>
           </div>
         </div>
         {agent.description && (

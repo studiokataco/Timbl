@@ -220,7 +220,7 @@ export function CampaignsBoard({ campaigns }: Props) {
           size="lg"
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr">
           {items.map((c) => {
             const pct =
               c.postCount > 0

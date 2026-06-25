@@ -18,9 +18,9 @@ export function MarketingNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
-      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <TimblWordmark href="/" />
-        <div className="hidden items-center gap-8 md:flex">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 md:grid md:grid-cols-[1fr_auto_1fr]">
+        <TimblWordmark href="/" className="justify-self-start" />
+        <div className="hidden items-center justify-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
@@ -31,7 +31,7 @@ export function MarketingNav() {
             </a>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 justify-self-end">
           <Button
             variant="ghost"
             className="hidden md:inline-flex"
