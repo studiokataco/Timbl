@@ -9,6 +9,7 @@ import {
 } from "@/lib/firebase/paths"
 import { agentConfigSchema } from "@/lib/schemas/agentConfig"
 import { startAgentRun, markAgentRunStatus } from "@/lib/agents/triggers/manual"
+import { collectCustomMetadata } from "@/lib/agents/runtime/events"
 import { SYSTEM_USER } from "@/lib/agents/triggers/system-user"
 
 export const runtime = "nodejs"
@@ -116,6 +117,8 @@ export async function POST(req: NextRequest) {
    * the agent. Errors mark the run failed. */
   void (async () => {
     let lastEvent
+    const generationIds = new Set<string>()
+    const sourceUrls = new Set<string>()
     try {
       for await (const ev of started.runner.runAsync({
         userId: started.userId,
@@ -123,11 +126,14 @@ export async function POST(req: NextRequest) {
         newMessage: started.newMessage,
       })) {
         lastEvent = ev
+        collectCustomMetadata(ev, generationIds, sourceUrls)
       }
       await markAgentRunStatus({
         orgId: payload.orgId,
         runId: started.runId,
         status: "succeeded",
+        generationIds: [...generationIds],
+        sourceUrls: [...sourceUrls],
       })
     } catch (err) {
       await markAgentRunStatus({

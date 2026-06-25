@@ -18,10 +18,10 @@ import { getRuntimeCtx } from "../runtime/context"
  * with `proposed: true` and `status: "proposed"`, so a human can vet it
  * in the UI before it lands in the official `awarenessDays` collection.
  *
- * Gemini-only by design: if the LLM registry isn't running on Gemini
- * (no key, or fallback to Anthropic/Mock), GOOGLE_SEARCH is unavailable
- * and any "discovery" would be hallucinated. We short-circuit in that
- * case rather than silently writing low-confidence proposals.
+ * Requires live web grounding: OpenRouter web search or Gemini's native
+ * GOOGLE_SEARCH. If neither is reachable (mock / anthropic-only), any
+ * "discovery" would be hallucinated, so we short-circuit rather than
+ * silently writing low-confidence proposals.
  */
 
 const input = z.object({
@@ -44,11 +44,11 @@ export const proposeAwarenessDayTool = new FunctionTool({
     const { orgId, runId } = getRuntimeCtx(ctx)
 
     const status = detectLlmStatus()
-    if (status.effective !== "gemini") {
+    if (!status.webResearch) {
       return {
         ok: false,
         error:
-          "Awareness research requires Gemini provider with google-search grounding enabled. Set GEMINI_API_KEY (or GOOGLE_GENAI_API_KEY) and switch this agent to provider=gemini.",
+          "Awareness research requires live web grounding. Set OPENROUTER_API_KEY (OpenRouter web search) or GEMINI_API_KEY (Gemini google-search grounding) and point this agent at that provider.",
       }
     }
 

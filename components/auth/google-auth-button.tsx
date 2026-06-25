@@ -14,6 +14,7 @@ export function GoogleAuthButton({
   intent,
   label,
   pendingLabel,
+  signingInLabel = "Signing in…",
   variant = "default",
   glow = false,
   icon,
@@ -22,6 +23,7 @@ export function GoogleAuthButton({
   intent: AuthIntent
   label: string
   pendingLabel: string
+  signingInLabel?: string
   variant?: "default" | "outline"
   glow?: boolean
   icon?: ReactNode
@@ -30,16 +32,19 @@ export function GoogleAuthButton({
   const router = useRouter()
   const search = useSearchParams()
   const [pending, setPending] = useState(false)
+  const [preparing, setPreparing] = useState(false)
 
   async function runAuth() {
     if (pending) return
     setPending(true)
     try {
       const result = await signInWithGoogleAccount()
+      setPreparing(true)
       const callback = await completeAuthCallback({
         user: result.user,
         intent,
         nextParam: search.get("next"),
+        onRetry: () => setPreparing(true),
       })
       if ("accessPending" in callback) {
         router.replace("/access-pending")
@@ -52,6 +57,7 @@ export function GoogleAuthButton({
       toast.error(message)
     } finally {
       setPending(false)
+      setPreparing(false)
     }
   }
 
@@ -62,7 +68,7 @@ export function GoogleAuthButton({
   const content = (
     <>
       {icon}
-      {pending ? pendingLabel : label}
+      {pending ? (preparing ? pendingLabel : signingInLabel) : label}
     </>
   )
 

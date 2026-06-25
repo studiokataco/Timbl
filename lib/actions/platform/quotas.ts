@@ -30,12 +30,15 @@ export async function setOrgQuotaOverride(
   const ref = getAdminDb().doc(orgPath(orgId))
   if (!(await ref.get()).exists) return { ok: false, error: "org_not_found" }
 
-  /* Dot-path so we touch only this metric, never the whole overrides map.
-   * "clear" must use FieldValue.delete() - the Admin DB has
-   * ignoreUndefinedProperties set, so writing undefined would be a no-op. */
+  /* Nested object so set(merge) touches only this metric, never the whole
+   * overrides map. A "quotaOverrides.key" string would be written as a literal
+   * flat field instead of nesting. "clear" must use FieldValue.delete() - the
+   * Admin DB has ignoreUndefinedProperties set, so undefined would be a no-op. */
   await ref.set(
     {
-      [`quotaOverrides.${metric}`]: value === "clear" ? FieldValue.delete() : value,
+      quotaOverrides: {
+        [metric]: value === "clear" ? FieldValue.delete() : value,
+      },
       updatedAt: new Date().toISOString(),
     },
     { merge: true },

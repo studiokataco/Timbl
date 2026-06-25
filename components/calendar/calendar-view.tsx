@@ -58,6 +58,7 @@ type Props = {
   suggestions: Suggestion[]
   campaigns: CampaignRow[]
   range: { start: string; end: string }
+  realtimeEnabled?: boolean
 }
 
 export function CalendarView({
@@ -69,6 +70,7 @@ export function CalendarView({
   suggestions,
   campaigns,
   range,
+  realtimeEnabled = false,
 }: Props) {
   const queryClient = useQueryClient()
   const { openQuickAdd, openComposerWithPost } = useDialogs()
@@ -140,7 +142,7 @@ export function CalendarView({
    * range where users see live edits. Navigating far-future months still
    * refetches via the useQuery above, but doesn't get onSnapshot updates
    * (which would be wasteful for far-future static content anyway). */
-  usePostsRealtime({ orgId, ...range, queryClient })
+  usePostsRealtime({ orgId, ...range, queryClient, enabled: realtimeEnabled })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),

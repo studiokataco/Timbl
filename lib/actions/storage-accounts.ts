@@ -37,8 +37,6 @@ export async function disconnectStorageAccount(id: string): Promise<ServerAction
   return { ok: true, id }
 }
 
-/* Admin SDK read - the full doc carries the encrypted token fields that the
- * public projection strips. Only the minted access token ever leaves here. */
 export async function getStorageAccessToken(
   accountId: string,
 ): Promise<

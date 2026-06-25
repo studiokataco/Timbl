@@ -32,6 +32,9 @@ export const ROOT_PLATFORM_ADMIN_EMAIL = "hello@kataco.in"
 const ROOT = "platform/state"
 
 export const platformConfigDocPath = "platform/config"
+export const platformRealtimeHealthPath = "platform/health/realtime"
+export const platformRealtimeHealthDocPath = (orgId: string) =>
+  `${platformRealtimeHealthPath}/${orgId}`
 export const platformAdminsPath = `${ROOT}/admins`
 export const platformAdminDocPath = (slug: string) => `${platformAdminsPath}/${slug}`
 export const platformAuditLogPath = `${ROOT}/auditLog`
@@ -122,6 +125,9 @@ export const platformAuditAction = z.enum([
   "billing.update",
   "signup.approve",
   "signup.deny",
+  "user.claims_remint",
+  "user.membership_assign",
+  "config.realtime_default",
 ])
 export type PlatformAuditAction = z.infer<typeof platformAuditAction>
 

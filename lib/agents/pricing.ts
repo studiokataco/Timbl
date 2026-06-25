@@ -14,7 +14,9 @@
  * A model absent from this table simply shows no cost estimate - that is
  * the intended, safe degradation. Never guess a number to fill a gap.
  *
- * Keys are the exact model IDs from the plan's §4 shortlist.
+ * Keys are the exact model IDs agents are configured with. The estimate is
+ * the fast first number; for OpenRouter runs an exact cost is reconciled
+ * later from the generation id (metrics.actualUsdCost) and is authoritative.
  */
 
 export interface ModelPrice {
@@ -37,10 +39,13 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   "claude-haiku-4-5-20251001": { inputPer1M: 1, outputPer1M: 5 },
   "claude-sonnet-4-6": { inputPer1M: 3, outputPer1M: 15 },
 
-  // --- OpenRouter open models (verify per-model on openrouter.ai) ---
-  "z-ai/glm-5.1": { inputPer1M: 0.2, outputPer1M: 0.6 },
-  "qwen/qwen3.6-plus": { inputPer1M: 0.4, outputPer1M: 1.2 },
-  // deepseek/deepseek-v4-flash: slug + price unconfirmed - omitted.
+  // --- OpenRouter ladder (LIST price, verify per-model on openrouter.ai) ---
+  // Seed LIST rates only - promo rates (e.g. minimax-m3's temporary 50% off)
+  // would make estimates silently double when the promo ends.
+  "google/gemini-3.1-flash-lite": { inputPer1M: 0.25, outputPer1M: 1.5 },
+  "minimax/minimax-m3": { inputPer1M: 0.6, outputPer1M: 2.4 },
+  "anthropic/claude-haiku-4.5": { inputPer1M: 1, outputPer1M: 5 },
+  "z-ai/glm-5.2": { inputPer1M: 1.1, outputPer1M: 3.5 },
 }
 
 /* Prompt-cache reads are billed at ~0.1x the input rate across providers

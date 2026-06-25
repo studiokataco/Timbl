@@ -114,6 +114,31 @@ function serializeEvent(event: StructuredEvent): string {
   return JSON.stringify(event)
 }
 
+/*
+ * Pulls OpenRouter run metadata off an event's customMetadata (set by
+ * OpenAiCompatibleLlm): the per-call generation id for billing
+ * reconciliation, and web-search citation URLs so grounding survives. Both
+ * accumulate into the caller's sets across a multi-call run. No-op for
+ * providers that don't emit it (Gemini, Anthropic, mock).
+ */
+export function collectCustomMetadata(
+  event: Event,
+  generationIds: Set<string>,
+  sourceUrls: Set<string>,
+): void {
+  const meta = (event as {
+    customMetadata?: {
+      openrouterGenerationId?: string
+      citations?: Array<{ url?: string }>
+    }
+  }).customMetadata
+  if (!meta) return
+  if (meta.openrouterGenerationId) generationIds.add(meta.openrouterGenerationId)
+  for (const c of meta.citations ?? []) {
+    if (c?.url) sourceUrls.add(c.url)
+  }
+}
+
 export const SSE_HEADERS = {
   "Content-Type": "text/event-stream; charset=utf-8",
   "Cache-Control": "no-store, no-transform",

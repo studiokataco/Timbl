@@ -51,6 +51,9 @@ function ensureRegistered() {
 export interface ResolveLlmInput {
   provider: AgentProvider
   model: string
+  /** Enable OpenRouter's web-search server tool. Ignored by non-OpenAI-
+   * compatible providers. */
+  webSearch?: boolean
 }
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -101,6 +104,7 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
           model: input.model,
           apiKey: openRouterKey,
           baseUrl: OPENROUTER_BASE_URL,
+          webSearch: input.webSearch,
         })
       }
       warnOnce(
@@ -141,33 +145,46 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
 
 /**
  * Cheap snapshot of the LLM environment so the UI can render a banner when
- * we're degraded from the configured provider. Used by
- * `lib/actions/llm-status.ts`.
+ * no real provider is usable. Used by `lib/actions/llm-status.ts`.
  *
- * `effective` describes the LLM the registry would actually instantiate
- * for the most common (Gemini-default) agent. `fallback` is true when
- * Gemini isn't available - most agents in the seeds default to Gemini,
- * so any non-Gemini effective provider is treated as a degraded state.
+ * OpenRouter is the intended default, so "degraded" no longer means
+ * "not Gemini" - it means "no usable provider at all" (mock). `effective`
+ * reports the best real provider the registry can reach, preferring
+ * OpenRouter; `fallback` is true only when that drops to mock.
  *
- * The per-provider booleans (`gemini`/`anthropic`/`openrouter`) report
- * whether each provider has a usable key configured, so the settings UI
- * can show an "AI connections" status. `ollama` is keyless (local server)
- * and so isn't reported here.
+ * `webResearch` is true when a provider that supports live grounding is
+ * usable - Gemini (native GOOGLE_SEARCH) or OpenRouter (web-search server
+ * tool). Tools that require real grounding gate on this rather than on a
+ * single provider.
+ *
+ * The per-provider booleans report whether each provider has a usable key
+ * configured, so the settings UI can show an "AI connections" status.
+ * `ollama` is keyless (local server) and so isn't reported here.
  */
 export function detectLlmStatus(): {
   gemini: boolean
   anthropic: boolean
   openrouter: boolean
-  effective: "gemini" | "anthropic" | "mock"
+  effective: "gemini" | "anthropic" | "openrouter" | "mock"
   fallback: boolean
+  webResearch: boolean
 } {
   const gemini = !!readGeminiKey()
   const anthropic = !!readAnthropicKey()
   const openrouter = !!readOpenRouterKey()
-  const effective: "gemini" | "anthropic" | "mock" = gemini
-    ? "gemini"
-    : anthropic
-      ? "anthropic"
-      : "mock"
-  return { gemini, anthropic, openrouter, effective, fallback: effective !== "gemini" }
+  const effective: "gemini" | "anthropic" | "openrouter" | "mock" = openrouter
+    ? "openrouter"
+    : gemini
+      ? "gemini"
+      : anthropic
+        ? "anthropic"
+        : "mock"
+  return {
+    gemini,
+    anthropic,
+    openrouter,
+    effective,
+    fallback: effective === "mock",
+    webResearch: openrouter || gemini,
+  }
 }

@@ -3,7 +3,11 @@ import { z } from "zod"
 
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
 import { startAgentRun, markAgentRunStatus } from "@/lib/agents/triggers/manual"
-import { eventsToSseStream, SSE_HEADERS } from "@/lib/agents/runtime/events"
+import {
+  eventsToSseStream,
+  SSE_HEADERS,
+  collectCustomMetadata,
+} from "@/lib/agents/runtime/events"
 import type { Event } from "@google/adk"
 
 export const runtime = "nodejs"
@@ -90,6 +94,8 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     completionTokens: 0,
     cachedTokens: 0,
   }
+  const generationIds = new Set<string>()
+  const sourceUrls = new Set<string>()
 
   const eventStream = started.runner.runAsync({
     userId: started.userId,
@@ -100,7 +106,8 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
   const body = eventsToSseStream(eventStream, {
     abortSignal: req.signal,
-    onRawEvent: (event) => collectMetrics(event, metrics),
+    onRawEvent: (event) =>
+      collectMetrics(event, metrics, generationIds, sourceUrls),
     onFinish: async (last) => {
       const status = req.signal.aborted
         ? "cancelled"
@@ -112,6 +119,8 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         runId: started.runId,
         status,
         metricsPatch: { ...metrics },
+        generationIds: [...generationIds],
+        sourceUrls: [...sourceUrls],
         error:
           last?.type === "error"
             ? { code: "agent_error", message: last.error.message }
@@ -130,7 +139,12 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   })
 }
 
-function collectMetrics(event: Event, m: RunMetrics): void {
+function collectMetrics(
+  event: Event,
+  m: RunMetrics,
+  generationIds: Set<string>,
+  sourceUrls: Set<string>,
+): void {
   const usage = (event as {
     usageMetadata?: {
       promptTokenCount?: number
@@ -144,6 +158,7 @@ function collectMetrics(event: Event, m: RunMetrics): void {
     m.completionTokens += usage.candidatesTokenCount ?? 0
     m.cachedTokens += usage.cachedContentTokenCount ?? 0
   }
+  collectCustomMetadata(event, generationIds, sourceUrls)
   const parts =
     (event as { content?: { parts?: Array<{ functionCall?: unknown }> } })
       .content?.parts ?? []

@@ -5,6 +5,7 @@ import { retrieve } from "@/lib/embeddings/retrieve"
 import type { Kind } from "@/lib/embeddings/embeddable"
 
 import { getRuntimeCtx } from "../runtime/context"
+import { fenceUntrusted } from "../runtime/guardrails"
 
 /*
  * Semantic retrieval over the embeddable collections. Agents use this to
@@ -52,6 +53,6 @@ export const retrieveTool = new FunctionTool({
         return true
       },
     })
-    return { hits }
+    return { hits: hits.map((h) => ({ ...h, snippet: fenceUntrusted(h.snippet) })) }
   },
 })

@@ -58,6 +58,7 @@ function SignInFormInner() {
   const search = useSearchParams()
   const [showForgot, setShowForgot] = useState(false)
   const [resetPending, setResetPending] = useState(false)
+  const [preparing, setPreparing] = useState(false)
 
   const {
     register,
@@ -70,10 +71,12 @@ function SignInFormInner() {
   async function onSubmit(data: SignInInput) {
     try {
       const cred = await signInWithEmail(data.email, data.password)
+      setPreparing(true)
       const result = await completeAuthCallback({
         user: cred.user,
         intent: "signin",
         nextParam: search.get("next"),
+        onRetry: () => setPreparing(true),
       })
       if ("accessPending" in result) {
         router.replace("/access-pending")
@@ -84,6 +87,8 @@ function SignInFormInner() {
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : ""
       toast.error(mapFirebaseAuthError(code))
+    } finally {
+      setPreparing(false)
     }
   }
 
@@ -178,11 +183,15 @@ function SignInFormInner() {
 
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || preparing}
           className="group h-11 w-full text-base"
           size="lg"
         >
-          {isSubmitting ? "Signing in…" : "Sign in"}
+          {preparing
+            ? "Getting things ready…"
+            : isSubmitting
+              ? "Signing in…"
+              : "Sign in"}
           <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Button>
 
@@ -197,7 +206,8 @@ function SignInFormInner() {
         <GoogleAuthButton
           intent="signin"
           label="Sign in with Google"
-          pendingLabel="Signing in…"
+          pendingLabel="Getting things ready…"
+          signingInLabel="Signing in…"
           variant="outline"
           className="h-11 w-full border-border bg-input/50 text-foreground hover:bg-input/70"
           icon={<GoogleIcon />}

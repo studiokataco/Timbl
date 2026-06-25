@@ -18,6 +18,7 @@ import { TopBar } from "@/components/shared/top-bar"
 import { WorkspaceProvider } from "@/components/shared/workspace-provider"
 import { WorkspaceReminders } from "@/components/shared/workspace-reminders"
 import { ImpersonationBanner } from "@/components/control/impersonation-banner"
+import { RealtimeDegradedProvider } from "@/lib/realtime/degraded-state"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
 import { resolveImpersonation } from "@/lib/auth/impersonation"
 import {
@@ -60,6 +61,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ])
   return (
     <QueryProvider>
+      <RealtimeDegradedProvider>
       <WorkspaceProvider orgId={orgId}>
         <PlanFeaturesProvider value={planFeatures}>
           <DialogsProvider data={referenceData}>
@@ -85,6 +87,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </DialogsProvider>
         </PlanFeaturesProvider>
       </WorkspaceProvider>
+      </RealtimeDegradedProvider>
     </QueryProvider>
   )
 }

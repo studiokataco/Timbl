@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Pull all GSM secrets into .env.local for local dev.
-# Run after rotating keys or on a fresh clone: pnpm secrets:pull
 set -euo pipefail
 
 PROJECT="${GCP_PROJECT:-timbl-prod}"
@@ -16,6 +14,11 @@ SECRETS=(
   SOCIAL_TOKEN_KEY
   AGENT_CRON_SECRET
   PUBLISH_SWEEP_SECRET
+  DROPBOX_APP_KEY
+  DROPBOX_APP_SECRET
+  GOOGLE_DRIVE_CLIENT_ID
+  GOOGLE_DRIVE_CLIENT_SECRET
+  GOOGLE_DRIVE_PICKER_KEY
 )
 
 echo "# Auto-generated from GSM (timbl-prod) - do not commit" > "$OUT"
@@ -26,6 +29,7 @@ echo "# --- Local dev (emulator) defaults ---" >> "$OUT"
 echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=timbl-dev" >> "$OUT"
 echo "NEXT_PUBLIC_ADMIN_HOST=admin.localhost:3000" >> "$OUT"
 echo "PLATFORM_ADMIN_DEV=1" >> "$OUT"
+echo "STORAGE_PROVIDERS_ENABLED=1" >> "$OUT"
 echo "APP_BASE_URL=http://localhost:3000" >> "$OUT"
 echo "RESEND_TEST_MODE=1" >> "$OUT"
 echo "" >> "$OUT"

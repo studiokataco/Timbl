@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { format, parseISO } from "date-fns"
 import {
   Calendar as CalendarIcon,
@@ -146,6 +147,7 @@ export function PostComposerSheet({
   onChanged,
 }: Props) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [draft, setDraft] = useState<Partial<Post>>({})
   const [pending, startTransition] = useTransition()
   const [datePickerOpen, setDatePickerOpen] = useState(false)
@@ -207,15 +209,16 @@ export function PostComposerSheet({
     [draft.scheduledDate],
   )
 
-  const persist = async (closeOnSuccess: boolean) => {
+  const persist = async (closeOnSuccess: boolean, overrideDraft?: Partial<Post>) => {
     if (!post?.id) return
-    const snapshot = JSON.stringify(draft)
+    const next = overrideDraft ?? draft
+    const snapshot = JSON.stringify(next)
     if (snapshot === lastSavedRef.current) {
       if (closeOnSuccess) onOpenChange(false)
       return
     }
     setSaveState("saving")
-    const res = await updatePost({ id: post.id, ...draft })
+    const res = await updatePost({ id: post.id, ...next })
     if (!res.ok) {
       setSaveState("error")
       toast.error(res.error ?? "Could not save")
@@ -223,8 +226,29 @@ export function PostComposerSheet({
     }
     lastSavedRef.current = snapshot
     setSaveState("saved")
+    /* Optimistically patch every cached posts query so calendar / kanban /
+     * list reflect the edit instantly, without waiting on the refetch. */
+    queryClient.setQueriesData<WithId<Post>[]>(
+      { queryKey: ["posts"] },
+      (curr) =>
+        curr?.map((p) =>
+          p.id === post.id ? ({ ...p, ...next } as WithId<Post>) : p,
+        ),
+    )
     onChanged?.()
     if (closeOnSuccess) onOpenChange(false)
+  }
+
+  /* Discrete controls (status, category, assignee, date) save immediately
+   * instead of waiting on the debounce - a single deliberate choice
+   * shouldn't risk being lost if the sheet closes before 1.5s elapses. */
+  const flushField = <K extends keyof Post>(key: K, value: Post[K] | undefined) => {
+    const next = { ...draft, [key]: value }
+    setDraft(next)
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current)
+    startTransition(() => {
+      void persist(false, next)
+    })
   }
 
   // Keep a ref to the latest persist closure so the autosave timer always
@@ -253,6 +277,26 @@ export function PostComposerSheet({
   const save = () => {
     startTransition(async () => {
       await persist(true)
+    })
+  }
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      onOpenChange(true)
+      return
+    }
+    const snapshot = JSON.stringify(draft)
+    if (snapshot === lastSavedRef.current) {
+      onOpenChange(false)
+      return
+    }
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current)
+      autosaveTimerRef.current = null
+    }
+    startTransition(async () => {
+      await persist(false)
+      if (lastSavedRef.current === snapshot) onOpenChange(false)
     })
   }
 
@@ -370,7 +414,7 @@ export function PostComposerSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         showCloseButton={false}
         className="w-full sm:max-w-xl overflow-y-auto p-0"
@@ -689,7 +733,7 @@ export function PostComposerSheet({
                 <Label>Status</Label>
                 <Select
                   value={currentStatus}
-                  onValueChange={(v) => setField("status", v as PostStatus)}
+                  onValueChange={(v) => flushField("status", v as PostStatus)}
                 >
                   <SelectTrigger>
                     <SelectValue>
@@ -857,7 +901,7 @@ export function PostComposerSheet({
                   onChange={(next) => setField("designLinks", next)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Add Canva, Google Drive, Dropbox or OneDrive links - paste a
+                  Add Canva, Google Drive or Dropbox links - paste a
                   share link for each file.
                 </p>
               </div>
@@ -950,7 +994,7 @@ export function PostComposerSheet({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
                 disabled={pending}
               >
                 Cancel

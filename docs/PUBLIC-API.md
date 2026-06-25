@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-https://app.timbl.co
+https://timbl.app
 ```
 
 ## Authentication

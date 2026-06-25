@@ -265,9 +265,6 @@ export function QuickAddDialog({
                 }
               }}
             />
-            <p className="text-xs text-muted-foreground">
-              One line - flesh out later.
-            </p>
           </div>
         </div>
 

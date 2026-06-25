@@ -1,18 +1,18 @@
 # Phase 7 - production deploy runbook
 
-> **Status (2026-05-17):** Phase 7 is **complete**. The `sm-dashboard-e7641` project is live with Google SSO, Firestore, Functions (`asia-south1`), and App Hosting. This doc is now reference material - a runbook for bootstrapping a new prod project from scratch or rebuilding the deploy from a clean slate. No outstanding action items.
+> **Status:** Phase 7 shipped. Prod runs on `timbl-prod` - App Hosting backend `timbl-backend` in `asia-southeast1`, auto-deploying from `main` of github.com/studiokataco/Timbl, with Google SSO, Firestore, Functions, Storage, and Secret Manager. The earlier `sm-dashboard-e7641` project is cut over and pending decommission. This doc is reference material - a runbook for bootstrapping a prod project from a clean slate. Step commands use the `prod` alias (`.firebaserc` -> `timbl-prod`); substitute identifiers as needed.
 
-This is the live runbook for taking the planner from emulator-only to a real Firebase deployment on the `sm-dashboard-e7641` project. Do it in this order - every step has a verification check before the next one runs.
+This is the live runbook for taking the planner from emulator-only to a real Firebase deployment on the `timbl-prod` project. Do it in this order - every step has a verification check before the next one runs.
 
 ## 0. Local prerequisites
 
 ```bash
 gcloud auth login
-gcloud config set project sm-dashboard-e7641
+gcloud config set project timbl-prod
 gcloud auth application-default login   # for Admin SDK local fallback
 
 firebase login
-firebase use prod                       # switches the CLI to sm-dashboard-e7641
+firebase use prod                       # switches the CLI to timbl-prod
 ```
 
 Verify: `firebase projects:list` shows the project as `(current)`.
@@ -30,7 +30,7 @@ gcloud services enable \
   firebasestorage.googleapis.com \
   firestore.googleapis.com \
   firebaseapphosting.googleapis.com \
-  --project sm-dashboard-e7641
+  --project timbl-prod
 ```
 
 ## 2. Enable Google Sign-in
@@ -41,14 +41,14 @@ In **Firebase Console → Authentication → Sign-in method**:
 2. Set the support email.
 3. In **Authentication → Settings → Authorized domains**, ensure the App Hosting domain and `localhost` are listed (default is fine).
 
-The blocking trigger that restricts to `@safefoundation.org.uk` and `@kataco.in` lives in `functions/src/setUserClaims.ts` - it deploys with the rest of the functions in step 5.
+The blocking trigger that gates who may sign in lives in `functions/src/setUserClaims.ts` (signups are invite-only - gated by `NEW_ORG_SIGNUP` plus the admin approval queue) - it deploys with the rest of the functions in step 5.
 
 ## 3. Provision Firestore + Storage
 
 ```bash
-# First time only. Pick a region close to users (eur3 for SAFE).
-firebase firestore:databases:create '(default)' --location=eur3
-gcloud storage buckets create gs://sm-dashboard-e7641.firebasestorage.app --location=eur3 --project sm-dashboard-e7641 || true
+# First time only. Pick a region close to users (asia-southeast1 for Timbl).
+firebase firestore:databases:create '(default)' --location=asia-southeast1
+gcloud storage buckets create gs://timbl-prod.firebasestorage.app --location=asia-southeast1 --project timbl-prod || true
 ```
 
 Deploy the rules:
@@ -74,7 +74,7 @@ The script is idempotent. You'll need values for:
 - `SENTRY_DSN` - https://sentry.io project DSN (optional, agents work without it).
 - `NEXT_PUBLIC_FIREBASE_API_KEY`, `_APP_ID`, `_MESSAGING_SENDER_ID` - **Console → Project settings → Web app config**.
 
-Verify: `gcloud secrets list --project sm-dashboard-e7641` shows every secret with a version.
+Verify: `gcloud secrets list --project timbl-prod` shows every secret with a version.
 
 ## 5. Deploy functions
 
@@ -88,7 +88,7 @@ firebase deploy --only functions
 `agentSweep` is the Cloud Scheduler-backed sweep that replaces `scripts/agent-cron.mjs` in production. After deploy, set the `APP_BASE_URL` param to your App Hosting URL:
 
 ```bash
-firebase functions:params:set APP_BASE_URL --value "https://<backend-id>--sm-dashboard-e7641.<region>.hosted.app"
+firebase functions:params:set APP_BASE_URL --value "https://<backend-id>--timbl-prod.<region>.hosted.app"
 firebase deploy --only functions:agentSweep
 ```
 
@@ -97,8 +97,8 @@ firebase deploy --only functions:agentSweep
 The functions deploy onto the default compute SA (`{PROJECT_NUMBER}-compute@developer.gserviceaccount.com`). Since 2024, Google strips Editor role from new default compute SAs - so `agentSweep` will spam `PERMISSION_DENIED: Missing or insufficient permissions` on every minute tick because its `db.collection("organizations").get()` lacks `datastore.entities.get`. Grant the minimal role explicitly:
 
 ```bash
-PROJECT_NUMBER=$(gcloud projects describe sm-dashboard-e7641 --format='value(projectNumber)')
-gcloud projects add-iam-policy-binding sm-dashboard-e7641 \
+PROJECT_NUMBER=$(gcloud projects describe timbl-prod --format='value(projectNumber)')
+gcloud projects add-iam-policy-binding timbl-prod \
   --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
   --role="roles/datastore.viewer" \
   --condition=None
@@ -108,7 +108,7 @@ Verify: within ~2 min, `firebase functions:log --only agentSweep --limit 5` show
 
 ## 6. Create the App Hosting backend
 
-GitHub remote: `https://github.com/studiokataco/SAFE.git` (branch `main`).
+GitHub remote: `https://github.com/studiokataco/Timbl.git` (branch `main`).
 
 Prereq - make sure the latest local work is pushed:
 
@@ -119,18 +119,18 @@ git push origin main
 
 In **Firebase Console → App Hosting**:
 
-1. Create a backend named `safe-planner`.
-2. Connect the GitHub repo (`studiokataco/SAFE`). Authorise the Firebase GitHub app on first connect.
+1. Create a backend named `timbl-backend`.
+2. Connect the GitHub repo (`studiokataco/Timbl`). Authorise the Firebase GitHub app on first connect.
 3. Live branch: `main`. Root: `/`. The `apphosting.yaml` at the repo root is the manifest.
 4. Build trigger: rollout on every push to `main`.
 5. After the first build kicks off, copy the generated URL - update `APP_BASE_URL` (step 5) and Firebase Auth's authorized domains (Console → Authentication → Settings → Authorized domains).
 
-Verify: `firebase apphosting:backends:list --project sm-dashboard-e7641` shows the backend as `ACTIVE`.
+Verify: `firebase apphosting:backends:list --project timbl-prod` shows the backend as `ACTIVE`.
 
 Manual rollouts (when needed):
 
 ```bash
-firebase apphosting:rollouts:create safe-planner --git-branch main --project sm-dashboard-e7641
+firebase apphosting:rollouts:create timbl-backend --git-branch main --project timbl-prod
 ```
 
 ## 7. First sign-in smoke
@@ -160,4 +160,16 @@ Expectations:
 
 ## 9. Rollback
 
-App Hosting keeps every prior build. To revert: **App Hosting → safe-planner → Builds → previous build → Promote to live**. Auth, Functions, and Rules are independent; revert each via `firebase functions:rollback` or the console.
+App Hosting keeps every prior build. To revert: **App Hosting → timbl-backend → Builds → previous build → Promote to live**. Auth, Functions, and Rules are independent; revert each via `firebase functions:rollback` or the console.
+
+### Realtime cutover rollback (no redeploy)
+
+Realtime is additive - surfaces always render from server-fetched data. If live sync misbehaves after enabling `realtime_v1`:
+
+1. **Per-org kill switch (fastest):** In admin.timbl → tenant → Feature flags → disable **Realtime v1** for the affected org. No App Hosting redeploy.
+2. **Global default OFF:** Control centre → Overview → Global realtime default → Turn OFF. New orgs and orgs without an explicit override stop engaging the client listener.
+3. **Verify degrade path:** Affected users should see the **Live sync paused** badge and 60s polling fallback; Live ops → Realtime health shows recent degrade events.
+4. **Rules rollback (only if rules changed):** `firebase deploy --only firestore:rules --project timbl-prod` from the last known-good commit.
+5. **Full app rollback:** Promote the previous App Hosting build (step above). Polling-only mode remains safe even on an older build.
+
+Soak 24-48h after re-enabling before expanding to more orgs.

@@ -7,6 +7,7 @@ import { resolveLlm } from "./llm-registry"
 import { makePermissionsCallback } from "./permissions"
 import { makeBudgetCallbacks } from "./budget"
 import { makeContextCompactors } from "./compaction"
+import { GLOBAL_OUTPUT_GUARDRAILS, INPUT_GUARDRAIL } from "./guardrails"
 
 /*
  * Single helper every agent factory uses to instantiate its LlmAgent.
@@ -29,24 +30,36 @@ export interface BuildLlmAgentInput
   /** Extra system text appended after agentConfig.systemPrompt - useful for
    * sub-agents in a pipeline whose role-specific instructions live in code. */
   instructionSuffix?: string
+  /** Enable OpenRouter web search for this agent (research agents). Forwarded
+   * to resolveLlm; a no-op unless the resolved provider is OpenRouter. */
+  webSearch?: boolean
 }
 
 export function buildLlmAgentFromConfig(
   input: BuildLlmAgentInput,
 ): LlmAgent {
-  const { config, instructionSuffix, name, description, ...rest } = input
+  const { config, instructionSuffix, name, description, webSearch, ...rest } =
+    input
   const perm = makePermissionsCallback(config.allowedTools)
   const budget = makeBudgetCallbacks(config.budgets)
 
-  const instruction = instructionSuffix
+  const base = instructionSuffix
     ? `${config.systemPrompt}\n\n${instructionSuffix}`
     : config.systemPrompt
+  /* Guardrails go last so they win over any looser tone wording in the
+   * agent's own prompt. Output guardrail stays last so it overrides tone;
+   * the input guardrail precedes it. Applied to every leaf LlmAgent. */
+  const instruction = `${base}\n\n${INPUT_GUARDRAIL}\n\n${GLOBAL_OUTPUT_GUARDRAILS}`
 
   return new LlmAgent({
     ...rest,
     name,
     description: description ?? config.description,
-    model: resolveLlm({ provider: config.provider, model: config.model }),
+    model: resolveLlm({
+      provider: config.provider,
+      model: config.model,
+      webSearch,
+    }),
     instruction,
     contextCompactors: makeContextCompactors(config),
     beforeModelCallback: [budget.beforeModel],

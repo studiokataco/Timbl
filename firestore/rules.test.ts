@@ -123,6 +123,58 @@ describe("organizations subcollection reads", () => {
   })
 })
 
+/* Exercises the exact shape the client realtime listener uses
+ * (usePostsRealtime): a windowed `getDocs` query over the org's posts
+ * collection, authorized only by the organizationId custom claim. This is the
+ * read that hits firestore.rules with real traffic at Phase 7 cutover. */
+describe("realtime posts list query (onSnapshot shape)", () => {
+  const win = (postsCol: ReturnType<typeof collection>) =>
+    query(
+      postsCol,
+      where("scheduledDate", ">=", "2026-01-01"),
+      where("scheduledDate", "<=", "2026-12-31"),
+    )
+
+  beforeAll(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `organizations/${ORG_A}/posts/rt-1`), {
+        organizationId: ORG_A,
+        title: "Dated post",
+        status: "idea",
+        scheduledDate: "2026-06-01",
+      })
+    })
+  })
+
+  it("allows an org member to stream their own org's window", async () => {
+    const ctx = authed("alice-uid", ORG_A, "contributor", "alice")
+    await assertSucceeds(
+      getDocs(win(collection(ctx.firestore(), `organizations/${ORG_A}/posts`))),
+    )
+  })
+
+  it("denies streaming another org's window", async () => {
+    const ctx = authed("alice-uid", ORG_A, "admin", "alice")
+    await assertFails(
+      getDocs(win(collection(ctx.firestore(), `organizations/${ORG_B}/posts`))),
+    )
+  })
+
+  it("denies a claimless (orgless) user", async () => {
+    const ctx = env.authenticatedContext("ghost-uid", {})
+    await assertFails(
+      getDocs(win(collection(ctx.firestore(), `organizations/${ORG_A}/posts`))),
+    )
+  })
+
+  it("denies an anonymous user", async () => {
+    const ctx = env.unauthenticatedContext()
+    await assertFails(
+      getDocs(win(collection(ctx.firestore(), `organizations/${ORG_A}/posts`))),
+    )
+  })
+})
+
 describe("posts mutations", () => {
   it("contributor can update own post", async () => {
     const ctx = authed("alice-uid", ORG_A, "contributor", "alice")

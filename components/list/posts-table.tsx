@@ -49,6 +49,7 @@ type Props = {
   categories: WithId<Category>[]
   users: WithId<User>[]
   range: { start: string; end: string }
+  realtimeEnabled?: boolean
 }
 
 /*
@@ -62,6 +63,7 @@ export function PostsTable({
   categories,
   users,
   range,
+  realtimeEnabled = false,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -78,7 +80,7 @@ export function PostsTable({
     initialData: initialPosts,
     staleTime: 30_000,
   })
-  usePostsRealtime({ orgId, ...range, queryClient })
+  usePostsRealtime({ orgId, ...range, queryClient, enabled: realtimeEnabled })
 
   const status = (searchParams.get("status") ?? "").split(",").filter(Boolean) as PostStatus[]
   const category = (searchParams.get("category") ?? "").split(",").filter(Boolean)

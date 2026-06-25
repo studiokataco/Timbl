@@ -257,12 +257,14 @@ async function resolveSchedulePost(i: ResolverInput): Promise<ResolverOutcome> {
   }
 
   if (finalize) {
-    patch["agentMeta.reviewState"] = "approved"
+    /* Nested objects, not "map.key" strings: set(merge) writes a dotted string
+     * as a literal flat field instead of merging into the nested map. */
+    patch.agentMeta = { reviewState: "approved" }
     patch.status = "scheduled"
     if (time.date) patch.scheduledDate = time.date
     if (time.time) patch.scheduledTime = time.time
     if (i.nextAction.targetChannel) {
-      patch[`channelStatuses.${i.nextAction.targetChannel}`] = "scheduled"
+      patch.channelStatuses = { [i.nextAction.targetChannel]: "scheduled" }
     }
   } else {
     /* Partial approval - record reviewer count but keep status in review. */

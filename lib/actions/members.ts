@@ -267,7 +267,7 @@ export async function updateOrgMember(input: unknown): Promise<ServerActionResul
   return { ok: true, id: parsed.data.userId }
 }
 
-async function syncClaimsForEmail(email: string) {
+export async function syncClaimsForEmail(email: string) {
   const membership = await findMembership(email)
   if (!membership || membership.active === false) return
   try {

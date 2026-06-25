@@ -9,26 +9,28 @@ import { persistIdeationTool } from "../../tools/research"
 import { retrieveTool } from "../../tools/retrieve"
 
 /*
- * Ideator - web-research-driven idea generator. Uses Gemini's first-party
- * grounding (GOOGLE_SEARCH + URL_CONTEXT) to discover awareness days, trending
- * topics, and adjacent stories the workspace could comment on,
- * then writes each discovery as an ideationFeed item with source URLs so a
- * human can verify claims before promoting to a post.
+ * Ideator - web-research-driven idea generator. Discovers awareness days,
+ * trending topics, and adjacent stories the workspace could comment on, then
+ * writes each discovery as an ideationFeed item with source URLs so a human
+ * can verify claims before promoting to a post.
  *
- * Gemini-only by design: GOOGLE_SEARCH is a Gemini built-in tool with no
- * Anthropic equivalent. If you point the ideator at Anthropic in
- * /settings/agents the run will surface a tool-incompatibility error.
+ * Grounding path depends on provider: OpenRouter (default) uses the
+ * web-search server tool, surfaced as citations on the run; Gemini uses its
+ * first-party GOOGLE_SEARCH + URL_CONTEXT built-ins. Pointed at a provider
+ * with neither (anthropic/mock), ideas come out ungrounded - keep it on
+ * openrouter or gemini.
  */
 export function buildIdeatorAgent(config: AgentConfig): LlmAgent {
+  const geminiGrounding = config.provider === "gemini"
   return buildLlmAgentFromConfig({
     name: "ideator",
     config,
+    webSearch: config.provider === "openrouter",
     tools: [
       readBrandConfigTool,
       listUpcomingAwarenessDaysTool,
       retrieveTool,
-      GOOGLE_SEARCH,
-      URL_CONTEXT,
+      ...(geminiGrounding ? [GOOGLE_SEARCH, URL_CONTEXT] : []),
       persistIdeationTool,
     ],
     instructionSuffix: IDEATOR_INSTRUCTION,
@@ -38,8 +40,7 @@ export function buildIdeatorAgent(config: AgentConfig): LlmAgent {
 const IDEATOR_INSTRUCTION = [
   "Workflow context:",
   "  - Start by reading brandConfig and listing upcoming awareness days for the next 30 days.",
-  "  - Use GOOGLE_SEARCH to discover trending topics and recent stories adjacent to the brand's audience.",
-  "  - Use URL_CONTEXT to read 1-3 of the most relevant articles per topic.",
+  "  - Use web search to discover trending topics and recent stories adjacent to the brand's audience, and to read the most relevant articles per topic.",
   "  - Before persisting an idea, call retrieve({kind:'post', query: <idea title or summary>, k: 10}). If a high-similarity match exists (score ≥ 0.85 with the real-provider scale, or check the top-3 snippets), DROP the idea - the brand has already covered it. Quality > quantity.",
   "  - For each viable idea, call persistIdeation exactly once with:",
   "      title - punchy headline",

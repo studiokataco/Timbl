@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2, Save, Sparkles } from "lucide-react"
+import { Info, Loader2, Save, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -10,13 +10,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { AGENT_PROVIDER_LABELS, labelOr } from "@/lib/labels/enums"
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import {
   Sheet,
@@ -57,8 +55,6 @@ export function AgentsClient({ initial }: Props) {
             <tr>
               <Th className="w-1/4">Agent</Th>
               <Th>Role</Th>
-              <Th>Provider</Th>
-              <Th>Model</Th>
               <Th className="text-right">Enabled</Th>
               <Th className="text-right">Actions</Th>
             </tr>
@@ -170,8 +166,6 @@ function Row({
           {config.role}
         </Badge>
       </td>
-      <td className="px-3 py-2.5 capitalize">{config.provider}</td>
-      <td className="px-3 py-2.5 font-mono text-xs">{config.model}</td>
       <td className="px-3 py-2.5 text-right">
         <button
           type="button"
@@ -214,21 +208,12 @@ function EditSheet({
   onClose: () => void
   onSaved: () => void
 }) {
-  const [provider, setProvider] = useState<AgentConfig["provider"]>(
-    config?.provider ?? "gemini",
-  )
-  const [model, setModel] = useState(config?.model ?? "")
   const [temperature, setTemperature] = useState<number>(
     config?.temperature ?? 0.5,
   )
   const [systemPrompt, setSystemPrompt] = useState(config?.systemPrompt ?? "")
   const [schedule, setSchedule] = useState<string>(config?.schedule ?? "")
   const [pending, startTransition] = useTransition()
-
-  /* Re-sync local state when a different config is opened. */
-  if (config && config.id !== model + "::" + provider /* sentinel */) {
-    /* noop - values seeded above via initial useState */
-  }
 
   return (
     <Sheet
@@ -254,8 +239,6 @@ function EditSheet({
                   const res = await updateAgentConfig({
                     name: config.name,
                     patch: {
-                      provider,
-                      model,
                       temperature,
                       systemPrompt,
                       schedule: schedule || undefined,
@@ -272,46 +255,25 @@ function EditSheet({
             >
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider">Provider</Label>
-                  <Select
-                    value={provider}
-                    onValueChange={(v) => setProvider(v as AgentConfig["provider"])}
-                  >
-                    <SelectTrigger id="provider">
-                      <SelectValue>
-                        {(v) => labelOr(AGENT_PROVIDER_LABELS, v)}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gemini">
-                        {AGENT_PROVIDER_LABELS.gemini}
-                      </SelectItem>
-                      <SelectItem value="anthropic">
-                        {AGENT_PROVIDER_LABELS.anthropic}
-                      </SelectItem>
-                      <SelectItem value="mock">
-                        {AGENT_PROVIDER_LABELS.mock}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="model">Model</Label>
-                  <Input
-                    id="model"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    placeholder={
-                      provider === "anthropic"
-                        ? "claude-sonnet-4-6"
-                        : "gemini-2.5-flash"
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="temperature">Temperature</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="temperature">Temperature</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Temperature help"
+                        >
+                          <Info className="size-3.5" aria-hidden />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Controls randomness. Lower (near 0) keeps output
+                          focused and repeatable; higher (toward 1) makes it
+                          more varied and creative.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="temperature"
                     type="number"

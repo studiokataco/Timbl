@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/dashboard", label: "Overview" },
   { href: "/ai-usage", label: "AI usage" },
   { href: "/tenants", label: "Tenants" },
+  { href: "/users", label: "Users" },
   { href: "/retention", label: "Retention" },
   { href: "/signups", label: "Signups" },
   { href: "/live-ops", label: "Live ops" },

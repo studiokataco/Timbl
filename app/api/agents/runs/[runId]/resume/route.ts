@@ -5,7 +5,11 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
 import { agentRunSchema } from "@/lib/schemas/agentRun"
-import { eventsToSseStream, SSE_HEADERS } from "@/lib/agents/runtime/events"
+import {
+  eventsToSseStream,
+  SSE_HEADERS,
+  collectCustomMetadata,
+} from "@/lib/agents/runtime/events"
 import { resolveAgent } from "@/lib/agents"
 import { AGENT_APP_NAME, buildRunner } from "@/lib/agents/runtime/runner"
 import { markAgentRunStatus } from "@/lib/agents/triggers/manual"
@@ -112,6 +116,8 @@ export async function POST(
     completionTokens: 0,
     cachedTokens: 0,
   }
+  const generationIds = new Set<string>()
+  const sourceUrls = new Set<string>()
 
   const eventStream = runner.runAsync({
     userId: run.userId,
@@ -122,7 +128,8 @@ export async function POST(
 
   const body = eventsToSseStream(eventStream, {
     abortSignal: req.signal,
-    onRawEvent: (event) => collectMetrics(event, metrics),
+    onRawEvent: (event) =>
+      collectMetrics(event, metrics, generationIds, sourceUrls),
     onFinish: async (last) => {
       const status = req.signal.aborted
         ? "cancelled"
@@ -134,6 +141,8 @@ export async function POST(
         runId,
         status,
         metricsPatch: metrics,
+        generationIds: [...generationIds],
+        sourceUrls: [...sourceUrls],
         error:
           last?.type === "error"
             ? { code: "agent_error", message: last.error.message }
@@ -161,6 +170,8 @@ function collectMetrics(
     completionTokens: number
     cachedTokens: number
   },
+  generationIds: Set<string>,
+  sourceUrls: Set<string>,
 ): void {
   const usage = (event as {
     usageMetadata?: {
@@ -175,6 +186,7 @@ function collectMetrics(
     m.completionTokens += usage.candidatesTokenCount ?? 0
     m.cachedTokens += usage.cachedContentTokenCount ?? 0
   }
+  collectCustomMetadata(event, generationIds, sourceUrls)
   const parts =
     (event as { content?: { parts?: Array<{ functionCall?: unknown }> } })
       .content?.parts ?? []

@@ -8,6 +8,7 @@ import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import type { IdeationItem } from "@/lib/schemas/ideationItem"
 import type { ApprovalLogRow } from "@/lib/actions/approvals"
+import type { StudioUsage } from "@/lib/actions/usage"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { PageHeader } from "@/components/shared/page-header"
 import { useMediaQuery } from "@/lib/hooks/use-media-query"
@@ -16,7 +17,7 @@ import { AGENT_TEMPLATES } from "@/lib/agents/template-catalog"
 import { cn } from "@/lib/utils"
 
 import { Roster } from "./roster"
-import { PipelineGraph } from "./pipeline-graph"
+import { UsageDashboard } from "./usage-dashboard"
 import { ActivityStream } from "./activity-stream"
 import { Inspector } from "./inspector"
 import { EmptyRosterCta } from "./empty-roster-cta"
@@ -32,7 +33,7 @@ type Props = {
   runs: AgentRunDoc[]
   ideation: IdeationItem[]
   approvals?: ApprovalLogRow[]
-  publishCounts?: { scheduled: number; posted: number }
+  usage: StudioUsage
 }
 
 export function StudioWorkspace({
@@ -40,7 +41,7 @@ export function StudioWorkspace({
   runs,
   ideation,
   approvals = [],
-  publishCounts,
+  usage,
 }: Props) {
   const router = useRouter()
   const params = useSearchParams()
@@ -79,11 +80,7 @@ export function StudioWorkspace({
           <EmptyRosterCta agents={agents} />
         ) : (
           <>
-            <PipelineGraph
-              agents={rosterAgents}
-              runs={runs}
-              initialPublishCounts={publishCounts}
-            />
+            <UsageDashboard initialUsage={usage} />
             <ActivityStream
               initialRuns={runs}
               initialIdeation={ideation}

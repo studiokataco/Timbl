@@ -24,6 +24,7 @@
     "test:smoke": "playwright test",
     "functions:build": "pnpm --dir functions build",
     "auth:configure": "bash scripts/configure-auth-domain.sh",
+    "preflight:prod": "bash scripts/preflight-prod.sh",
     "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh",
     "secrets:pull": "bash scripts/pull-secrets.sh",
     "secrets:rotate-resend": "bash scripts/rotate-secret.sh RESEND_API_KEY --env-local",

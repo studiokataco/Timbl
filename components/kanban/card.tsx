@@ -63,11 +63,11 @@ export const KanbanCard = memo(function KanbanCard({
       }}
       {...(dragEnabled ? { ...attributes, ...listeners } : {})}
       className={cn(
-        "group relative rounded-lg border border-border border-l-4 bg-background p-3 transition-shadow select-none",
+        "group relative w-full overflow-hidden rounded-lg border border-border border-l-4 bg-background p-3 transition-shadow select-none",
         dragEnabled && "md:cursor-grab md:active:cursor-grabbing",
         "hover:shadow-sm",
         sourceDragging && "opacity-40",
-        isDragging && "rotate-1 shadow-lg ring-1 ring-border",
+        isDragging && "shadow-lg ring-1 ring-border",
         selected && "ring-2 ring-primary/40",
       )}
       onClick={onClick}
@@ -136,7 +136,7 @@ export const KanbanCard = memo(function KanbanCard({
           </div>
         ) : null}
       </div>
-      {pendingReview ? (
+      {pendingReview && !isDragging ? (
         <div className="mt-3 border-t border-border pt-3">
           <p className="mb-1.5 text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400">
             Needs review
@@ -144,11 +144,11 @@ export const KanbanCard = memo(function KanbanCard({
           <ApprovalActions
             postId={post.id}
             nextAction={post.agentMeta?.nextAction}
-            className="flex items-center gap-1.5"
+            className="flex flex-col items-stretch gap-1.5"
           />
         </div>
       ) : null}
-      {onStatusChange ? (
+      {onStatusChange && !isDragging ? (
         <div
           className="mt-3 border-t border-border pt-3 md:hidden"
           onPointerDown={(e) => e.stopPropagation()}

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 
 import { addDays, format, subYears } from "date-fns"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { realtimeEnabledForOrg } from "@/lib/realtime/realtime-enabled"
 import { PageHeader } from "@/components/shared/page-header"
 import { KanbanBoard } from "@/components/kanban/board"
 import {
@@ -25,6 +26,7 @@ export default async function KanbanPage() {
     fetchCategories(),
     fetchUsers(),
   ])
+  const realtimeEnabled = await realtimeEnabledForOrg(orgId)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-10 lg:py-14">
@@ -40,6 +42,7 @@ export default async function KanbanPage() {
         categories={categories}
         users={users}
         range={{ start, end }}
+        realtimeEnabled={realtimeEnabled}
       />
     </div>
   )
