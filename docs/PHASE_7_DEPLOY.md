@@ -160,7 +160,64 @@ Expectations:
 
 ## 9. Rollback
 
-App Hosting keeps every prior build. To revert: **App Hosting → timbl-backend → Builds → previous build → Promote to live**. Auth, Functions, and Rules are independent; revert each via `firebase functions:rollback` or the console.
+### App Hosting (frontend)
+
+App Hosting keeps every prior build. To revert the web app:
+
+1. **Firebase Console** → App Hosting → `timbl-backend` → Builds → select the previous good build → **Promote to live**.
+2. Or CLI: `firebase apphosting:rollouts:create timbl-backend --git-branch main --project timbl-prod` (only when you want a fresh build from a known-good commit on `main`).
+
+Auth, Functions, and Firestore are independent of App Hosting - reverting the frontend does not undo rules, indexes, or backend config.
+
+### Realtime cutover (no redeploy)
+
+Realtime is additive - surfaces always render from server-fetched data. To roll back live sync without a deploy:
+
+1. **Per-org kill switch (fastest):** Control centre → tenant → flip `realtime_v1` **OFF** for the affected org. Takes effect on the next page load.
+2. **Global default:** Control centre → Dashboard → **Global realtime default** → **Turn OFF**. New orgs and orgs without an explicit `realtime_v1` override stop engaging the client listener.
+3. **Env fallback (requires App Hosting rollout):** Set `NEXT_PUBLIC_REALTIME_DEFAULT=0` in `apphosting.yaml` and promote a new build. Use only when the platform doc toggle is unavailable.
+
+After rollback, the app continues on 60s polling fallback. Users may see the **Live sync paused** badge in the top bar until the listener stops retrying.
+
+Verify rollback:
+
+- Two browser tabs on the affected org: edits still converge within ~60s (polling), not instantly.
+- Control centre → Live ops → **Realtime health** shows degrade pings if listeners were active when you flipped the flag.
+- `pnpm test:rules` locally still passes (rules are unchanged).
+
+### Firestore rules / indexes
+
+```bash
+# Restore a prior rules revision from git, then:
+firebase deploy --only firestore:rules --project timbl-prod
+
+# Indexes are forward-only; deleting an index in-console does not roll back code.
+firebase deploy --only firestore:indexes --project timbl-prod
+```
+
+Keep the last known-good `firestore/firestore.rules` commit hash in your deploy notes before any rules change.
+
+### Cloud Functions
+
+```bash
+firebase functions:rollback --project timbl-prod
+```
+
+Or pick a prior revision in **Firebase Console → Functions**.
+
+### Platform admin repairs (auth claims)
+
+If login breaks after a rules or claims change:
+
+1. Control centre → **Users** → look up the operator email.
+2. **Re-mint claims** (owner only). Audit row should appear under Recent audit.
+3. User signs out and back in.
+
+### Canary soak before GA (T39-T40)
+
+- Run canary with `realtime_v1` ON for one internal org only (T33).
+- Complete T34-T38 checklist on timbl.app (live update, failure injection, auth dead-ends, admin repair drill, flag OFF rollback).
+- Wait 24-48h, then expand to friendly orgs (T39) before flipping global default ON (T40).
 
 ### Realtime cutover rollback (no redeploy)
 
