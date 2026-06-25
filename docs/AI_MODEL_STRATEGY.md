@@ -1,6 +1,6 @@
 # AI model strategy - reference
 
-The single place that explains how SAFE picks, runs, and switches AI models -
+The single place that explains how Timbl picks, runs, and switches AI models -
 what's decided, what's deferred, and what is *not possible* on the hosted
 product. Read this before proposing a model change.
 
@@ -66,9 +66,6 @@ real runs:
 
 ### Prerequisites before a serious migration
 
-- **Gemini 3.5 Flash's exact API model ID is unconfirmed.** Released
-  2026-05-19; verify the model string against the live Gemini API before
-  wiring it. Do not guess.
 - **The OpenRouter key is a free-tier key with a $5 cap.** Fine for a few
   A/B runs; it will run dry under real volume. Top it up before load-testing
   any OpenRouter agent.
@@ -96,7 +93,7 @@ models (§9).
 
 ---
 
-## 5. The desktop app (Electron) - future, gated on Phase 7
+## 5. The desktop app (Electron) - future (auth prerequisite now met)
 
 A desktop build is the *only* way local models (Gemma 4 etc.) become real,
 because the desktop bundles a local server that **can** reach a local Ollama.
@@ -105,17 +102,18 @@ because the desktop bundles a local server that **can** reach a local Ollama.
   Electron main process boots the bundled Node server on localhost; the
   renderer loads it. A window-over-cloud desktop adds nothing - the bundled
   local server is the whole point.
-- **Hard dependency: Phase 7.** A desktop app cannot ship Admin SDK
+- **Auth prerequisite (met).** A desktop app cannot ship Admin SDK
   credentials, so it must use the user-scoped client SDK + Firestore
-  Security Rules - which Phase 7 builds. **Desktop cannot precede Phase 7.**
+  Security Rules - which Phase 7 delivered. That blocker is now cleared;
+  desktop is unbuilt, not blocked.
 - **Online-only.** Cloud Firestore; offline/local datastore is deferred.
 - Adds a model-manager UI (Gemma 4 26B Q4 ≈ 18 GB download) and flips the
   `ollama` provider's UI gate on.
 - The hook is already in place: the `ollama` provider + adapter exist after
   this phase, so the desktop phase only adds the Electron wrapper.
 
-**Sequencing:** pluggable providers (done) → Phase 7 (auth + Security Rules)
-→ Electron desktop.
+**Sequencing:** pluggable providers (done) → Phase 7 auth + Security Rules
+(done) → Electron desktop (not started).
 
 ---
 
@@ -160,7 +158,7 @@ story.
 | Per-tenant bring-your-own-key | **Deferred** | One platform OpenRouter key for v1, cost folded into subscription. |
 | Auto-applying model updates | **Out** | A new model is a behaviour change; humans apply after A/B. Tracking is notify-only. |
 | Gemma 4 / local models on hosted prod | **Not possible** | Cloud Run can't reach a localhost model server. Desktop only (§5). |
-| Electron desktop build | **Deferred** | Depends on Phase 7 (auth + Security Rules). |
+| Electron desktop build | **Deferred** | Phase 7 auth prerequisite now met; not yet built. |
 | Localized / on-device embeddings | **Rejected** | Embeddings stay cloud + org-pinned (§7). |
 | `openclaude` repo, HuggingFace, Docker | **Rejected** | Wrong tool category for this product. |
 
