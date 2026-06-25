@@ -46,16 +46,19 @@ export async function recordPlatformRun(rec: PlatformRunRecord): Promise<void> {
   const providerKey = rec.provider ? safeFieldKey(rec.provider) : "unknown"
   const modelKey = rec.model ? safeFieldKey(rec.model) : "unknown"
 
+  /* Nested objects, not "map.key" strings: set(merge) writes a dotted string
+   * as a literal field name, so the by-model/by-provider maps only build
+   * correctly when merged as real nested objects. */
   const scalar = {
     usdCost: FieldValue.increment(rec.usdCost),
     agentRuns: FieldValue.increment(1),
     promptTokens: FieldValue.increment(rec.promptTokens),
     completionTokens: FieldValue.increment(rec.completionTokens),
     cachedTokens: FieldValue.increment(rec.cachedTokens),
-    [`runsByOutcome.${rec.outcome}`]: FieldValue.increment(1),
-    [`byProvider.${providerKey}`]: FieldValue.increment(rec.usdCost),
-    [`byModel.${modelKey}`]: FieldValue.increment(rec.usdCost),
-    [`modelNames.${modelKey}`]: rec.model ?? "unknown",
+    runsByOutcome: { [rec.outcome]: FieldValue.increment(1) },
+    byProvider: { [providerKey]: FieldValue.increment(rec.usdCost) },
+    byModel: { [modelKey]: FieldValue.increment(rec.usdCost) },
+    modelNames: { [modelKey]: rec.model ?? "unknown" },
     updatedAt: now,
   }
 
@@ -72,9 +75,9 @@ export async function recordPlatformRun(rec: PlatformRunRecord): Promise<void> {
         orgId: rec.orgId,
         usdCost: FieldValue.increment(rec.usdCost),
         agentRuns: FieldValue.increment(1),
-        [`byProvider.${providerKey}`]: FieldValue.increment(rec.usdCost),
-        [`byModel.${modelKey}`]: FieldValue.increment(rec.usdCost),
-        [`modelNames.${modelKey}`]: rec.model ?? "unknown",
+        byProvider: { [providerKey]: FieldValue.increment(rec.usdCost) },
+        byModel: { [modelKey]: FieldValue.increment(rec.usdCost) },
+        modelNames: { [modelKey]: rec.model ?? "unknown" },
         updatedAt: now,
       },
       { merge: true },

@@ -57,6 +57,7 @@ type Props = {
   categories: WithId<Category>[]
   users: WithId<User>[]
   range: { start: string; end: string }
+  realtimeEnabled?: boolean
 }
 
 export function KanbanBoard({
@@ -65,6 +66,7 @@ export function KanbanBoard({
   categories,
   users,
   range,
+  realtimeEnabled = false,
 }: Props) {
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -84,7 +86,7 @@ export function KanbanBoard({
     initialData: initialPosts,
     staleTime: 30_000,
   })
-  usePostsRealtime({ orgId, ...range, queryClient })
+  usePostsRealtime({ orgId, ...range, queryClient, enabled: realtimeEnabled })
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragWidth, setDragWidth] = useState<number | undefined>(undefined)
   const [pendingMove, setPendingMove] = useState<{

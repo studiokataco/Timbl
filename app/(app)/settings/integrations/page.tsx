@@ -106,7 +106,7 @@ export default async function SettingsIntegrationsPage() {
 
       <SettingsSection
         title="Storage"
-        description="Connect Google Drive, Dropbox or OneDrive so your team can attach files from their own storage to posts."
+        description="Connect Google Drive or Dropbox so your team can attach files from their own storage to posts."
       >
         {storageLive ? (
           <StorageClient

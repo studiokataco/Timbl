@@ -1,16 +1,5 @@
 import type { StorageProvider } from "@/lib/schemas/_shared"
 
-/*
- * Static, public metadata for each connectable storage provider. OAuth
- * endpoints and scopes are public (not secrets), so this is safe to import
- * from client components that render the setup UI. Per-org client_id /
- * client_secret live encrypted in Firestore (see lib/storage/oauth.ts).
- *
- * Endpoints + scopes verified against the providers' OAuth docs:
- *   Google  - accounts.google.com/o/oauth2/v2/auth, drive.file picker scope
- *   Dropbox - dropbox.com/oauth2/authorize, token_access_type=offline
- *   OneDrive- login.microsoftonline.com/common, Microsoft Graph Files.Read
- */
 export type StorageProviderDef = {
   key: StorageProvider
   label: string
@@ -70,26 +59,6 @@ export const STORAGE_PROVIDERS: StorageProviderDef[] = [
       "sharing.read",
       "sharing.write",
     ],
-  },
-  {
-    key: "onedrive",
-    label: "OneDrive",
-    domain: "onedrive.live.com",
-    consoleUrl:
-      "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
-    consoleHint:
-      "Register an app in Microsoft Entra ID with delegated Files.Read + offline_access.",
-    setupSteps: [
-      "Open the Microsoft Entra admin center and register a new application.",
-      "Set Supported account types to include personal Microsoft accounts.",
-      "Under Authentication add a Web platform and paste the redirect URI above.",
-      "Under API permissions add delegated Microsoft Graph permissions Files.Read, User.Read and offline_access.",
-      "Under Certificates & secrets create a new client secret.",
-      "Copy the Application (client) ID and the secret Value below.",
-    ],
-    authorizeUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
-    tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-    scopes: ["Files.Read", "User.Read", "offline_access"],
   },
 ]
 

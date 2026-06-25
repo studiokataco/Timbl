@@ -5,10 +5,10 @@ import type { AgentProvider } from "@/lib/schemas/agentConfig"
  * local-AI availability gate. Client-safe: reads only NEXT_PUBLIC_* and
  * NODE_ENV so it can be imported into client components.
  *
- * Model IDs are sourced verbatim from the phase plan's §4 shortlist
- * (safe-pluggable-ai-providers-ab.md). These are *suggestions* surfaced
- * in a free-text <datalist> - the model field stays z.string(), so an
- * operator can always type an ID not listed here.
+ * OpenRouter ids follow the agent model ladder (cheap / workhorse / review /
+ * escalation). These are *suggestions* surfaced in a free-text <datalist> -
+ * the model field stays z.string(), so an operator can always type an ID not
+ * listed here.
  */
 
 /* Human-readable names for the model picker. Curated for the ids we
@@ -19,9 +19,10 @@ const MODEL_LABELS: Record<string, string> = {
   "gemini-3.5-flash": "Gemini 3.5 Flash",
   "claude-haiku-4-5-20251001": "Claude Haiku 4.5",
   "claude-sonnet-4-6": "Claude Sonnet 4.6",
-  "deepseek/deepseek-v4-flash": "DeepSeek V4 Flash",
-  "z-ai/glm-5.1": "GLM 5.1",
-  "qwen/qwen3.6-plus": "Qwen 3.6 Plus",
+  "google/gemini-3.1-flash-lite": "Gemini 3.1 Flash Lite",
+  "minimax/minimax-m3": "MiniMax M3",
+  "anthropic/claude-haiku-4.5": "Claude Haiku 4.5",
+  "z-ai/glm-5.2": "GLM 5.2",
   mock: "Mock",
 }
 
@@ -45,9 +46,10 @@ export const MODEL_SUGGESTIONS: Record<AgentProvider, readonly string[]> = {
   gemini: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3.5-flash"],
   anthropic: ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"],
   openrouter: [
-    "deepseek/deepseek-v4-flash",
-    "z-ai/glm-5.1",
-    "qwen/qwen3.6-plus",
+    "google/gemini-3.1-flash-lite",
+    "minimax/minimax-m3",
+    "anthropic/claude-haiku-4.5",
+    "z-ai/glm-5.2",
   ],
   ollama: [
     "gemma4:26b",

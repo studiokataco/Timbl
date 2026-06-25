@@ -32,9 +32,57 @@ import type {
  *
  * No prompt-cache plumbing - OpenRouter/DeepSeek do context caching
  * server-side automatically; Ollama is local.
+ *
+ * OpenRouter extras handled here (no-ops on Ollama):
+ *   - generation id: the top-level `id` of the completion is OpenRouter's
+ *     generation handle. Surfaced on customMetadata so a run can later
+ *     reconcile estimated cost against exact cost via GET /generation?id=.
+ *   - web search: the `openrouter:web_search` server tool (the older
+ *     `plugins:[{id:"web"}]` request param is deprecated). Enabled per-agent
+ *     via the `webSearch` constructor flag, not the ADK tools path.
+ *   - citations: web search returns url_citation annotations on the message;
+ *     parsed into customMetadata.citations so source URLs survive even if the
+ *     model doesn't echo them in prose.
  */
 
-const DEFAULT_MAX_TOKENS = 4096
+/* Per-model output ceilings. The previous flat 4096 silently truncated long
+ * drafts/reviews on models that support far more. Unknown models fall back to
+ * DEFAULT_MAX_TOKENS. Keyed by the post-prefix model id (vendor/model). */
+const MODEL_OUTPUT_LIMITS: Record<string, number> = {
+  "minimax/minimax-m3": 16_384,
+  "z-ai/glm-5.2": 16_384,
+  "anthropic/claude-haiku-4.5": 8_192,
+  "google/gemini-3.1-flash-lite": 8_192,
+}
+
+const DEFAULT_MAX_TOKENS = 8_192
+
+function resolveMaxTokens(model: string, override?: number): number {
+  return override ?? MODEL_OUTPUT_LIMITS[model] ?? DEFAULT_MAX_TOKENS
+}
+
+/* OpenRouter server tool for live web search. `type` is the OpenRouter-
+ * specific slug, so it does not satisfy the OpenAI SDK's tool union - the
+ * params object is cast at the call site. */
+const WEB_SEARCH_TOOL = {
+  type: "openrouter:web_search",
+  parameters: { max_results: 5, engine: "auto" },
+} as const
+
+interface ParsedCitation {
+  url: string
+  title?: string
+}
+
+export interface OpenAiCompatibleLlmOptions {
+  model?: string
+  apiKey?: string
+  baseUrl?: string
+  /** Enable OpenRouter's web-search server tool for this agent. */
+  webSearch?: boolean
+  /** Hard override of the per-model output ceiling. */
+  maxTokens?: number
+}
 
 export class OpenAiCompatibleLlm extends BaseLlm {
   /* Resolution is by agentConfig.provider in resolveLlm(), not by this
@@ -47,13 +95,17 @@ export class OpenAiCompatibleLlm extends BaseLlm {
   ]
 
   private readonly client: OpenAI
+  private readonly webSearch: boolean
+  private readonly maxTokensOverride?: number
 
-  constructor(params: { model?: string; apiKey?: string; baseUrl?: string } = {}) {
+  constructor(params: OpenAiCompatibleLlmOptions = {}) {
     super({ model: params.model ?? "" })
     this.client = new OpenAI({
       apiKey: params.apiKey ?? "not-needed",
       baseURL: params.baseUrl,
     })
+    this.webSearch = params.webSearch ?? false
+    this.maxTokensOverride = params.maxTokens
   }
 
   override async *generateContentAsync(
@@ -69,20 +121,29 @@ export class OpenAiCompatibleLlm extends BaseLlm {
       "",
     )
 
+    const allTools = this.webSearch ? [...tools, WEB_SEARCH_TOOL] : tools
     const params = {
       model: modelName,
-      max_tokens: DEFAULT_MAX_TOKENS,
+      max_tokens: resolveMaxTokens(modelName, this.maxTokensOverride),
       messages,
-      ...(tools.length ? { tools } : {}),
+      /* Streamed responses omit token usage unless explicitly requested; without
+       * this the final chunk carries no usage and every run meters as 0 tokens
+       * / $0, starving the cost dashboards. */
+      stream_options: { include_usage: true },
+      ...(allTools.length ? { tools: allTools } : {}),
     }
 
     /* Use the chat.completions.stream() helper - like anthropic-llm.ts it
      * correctly aggregates tool_call argument deltas across chunks. We
      * iterate raw chunks to yield partial:true text for the chat UI, then
-     * await finalChatCompletion() for the fully-parsed message. */
-    const completionStream = this.client.chat.completions.stream(params, {
-      signal: abortSignal,
-    })
+     * await finalChatCompletion() for the fully-parsed message.
+     *
+     * Cast: params carries the OpenRouter-specific web_search tool slug,
+     * which the OpenAI SDK's tool union doesn't model. */
+    const completionStream = this.client.chat.completions.stream(
+      params as Parameters<typeof this.client.chat.completions.stream>[0],
+      { signal: abortSignal },
+    )
 
     if (stream !== false) {
       for await (const chunk of completionStream) {
@@ -121,13 +182,48 @@ export class OpenAiCompatibleLlm extends BaseLlm {
 
     const inTok = final.usage?.prompt_tokens ?? 0
     const outTok = final.usage?.completion_tokens ?? 0
+    const finishReasonRaw = final.choices[0]?.finish_reason ?? undefined
+    const citations = parseCitations(message)
+    /* OpenRouter returns the generation handle as the completion's top-level
+     * id; Ollama returns its own id we simply ignore downstream. */
+    const generationId = final.id || undefined
+
+    /* Truncation guard. A reasoning model (e.g. minimax-m3) can spend the
+     * whole output budget on hidden reasoning and return zero content with
+     * finish_reason "length". Without this, the run yields nothing yet marks
+     * "succeeded" - a silent empty post. Surface it as an error so the run
+     * fails visibly and the cap can be raised. */
+    if (parts.length === 0 && finishReasonRaw === "length") {
+      yield {
+        errorCode: "MAX_TOKENS",
+        errorMessage: `Model ${modelName} reached the output token cap before producing any content (likely reasoning-token exhaustion). Raise the per-model cap in MODEL_OUTPUT_LIMITS.`,
+        partial: false,
+        turnComplete: true,
+        ...(generationId
+          ? { customMetadata: { openrouterGenerationId: generationId } }
+          : {}),
+        usageMetadata: {
+          promptTokenCount: inTok,
+          candidatesTokenCount: outTok,
+          totalTokenCount: inTok + outTok,
+        } as never,
+      } satisfies LlmResponse
+      return
+    }
+
+    const customMetadata =
+      generationId || citations.length
+        ? {
+            ...(generationId ? { openrouterGenerationId: generationId } : {}),
+            ...(citations.length ? { citations } : {}),
+          }
+        : undefined
     yield {
       content: parts.length ? { role: "model", parts } : undefined,
       partial: false,
       turnComplete: true,
-      finishReason: mapFinishReason(
-        final.choices[0]?.finish_reason ?? undefined,
-      ) as never,
+      finishReason: mapFinishReason(finishReasonRaw) as never,
+      ...(customMetadata ? { customMetadata } : {}),
       usageMetadata: {
         promptTokenCount: inTok,
         candidatesTokenCount: outTok,
@@ -141,6 +237,30 @@ export class OpenAiCompatibleLlm extends BaseLlm {
       "OpenAiCompatibleLlm does not support live bidi connections",
     )
   }
+}
+
+/* OpenRouter standardises web-search results onto the OpenAI annotation
+ * schema: message.annotations[] with type "url_citation" and a nested
+ * url_citation:{url,title}. Read loosely - the SDK types annotations but not
+ * OpenRouter's extra `content` excerpt field. */
+function parseCitations(message: unknown): ParsedCitation[] {
+  const annotations = (message as {
+    annotations?: Array<{
+      type?: string
+      url_citation?: { url?: string; title?: string }
+    }>
+  } | null | undefined)?.annotations
+  if (!Array.isArray(annotations)) return []
+  const out: ParsedCitation[] = []
+  const seen = new Set<string>()
+  for (const a of annotations) {
+    if (a?.type !== "url_citation") continue
+    const url = a.url_citation?.url
+    if (!url || seen.has(url)) continue
+    seen.add(url)
+    out.push({ url, ...(a.url_citation?.title ? { title: a.url_citation.title } : {}) })
+  }
+  return out
 }
 
 function safeParseArgs(raw: string | undefined): Record<string, unknown> {

@@ -2,7 +2,7 @@ import { listAgentConfigs } from "@/lib/actions/agent-configs"
 import { listAgentRuns } from "@/lib/actions/agent-runs"
 import { listApprovalsLog } from "@/lib/actions/approvals"
 import { listIdeationFeed } from "@/lib/actions/ideation"
-import { countPublishablePosts } from "@/lib/actions/posts"
+import { getStudioUsage } from "@/lib/actions/usage"
 
 import { StudioWorkspace } from "@/components/studio/studio-workspace"
 
@@ -17,12 +17,12 @@ export const dynamic = "force-dynamic"
  * selection. No mutations yet - purely a visual surface.
  */
 export default async function StudioPage() {
-  const [agents, runs, ideation, approvals, publishCounts] = await Promise.all([
+  const [agents, runs, ideation, approvals, usage] = await Promise.all([
     listAgentConfigs(),
     listAgentRuns({ limit: 50 }),
     listIdeationFeed({ status: "new" }),
     listApprovalsLog({ limit: 50 }),
-    countPublishablePosts(),
+    getStudioUsage(),
   ])
 
   return (
@@ -31,7 +31,7 @@ export default async function StudioPage() {
       runs={runs}
       ideation={ideation}
       approvals={approvals}
-      publishCounts={publishCounts}
+      usage={usage}
     />
   )
 }

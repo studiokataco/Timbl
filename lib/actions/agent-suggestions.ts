@@ -37,10 +37,12 @@ async function patchAgentMeta(
   const data = snap.data()
   if (data?.organizationId !== orgId) return { ok: false, error: "cross_org" }
   const meta = (data.agentMeta ?? {}) as Record<string, unknown>
+  /* Nested object, not "agentMeta.key" strings: set(merge) writes a dotted
+   * string as a literal flat field, never reaching the agentMeta map. */
   const flat: Record<string, unknown> = {
     updatedAt: new Date().toISOString(),
+    agentMeta: { ...patch },
   }
-  for (const [k, v] of Object.entries(patch)) flat[`agentMeta.${k}`] = v
   await ref.set(flat, { merge: true })
   return {
     ok: true,

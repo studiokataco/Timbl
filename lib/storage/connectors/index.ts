@@ -2,7 +2,6 @@ import type { StorageAccount } from "@/lib/schemas/storageAccount"
 
 import { dropboxConnector } from "./dropbox"
 import { gdriveConnector } from "./gdrive"
-import { onedriveConnector } from "./onedrive"
 
 export type StorageConnector = {
   connect(orgId: string): Promise<{ url: string }>
@@ -12,7 +11,6 @@ export type StorageConnector = {
 const connectors: Record<string, StorageConnector> = {
   gdrive: gdriveConnector,
   dropbox: dropboxConnector,
-  onedrive: onedriveConnector,
 }
 
 export function getStorageConnector(provider: string): StorageConnector | undefined {

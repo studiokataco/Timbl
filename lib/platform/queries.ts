@@ -7,6 +7,7 @@ import {
   platformOrgRollupDocPath,
   platformOrgRollupPeriodDocPath,
   platformOrgRollupsPath,
+  platformRealtimeHealthPath,
   platformRollupDocPath,
   platformSignupRequestsPath,
   signupRequestSchema,
@@ -487,4 +488,27 @@ export async function latencyStats(sample = 200): Promise<LatencyStats> {
     p95: at(0.95),
     max: durations[durations.length - 1],
   }
+}
+
+export type RealtimeHealthRow = {
+  orgId: string
+  reason: string
+  degradedAt: string
+}
+
+export async function listRealtimeHealth(limit = 20): Promise<RealtimeHealthRow[]> {
+  await requirePlatformAdmin()
+  const snap = await getAdminDb()
+    .collection(platformRealtimeHealthPath)
+    .orderBy("degradedAt", "desc")
+    .limit(limit)
+    .get()
+  return snap.docs.map((d) => {
+    const data = d.data()
+    return {
+      orgId: (data.orgId as string) ?? d.id,
+      reason: (data.reason as string) ?? "unknown",
+      degradedAt: (data.degradedAt as string) ?? "",
+    }
+  })
 }

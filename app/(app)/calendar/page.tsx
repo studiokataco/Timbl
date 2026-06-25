@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic"
 
 import { addDays, format, startOfMonth, subDays } from "date-fns"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { realtimeEnabledForOrg } from "@/lib/realtime/realtime-enabled"
 import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
 import { CalendarView } from "@/components/calendar/calendar-view"
 import { fetchAwarenessWithPlannedStatus } from "@/lib/queries/awareness.server"
@@ -40,6 +41,7 @@ export default async function CalendarPage() {
     fetchSuggestions(),
     fetchCampaignWithPostCount(orgId),
   ])
+  const realtimeEnabled = await realtimeEnabledForOrg(orgId)
 
   return (
     <CalendarView
@@ -52,6 +54,7 @@ export default async function CalendarPage() {
       suggestions={suggestions}
       campaigns={campaigns}
       range={{ start, end }}
+      realtimeEnabled={realtimeEnabled}
     />
   )
 }

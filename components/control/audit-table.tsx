@@ -25,6 +25,9 @@ export const ACTION_LABEL: Record<PlatformAuditAction, string> = {
   "billing.update": "Billing updated",
   "signup.approve": "Signup approved",
   "signup.deny": "Signup denied",
+  "user.claims_remint": "Claims re-minted",
+  "user.membership_assign": "Membership assigned",
+  "config.realtime_default": "Realtime default changed",
 }
 
 export const ACTION_TONE: Record<PlatformAuditAction, string> = {
@@ -49,6 +52,9 @@ export const ACTION_TONE: Record<PlatformAuditAction, string> = {
   "billing.update": "bg-violet-500/15 text-violet-700 dark:text-violet-400",
   "signup.approve": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   "signup.deny": "bg-red-500/15 text-red-700 dark:text-red-400",
+  "user.claims_remint": "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  "user.membership_assign": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  "config.realtime_default": "bg-blue-500/15 text-blue-700 dark:text-blue-400",
 }
 
 export function ActionPill({ action }: { action: PlatformAuditAction }) {

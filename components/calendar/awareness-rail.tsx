@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { Bell, ChevronDown, Sparkles, TrendingDown } from "lucide-react"
+import { Bell, Check, ChevronDown, Sparkles, TrendingDown } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay } from "@/lib/schemas"
 import { CADENCE_LABELS, IMPORTANCE_LABELS, labelOr } from "@/lib/labels/enums"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
+import { AnimatePresence, motion } from "framer-motion"
 import { StackedDeck } from "./stacked-deck"
 
 type Props = {
@@ -74,7 +75,13 @@ export function CalendarAwarenessRail({
 
   const FAN_MAX = 3
 
-  const awarenessCards: React.ReactNode[] = awarenessDays
+  const sortedAwarenessDays = [...awarenessDays].sort((a, b) => {
+    const aPlanned = planned.has(a.id) ? 1 : 0
+    const bPlanned = planned.has(b.id) ? 1 : 0
+    return aPlanned - bPlanned
+  })
+
+  const awarenessCards: React.ReactNode[] = sortedAwarenessDays
     .slice(0, FAN_MAX)
     .map((d) => (
       <div key={d.id} className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2">
@@ -89,12 +96,12 @@ export function CalendarAwarenessRail({
             {IMPORTANCE_LABELS[d.importance]}
           </Badge>
         </div>
-        <div className="font-medium leading-snug">{d.name}</div>
-        {planned.has(d.id) && (
-          <span className="text-[var(--color-success)] text-[11px]">
-            ✓ planned
-          </span>
-        )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-medium leading-snug">{d.name}</div>
+          {planned.has(d.id) && (
+            <Check className="size-3 shrink-0 text-[var(--color-success)]" />
+          )}
+        </div>
       </div>
     ))
 
@@ -167,45 +174,50 @@ export function CalendarAwarenessRail({
               None in the visible window.
             </p>
           ) : (
-            <ul className="flex flex-col gap-1.5">
-              {awarenessDays.map((d) => {
-                const isPlanned = planned.has(d.id)
-                return (
-                  <li
-                    key={d.id}
-                    className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        {format(parseISO(d.date), "EEE d MMM")}
-                      </span>
-                      <Badge
-                        variant={IMPORTANCE_VARIANT[d.importance]}
-                        className="font-normal text-[10px] px-1.5 py-0"
-                      >
-                        {IMPORTANCE_LABELS[d.importance]}
-                      </Badge>
-                    </div>
-                    <div className="font-medium leading-snug">{d.name}</div>
-                    {isPlanned ? (
-                      <span className="text-[var(--color-success)] text-[11px]">
-                        ✓ planned
-                      </span>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs self-start"
-                        onClick={() => promote(d)}
-                        disabled={pending}
-                      >
-                        Promote to post
-                      </Button>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <motion.ul layout className="flex flex-col gap-1.5">
+              <AnimatePresence initial={false}>
+                {sortedAwarenessDays.map((d) => {
+                  const isPlanned = planned.has(d.id)
+                  return (
+                    <motion.li
+                      key={d.id}
+                      layout
+                      transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                      className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {format(parseISO(d.date), "EEE d MMM")}
+                        </span>
+                        <Badge
+                          variant={IMPORTANCE_VARIANT[d.importance]}
+                          className="font-normal text-[10px] px-1.5 py-0"
+                        >
+                          {IMPORTANCE_LABELS[d.importance]}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-medium leading-snug">{d.name}</div>
+                        {isPlanned && (
+                          <Check className="size-3 shrink-0 text-[var(--color-success)]" />
+                        )}
+                      </div>
+                      {!isPlanned && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs self-start"
+                          onClick={() => promote(d)}
+                          disabled={pending}
+                        >
+                          Promote to post
+                        </Button>
+                      )}
+                    </motion.li>
+                  )
+                })}
+              </AnimatePresence>
+            </motion.ul>
           )
         ) : awarenessDays.length > 0 ? (
           <StackedDeck

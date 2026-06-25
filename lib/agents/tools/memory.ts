@@ -9,6 +9,7 @@ import { snapToData } from "@/lib/firebase/serialize"
 import type { AgentMemory } from "@/lib/schemas"
 
 import { getRuntimeCtx } from "../runtime/context"
+import { fenceUntrusted } from "../runtime/guardrails"
 
 /*
  * Agent-side memory tools. Bypass lib/actions/agent-memory.ts on purpose -
@@ -84,7 +85,7 @@ export const recallTool = new FunctionTool({
       .map((h) => {
         const doc = byId.get(h.id)
         if (!doc) return undefined
-        return { id: doc.id, topic: doc.topic, body: doc.body, createdAt: doc.createdAt, score: h.score }
+        return { id: doc.id, topic: doc.topic, body: fenceUntrusted(doc.body), createdAt: doc.createdAt, score: h.score }
       })
       .filter((m): m is { id: string; topic: string; body: string; createdAt: string; score: number } => m !== undefined)
     return { memories }

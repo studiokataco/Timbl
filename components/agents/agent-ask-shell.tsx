@@ -83,6 +83,12 @@ export type AgentAskShellProps = {
   onSubmit: (override?: string) => void
   isEmpty: boolean
   showShortcutHints?: boolean
+  /** Hide the suggestion-chip hero (use for single-purpose agents). */
+  showEmptyState?: boolean
+  /** Hide the agent-mode selector (use when the agent is fixed). */
+  showAgentPicker?: boolean
+  /** Composer placeholder. Defaults to the generic Ask-AI prompt. */
+  placeholder?: string
   children: ReactNode
   className?: string
 }
@@ -98,6 +104,9 @@ export function AgentAskShell({
   onSubmit,
   isEmpty,
   showShortcutHints = true,
+  showEmptyState = true,
+  showAgentPicker = true,
+  placeholder = "Ask anything…",
   children,
   className,
 }: AgentAskShellProps) {
@@ -126,7 +135,7 @@ export function AgentAskShell({
     <div className={cn("flex flex-1 min-h-0 flex-col", className)}>
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {children}
-        {isEmpty && (
+        {isEmpty && showEmptyState && (
           <div
             aria-hidden={!isEmpty}
             className="absolute inset-0 flex flex-col items-center justify-center bg-background px-6 py-8"
@@ -189,7 +198,7 @@ export function AgentAskShell({
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => onInputChange(e.target.value)}
-                placeholder="Ask anything…"
+                placeholder={placeholder}
                 rows={1}
                 disabled={streaming}
                 onKeyDown={(e) => {
@@ -228,30 +237,32 @@ export function AgentAskShell({
           </div>
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-muted/40 px-5 py-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-caption text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 uppercase tracking-wide">
-                  Agent Mode
-                </span>
-                <div className="relative">
-                  <select
-                    aria-label="Agent mode"
-                    value={resolvedActiveAgent}
-                    disabled={streaming}
-                    onChange={(e) => onAgentSwitch(e.target.value)}
-                    className={FOOTER_SELECT}
-                  >
-                    {pickerAgentNames.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    aria-hidden
-                    className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
-                  />
+              {showAgentPicker && (
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 uppercase tracking-wide">
+                    Agent Mode
+                  </span>
+                  <div className="relative">
+                    <select
+                      aria-label="Agent mode"
+                      value={resolvedActiveAgent}
+                      disabled={streaming}
+                      onChange={(e) => onAgentSwitch(e.target.value)}
+                      className={FOOTER_SELECT}
+                    >
+                      {pickerAgentNames.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      aria-hidden
+                      className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
             {showShortcutHints && (
               <dl className="hidden sm:grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] leading-tight text-muted-foreground/60">

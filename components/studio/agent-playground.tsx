@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Info,
   Loader2,
   Play,
   Plus,
@@ -18,10 +19,6 @@ import cronstrue from "cronstrue"
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import { updateAgentConfig } from "@/lib/actions/agent-configs"
-import {
-  MODEL_SUGGESTIONS,
-  isLocalAiAvailable,
-} from "@/lib/agents/provider-catalog"
 import { listAgentRuns } from "@/lib/actions/agent-runs"
 import { estimateUsdCost } from "@/lib/agents/pricing"
 import { Button } from "@/components/ui/button"
@@ -36,7 +33,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { AGENT_PROVIDER_LABELS, labelOr } from "@/lib/labels/enums"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { AgentChat } from "@/components/agents/agent-chat"
 import {
@@ -286,10 +288,6 @@ function TuneTab({
   const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
 
-  const [provider, setProvider] = useState<AgentConfig["provider"]>(
-    agent.provider,
-  )
-  const [model, setModel] = useState(agent.model)
   const [temperature, setTemperature] = useState(agent.temperature)
   const [systemPrompt, setSystemPrompt] = useState(agent.systemPrompt ?? "")
   const [schedule, setSchedule] = useState(agent.schedule ?? "")
@@ -310,8 +308,6 @@ function TuneTab({
 
   const dirty = useMemo(
     () => ({
-      provider: provider !== agent.provider,
-      model: model !== agent.model,
       temperature: temperature !== agent.temperature,
       systemPrompt: systemPrompt !== (agent.systemPrompt ?? ""),
       schedule: schedule !== (agent.schedule ?? ""),
@@ -325,8 +321,6 @@ function TuneTab({
       enabled: enabled !== agent.enabled,
     }),
     [
-      provider,
-      model,
       temperature,
       systemPrompt,
       schedule,
@@ -365,8 +359,6 @@ function TuneTab({
   }, [schedule])
 
   const reset = () => {
-    setProvider(agent.provider)
-    setModel(agent.model)
     setTemperature(agent.temperature)
     setSystemPrompt(agent.systemPrompt ?? "")
     setSchedule(agent.schedule ?? "")
@@ -385,8 +377,6 @@ function TuneTab({
       const res = await updateAgentConfig({
         name: agent.name,
         patch: {
-          provider,
-          model,
           temperature,
           systemPrompt,
           schedule: schedule || undefined,
@@ -424,47 +414,7 @@ function TuneTab({
         save()
       }}
     >
-      <Field label="Provider" dirty={dirty.provider}>
-        <Select
-          value={provider}
-          onValueChange={(v) => setProvider(v as AgentConfig["provider"])}
-        >
-          <SelectTrigger>
-            <SelectValue>
-              {(v) => labelOr(AGENT_PROVIDER_LABELS, v)}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="gemini">{AGENT_PROVIDER_LABELS.gemini}</SelectItem>
-            <SelectItem value="anthropic">
-              {AGENT_PROVIDER_LABELS.anthropic}
-            </SelectItem>
-            <SelectItem value="openrouter">
-              {AGENT_PROVIDER_LABELS.openrouter}
-            </SelectItem>
-            {isLocalAiAvailable() && (
-              <SelectItem value="ollama">{AGENT_PROVIDER_LABELS.ollama}</SelectItem>
-            )}
-            <SelectItem value="mock">{AGENT_PROVIDER_LABELS.mock}</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field label="Model" dirty={dirty.model}>
-        <Input
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          list="model-suggestions"
-          placeholder={MODEL_SUGGESTIONS[provider]?.[0] ?? "gemini-2.5-flash"}
-        />
-        <datalist id="model-suggestions">
-          {(MODEL_SUGGESTIONS[provider] ?? []).map((id) => (
-            <option key={id} value={id} />
-          ))}
-        </datalist>
-      </Field>
-
-      <Field label="Temperature" dirty={dirty.temperature}>
+      <Field label="Temperature" dirty={dirty.temperature} hint={TEMPERATURE_HINT}>
         <Input
           type="number"
           step="0.1"
@@ -614,13 +564,18 @@ function TuneTab({
   )
 }
 
+const TEMPERATURE_HINT =
+  "Controls randomness. Lower (near 0) keeps output focused and repeatable; higher (toward 1) makes it more varied and creative."
+
 function Field({
   label,
   dirty,
+  hint,
   children,
 }: {
   label: string
   dirty?: boolean
+  hint?: string
   children: React.ReactNode
 }) {
   const id = useMemo(() => `f-${label.replace(/\s+/g, "-").toLowerCase()}`, [
@@ -632,6 +587,20 @@ function Field({
         <Label htmlFor={id} className="text-[12px]">
           {label}
         </Label>
+        {hint && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                type="button"
+                className="text-muted-foreground hover:text-foreground"
+                aria-label={`${label} help`}
+              >
+                <Info className="size-3.5" aria-hidden />
+              </TooltipTrigger>
+              <TooltipContent>{hint}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         {dirty && <DirtyDot />}
       </div>
       <div id={id}>{children}</div>
@@ -997,10 +966,12 @@ function RunRow({
   )
 }
 
-/* Cost shown per run: the metrics.usdCost captured at run time when
- * present, else an estimate from the static price table (§6.6). Estimate
- * is 0 for local Ollama models and any model with no price entry. */
+/* Cost shown per run, most-authoritative first: actualUsdCost reconciled
+ * from the OpenRouter generation id, else the usdCost estimate captured at
+ * run time, else an on-the-fly estimate from the static price table.
+ * Estimate is 0 for local Ollama models and any model with no price entry. */
 function runCost(run: AgentRunDoc): number {
+  if (run.metrics.actualUsdCost != null) return run.metrics.actualUsdCost
   if (run.metrics.usdCost > 0) return run.metrics.usdCost
   return estimateUsdCost(
     run.model,

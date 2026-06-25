@@ -13,6 +13,7 @@ import {
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { MobileNav } from "@/components/shared/mobile-nav"
 import { NotificationsMenu } from "@/components/shared/notifications-menu"
+import { RealtimeDegradedBadge } from "@/components/shared/realtime-degraded-badge"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 
 export function TopBar({
@@ -62,6 +63,8 @@ export function TopBar({
         </button>
 
         <NotificationsMenu />
+
+        <RealtimeDegradedBadge />
 
         <ThemeToggle />
 

@@ -1,5 +1,6 @@
 "use server"
 
+import { FieldValue } from "firebase-admin/firestore"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
 import { orgPath } from "@/lib/firebase/paths"
@@ -139,7 +140,10 @@ export async function cancelSubscription(): Promise<BillingActionResult> {
 /* Move to a different plan. Upgrade applies immediately (prorated by Razorpay);
  * downgrade applies at the next cycle so the customer keeps what they paid for.
  * Plan still flips on the webhook, not here. */
-export async function changePlan(planId: string): Promise<BillingActionResult> {
+export async function changePlan(
+  planId: string,
+  meta?: { reason?: string; note?: string },
+): Promise<BillingActionResult> {
   const off = billingSelfServeOff()
   if (off) return off
 
@@ -173,6 +177,21 @@ export async function changePlan(planId: string): Promise<BillingActionResult> {
       razorpaySubscriptionStatus: sub.status,
       billingEmail: user.email,
     })
+    /* Append-only log of why a customer downgraded - feeds retention
+     * analysis. Only recorded on downgrades, where the reason is collected. */
+    if (!isUpgrade && meta?.reason) {
+      await getAdminDb()
+        .collection(`${orgPath(orgId)}/billingEvents`)
+        .add({
+          type: "downgrade",
+          fromPlan: currentPlanId ?? null,
+          toPlan: planId,
+          reason: meta.reason,
+          note: meta.note ?? null,
+          userId: user.id,
+          createdAt: FieldValue.serverTimestamp(),
+        })
+    }
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Razorpay error" }

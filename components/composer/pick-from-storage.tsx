@@ -15,12 +15,10 @@ import type { DesignLink, StorageProvider } from "@/lib/schemas"
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  interface Window { Dropbox?: any; OneDrive?: any; gapi?: any; google?: any }
+  interface Window { Dropbox?: any; gapi?: any; google?: any }
 }
 
 type DropboxFile = { link: string; name: string; thumbnailLink?: string }
-type OneDriveItem = { webUrl?: string; link?: string; name: string }
-type OneDriveResponse = { value?: OneDriveItem[] }
 type DriveDoc = { url: string; name: string; thumbnails?: Array<{ url: string }> }
 type PickerData = { action: unknown; docs?: DriveDoc[] }
 
@@ -79,8 +77,6 @@ export function PickFromStorage({
     await injectScript(
       "https://www.dropbox.com/static/api/2/dropins.js",
       (el) => {
-        // The Chooser SDK reads its app key from the script tag's own
-        // id="dropboxjs" + data-app-key, not from a choose() argument.
         el.id = "dropboxjs"
         el.setAttribute("data-app-key", res.clientId)
       },
@@ -99,29 +95,6 @@ export function PickFromStorage({
           })),
         ),
       cancel: () => {},
-    })
-  }
-
-  async function pickOneDrive() {
-    const res = await getStoragePickerConfig("onedrive")
-    if (!res.ok) return toast.error(`OneDrive is not ready: ${res.error}`)
-    await injectScript("https://js.live.net/v7.2/OneDrive.js")
-    window.OneDrive.open({
-      clientId: res.clientId,
-      action: "share",
-      multiSelect: true,
-      advanced: { redirectUri: window.location.origin },
-      success: (response: OneDriveResponse) =>
-        onPick(
-          (response.value ?? []).map((item): DesignLink => ({
-            url: item.webUrl || item.link || "",
-            provider: "onedrive",
-            label: item.name,
-            source: "picker",
-          })),
-        ),
-      cancel: () => {},
-      error: () => toast.error("Could not open the OneDrive picker"),
     })
   }
 
@@ -162,7 +135,6 @@ export function PickFromStorage({
   async function handlePick(provider: StorageProvider, accountId: string) {
     try {
       if (provider === "dropbox") await pickDropbox()
-      else if (provider === "onedrive") await pickOneDrive()
       else if (provider === "gdrive") await pickGoogle(accountId)
     } catch {
       const label = STORAGE_PROVIDERS.find((p) => p.key === provider)?.label

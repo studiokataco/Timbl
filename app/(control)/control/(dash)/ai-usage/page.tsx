@@ -2,16 +2,20 @@ import { Coins, Cpu, Database, Gauge } from "lucide-react"
 
 import { CostDonut, SpendTrendChart } from "@/components/control/charts"
 import { CostBars, PageHeading, StatCard } from "@/components/control/widgets"
+import { AutoRefresh } from "@/components/control/auto-refresh"
+import { OpenRouterBilling } from "@/components/control/openrouter-billing"
 import { compact, pct, usd } from "@/lib/platform/format"
 import { getGlobalRollup, globalDailyTrend, listOrgRows } from "@/lib/platform/queries"
+import { getOpenRouterAccount } from "@/lib/platform/openrouter"
 
 export const dynamic = "force-dynamic"
 
 export default async function AiUsagePage() {
-  const [rollup, orgs, trend] = await Promise.all([
+  const [rollup, orgs, trend, openRouter] = await Promise.all([
     getGlobalRollup(),
     listOrgRows(),
     globalDailyTrend(14),
+    getOpenRouterAccount(),
   ])
 
   const cacheRatio =
@@ -24,10 +28,13 @@ export default async function AiUsagePage() {
 
   return (
     <div>
-      <PageHeading
-        title="AI usage & cost"
-        description={`Agentic spend across all tenants for ${rollup.period}.`}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeading
+          title="AI usage & cost"
+          description={`Agentic spend across all tenants for ${rollup.period}.`}
+        />
+        <AutoRefresh intervalMs={30_000} />
+      </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon={Coins} label="Total spend" value={usd(rollup.usdCost)} sub={`${compact(rollup.agentRuns)} runs`} />
@@ -35,6 +42,8 @@ export default async function AiUsagePage() {
         <StatCard icon={Gauge} label="Cache hit ratio" value={pct(cacheRatio)} sub={`${compact(rollup.cachedTokens)} cached`} />
         <StatCard icon={Database} label="Embedding calls" value={compact(rollup.embeddingCalls)} sub="indexing + recall" />
       </div>
+
+      <OpenRouterBilling account={openRouter} />
 
       <section className="mt-6 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
         <h2 className="mb-2 font-heading text-sm font-semibold tracking-tight">

@@ -3,9 +3,6 @@
 import { storageProvider, type StorageProvider } from "@/lib/schemas/_shared"
 import { loadStoragePlatformApp } from "@/lib/storage/oauth"
 
-/* The platform app's client id (Dropbox app key / OneDrive client id) and the
- * Google Drive picker key are public values the vendor SDKs embed client-side.
- * The client secret never leaves the server. */
 export async function getStoragePickerConfig(
   provider: StorageProvider,
 ): Promise<

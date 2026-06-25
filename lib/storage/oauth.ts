@@ -13,13 +13,6 @@ export type StoragePlatformApp = {
   apiKey?: string
 }
 
-/*
- * One platform-owned OAuth app per provider. Credentials come from Secret
- * Manager (apphosting.yaml), never per-tenant - a tenant only OAuths their own
- * account, with no developer-app registration on their side. `apiKey` is the
- * Google Drive picker browser key, from the same Cloud project as the OAuth
- * client (so one platform key serves every tenant).
- */
 const ENV: Record<
   StorageProvider,
   { id: string; secret: string; apiKey?: string }
@@ -30,7 +23,6 @@ const ENV: Record<
     apiKey: "GOOGLE_DRIVE_PICKER_KEY",
   },
   dropbox: { id: "DROPBOX_APP_KEY", secret: "DROPBOX_APP_SECRET" },
-  onedrive: { id: "ONEDRIVE_CLIENT_ID", secret: "ONEDRIVE_CLIENT_SECRET" },
 }
 
 export class StorageOauthAppNotConfiguredError extends Error {

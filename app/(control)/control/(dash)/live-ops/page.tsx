@@ -11,7 +11,7 @@ import { AutoRefresh } from "@/components/control/auto-refresh"
 import { ThroughputChart } from "@/components/control/charts"
 import { StatCard, StatusPill } from "@/components/control/widgets"
 import { compact, duration, pct, relativeTime, usd } from "@/lib/platform/format"
-import { getOpsData } from "@/lib/platform/queries"
+import { getOpsData, listRealtimeHealth } from "@/lib/platform/queries"
 import type { RunRow } from "@/lib/platform/queries"
 import { cn } from "@/lib/utils"
 
@@ -36,7 +36,10 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 export default async function LiveOpsPage() {
-  const ops = await getOpsData(400)
+  const [ops, realtimeHealth] = await Promise.all([
+    getOpsData(400),
+    listRealtimeHealth(15),
+  ])
   const inFlightCount = ops.inFlight.length
   const runs24 = ops.hourly.reduce((s, h) => s + h.runs, 0)
   const failed24 = ops.hourly.reduce((s, h) => s + h.failed, 0)
@@ -77,6 +80,34 @@ export default async function LiveOpsPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="mt-6">
+        <h2 className="mb-3 font-heading text-sm font-semibold tracking-tight">
+          Realtime health (recent degrades)
+        </h2>
+        <div className="rounded-xl bg-card ring-1 ring-foreground/10">
+          {realtimeHealth.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+              No degrade events recorded.
+            </p>
+          ) : (
+            <ol className="divide-y divide-foreground/5">
+              {realtimeHealth.map((row) => (
+                <li
+                  key={`${row.orgId}-${row.degradedAt}`}
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+                >
+                  <span className="font-medium">{row.orgId}</span>
+                  <span className="text-muted-foreground">{row.reason}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {relativeTime(row.degradedAt)}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       </section>
 

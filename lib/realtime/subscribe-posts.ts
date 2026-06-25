@@ -7,23 +7,32 @@ import {
   query,
   where,
 } from "firebase/firestore"
-import { signInAnonymously } from "firebase/auth"
+import type { User } from "firebase/auth"
 import { useEffect } from "react"
+import { usePostHog } from "posthog-js/react"
+import { reportRealtimeDegrade } from "@/lib/actions/realtime-health"
 import { getClientAuth, getClientDb } from "@/lib/firebase/client"
+import { useRealtimeDegraded } from "@/lib/realtime/degraded-state"
 import { orgPostsPath } from "@/lib/firebase/paths"
 import type { QueryClient } from "@tanstack/react-query"
 
 /*
- * Subscribes to real-time changes on posts in the visible window. Calls
- * QueryClient.invalidateQueries on every snapshot so the calendar's
- * useQuery refetches and re-renders.
+ * Live-updates listener for the posts in the visible window. STRICTLY
+ * ADDITIVE: every surface already renders from server-fetched data (Admin SDK,
+ * rules-immune), so this only triggers refetches. It must never throw, block a
+ * render, or leave a surface stale with no recovery path.
  *
- * Pre-Phase 7 (no real Firebase Auth user) the security rules reject
- * unauthenticated reads. We attempt anonymous sign-in to get past the
- * rule - works only if Anonymous provider is enabled in the console.
- * If sign-in or the snapshot fails we log and bail; mutations still
- * reconcile through router.refresh() + queryClient invalidation.
+ * Engagement is gated server-side via `enabled` (the resolved `realtime_v1`
+ * flag - see realtime-enabled.ts). Even when enabled it only runs for a real,
+ * non-anonymous signed-in user whose org claim satisfies firestore.rules. When
+ * realtime can't run - no user yet, claim denied, snapshot error - it degrades
+ * to a slow polling refetch so cross-tab data still converges, and reports the
+ * degradation to telemetry. Never `signInAnonymously` (anon has no org claim,
+ * so the read is guaranteed denied).
  */
+
+const POLL_FALLBACK_MS = 60_000
+
 export function usePostsRealtime(opts: {
   orgId: string
   start: string
@@ -32,26 +41,51 @@ export function usePostsRealtime(opts: {
   enabled?: boolean
 }) {
   const { orgId, start, end, queryClient, enabled = true } = opts
+  const posthog = usePostHog()
+  const { setDegraded } = useRealtimeDegraded()
+
   useEffect(() => {
     if (!enabled) return
-    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) return
-    if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "demo-api-key") return
+    /* Testing accounts / dev shim: no real client auth user, so realtime would
+     * only hit denied reads. Server fetch + invalidation already keep dev fresh. */
+    if (process.env.NEXT_PUBLIC_USE_EMULATORS === "1") return
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+    if (!apiKey || apiKey === "demo-api-key") return
 
-    let unsub: (() => void) | undefined
+    let snapshotUnsub: (() => void) | undefined
+    let pollTimer: ReturnType<typeof setInterval> | undefined
     let cancelled = false
-    const timer = setTimeout(async () => {
+    let degradeReported = false
+
+    const refetch = () =>
+      queryClient.invalidateQueries({ queryKey: ["posts", orgId] })
+
+    const startPolling = (reason: string) => {
+      if (pollTimer || cancelled) return
+      pollTimer = setInterval(refetch, POLL_FALLBACK_MS)
+      setDegraded(true)
+      if (!degradeReported) {
+        degradeReported = true
+        posthog?.capture?.("realtime_degraded", { orgId, reason })
+        void reportRealtimeDegrade({ orgId, reason }).catch(() => {})
+      }
+    }
+
+    const stopPolling = () => {
+      if (pollTimer) clearInterval(pollTimer)
+      pollTimer = undefined
+      setDegraded(false)
+    }
+
+    const subscribe = (user: User | null) => {
       if (cancelled) return
+      /* No real user (or anonymous) -> org-claim rule denies the read. Hold on
+       * polling until auth resolves; onIdTokenChanged re-runs this on sign-in. */
+      if (!user || user.isAnonymous) {
+        startPolling("no_authenticated_user")
+        return
+      }
       try {
-        const auth = getClientAuth()
-        if (!auth.currentUser) {
-          try {
-            await signInAnonymously(auth)
-          } catch (err) {
-            console.warn("[realtime] anon sign-in failed; realtime disabled", err)
-            return
-          }
-        }
-        if (cancelled) return
         const db = getClientDb()
         const q = query(
           collection(db, orgPostsPath(orgId)),
@@ -59,30 +93,49 @@ export function usePostsRealtime(opts: {
           where("scheduledDate", "<=", end),
           orderBy("scheduledDate", "asc"),
         )
-        unsub = onSnapshot(
+        snapshotUnsub = onSnapshot(
           q,
-          () =>
-            /* Prefix invalidation: every ["posts", orgId, ...] query
-             * (calendar 6w, posts-table 1y, kanban ranges) refetches when
-             * any snapshot fires - so cross-view edits propagate without
-             * each surface needing its own listener for its own window. */
-            queryClient.invalidateQueries({
-              queryKey: ["posts", orgId],
-            }),
+          () => {
+            /* Live and healthy - stop any fallback polling. */
+            stopPolling()
+            refetch()
+          },
           (err) => {
+            /* permission-denied / unavailable - degrade, never throw. */
             console.warn("[realtime] posts snapshot error", err)
+            try {
+              snapshotUnsub?.()
+            } catch {}
+            snapshotUnsub = undefined
+            startPolling((err as { code?: string })?.code ?? "snapshot_error")
           },
         )
       } catch (err) {
         console.warn("[realtime] init failed", err)
+        startPolling("init_failed")
       }
-    }, 0)
+    }
+
+    const auth = getClientAuth()
+    /* Re-evaluate on every auth/token change: handles the initial null->user
+     * race and the claim landing after first-login activation. */
+    const authUnsub = auth.onIdTokenChanged((user) => {
+      try {
+        snapshotUnsub?.()
+      } catch {}
+      snapshotUnsub = undefined
+      subscribe(user)
+    })
+
     return () => {
       cancelled = true
-      clearTimeout(timer)
+      stopPolling()
       try {
-        unsub?.()
+        authUnsub()
+      } catch {}
+      try {
+        snapshotUnsub?.()
       } catch {}
     }
-  }, [orgId, start, end, queryClient, enabled])
+  }, [orgId, start, end, queryClient, enabled, posthog, setDegraded])
 }

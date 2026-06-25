@@ -144,14 +144,18 @@ export const updateDraftPostTool = new FunctionTool({
     }
     const now = new Date().toISOString()
     const flat: Record<string, unknown> = { updatedAt: now }
+    /* agentMeta keys go in a nested object, not "agentMeta.key" strings:
+     * set(merge) writes a dotted string as a literal flat field. */
+    const meta: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(input.patch)) {
       if (v === undefined) continue
       if (k === "rationale" || k === "reviewState") {
-        flat[`agentMeta.${k}`] = v
+        meta[k] = v
       } else {
         flat[k] = v
       }
     }
+    if (Object.keys(meta).length) flat.agentMeta = meta
     await ref.set(flat, { merge: true })
     try {
       const after = await ref.get()

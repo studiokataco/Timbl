@@ -81,6 +81,21 @@ export function ApprovalActions({
   const [note, setNote] = useState("")
   const queryClient = useQueryClient()
 
+  /* Flip the cached post out of "pending" review immediately so the card's
+   * Approve/Reject controls disappear without waiting on the refetch. The
+   * subsequent invalidate reconciles against the server. */
+  function patchReviewState(state: "approved" | "rejected") {
+    queryClient.setQueriesData<{ id: string; agentMeta?: Record<string, unknown> }[]>(
+      { queryKey: ["posts"] },
+      (curr) =>
+        curr?.map((p) =>
+          p.id === postId
+            ? { ...p, agentMeta: { ...p.agentMeta, reviewState: state } }
+            : p,
+        ),
+    )
+  }
+
   function approve() {
     startTransition(async () => {
       const res = await approveAgentDraft({ postId })
@@ -88,6 +103,7 @@ export function ApprovalActions({
         toast.error("Couldn't approve", { description: res.error })
         return
       }
+      patchReviewState("approved")
       queryClient.invalidateQueries({ queryKey: ["posts"] })
       queryClient.invalidateQueries({ queryKey: ["studio", "runs"] })
       /* Toast with Undo. Sonner's `action` is the standard slot for
@@ -139,6 +155,7 @@ export function ApprovalActions({
         toast.error("Couldn't reject", { description: res.error })
         return
       }
+      patchReviewState("rejected")
       queryClient.invalidateQueries({ queryKey: ["posts"] })
       toast.success(regenerate ? "Sent back for regeneration" : "Rejected")
       setRejectOpen(false)
@@ -163,7 +180,7 @@ export function ApprovalActions({
       <Button
         size="sm"
         variant="outline"
-        className="h-7 px-2 text-xs"
+        className="h-7 w-full justify-center px-2 text-xs"
         onClick={approve}
         disabled={pending}
         aria-label={APPROVE_LABEL[kind]}
@@ -183,7 +200,7 @@ export function ApprovalActions({
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs text-muted-foreground"
+              className="h-7 w-full justify-center px-2 text-xs text-muted-foreground"
               disabled={pending}
               aria-label="Reject draft"
             />

@@ -6,25 +6,29 @@ import { buildLlmAgentFromConfig } from "../../runtime/build-agent"
 import { proposeAwarenessDayTool } from "../../tools/awareness-research"
 
 /*
- * Awareness researcher - Gemini-grounded discovery of real, dated
- * observances (international days, awareness weeks, cultural/health
- * dates) within a requested window. Uses GOOGLE_SEARCH for live web
- * lookup and URL_CONTEXT to read the most authoritative source pages,
- * then records each finding as a *proposal* (not a live awareness day)
- * via `proposeAwarenessDay`. A human accepts or rejects proposals in
- * /awareness before they enter the official collection.
+ * Awareness researcher - live discovery of real, dated observances
+ * (international days, awareness weeks, cultural/health dates) within a
+ * requested window, recorded as *proposals* (not live awareness days) via
+ * `proposeAwarenessDay`. A human accepts or rejects proposals in /awareness
+ * before they enter the official collection.
  *
- * Gemini-only - GOOGLE_SEARCH grounding has no Anthropic equivalent.
- * If pointed at a non-Gemini provider the persistence tool short-
- * circuits with a clear error.
+ * Grounding path depends on provider: OpenRouter (default) uses the
+ * web-search server tool; Gemini uses GOOGLE_SEARCH + URL_CONTEXT. The
+ * proposeAwarenessDay tool short-circuits with a clear error if neither
+ * grounding path is reachable (anthropic/mock).
  */
 export function buildAwarenessResearcherAgent(
   config: AgentConfig,
 ): LlmAgent {
+  const geminiGrounding = config.provider === "gemini"
   return buildLlmAgentFromConfig({
     name: "awareness-researcher",
     config,
-    tools: [GOOGLE_SEARCH, URL_CONTEXT, proposeAwarenessDayTool],
+    webSearch: config.provider === "openrouter",
+    tools: [
+      ...(geminiGrounding ? [GOOGLE_SEARCH, URL_CONTEXT] : []),
+      proposeAwarenessDayTool,
+    ],
     instructionSuffix: AWARENESS_RESEARCHER_INSTRUCTION,
   })
 }
@@ -32,8 +36,8 @@ export function buildAwarenessResearcherAgent(
 const AWARENESS_RESEARCHER_INSTRUCTION = [
   "Workflow context:",
   "  - The user will give you a date range (from / to) and an optional region.",
-  "  - Use GOOGLE_SEARCH to discover REAL, verifiable awareness days, international observances, and significant cultural / health / social dates within that window. Prefer official or reputable sources (UN, WHO, government health bodies, established NGOs, mainstream press).",
-  "  - Use URL_CONTEXT to confirm at least one source per proposed day. Do not invent URLs.",
+  "  - Use web search to discover REAL, verifiable awareness days, international observances, and significant cultural / health / social dates within that window. Prefer official or reputable sources (UN, WHO, government health bodies, established NGOs, mainstream press).",
+  "  - Confirm at least one source per proposed day from the search results. Do not invent URLs.",
   "  - For each verified day, call proposeAwarenessDay EXACTLY once with:",
   "      date - the ISO date YYYY-MM-DD the day falls on this year",
   "      name - short canonical name (e.g. \"World Health Day\")",

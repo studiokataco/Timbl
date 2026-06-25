@@ -25,6 +25,7 @@ yarn-error.log*
 .vscode/
 .idea/
 *.swp
+docs/*
 
 # Next.js
 /.next/

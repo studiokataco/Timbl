@@ -35,6 +35,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
+          "--toast-close-button-start": "unset",
+          "--toast-close-button-end": "0",
+          "--toast-close-button-transform": "translate(35%, -35%)",
         } as React.CSSProperties
       }
       toastOptions={{
@@ -42,6 +45,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
           toast: "cn-toast",
           closeButton:
             "!bg-popover !text-muted-foreground !border-border hover:!text-foreground hover:!bg-secondary",
+          cancelButton:
+            "cn-toast-cancel !h-8 !rounded-md !px-3 !text-sm !font-semibold !bg-secondary !text-secondary-foreground !border !border-border hover:!bg-secondary/80",
+          actionButton:
+            "cn-toast-action !h-8 !rounded-md !px-3 !text-sm !font-semibold !bg-primary !text-primary-foreground hover:!bg-primary/90 !border-0",
         },
       }}
       {...props}

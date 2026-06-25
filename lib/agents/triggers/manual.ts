@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { Content } from "@google/genai"
+import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
@@ -150,6 +151,10 @@ export interface MarkRunStatusInput {
   error?: { code: string; message: string }
   metricsPatch?: Record<string, number>
   outputsPatch?: { postIds?: string[]; ideationItemIds?: string[] }
+  /** OpenRouter generation handles collected across the run's LLM calls. */
+  generationIds?: string[]
+  /** Web-search citation URLs collected across the run. */
+  sourceUrls?: string[]
 }
 
 export async function markAgentRunStatus(input: MarkRunStatusInput) {
@@ -165,16 +170,27 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
     patch.finishedAt = now
   }
   if (input.error) patch.error = input.error
+  /* Nested objects, not "metrics.key" / "outputs.key" strings: set(merge)
+   * writes a dotted string as a literal flat field, leaving the real nested
+   * map untouched. Merge deep-merges these, so only the listed keys change. */
   if (input.metricsPatch) {
-    for (const [k, v] of Object.entries(input.metricsPatch)) {
-      patch[`metrics.${k}`] = v
+    patch.metrics = { ...input.metricsPatch }
+  }
+  if (input.outputsPatch?.postIds || input.outputsPatch?.ideationItemIds) {
+    patch.outputs = {
+      ...(input.outputsPatch.postIds ? { postIds: input.outputsPatch.postIds } : {}),
+      ...(input.outputsPatch.ideationItemIds
+        ? { ideationItemIds: input.outputsPatch.ideationItemIds }
+        : {}),
     }
   }
-  if (input.outputsPatch?.postIds) {
-    patch["outputs.postIds"] = input.outputsPatch.postIds
+  /* arrayUnion so a resumed run (same id, second route invocation) appends
+   * its generation ids / citations rather than clobbering the first leg. */
+  if (input.generationIds?.length) {
+    patch.generationIds = FieldValue.arrayUnion(...input.generationIds)
   }
-  if (input.outputsPatch?.ideationItemIds) {
-    patch["outputs.ideationItemIds"] = input.outputsPatch.ideationItemIds
+  if (input.sourceUrls?.length) {
+    patch.sourceUrls = FieldValue.arrayUnion(...input.sourceUrls)
   }
   await ref.set(patch, { merge: true })
 
@@ -208,8 +224,8 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
         : undefined
       await ref.set(
         durationMs === undefined
-          ? { "metrics.usdCost": usdCost }
-          : { "metrics.usdCost": usdCost, durationMs },
+          ? { metrics: { usdCost } }
+          : { metrics: { usdCost }, durationMs },
         { merge: true },
       )
       await emitAgentRun({

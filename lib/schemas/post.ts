@@ -58,14 +58,6 @@ export const agentMetaSchema = z.object({
 })
 export type AgentMeta = z.infer<typeof agentMetaSchema>
 
-/*
- * A design or reference link attached to a post - a Canva design, or a file
- * shared from the org's own Google Drive / Dropbox / OneDrive. Distinct from
- * `assetUrls`, which is publishable media the pipeline splits by file
- * extension; design links are references for the team and never published.
- * `provider` is derived from the URL host; `source` records whether the link
- * was pasted or chosen through a connected storage app's picker.
- */
 export const designLinkSchema = z.object({
   url: z.string().url(),
   provider: linkProvider.default("link"),

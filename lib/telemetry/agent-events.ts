@@ -62,21 +62,27 @@ export async function emitAgentRun(event: AgentRunEvent): Promise<void> {
   const providerKey = event.provider ? safeFieldKey(event.provider) : "unknown"
   const modelKey = event.model ? safeFieldKey(event.model) : "unknown"
 
-  /* Atomic increment so concurrent runs don't lose counts. setDoc(merge)
-   * + FieldValue.increment is the documented Admin SDK pattern for this. */
+  /* Atomic increment so concurrent runs don't lose counts. The per-key maps
+   * are written as nested objects (not "map.key" string keys): set(merge)
+   * treats a dotted string as a literal field name, so only nested objects
+   * deep-merge into real maps. FieldValue.increment composes inside them. */
   await ref.set(
     {
       period,
       organizationId: event.orgId,
       agentRuns: FieldValue.increment(1),
-      [`agentRunsByAgent.${event.agentName}`]: FieldValue.increment(1),
-      [`agentRunsByOutcome.${event.outcome}`]: FieldValue.increment(1),
+      agentRunsByAgent: { [event.agentName]: FieldValue.increment(1) },
+      agentRunsByOutcome: { [event.outcome]: FieldValue.increment(1) },
+      tokensByAgent: {
+        [event.agentName]: FieldValue.increment(promptTokens + completionTokens),
+      },
+      usdByAgent: { [event.agentName]: FieldValue.increment(usdCost) },
       promptTokens: FieldValue.increment(promptTokens),
       completionTokens: FieldValue.increment(completionTokens),
       cachedTokens: FieldValue.increment(cachedTokens),
       usdCost: FieldValue.increment(usdCost),
-      [`usdByProvider.${providerKey}`]: FieldValue.increment(usdCost),
-      [`usdByModel.${modelKey}`]: FieldValue.increment(usdCost),
+      usdByProvider: { [providerKey]: FieldValue.increment(usdCost) },
+      usdByModel: { [modelKey]: FieldValue.increment(usdCost) },
       updatedAt: new Date().toISOString(),
     },
     { merge: true },
@@ -162,6 +168,10 @@ export interface UsageSnapshot {
   usdCost: number
   agentRunsByAgent: Record<string, number>
   agentRunsByOutcome: Record<string, number>
+  tokensByAgent: Record<string, number>
+  usdByAgent: Record<string, number>
+  usdByModel: Record<string, number>
+  usdByProvider: Record<string, number>
 }
 
 export async function readUsageSnapshot(
@@ -180,5 +190,9 @@ export async function readUsageSnapshot(
     usdCost: (data.usdCost as number) ?? 0,
     agentRunsByAgent: (data.agentRunsByAgent as Record<string, number>) ?? {},
     agentRunsByOutcome: (data.agentRunsByOutcome as Record<string, number>) ?? {},
+    tokensByAgent: (data.tokensByAgent as Record<string, number>) ?? {},
+    usdByAgent: (data.usdByAgent as Record<string, number>) ?? {},
+    usdByModel: (data.usdByModel as Record<string, number>) ?? {},
+    usdByProvider: (data.usdByProvider as Record<string, number>) ?? {},
   }
 }

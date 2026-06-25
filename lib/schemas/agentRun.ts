@@ -23,7 +23,11 @@ export const agentRunMetricsSchema = z.object({
   /** Slice of promptTokens served from the prompt cache (read hits). Lets the
    * UI show cache effectiveness and feeds the cache discount in usdCost. */
   cachedTokens: z.number().int().nonnegative().default(0),
+  /** Estimated cost from the static price table, written at run end. */
   usdCost: z.number().nonnegative().default(0),
+  /** Exact cost reconciled from OpenRouter's GET /generation per generation
+   * id. Authoritative for spend reporting; absent until reconciled. */
+  actualUsdCost: z.number().nonnegative().optional(),
 })
 export type AgentRunMetrics = z.infer<typeof agentRunMetricsSchema>
 
@@ -72,5 +76,12 @@ export const agentRunSchema = audit.extend({
    * and /studio renders "No agent runs yet" despite real runs existing. */
   parentRunId: z.string().nullable().optional(),
   dedupKey: z.string().nullable().optional(),
+  /* OpenRouter generation handles for every LLM call in the run. Used to
+   * reconcile estimated cost against exact cost via GET /generation. */
+  generationIds: z.array(z.string()).optional(),
+  /* Source URLs returned by web-search citations across the run, so an
+   * ideator/researcher's grounding survives even if the model doesn't echo
+   * each URL in prose. */
+  sourceUrls: z.array(z.string()).optional(),
 })
 export type AgentRunDoc = z.infer<typeof agentRunSchema>

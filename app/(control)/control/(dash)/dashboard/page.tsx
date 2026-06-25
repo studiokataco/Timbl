@@ -2,7 +2,9 @@ import Link from "next/link"
 import { Activity, AlertTriangle, Building2, DollarSign } from "lucide-react"
 
 import { CostDonut, SpendTrendChart } from "@/components/control/charts"
+import { PlatformSettings } from "@/components/control/platform-settings"
 import { PageHeading, StatCard, StatusPill } from "@/components/control/widgets"
+import { getPlatformConfig } from "@/lib/actions/platform/config"
 import { compact, inr, pct, relativeTime, usd } from "@/lib/platform/format"
 import {
   getGlobalRollup,
@@ -15,12 +17,13 @@ import { getRevenueSummary } from "@/lib/platform/revenue"
 export const dynamic = "force-dynamic"
 
 export default async function ControlDashboardPage() {
-  const [rollup, orgs, revenue, failing, trend] = await Promise.all([
+  const [rollup, orgs, revenue, failing, trend, platformConfig] = await Promise.all([
     getGlobalRollup(),
     listOrgRows(),
     getRevenueSummary(),
     listRunsByStatus(["failed"], 8),
     globalDailyTrend(14),
+    getPlatformConfig(),
   ])
 
   const totalRuns = rollup.succeeded + rollup.failed
@@ -42,6 +45,10 @@ export default async function ControlDashboardPage() {
         <StatCard icon={DollarSign} label="Est. MRR" value={inr(revenue.estMrrInr)} sub={`${revenue.payingOrgs} paying`} />
         <StatCard icon={Building2} label="Active orgs" value={`${rollup.activeOrgs}`} sub={`${orgs.length} total`} />
         <StatCard icon={AlertTriangle} label="Failure rate" value={pct(failureRate)} sub={`${compact(rollup.failed)} failed`} />
+      </div>
+
+      <div className="mt-6">
+        <PlatformSettings initial={platformConfig} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
