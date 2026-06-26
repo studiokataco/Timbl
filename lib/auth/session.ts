@@ -2,6 +2,7 @@ import "server-only"
 import { cookies } from "next/headers"
 
 import { getAdminAuth } from "@/lib/firebase/admin"
+import { coercePlatformRole, type PlatformRole } from "@/lib/auth/platform-rbac"
 
 export const SESSION_COOKIE_NAME = "__session"
 const SESSION_DURATION_MS = 14 * 24 * 60 * 60 * 1000
@@ -20,9 +21,9 @@ export type SessionAuth = {
    * Set by functions/src/setUserClaims.ts on sign-in, or immediately by
    * grantPlatformAdmin. Null for ordinary tenant users. */
   platform: "admin" | null
-  /* The platform admin's role: "owner" (full god-mode) or "analyst"
-   * (read-only monitoring). Null for non-platform users. */
-  platformRole: "owner" | "analyst" | null
+  /* The platform admin's role (owner | admin | support). Capabilities per
+   * role live in lib/auth/platform-rbac.ts. Null for non-platform users. */
+  platformRole: PlatformRole | null
 }
 
 export async function createSessionFromIdToken(idToken: string): Promise<string> {
@@ -78,11 +79,7 @@ export async function readSessionAuth(): Promise<SessionAuth | null> {
 
     const platform = decoded.platform === "admin" ? "admin" : null
     const platformRole =
-      platform === "admin"
-        ? decoded.platformRole === "analyst"
-          ? "analyst"
-          : "owner"
-        : null
+      platform === "admin" ? coercePlatformRole(decoded.platformRole) : null
 
     return { uid: decoded.uid, email, workspace, platform, platformRole }
   } catch {

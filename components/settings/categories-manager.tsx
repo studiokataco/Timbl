@@ -228,6 +228,7 @@ export function CategoriesManager({
         </div>
 
         <DndContext
+          id="categories-manager"
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={onDragEnd}

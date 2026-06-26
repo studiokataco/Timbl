@@ -383,6 +383,7 @@ export function KanbanBoard({
 
       <div className="min-h-0 flex-1 overflow-x-hidden pb-24 md:overflow-x-auto md:scrollbar-subtle md:pb-4">
         <DndContext
+          id="kanban-board"
           sensors={sensors}
           collisionDetection={pointerWithin}
           onDragStart={onDragStart}

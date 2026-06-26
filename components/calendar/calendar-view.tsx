@@ -294,12 +294,12 @@ export function CalendarView({
 
   return (
     <>
-      <div className="flex-1 flex min-h-0 overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden -mb-[var(--ask-ai-clearance)]">
         <main
           ref={mainRef}
-          className="flex-1 min-w-0 overflow-y-auto px-6 sm:px-10 py-8"
+          className="flex-1 min-w-0 overflow-y-auto px-6 sm:px-10 pt-8 pb-[var(--ask-ai-clearance)]"
         >
-          <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+          <DndContext id="calendar-board" sensors={sensors} onDragEnd={onDragEnd}>
             <CalendarToolbar
               visibleDate={visibleDate}
               view={view}
@@ -402,7 +402,7 @@ export function CalendarView({
           ) : (
             <div
               id="calendar-sidebar-content"
-              className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6"
+              className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 pb-[var(--ask-ai-clearance)]"
             >
               <div className="pt-4 pb-2 flex justify-end -mr-2">
                 <button

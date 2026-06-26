@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { can, ROLE_META, type PlatformRole } from "@/lib/auth/platform-rbac"
 import {
   deleteOrganization,
   renameOrganization,
@@ -28,6 +29,7 @@ const METRICS = ["agentRuns", "scheduledPosts", "brands", "seats"] as const
 const RETENTION_DAYS = 60
 
 export function TenantControls({
+  role,
   orgId,
   name,
   plan,
@@ -37,6 +39,7 @@ export function TenantControls({
   trialEndsAt,
   featureFlags,
 }: {
+  role: PlatformRole
   orgId: string
   name: string
   plan: string
@@ -46,6 +49,16 @@ export function TenantControls({
   trialEndsAt: string | null
   featureFlags: Record<string, boolean>
 }) {
+  const actor = { role }
+  const canRename = can(actor, "tenants:manage")
+  const canPlan = can(actor, "plans:manage")
+  const canStatus = can(actor, "tenants:status")
+  const canQuota = can(actor, "quotas:manage")
+  const canTrial = can(actor, "trials:manage")
+  const canFlags = can(actor, "flags:manage")
+  const canImpersonate = can(actor, "impersonation:start")
+  const canDelete = can(actor, "tenants:delete")
+
   const router = useRouter()
   const [pending, start] = useTransition()
   const [nameValue, setNameValue] = useState(name)
@@ -85,11 +98,14 @@ export function TenantControls({
       <section className="rounded-xl bg-card ring-1 ring-foreground/10">
         <header className="flex items-center justify-between gap-3 border-b border-foreground/5 px-4 py-3">
           <h2 className="font-heading text-sm font-semibold tracking-tight">
-            Admin controls
+            Tenant controls
           </h2>
-          <span className="text-xs text-muted-foreground">owner only</span>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_META[role].tone}`}>
+            {ROLE_META[role].label}
+          </span>
         </header>
 
+        {canRename ? (
         <ControlRow
           title="Rename workspace"
           hint="Changes the display name only - the workspace ID is permanent."
@@ -112,7 +128,9 @@ export function TenantControls({
             </Button>
           </div>
         </ControlRow>
+        ) : null}
 
+        {canPlan ? (
         <ControlRow title="Plan">
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -135,7 +153,9 @@ export function TenantControls({
             </Button>
           </div>
         </ControlRow>
+        ) : null}
 
+        {canStatus ? (
         <ControlRow
           title="Status"
           hint={
@@ -167,7 +187,9 @@ export function TenantControls({
             </Button>
           )}
         </ControlRow>
+        ) : null}
 
+        {canQuota ? (
         <ControlRow title="Quota override">
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -213,7 +235,9 @@ export function TenantControls({
             </Button>
           </div>
         </ControlRow>
+        ) : null}
 
+        {canTrial ? (
         <ControlRow
           title="Trial"
           hint={
@@ -252,7 +276,9 @@ export function TenantControls({
             )}
           </div>
         </ControlRow>
+        ) : null}
 
+        {canFlags ? (
         <ControlRow
           title="Feature flags"
           hint="Per-org overrides. A missing flag is off."
@@ -281,9 +307,11 @@ export function TenantControls({
             })}
           </div>
         </ControlRow>
+        ) : null}
 
+        {canImpersonate ? (
         <ControlRow
-          title="Support"
+          title="Impersonate user"
           hint="Opens the tenant app as this org on the main host. Exit from the banner there."
         >
           <Button
@@ -301,10 +329,11 @@ export function TenantControls({
             Impersonate (30m)
           </Button>
         </ControlRow>
+        ) : null}
 
       </section>
 
-      {status === "suspended" ? (
+      {canDelete && status === "suspended" ? (
         <section className="rounded-xl bg-card ring-1 ring-red-500/30">
           <header className="border-b border-red-500/15 px-4 py-3">
             <h2 className="font-heading text-sm font-semibold tracking-tight text-red-600 dark:text-red-400">

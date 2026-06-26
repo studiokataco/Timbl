@@ -6,6 +6,7 @@ import { z } from "zod"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath } from "@/lib/firebase/paths"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import { FREE_PLAN_ID, TRIAL_DAYS, TRIAL_PLAN_ID } from "@/lib/plans/plans"
 
@@ -26,7 +27,7 @@ const TRIAL_MS = TRIAL_DAYS * 86_400_000
  */
 export async function setTrial(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "trials:manage")) return { ok: false, error: "forbidden" }
   const parsed = trialInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, action } = parsed.data
@@ -104,7 +105,7 @@ const grandfatherInput = z.object({
 
 export async function setGrandfathered(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "trials:manage")) return { ok: false, error: "forbidden" }
   const parsed = grandfatherInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, value } = parsed.data

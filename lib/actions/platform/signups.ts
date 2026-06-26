@@ -4,6 +4,7 @@ import { z } from "zod"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import {
   platformSignupRequestDocPath,
@@ -21,7 +22,7 @@ const idInput = z.object({ id: z.string().min(1) })
 
 export async function approveSignupRequest(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "signups:review")) return { ok: false, error: "forbidden" }
 
   const parsed = idInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
@@ -79,7 +80,7 @@ export async function approveSignupRequest(raw: unknown): Promise<PlatformAction
 
 export async function denySignupRequest(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "signups:review")) return { ok: false, error: "forbidden" }
 
   const parsed = idInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }

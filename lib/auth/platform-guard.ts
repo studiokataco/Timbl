@@ -4,8 +4,15 @@ import { notFound, redirect } from "next/navigation"
 
 import { readSessionAuth } from "@/lib/auth/session"
 import { ROOT_PLATFORM_ADMIN_EMAIL } from "@/lib/platform/schema"
+import {
+  can,
+  coercePlatformRole,
+  type PlatformCapability,
+  type PlatformRole,
+} from "@/lib/auth/platform-rbac"
 
 export { ROOT_PLATFORM_ADMIN_EMAIL }
+export type { PlatformRole, PlatformCapability }
 
 /*
  * The single gate for the control centre (admin subdomain). The Admin SDK
@@ -23,12 +30,15 @@ export { ROOT_PLATFORM_ADMIN_EMAIL }
 
 const useDevShim = process.env.NEXT_PUBLIC_USE_EMULATORS === "1"
 
-export type PlatformRole = "owner" | "analyst"
-
 export interface PlatformActor {
   uid: string
   email: string
   role: PlatformRole
+}
+
+/** Capability check for a platform actor. Mirrors can() from platform-rbac. */
+export function actorCan(actor: PlatformActor, capability: PlatformCapability): boolean {
+  return can(actor, capability)
 }
 
 /** Returns the platform actor, or null if the caller is not a platform admin. */
@@ -36,9 +46,9 @@ export async function readPlatformActor(): Promise<PlatformActor | null> {
   if (useDevShim) {
     const devFlag = process.env.PLATFORM_ADMIN_DEV
     if (devFlag) {
-      /* PLATFORM_ADMIN_DEV=analyst previews the read-only experience locally;
-       * any other truthy value (e.g. "1") is owner. */
-      const role: PlatformRole = devFlag === "analyst" ? "analyst" : "owner"
+      /* PLATFORM_ADMIN_DEV=admin|support previews those tiers locally; any
+       * other truthy value (e.g. "1") is owner. */
+      const role: PlatformRole = devFlag === "1" ? "owner" : coercePlatformRole(devFlag)
       return { uid: "dev-platform-admin", email: ROOT_PLATFORM_ADMIN_EMAIL, role }
     }
     return null

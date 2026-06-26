@@ -182,13 +182,22 @@ export const beforeUserSignedIn = v2BeforeUserSignedIn(async (event) => {
   }
 })
 
+/* Role coercion mirrors coercePlatformRole in lib/auth/platform-rbac.ts;
+ * functions/ has a separate tsconfig and cannot import @/lib - keep in sync.
+ * missing = owner (legacy root grant); legacy "analyst"/unknown = support. */
+type PlatformRole = "owner" | "admin" | "support"
+function coercePlatformRole(raw: unknown): PlatformRole {
+  if (raw === "owner" || raw === "admin" || raw === "support") return raw
+  if (raw == null) return "owner"
+  return "support"
+}
+
 /* platform/state/admins/{emailSlug} exists -> platform claim + role.
- * emailSlug must match lib/platform/schema.ts emailSlug(); role mirrors the
- * doc's `role` field (missing = owner, for back-compat). */
+ * emailSlug must match lib/platform/schema.ts emailSlug(). */
 async function resolvePlatformClaim(
   db: FirebaseFirestore.Firestore,
   email: string,
-): Promise<{ platform?: "admin"; platformRole?: "owner" | "analyst" }> {
+): Promise<{ platform?: "admin"; platformRole?: PlatformRole }> {
   try {
     const slug = email
       .toLowerCase()
@@ -197,8 +206,7 @@ async function resolvePlatformClaim(
       .replace(/(^-|-$)/g, "")
     const snap = await db.doc(`platform/state/admins/${slug}`).get()
     if (!snap.exists) return {}
-    const role = snap.data()?.role === "analyst" ? "analyst" : "owner"
-    return { platform: "admin", platformRole: role }
+    return { platform: "admin", platformRole: coercePlatformRole(snap.data()?.role) }
   } catch {
     return {}
   }

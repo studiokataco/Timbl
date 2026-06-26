@@ -67,7 +67,11 @@ export function WorkspaceSettings({
   }
 
   const setupSummary = completedAt
-    ? `Completed ${new Date(completedAt).toLocaleDateString()}${
+    ? `Completed ${new Date(completedAt).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })}${
         industry ? ` · ${industry}` : ""
       }`
     : "Not completed yet"

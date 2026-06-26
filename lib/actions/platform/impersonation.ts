@@ -6,6 +6,7 @@ import { z } from "zod"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath, orgUsersPath } from "@/lib/firebase/paths"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import {
   clearImpersonationCookie,
   loadImpersonationRecord,
@@ -35,7 +36,7 @@ const startInput = z.object({ orgId: z.string().min(1) })
 
 export async function startImpersonation(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "impersonation:start")) return { ok: false, error: "forbidden" }
   const parsed = startInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId } = parsed.data

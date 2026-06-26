@@ -70,7 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <DunningBanner />
             <div className="flex flex-1 min-h-0">
               <Sidebar />
-              <div className="flex flex-col flex-1 min-w-0 overflow-y-auto pb-[calc(6rem+env(safe-area-inset-bottom))]">
+              <div className="flex flex-col flex-1 min-w-0 overflow-y-auto pb-[var(--ask-ai-clearance)]">
                 <TopBar userName={user.name} workspaceName={org.name} />
                 {children}
               </div>

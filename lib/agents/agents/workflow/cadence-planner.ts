@@ -42,6 +42,7 @@ export function buildCadencePlannerAgent(config: AgentConfig): LlmAgent {
 
 const CADENCE_INSTRUCTION = [
   "Workflow context:",
+  "  - Dates in the user prompt use Indian format DD-MM-YYYY. Convert to yyyy-MM-dd before calling any tool.",
   "  - Read brandConfig.targetCadence (perWeek, preferredDays, preferredTimes).",
   "  - Call findOpenSlots with the user-supplied date range and the cadence preferences.",
   "  - For each returned slot, decide a topic - combine awareness days, brand priorities, and existing posts (use listPosts to avoid repeating).",

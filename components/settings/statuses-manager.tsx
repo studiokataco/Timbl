@@ -102,6 +102,7 @@ export function StatusesManager({
         </div>
 
         <DndContext
+          id="statuses-manager"
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={onDragEnd}

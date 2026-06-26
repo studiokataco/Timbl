@@ -145,93 +145,6 @@ export function CalendarAwarenessRail({
         <button
           type="button"
           className="flex w-full items-center gap-1.5 text-left"
-          onClick={() => setAwarenessOpen((o) => !o)}
-          aria-expanded={awarenessOpen}
-        >
-          <Sparkles aria-hidden className="size-3.5 text-muted-foreground" />
-          <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Awareness this period
-          </h2>
-          {awarenessDays.length > 0 && (
-            <Badge
-              variant="secondary"
-              className="font-normal text-[10px] px-1.5 py-0"
-            >
-              {awarenessDays.length}
-            </Badge>
-          )}
-          <ChevronDown
-            aria-hidden
-            className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
-              awarenessOpen ? "" : "rotate-180"
-            }`}
-          />
-        </button>
-
-        {awarenessOpen ? (
-          awarenessDays.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              None in the visible window.
-            </p>
-          ) : (
-            <motion.ul layout className="flex flex-col gap-1.5">
-              <AnimatePresence initial={false}>
-                {sortedAwarenessDays.map((d) => {
-                  const isPlanned = planned.has(d.id)
-                  return (
-                    <motion.li
-                      key={d.id}
-                      layout
-                      transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
-                      className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {format(parseISO(d.date), "EEE d MMM")}
-                        </span>
-                        <Badge
-                          variant={IMPORTANCE_VARIANT[d.importance]}
-                          className="font-normal text-[10px] px-1.5 py-0"
-                        >
-                          {IMPORTANCE_LABELS[d.importance]}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-medium leading-snug">{d.name}</div>
-                        {isPlanned && (
-                          <Check className="size-3 shrink-0 text-[var(--color-success)]" />
-                        )}
-                      </div>
-                      {!isPlanned && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs self-start"
-                          onClick={() => promote(d)}
-                          disabled={pending}
-                        >
-                          Promote to post
-                        </Button>
-                      )}
-                    </motion.li>
-                  )
-                })}
-              </AnimatePresence>
-            </motion.ul>
-          )
-        ) : awarenessDays.length > 0 ? (
-          <StackedDeck
-            cards={awarenessCards}
-            slotHeight={72}
-            onClick={() => setAwarenessOpen(true)}
-          />
-        ) : null}
-      </section>
-
-      <section className="flex flex-col gap-3 border-t border-border py-6">
-        <button
-          type="button"
-          className="flex w-full items-center gap-1.5 text-left"
           onClick={() => setRemindersOpen((o) => !o)}
           aria-expanded={remindersOpen}
         >
@@ -250,7 +163,7 @@ export function CalendarAwarenessRail({
           <ChevronDown
             aria-hidden
             className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
-              remindersOpen ? "" : "rotate-180"
+              remindersOpen ? "rotate-180" : ""
             }`}
           />
         </button>
@@ -320,6 +233,93 @@ export function CalendarAwarenessRail({
             cards={suggestionCards}
             slotHeight={60}
             onClick={() => setRemindersOpen(true)}
+          />
+        ) : null}
+      </section>
+
+      <section className="flex flex-col gap-3 border-t border-border py-6">
+        <button
+          type="button"
+          className="flex w-full items-center gap-1.5 text-left"
+          onClick={() => setAwarenessOpen((o) => !o)}
+          aria-expanded={awarenessOpen}
+        >
+          <Sparkles aria-hidden className="size-3.5 text-muted-foreground" />
+          <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Awareness this period
+          </h2>
+          {awarenessDays.length > 0 && (
+            <Badge
+              variant="secondary"
+              className="font-normal text-[10px] px-1.5 py-0"
+            >
+              {awarenessDays.length}
+            </Badge>
+          )}
+          <ChevronDown
+            aria-hidden
+            className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
+              awarenessOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {awarenessOpen ? (
+          awarenessDays.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              None in the visible window.
+            </p>
+          ) : (
+            <motion.ul layout className="flex flex-col gap-1.5">
+              <AnimatePresence initial={false}>
+                {sortedAwarenessDays.map((d) => {
+                  const isPlanned = planned.has(d.id)
+                  return (
+                    <motion.li
+                      key={d.id}
+                      layout
+                      transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                      className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {format(parseISO(d.date), "EEE d MMM")}
+                        </span>
+                        <Badge
+                          variant={IMPORTANCE_VARIANT[d.importance]}
+                          className="font-normal text-[10px] px-1.5 py-0"
+                        >
+                          {IMPORTANCE_LABELS[d.importance]}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-medium leading-snug">{d.name}</div>
+                        {isPlanned && (
+                          <Check className="size-3 shrink-0 text-[var(--color-success)]" />
+                        )}
+                      </div>
+                      {!isPlanned && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs self-start"
+                          onClick={() => promote(d)}
+                          disabled={pending}
+                        >
+                          Promote to post
+                        </Button>
+                      )}
+                    </motion.li>
+                  )
+                })}
+              </AnimatePresence>
+            </motion.ul>
+          )
+        ) : awarenessDays.length > 0 ? (
+          <StackedDeck
+            cards={awarenessCards}
+            slotHeight={72}
+            onClick={() => setAwarenessOpen(true)}
           />
         ) : null}
       </section>

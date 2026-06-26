@@ -2,6 +2,7 @@ import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { emailSlug, platformAdminDocPath } from "@/lib/platform/schema"
+import { coercePlatformRole, type PlatformRole } from "@/lib/auth/platform-rbac"
 
 /*
  * The allowlist at platform/state/admins/{emailSlug} is the source of truth
@@ -14,12 +15,11 @@ import { emailSlug, platformAdminDocPath } from "@/lib/platform/schema"
  */
 export async function resolvePlatformClaim(
   email: string,
-): Promise<{ platform?: "admin"; platformRole?: "owner" | "analyst" }> {
+): Promise<{ platform?: "admin"; platformRole?: PlatformRole }> {
   try {
     const snap = await getAdminDb().doc(platformAdminDocPath(emailSlug(email))).get()
     if (!snap.exists) return {}
-    const role = snap.get("role") === "analyst" ? "analyst" : "owner"
-    return { platform: "admin", platformRole: role }
+    return { platform: "admin", platformRole: coercePlatformRole(snap.get("role")) }
   } catch {
     return {}
   }

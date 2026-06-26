@@ -6,6 +6,7 @@ import { syncClaimsForEmail } from "@/lib/actions/members"
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin"
 import { orgPath, orgUsersPath } from "@/lib/firebase/paths"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import {
   findMembership,
   listMembershipsForEmail,
@@ -87,7 +88,7 @@ export async function lookupPlatformUser(raw: unknown): Promise<
 
 export async function remintPlatformUserClaims(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "users:manage")) return { ok: false, error: "forbidden" }
   const parsed = emailInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_email" }
   const email = normalizeEmail(parsed.data.email)
@@ -111,7 +112,7 @@ export async function remintPlatformUserClaims(raw: unknown): Promise<PlatformAc
 
 export async function assignPlatformMembership(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "users:manage")) return { ok: false, error: "forbidden" }
   const parsed = assignInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, role } = parsed.data

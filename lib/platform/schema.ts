@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { coercePlatformRole, type PlatformRole } from "@/lib/auth/platform-rbac"
+
 /*
  * Platform (super-admin) data layer. Everything the control centre owns
  * lives under the single top-level `platform` collection so one Firestore
@@ -9,7 +11,7 @@ import { z } from "zod"
  *
  *   platform/config                                  singleton settings doc
  *   platform/state/admins/{emailSlug}                allowlist (source of truth)
- *   platform/state/auditLog/{autoId}                 god-mode forensic trail
+ *   platform/state/auditLog/{autoId}                 admin forensic trail
  *   platform/state/signals/{autoId}                  tenant-side ops signals
  *   platform/state/impersonationSessions/{id}        active impersonations
  *   platform/state/rollups/{YYYY-MM}                 global usage rollup
@@ -91,16 +93,19 @@ export const ROLLUP_ROOT = ROOT
 
 /* ── zod doc shapes ──────────────────────────────────────────────────── */
 
-/* owner = full god-mode + team management. analyst = read-only monitoring
- * (all dashboards, no mutations, no impersonation, no team management). */
-export const platformRole = z.enum(["owner", "analyst"])
-export type PlatformRole = z.infer<typeof platformRole>
+/* Role -> capability bundles live in lib/auth/platform-rbac.ts (the single
+ * source of truth, shared with the client). This enum is just the wire shape. */
+export const platformRole = z.enum(["owner", "admin", "support"])
+export type { PlatformRole }
+
+/* Stored docs and minted claims may carry a missing role (legacy root grant)
+ * or the retired "analyst" value; coerce both to a current role on read so a
+ * stale value never drops an admin row from the allowlist. */
+export const storedPlatformRole = z.preprocess(coercePlatformRole, platformRole)
 
 export const platformAdminSchema = z.object({
   email: z.string().email(),
-  /* Missing role = owner, for back-compat with admins granted before roles
-   * existed (the root admin). New grants always set it explicitly. */
-  role: platformRole.default("owner"),
+  role: storedPlatformRole,
   grantedBy: z.string(),
   grantedAt: z.string(),
 })

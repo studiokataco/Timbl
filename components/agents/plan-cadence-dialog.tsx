@@ -32,8 +32,8 @@ export function PlanCadenceDialog({
   onOpenChange: (v: boolean) => void
   startDate: Date
 }) {
-  const start = format(startDate, "yyyy-MM-dd")
-  const end = format(addDays(startDate, 13), "yyyy-MM-dd")
+  const start = format(startDate, "dd-MM-yyyy")
+  const end = format(addDays(startDate, 13), "dd-MM-yyyy")
   const [closed, setClosed] = useState(0)
   const [input, setInput] = useState(`Plan a posting cadence from ${start} to ${end}.`)
   const [streaming, setStreaming] = useState(false)

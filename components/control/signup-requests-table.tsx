@@ -9,6 +9,16 @@ import { Button } from "@/components/ui/button"
 import { approveSignupRequest, denySignupRequest } from "@/lib/actions/platform/signups"
 import type { SignupRequest } from "@/lib/platform/schema"
 
+function formatRequestedAt(value: SignupRequest["requestedAt"]) {
+  const t = Date.parse(String(value))
+  if (Number.isNaN(t)) return "-"
+  return new Date(t).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+}
+
 export function SignupRequestsTable({
   requests,
   status,
@@ -65,7 +75,7 @@ export function SignupRequestsTable({
                 ) : null}
               </div>
               <div className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                {new Date(req.requestedAt).toLocaleDateString()}
+                {formatRequestedAt(req.requestedAt)}
               </div>
             </div>
             {req.useCase ? (
@@ -132,7 +142,7 @@ export function SignupRequestsTable({
                   {req.useCase ?? "-"}
                 </td>
                 <td className="px-3 py-3 text-muted-foreground tabular-nums">
-                  {new Date(req.requestedAt).toLocaleDateString()}
+                  {formatRequestedAt(req.requestedAt)}
                 </td>
                 {status === "pending" ? (
                   <td className="px-4 py-3 text-right">

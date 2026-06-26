@@ -2,6 +2,7 @@
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import { platformBillingDocPath } from "@/lib/platform/schema"
 import {
@@ -29,7 +30,7 @@ export async function setBillingProfile(
   raw: unknown,
 ): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "billing:manage")) return { ok: false, error: "forbidden" }
   const parsed = billingProfileSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
 

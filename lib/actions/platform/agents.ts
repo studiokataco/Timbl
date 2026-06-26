@@ -5,6 +5,7 @@ import { z } from "zod"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import { startAgentRun, markAgentRunStatus } from "@/lib/agents/triggers/manual"
 import { SYSTEM_USER } from "@/lib/agents/triggers/system-user"
@@ -22,7 +23,7 @@ const forceInput = z.object({
  * doesn't block on it. */
 export async function forceRunAgent(raw: unknown): Promise<PlatformActionResult & { runId?: string }> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "agents:operate")) return { ok: false, error: "forbidden" }
   const parsed = forceInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, agentName, input } = parsed.data
@@ -83,7 +84,7 @@ const cancelInput = z.object({
 
 export async function cancelRunInOrg(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "agents:operate")) return { ok: false, error: "forbidden" }
   const parsed = cancelInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, runId } = parsed.data

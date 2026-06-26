@@ -7,6 +7,7 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath } from "@/lib/firebase/paths"
 import { slugify } from "@/lib/auth/domains"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import {
   platformBillingDocPath,
@@ -25,7 +26,7 @@ const input = z.object({
 
 export async function setOrgStatus(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "tenants:status")) return { ok: false, error: "forbidden" }
   const parsed = input.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, status } = parsed.data
@@ -64,7 +65,7 @@ export async function renameOrganization(
   raw: unknown,
 ): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "tenants:manage")) return { ok: false, error: "forbidden" }
   const parsed = renameInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, name } = parsed.data
@@ -104,7 +105,7 @@ export async function deleteOrganization(
   raw: unknown,
 ): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "tenants:delete")) return { ok: false, error: "forbidden" }
   const parsed = deleteInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { orgId, confirm } = parsed.data

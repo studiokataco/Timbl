@@ -101,6 +101,7 @@
  *   accent pulls from brand-accent blue (#3b82f6) - used sparingly
  */
 :root {
+  --ask-ai-clearance: calc(6rem + env(safe-area-inset-bottom));
   --background: #ffffff;             /* canvas */
   --foreground: #111111;             /* ink */
   --card: #ffffff;

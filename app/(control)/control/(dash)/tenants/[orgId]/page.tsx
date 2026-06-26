@@ -22,6 +22,7 @@ import {
 } from "@/components/control/widgets"
 import { getBillingProfile } from "@/lib/actions/platform/billing"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { compact, duration, inr, pct, relativeTime } from "@/lib/platform/format"
 import { getOrgPeriod, getOrgRow, listOrgRuns } from "@/lib/platform/queries"
 import {
@@ -75,7 +76,7 @@ export default async function TenantDetailPage({
 
   const usage = await getOrgUsage(orgId, row.plan, profile?.quotaOverrides ?? {})
 
-  const isOwner = actor.role === "owner"
+  const canBilling = can(actor, "billing:manage")
   const fin = tenantFinancials(row.plan, row.mtdUsdCost)
   const modelSlices = Object.entries(period.byModel).map(([k, v]) => ({ name: k, value: v }))
 
@@ -176,7 +177,7 @@ export default async function TenantDetailPage({
 
           <TenantActivity entries={audit} impersonations={impersonations} />
 
-          {isOwner ? (
+          {canBilling ? (
             <TenantBilling orgId={orgId} profile={billing} />
           ) : (
             <BillingReadOnly billing={billing} />
@@ -184,18 +185,17 @@ export default async function TenantDetailPage({
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-2">
-          {isOwner ? (
-            <TenantControls
-              orgId={orgId}
-              name={row.name}
-              plan={row.plan}
-              status={row.status}
-              suspendedAt={row.suspendedAt}
-              billingStatus={row.billingStatus}
-              trialEndsAt={row.trialEndsAt}
-              featureFlags={profile?.featureFlags ?? {}}
-            />
-          ) : null}
+          <TenantControls
+            role={actor.role}
+            orgId={orgId}
+            name={row.name}
+            plan={row.plan}
+            status={row.status}
+            suspendedAt={row.suspendedAt}
+            billingStatus={row.billingStatus}
+            trialEndsAt={row.trialEndsAt}
+            featureFlags={profile?.featureFlags ?? {}}
+          />
 
           {profile ? <TenantOverview profile={profile} /> : null}
 

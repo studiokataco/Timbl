@@ -1,6 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
+import { ChevronDown } from "lucide-react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category } from "@/lib/schemas"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -24,12 +26,27 @@ export function CategoryFilter({
   onAll,
   onNone,
 }: Props) {
+  const [open, setOpen] = useState(true)
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-caption uppercase tracking-wider text-muted-foreground">
-          Categories
-        </h3>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex items-center gap-1.5 text-left"
+        >
+          <h3 className="text-caption uppercase tracking-wider text-muted-foreground">
+            Categories
+          </h3>
+          <ChevronDown
+            aria-hidden
+            className={`size-3.5 text-muted-foreground transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
         <div className="flex gap-2 text-[11px]">
           <button
             type="button"
@@ -48,6 +65,8 @@ export function CategoryFilter({
           </button>
         </div>
       </div>
+      {open && (
+        <>
       <ul className="flex flex-col gap-1">
         {categories.map((c) => (
           <li key={c.id}>
@@ -78,6 +97,8 @@ export function CategoryFilter({
       >
         Manage categories
       </Link>
+        </>
+      )}
     </div>
   )
 }

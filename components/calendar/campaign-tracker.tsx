@@ -96,7 +96,7 @@ export function CampaignTracker({ campaigns }: Props) {
         <ChevronDown
           aria-hidden
           className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
-            open ? "" : "rotate-180"
+            open ? "rotate-180" : ""
           }`}
         />
       </button>

@@ -1,6 +1,7 @@
 import { PageHeading } from "@/components/control/widgets"
 import { TeamManager } from "@/components/control/team-manager"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { listPlatformAdmins } from "@/lib/actions/platform/admins"
 
 export const dynamic = "force-dynamic"
@@ -15,7 +16,7 @@ export default async function TeamPage() {
     <div>
       <PageHeading
         title="Team"
-        description="Platform admins who can access the control centre. Owners manage tenants and the team; analysts monitor read-only."
+        description="Platform controllers who can access the control centre."
       />
       <TeamManager
         admins={admins.map((a) => ({
@@ -24,7 +25,7 @@ export default async function TeamPage() {
           grantedBy: a.grantedBy,
           grantedAt: a.grantedAt,
         }))}
-        canManage={actor.role === "owner"}
+        canManage={can(actor, "team:manage")}
       />
     </div>
   )

@@ -4,6 +4,7 @@ import { z } from "zod"
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { can } from "@/lib/auth/platform-rbac"
 import { writePlatformAudit } from "@/lib/platform/audit"
 import {
   emailSlug,
@@ -30,7 +31,7 @@ import type { PlatformActionResult } from "./orgs"
 
 const grantInput = z.object({
   email: z.string().email(),
-  role: platformRoleSchema.default("analyst"),
+  role: platformRoleSchema.default("support"),
 })
 const emailInput = z.object({ email: z.string().email() })
 
@@ -49,7 +50,7 @@ export async function listPlatformAdmins(): Promise<
 
 export async function grantPlatformAdmin(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "team:manage")) return { ok: false, error: "forbidden" }
   const parsed = grantInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const email = parsed.data.email.toLowerCase()
@@ -88,7 +89,7 @@ export async function grantPlatformAdmin(raw: unknown): Promise<PlatformActionRe
 
 export async function revokePlatformAdmin(raw: unknown): Promise<PlatformActionResult> {
   const actor = await requirePlatformAdmin()
-  if (actor.role !== "owner") return { ok: false, error: "forbidden" }
+  if (!can(actor, "team:manage")) return { ok: false, error: "forbidden" }
   const parsed = emailInput.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_email" }
   const email = parsed.data.email.toLowerCase()
