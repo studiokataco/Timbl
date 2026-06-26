@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowRight, Lock, User } from "lucide-react"
@@ -11,7 +11,9 @@ import { FirebaseError } from "firebase/app"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthFloatingField } from "@/components/auth/auth-floating-field"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
+import { PolicyAcceptance } from "@/components/auth/policy-acceptance"
 import { Button } from "@/components/ui/button"
+import { recordAccountConsent } from "@/lib/actions/record-consent"
 import { mapFirebaseAuthError, signUpWithEmail } from "@/lib/auth/email-auth"
 import { completeAuthCallback } from "@/lib/auth/post-auth-callback"
 import { signUpSchema, type SignUpInput } from "@/lib/schemas/auth"
@@ -50,6 +52,8 @@ function ClaimAccessFormInner({
 }) {
   const router = useRouter()
   const search = useSearchParams()
+  const [accepted, setAccepted] = useState(false)
+  const [acceptError, setAcceptError] = useState<string>()
 
   const {
     register,
@@ -67,6 +71,7 @@ function ClaimAccessFormInner({
     }
     try {
       const cred = await signUpWithEmail(data.email, data.password, data.name)
+      await recordAccountConsent(await cred.user.getIdToken())
       const result = await completeAuthCallback({
         user: cred.user,
         intent: "signin",
@@ -103,14 +108,19 @@ function ClaimAccessFormInner({
       <form
         className="space-y-5"
         onSubmit={handleSubmit((values) => {
-          const parsed = signUpSchema.safeParse(values)
+          const parsed = signUpSchema.safeParse({ ...values, acceptedTerms: accepted })
           if (!parsed.success) {
             const issue = parsed.error.issues[0]
+            if (issue?.path[0] === "acceptedTerms") {
+              setAcceptError(issue.message)
+              return
+            }
             setError((issue?.path[0] as keyof SignUpInput) ?? "email", {
               message: issue?.message ?? "Invalid input",
             })
             return
           }
+          setAcceptError(undefined)
           void onSubmit(parsed.data)
         })}
       >
@@ -153,6 +163,16 @@ function ClaimAccessFormInner({
           {...register("confirmPassword")}
         />
 
+        <PolicyAcceptance
+          id="claim_accept_terms"
+          checked={accepted}
+          onCheckedChange={(value) => {
+            setAccepted(value)
+            if (value) setAcceptError(undefined)
+          }}
+          error={acceptError}
+        />
+
         <Button
           type="submit"
           disabled={isSubmitting}
@@ -176,6 +196,10 @@ function ClaimAccessFormInner({
           variant="outline"
           className="h-11 w-full border-border bg-input/50 text-foreground hover:bg-input/70"
           icon={<GoogleIcon />}
+          disabled={!accepted}
+          onAuthenticated={async (idToken) => {
+            await recordAccountConsent(idToken)
+          }}
         />
       </form>
 

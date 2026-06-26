@@ -24,7 +24,7 @@ export function HowItWorks() {
     <section id="how-it-works" className="scroll-mt-16 bg-muted px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-balance text-4xl font-semibold tracking-tight">
+          <h2 className="text-balance text-3xl font-semibold tracking-tight">
             How it Works
           </h2>
         </Reveal>

@@ -16,6 +16,15 @@ const NAV_LINKS = [
 export function MarketingNav() {
   const [open, setOpen] = useState(false)
 
+  const scrollToAnchor = (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const target = document.querySelector(href)
+    if (!target) return
+    e.preventDefault()
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
+    history.replaceState(null, "", href)
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 md:grid md:grid-cols-[1fr_auto_1fr]">
@@ -25,6 +34,7 @@ export function MarketingNav() {
             <a
               key={link.href}
               href={link.href}
+              onClick={scrollToAnchor(link.href)}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {link.label}
@@ -59,7 +69,10 @@ export function MarketingNav() {
               <a
                 key={link.href}
                 href={link.href}
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  setOpen(false)
+                  scrollToAnchor(link.href)(e)
+                }}
                 className="py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}

@@ -55,6 +55,9 @@ export const platformWebhookEventDocPath = (eventId: string) =>
 export const platformSignupRequestsPath = `${ROOT}/signupRequests`
 export const platformSignupRequestDocPath = (id: string) =>
   `${platformSignupRequestsPath}/${id}`
+export const platformConsentsPath = `${ROOT}/consents`
+export const platformConsentDocPath = (email: string) =>
+  `${platformConsentsPath}/${emailSlug(email)}`
 export const platformOrgRollupsPath = `${ROOT}/orgRollups`
 export const platformOrgRollupDocPath = (orgId: string) =>
   `${platformOrgRollupsPath}/${orgId}`
@@ -224,8 +227,21 @@ export const signupRequestSchema = z.object({
   decidedAt: z.string().nullish(),
   decidedBy: z.string().nullish(),
   orgId: z.string().nullish(),
+  acceptedTerms: z.boolean().nullish(),
+  acceptedAt: z.string().nullish(),
+  acceptedPolicyVersion: z.string().nullish(),
 })
 export type SignupRequest = z.infer<typeof signupRequestSchema>
+
+export const consentRecordSchema = z.object({
+  email: z.string().email(),
+  uid: z.string().nullish(),
+  acceptedTerms: z.literal(true),
+  acceptedAt: z.string(),
+  policyVersion: z.string(),
+  context: z.enum(["invite_request", "account_creation"]),
+})
+export type ConsentRecord = z.infer<typeof consentRecordSchema>
 
 export const orgRollupPeriodSchema = z.object({
   period: z.string(),

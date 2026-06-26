@@ -27,11 +27,11 @@ export function Features() {
           <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-[13px] font-medium text-muted-foreground">
             Why Timbl
           </span>
-          <h2 className="mt-4 text-balance text-4xl font-semibold tracking-tight">
+          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight">
             You&rsquo;re not supposed to be a professional spreadsheet manager!
           </h2>
           <p className="mt-4 text-pretty text-muted-foreground">
-            Increasing channels, clients and same week deadlines are making it harder to plan. Spreadsheets, Docs, Whatsapp; none of which were made
+            Increasing channels, clients and same week deadlines are making it harder to plan. Spreadsheets, Docs and Whatsapp were never made
             for managing multiple brands, creators and channels at once. Timbl helps you fix that.
           </p>
         </Reveal>

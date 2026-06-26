@@ -76,21 +76,9 @@ export function CtaBand() {
     <section className="relative overflow-hidden px-6 py-32 md:py-48">
       <RippleRings />
       <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[40rem] max-w-full -translate-x-1/2 rounded-full bg-foreground/[0.06] blur-3xl" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-32"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-          maskImage: "linear-gradient(to top, black, transparent)",
-          WebkitMaskImage: "linear-gradient(to top, black, transparent)",
-          opacity: 0.4,
-        }}
-      />
 
       <Reveal stagger className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
-        <h2 className="text-balance text-3xl font-bold tracking-tight md:text-5xl">
+        <h2 className="text-balance text-2xl font-bold tracking-tight md:text-4xl">
           Bring next month&apos;s content to Timbl
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">

@@ -8,12 +8,15 @@ import { toast } from "sonner"
 
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthFloatingField } from "@/components/auth/auth-floating-field"
+import { PolicyAcceptance } from "@/components/auth/policy-acceptance"
 import { Button } from "@/components/ui/button"
 import { submitInviteRequest } from "@/lib/actions/request-invite"
 import { signupRequestFormSchema, type SignupRequestFormInput } from "@/lib/schemas/signupRequest"
 
 export function RequestInviteForm() {
   const [submitted, setSubmitted] = useState(false)
+  const [accepted, setAccepted] = useState(false)
+  const [acceptError, setAcceptError] = useState<string>()
 
   const {
     register,
@@ -23,14 +26,19 @@ export function RequestInviteForm() {
   } = useForm<SignupRequestFormInput>()
 
   async function onSubmit(data: SignupRequestFormInput) {
-    const parsed = signupRequestFormSchema.safeParse(data)
+    const parsed = signupRequestFormSchema.safeParse({ ...data, acceptedTerms: accepted })
     if (!parsed.success) {
       const issue = parsed.error.issues[0]
+      if (issue?.path[0] === "acceptedTerms") {
+        setAcceptError(issue.message)
+        return
+      }
       setError((issue?.path[0] as keyof SignupRequestFormInput) ?? "email", {
         message: issue?.message ?? "Invalid input",
       })
       return
     }
+    setAcceptError(undefined)
     const result = await submitInviteRequest(parsed.data)
     if (!result.ok) {
       toast.error(result.error ?? "Something went wrong. Try again.")
@@ -122,6 +130,16 @@ export function RequestInviteForm() {
             <p className="text-xs text-destructive">{errors.useCase.message}</p>
           ) : null}
         </div>
+
+        <PolicyAcceptance
+          id="invite_accept_terms"
+          checked={accepted}
+          onCheckedChange={(value) => {
+            setAccepted(value)
+            if (value) setAcceptError(undefined)
+          }}
+          error={acceptError}
+        />
 
         <Button
           type="submit"

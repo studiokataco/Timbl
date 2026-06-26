@@ -1,8 +1,9 @@
 "use server"
 
+import { LEGAL } from "@/lib/constants/legal"
 import { sendSignupRequestedEmail } from "@/lib/email/beta"
 import { getAdminDb } from "@/lib/firebase/admin"
-import { platformSignupRequestsPath } from "@/lib/platform/schema"
+import { platformConsentDocPath, platformSignupRequestsPath } from "@/lib/platform/schema"
 import { writePlatformSignal } from "@/lib/platform/signals"
 import { signupRequestFormSchema } from "@/lib/schemas/signupRequest"
 import type { ServerActionResult } from "@/lib/schemas"
@@ -36,7 +37,21 @@ export async function submitInviteRequest(raw: unknown): Promise<ServerActionRes
     ...(useCase?.trim() ? { useCase: useCase.trim() } : {}),
     status: "pending",
     requestedAt: now,
+    acceptedTerms: true,
+    acceptedAt: now,
+    acceptedPolicyVersion: LEGAL.policyVersion,
   })
+
+  await db.doc(platformConsentDocPath(norm)).set(
+    {
+      email: norm,
+      acceptedTerms: true,
+      acceptedAt: now,
+      policyVersion: LEGAL.policyVersion,
+      context: "invite_request",
+    },
+    { merge: true },
+  )
 
   void writePlatformSignal({
     id: `signup-${ref.id}`,

@@ -151,6 +151,7 @@ export function PostDeck() {
               end: "+=120%",
               scrub: 0.6,
               pin: pin.current,
+              anticipatePin: 1,
             },
           })
         }
@@ -178,11 +179,11 @@ export function PostDeck() {
           <p className="text-[13px] font-semibold uppercase tracking-wide text-emerald-300/80">
             Every post, every brand
           </p>
-          <h2 className="mt-3 text-balance text-4xl font-semibold tracking-tight">
+          <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight">
             Months of content, accessible in one simple space.
           </h2>
           <p className="mt-4 text-pretty text-white/60">
-            Plan across channels, colour-coded categories, drag-and-drop to plan faster and use AI agents to draft and schedule but always waiting on the one
+            Use AI agents to draft, schedule and plan across channels with ease. Drag-and-drop cards to plan faster but always waiting on the one
             approval that matters: <span className="font-bold">yours</span>.
        
           </p>

@@ -11,7 +11,7 @@ import { FacebookIcon, InstagramIcon, LinkedInIcon, XIcon } from "./brand-icons"
 import { PIN_QUERY, gsap, landingScroller, useGSAP } from "./gsap"
 import { TypewriterWord } from "./typewriter-word"
 
-const HERO_AUDIENCES = ["Creators", "Agencies", "Studios", "Organisations", "Teams"]
+const HERO_AUDIENCES = ["Creators", "Agencies", "Studios", "Teams"]
 
 const FLOATERS = [
   { label: "Instagram", Icon: InstagramIcon, pos: "-right-1 top-[8%] md:left-[1%] md:right-auto md:top-[10%]", from: { x: 150, y: 60 } },
@@ -66,11 +66,6 @@ export function Hero() {
           const scroller = landingScroller(root.current)
 
           if (!canPin) {
-            // Touch / no precise pointer: scroll-linked but NOT pinned. The scrub
-            // ties the entrance to scroll position so the user drives it; dropping
-            // the pin is what keeps native momentum scrolling smooth. Triggered off
-            // the untransformed stage so the device's own tween can't skew the
-            // measurement.
             const scrubbed = (start: string, end: string) => ({
               trigger: stage.current,
               scroller,
@@ -127,6 +122,7 @@ export function Hero() {
             end: "+=110%",
             scrub: 0.6,
             pin: pin.current,
+            anticipatePin: 1,
           },
         })
 
@@ -206,17 +202,17 @@ export function Hero() {
             </span>
           </span>
      
-          <h1 className="mt-6 text-balance text-5xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
-            Built for those who multitask with
-            <br className="hidden md:block" />{' '}
-            <TypewriterWord words={HERO_AUDIENCES} /> and Content
+          <h1 className="mt-6 text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
+            Planning content for <br className="hidden md:block" />{' '}
+            <TypewriterWord words={HERO_AUDIENCES} /> has never been easier
+            
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-            Timbl is an Agentic Planner with highly efficient workflows and tools to manage your projects, campaigns and media planning. </p>
+          <p className="mx-auto mt-6 max-w-2xl text-pretty text-base text-muted-foreground">
+            Timbl is an Agentic Planner with efficient workflows and tools to manage your content, campaigns, projects, and multimedia.</p>
             <div className="flex flex-col items-center mt-8">
               <hr className="h-px border-0 bg-muted-foreground/20 w-[340px] md:w-[430px]" />
             </div>
-            <h2 className="mt-8 text-2xl font-semibold">
+            <h2 className="mt-8 text-xl font-semibold">
        
               You focus on the big picture,
               <br />

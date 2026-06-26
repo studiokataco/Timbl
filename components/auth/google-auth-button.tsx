@@ -19,6 +19,8 @@ export function GoogleAuthButton({
   glow = false,
   icon,
   className,
+  disabled = false,
+  onAuthenticated,
 }: {
   intent: AuthIntent
   label: string
@@ -28,6 +30,8 @@ export function GoogleAuthButton({
   glow?: boolean
   icon?: ReactNode
   className?: string
+  disabled?: boolean
+  onAuthenticated?: (idToken: string) => Promise<void> | void
 }) {
   const router = useRouter()
   const search = useSearchParams()
@@ -39,6 +43,9 @@ export function GoogleAuthButton({
     setPending(true)
     try {
       const result = await signInWithGoogleAccount()
+      if (onAuthenticated) {
+        await onAuthenticated(await result.user.getIdToken())
+      }
       setPreparing(true)
       const callback = await completeAuthCallback({
         user: result.user,
@@ -62,6 +69,7 @@ export function GoogleAuthButton({
   }
 
   const handleClick = () => {
+    if (disabled) return
     void runAuth()
   }
 
@@ -76,7 +84,7 @@ export function GoogleAuthButton({
     return (
       <BrandGlowButton
         onClick={handleClick}
-        disabled={pending}
+        disabled={pending || disabled}
         className="h-11 w-full text-base"
       >
         {content}
@@ -87,7 +95,7 @@ export function GoogleAuthButton({
   return (
     <Button
       onClick={handleClick}
-      disabled={pending}
+      disabled={pending || disabled}
       variant={variant}
       className={className ?? "w-full"}
       size="lg"

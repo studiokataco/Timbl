@@ -542,38 +542,6 @@ function CloudShape() {
   )
 }
 
-function WorkAgent() {
-  return (
-    <svg viewBox="0 0 24 20" className="w-8 text-foreground/85">
-      <circle cx="12" cy="4.5" r="3" fill="currentColor" />
-      <path
-        d="M12 7.5 L11.5 12.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-      <rect x="6.5" y="14.6" width="11" height="2.4" rx="1" fill="currentColor" opacity="0.3" />
-      <path
-        className="hiw-hand hiw-hand-l"
-        d="M11.5 10 L8.5 14.6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-      <path
-        className="hiw-hand hiw-hand-r"
-        d="M11.5 10 L14.5 14.6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
 type Station = {
   sfx: string
   cloudLeft: number
@@ -663,25 +631,6 @@ export function SceneAgents() {
           anims.push(tl)
         })
 
-        anims.push(
-          gsap.to(q(".hiw-hand-l"), {
-            y: 1.4,
-            duration: 0.32,
-            yoyo: true,
-            repeat: -1,
-            ease: "sine.inOut",
-          })
-        )
-        anims.push(
-          gsap.to(q(".hiw-hand-r"), {
-            y: 1.4,
-            duration: 0.32,
-            yoyo: true,
-            repeat: -1,
-            ease: "sine.inOut",
-            delay: 0.16,
-          })
-        )
         anims.push(
           gsap.to(q(".hiw-cloud"), {
             x: "+=10",
@@ -824,9 +773,6 @@ export function SceneAgents() {
         >
           <div className="relative">
             <CloudShape />
-            <div className="absolute -top-9 left-1/2 -translate-x-1/2">
-              <WorkAgent />
-            </div>
             <Sparkles
               className="hiw-spark absolute -top-5 left-2 size-3"
               style={{ color: SIG.blue }}

@@ -23,10 +23,18 @@ export function MarketingFooter() {
           </Link>
         </nav>
       </Reveal>
-      <div className="mx-auto mt-12 max-w-6xl border-t border-white/10 pt-6">
+      <div className="mx-auto mt-12 flex max-w-6xl flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] text-zinc-500">
           © {new Date().getFullYear()} Timbl
         </p>
+        <nav className="flex gap-6 text-[13px] text-zinc-500">
+          <Link href="/privacy" className="transition-colors hover:text-zinc-300">
+            Privacy
+          </Link>
+          <Link href="/terms" className="transition-colors hover:text-zinc-300">
+            Terms
+          </Link>
+        </nav>
       </div>
     </footer>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowRight, Lock, User } from "lucide-react"
@@ -12,8 +12,10 @@ import { AuthCard } from "@/components/auth/auth-card"
 import { AuthFloatingField } from "@/components/auth/auth-floating-field"
 import { DevAuthShortcuts } from "@/components/auth/dev-auth-shortcuts"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
+import { PolicyAcceptance } from "@/components/auth/policy-acceptance"
 import { Button } from "@/components/ui/button"
 import { IS_DEV_SHIM } from "@/lib/auth/dev-session"
+import { recordAccountConsent } from "@/lib/actions/record-consent"
 import { mapFirebaseAuthError, signUpWithEmail } from "@/lib/auth/email-auth"
 import { completeAuthCallback } from "@/lib/auth/post-auth-callback"
 import { signUpSchema, type SignUpInput } from "@/lib/schemas/auth"
@@ -52,6 +54,8 @@ export function SignUpForm() {
 function SignUpFormInner() {
   const router = useRouter()
   const search = useSearchParams()
+  const [accepted, setAccepted] = useState(false)
+  const [acceptError, setAcceptError] = useState<string>()
 
   const {
     register,
@@ -63,6 +67,7 @@ function SignUpFormInner() {
   async function onSubmit(data: SignUpInput) {
     try {
       const cred = await signUpWithEmail(data.email, data.password, data.name)
+      await recordAccountConsent(await cred.user.getIdToken())
       const result = await completeAuthCallback({
         user: cred.user,
         intent: "signup",
@@ -94,14 +99,19 @@ function SignUpFormInner() {
       <form
         className="space-y-6"
         onSubmit={handleSubmit((values) => {
-          const parsed = signUpSchema.safeParse(values)
+          const parsed = signUpSchema.safeParse({ ...values, acceptedTerms: accepted })
           if (!parsed.success) {
             const issue = parsed.error.issues[0]
+            if (issue?.path[0] === "acceptedTerms") {
+              setAcceptError(issue.message)
+              return
+            }
             setError((issue?.path[0] as keyof SignUpInput) ?? "email", {
               message: issue?.message ?? "Invalid input",
             })
             return
           }
+          setAcceptError(undefined)
           void onSubmit(parsed.data)
         })}
       >
@@ -142,6 +152,16 @@ function SignUpFormInner() {
           {...register("confirmPassword")}
         />
 
+        <PolicyAcceptance
+          id="signup_accept_terms"
+          checked={accepted}
+          onCheckedChange={(value) => {
+            setAccepted(value)
+            if (value) setAcceptError(undefined)
+          }}
+          error={acceptError}
+        />
+
         <Button
           type="submit"
           disabled={isSubmitting}
@@ -167,6 +187,10 @@ function SignUpFormInner() {
           variant="outline"
           className="h-11 w-full border-border bg-input/50 text-foreground hover:bg-input/70"
           icon={<GoogleIcon />}
+          disabled={!accepted}
+          onAuthenticated={async (idToken) => {
+            await recordAccountConsent(idToken)
+          }}
         />
       </form>
 
