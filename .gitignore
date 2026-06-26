@@ -58,6 +58,15 @@ ui-debug.log*
 docs/AGENTS_WALKTHROUGH.md
 docs/*
 AGENTS.md
+.claude/
+.cursor/
+.githooks/
+.github/skills/
+.github/hooks/
+.impeccable/
+.agents/
+agent/
+skills-lock.json
 
 # Cloud Functions build output
 functions/lib/
