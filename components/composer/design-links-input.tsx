@@ -84,17 +84,13 @@ export function DesignLinksInput({
           </div>
         )
       })}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={add}
-        className="self-start"
-      >
-        <Plus aria-hidden />
-        Add link
-      </Button>
-      <PickFromStorage onPick={(links) => commit([...rows, ...links])} />
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button type="button" variant="outline" size="sm" onClick={add}>
+          <Plus aria-hidden />
+          Add URL
+        </Button>
+        <PickFromStorage onPick={(links) => commit([...rows, ...links])} />
+      </div>
     </div>
   )
 }

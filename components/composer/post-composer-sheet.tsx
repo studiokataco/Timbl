@@ -109,6 +109,36 @@ const CHANNEL_STATUS_OPTIONS: ChannelStatus[] = [
   "failed",
 ]
 
+type Meridiem = "AM" | "PM"
+
+const HOUR_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
+const BASE_MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => i * 5)
+
+function parseScheduledTime(
+  time?: string,
+): { hour12: number; minute: number; meridiem: Meridiem } | null {
+  if (!time) return null
+  const [h, m] = time.split(":").map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return null
+  return {
+    hour12: h % 12 === 0 ? 12 : h % 12,
+    minute: m,
+    meridiem: h >= 12 ? "PM" : "AM",
+  }
+}
+
+function buildScheduledTime(hour12: number, minute: number, meridiem: Meridiem) {
+  let h = hour12 % 12
+  if (meridiem === "PM") h += 12
+  return `${String(h).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+}
+
+function formatTimeLabel(time?: string) {
+  const parts = parseScheduledTime(time)
+  if (!parts) return null
+  return `${parts.hour12}:${String(parts.minute).padStart(2, "0")} ${parts.meridiem}`
+}
+
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -127,8 +157,8 @@ type SaveState = "idle" | "saving" | "saved" | "error"
 
 /*
  * Side-sheet composer (full-screen drawer on mobile via Sheet's responsive
- * styling). Five tabs match the PRD shape: Brief / Copy & Tags / Design /
- * Channels / Notes.
+ * styling). Tabs: Brief (notes live here) / Copy & Tags / Design /
+ * Channels / Preview.
  *
  * Save is explicit for now - Phase 3 swaps in autosave on blur/idle and
  * keeps the Save button as a fallback.
@@ -208,6 +238,21 @@ export function PostComposerSheet({
     () => (draft.scheduledDate ? parseISO(draft.scheduledDate) : new Date()),
     [draft.scheduledDate],
   )
+
+  const timeParts = parseScheduledTime(draft.scheduledTime)
+  const timeLabel = formatTimeLabel(draft.scheduledTime)
+  const minuteOptions = useMemo(() => {
+    if (timeParts && !BASE_MINUTE_OPTIONS.includes(timeParts.minute)) {
+      return [...BASE_MINUTE_OPTIONS, timeParts.minute].sort((a, b) => a - b)
+    }
+    return BASE_MINUTE_OPTIONS
+  }, [timeParts])
+
+  const setTimePart = (patch: Partial<{ hour12: number; minute: number; meridiem: Meridiem }>) => {
+    const base = timeParts ?? { hour12: 9, minute: 0, meridiem: "AM" as Meridiem }
+    const next = { ...base, ...patch }
+    setField("scheduledTime", buildScheduledTime(next.hour12, next.minute, next.meridiem))
+  }
 
   const persist = async (closeOnSuccess: boolean, overrideDraft?: Partial<Post>) => {
     if (!post?.id) return
@@ -424,8 +469,8 @@ export function PostComposerSheet({
             <div className="flex items-center justify-between gap-3">
               <SheetTitle className="min-w-0 flex-1 text-base font-medium">
                 {post
-                  ? `Edit post - ${format(date, "EEE d MMM")}`
-                  : "Edit post"}
+                  ? `Edit - ${format(date, "EEE d MMM")}${timeLabel ? `, ${timeLabel}` : ""}`
+                  : "Edit "}
               </SheetTitle>
               <div className="shrink-0 flex items-center gap-3">
                 <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
@@ -478,10 +523,6 @@ export function PostComposerSheet({
                 </SheetClose>
               </div>
             </div>
-            <SheetDescription className="text-xs">
-              Edits autosave 1.5s after your last change. Save button forces
-              an immediate write and closes.
-            </SheetDescription>
           </SheetHeader>
 
           <Tabs
@@ -496,7 +537,6 @@ export function PostComposerSheet({
                   { id: "copy", label: "Copy" },
                   { id: "design", label: "Design" },
                   { id: "channels", label: "Channels" },
-                  { id: "notes", label: "Notes" },
                   { id: "preview", label: "Preview" },
                 ]}
                 value={composerTab}
@@ -521,7 +561,7 @@ export function PostComposerSheet({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label>Date</Label>
+                <Label>Date &amp; time</Label>
                 <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                   <PopoverTrigger
                     render={
@@ -530,18 +570,85 @@ export function PostComposerSheet({
                   >
                     <CalendarIcon aria-hidden className="size-4" />
                     {format(date, "EEE d MMM yyyy")}
+                    {timeLabel ? `, ${timeLabel}` : ""}
                   </PopoverTrigger>
-                  <PopoverContent className="w-[min(20rem,calc(100vw-2rem))] p-0" align="start">
+                  <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={date}
                       onSelect={(d) => {
                         if (d) {
                           setField("scheduledDate", format(d, "yyyy-MM-dd"))
-                          setDatePickerOpen(false)
                         }
                       }}
                     />
+                    <div className="flex flex-col gap-2 border-t border-border p-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Time</Label>
+                        {draft.scheduledTime ? (
+                          <button
+                            type="button"
+                            onClick={() => setField("scheduledTime", undefined)}
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Clear
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Select
+                          value={timeParts ? String(timeParts.hour12) : ""}
+                          onValueChange={(v) => setTimePart({ hour12: Number(v) })}
+                        >
+                          <SelectTrigger className="min-w-0 flex-1">
+                            <SelectValue placeholder="Hr" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {HOUR_OPTIONS.map((h) => (
+                              <SelectItem key={h} value={String(h)}>
+                                {h}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <span aria-hidden className="text-muted-foreground">:</span>
+                        <Select
+                          value={timeParts ? String(timeParts.minute) : ""}
+                          onValueChange={(v) => setTimePart({ minute: Number(v) })}
+                        >
+                          <SelectTrigger className="min-w-0 flex-1">
+                            <SelectValue placeholder="Min" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {minuteOptions.map((m) => (
+                              <SelectItem key={m} value={String(m)}>
+                                {String(m).padStart(2, "0")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex shrink-0 overflow-hidden rounded-md border border-border">
+                          {(["AM", "PM"] as Meridiem[]).map((mer) => {
+                            const active = (timeParts?.meridiem ?? "AM") === mer
+                            return (
+                              <button
+                                key={mer}
+                                type="button"
+                                aria-pressed={timeParts ? active : false}
+                                onClick={() => setTimePart({ meridiem: mer })}
+                                className={
+                                  timeParts && active
+                                    ? "px-2.5 py-1.5 text-xs font-medium bg-foreground text-background"
+                                    : "px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                                }
+                              >
+                                {mer}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>
@@ -720,12 +827,12 @@ export function PostComposerSheet({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label>Detailed brief</Label>
+                <Label>Brief</Label>
                 <Textarea
                   rows={4}
                   value={draft.detailedBrief ?? ""}
                   onChange={(e) => setField("detailedBrief", e.target.value)}
-                  placeholder="Tone, references, must-haves..."
+                  placeholder="Write a brief for the post..."
                 />
               </div>
 
@@ -748,9 +855,17 @@ export function PostComposerSheet({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Move the post to any column.
-                </p>
+
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>Notes</Label>
+                <Textarea
+                  rows={4}
+                  value={draft.notes ?? ""}
+                  onChange={(e) => setField("notes", e.target.value)}
+                  placeholder="Internal-only notes..."
+                />
               </div>
             </TabsContent>
 
@@ -806,25 +921,9 @@ export function PostComposerSheet({
                 </Select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label>First comment</Label>
-                <Textarea
-                  rows={3}
-                  maxLength={2200}
-                  value={draft.firstComment ?? ""}
-                  onChange={(e) => setField("firstComment", e.target.value || undefined)}
-                  placeholder="Add a first comment that posts immediately after (LinkedIn, Instagram, Facebook)..."
-                />
-              </div>
+              
 
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="ai-assisted-toggle">AI-assisted</Label>
-                <Switch
-                  id="ai-assisted-toggle"
-                  checked={draft.isAiGenerated ?? false}
-                  onCheckedChange={(v) => setField("isAiGenerated", v || undefined)}
-                />
-              </div>
+              
             </TabsContent>
 
             {/* --- Design --- */}
@@ -900,10 +999,6 @@ export function PostComposerSheet({
                   value={draft.designLinks ?? []}
                   onChange={(next) => setField("designLinks", next)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Add Canva, Google Drive or Dropbox links - paste a
-                  share link for each file.
-                </p>
               </div>
             </TabsContent>
 
@@ -954,17 +1049,6 @@ export function PostComposerSheet({
                 )
               })
               )}
-            </TabsContent>
-
-            {/* --- Notes --- */}
-            <TabsContent value="notes" className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 flex flex-col gap-2">
-              <Label>Notes</Label>
-              <Textarea
-                rows={8}
-                value={draft.notes ?? ""}
-                onChange={(e) => setField("notes", e.target.value)}
-                placeholder="Internal-only notes..."
-              />
             </TabsContent>
 
             {/* --- Preview --- */}

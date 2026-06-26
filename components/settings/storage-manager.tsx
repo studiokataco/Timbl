@@ -6,6 +6,7 @@ import { AlertTriangle, Link2, Unplug } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
+import { GoogleDriveIcon } from "@/components/marketing/brand-icons"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { disconnectStorageAccount } from "@/lib/actions/storage-accounts"
 import { STORAGE_PROVIDERS } from "@/lib/storage/providers"
@@ -48,12 +49,16 @@ export function StorageManager({ accounts, availableProviders }: Props) {
           <div key={p.key} className="rounded-xl border border-border bg-canvas p-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 text-sm font-medium">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={faviconUrl(`https://${p.domain}`)}
-                  alt=""
-                  className="size-4 rounded-sm"
-                />
+                {p.key === "gdrive" ? (
+                  <GoogleDriveIcon aria-hidden className="size-4" />
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={faviconUrl(`https://${p.domain}`)}
+                    alt=""
+                    className="size-4 rounded-sm"
+                  />
+                )}
                 {p.label}
               </h2>
               {isAvailable ? (

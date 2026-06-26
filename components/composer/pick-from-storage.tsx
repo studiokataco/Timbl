@@ -1,9 +1,11 @@
 "use client"
 
+import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { GoogleDriveIcon } from "@/components/marketing/brand-icons"
 import {
   getStorageAccessToken,
   listStorageAccounts,
@@ -16,6 +18,11 @@ import type { DesignLink, StorageProvider } from "@/lib/schemas"
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   interface Window { Dropbox?: any; gapi?: any; google?: any }
+}
+
+const PICK_LABELS: Record<StorageProvider, string> = {
+  gdrive: "Add Drive Link",
+  dropbox: "Add Dropbox Link",
 }
 
 type DropboxFile = { link: string; name: string; thumbnailLink?: string }
@@ -69,7 +76,19 @@ export function PickFromStorage({
   }
 
   const connected = STORAGE_PROVIDERS.filter((p) => accountByProvider.has(p.key))
-  if (connected.length === 0) return null
+  if (connected.length === 0) {
+    if (!data) return null
+    return (
+      <p className="text-xs text-muted-foreground">
+        <Link
+          href="/settings/integrations"
+          className="font-medium text-foreground underline underline-offset-2"
+        >
+          Connect Drive or Dropbox
+        </Link>{" "}
+      </p>
+    )
+  }
 
   async function pickDropbox() {
     const res = await getStoragePickerConfig("dropbox")
@@ -143,8 +162,7 @@ export function PickFromStorage({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      <span>Pick from:</span>
+    <>
       {connected.map((provider) => {
         const accountId = accountByProvider.get(provider.key)!
         return (
@@ -153,22 +171,25 @@ export function PickFromStorage({
             type="button"
             variant="outline"
             size="sm"
-            aria-label={`Pick from ${provider.label}`}
             onClick={() => handlePick(provider.key, accountId)}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={faviconUrl(`https://${provider.domain}`)}
-              alt=""
-              width={14}
-              height={14}
-              className="size-3.5"
-              loading="lazy"
-            />
-            {provider.label}
+            {provider.key === "gdrive" ? (
+              <GoogleDriveIcon aria-hidden className="size-3.5" />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={faviconUrl(`https://${provider.domain}`)}
+                alt=""
+                width={14}
+                height={14}
+                className="size-3.5"
+                loading="lazy"
+              />
+            )}
+            {PICK_LABELS[provider.key]}
           </Button>
         )
       })}
-    </div>
+    </>
   )
 }

@@ -17,7 +17,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -28,7 +27,6 @@ type Props = {
   view: CalendarView
   onPrev: () => void
   onNext: () => void
-  onToday: () => void
   onViewChange: (v: CalendarView) => void
   onOpenFilters?: () => void
 }
@@ -43,19 +41,18 @@ function viewLabel(view: CalendarView, date: Date): string {
 const VIEWS: { value: CalendarView; icon: React.ReactNode; label: string }[] = [
   { value: "month", icon: <Calendar className="size-3.5" aria-hidden />, label: "Month" },
   { value: "week", icon: <Grid3x3 className="size-3.5" aria-hidden />, label: "Week" },
-  { value: "day", icon: <Clock className="size-3.5" aria-hidden />, label: "Day" },
+  { value: "day", icon: <Clock className="size-3.5" aria-hidden />, label: "Today" },
   { value: "list", icon: <List className="size-3.5" aria-hidden />, label: "List" },
 ]
 
-function TodayMenu({
+function ViewMenu({
   view,
-  onToday,
   onViewChange,
 }: {
   view: CalendarView
-  onToday: () => void
   onViewChange: (v: CalendarView) => void
 }) {
+  const current = VIEWS.find((v) => v.value === view) ?? VIEWS[0]
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -63,16 +60,15 @@ function TodayMenu({
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0 gap-1 pr-2"
+            className="shrink-0 gap-1.5 pr-2"
           />
         }
       >
-        Today
+        {current.icon}
+        {current.label}
         <ChevronDown aria-hidden className="size-3.5 opacity-60" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-36">
-        <DropdownMenuItem onClick={onToday}>Go to today</DropdownMenuItem>
-        <DropdownMenuSeparator />
         {VIEWS.map((v) => (
           <DropdownMenuItem
             key={v.value}
@@ -96,7 +92,6 @@ export function CalendarToolbar({
   view,
   onPrev,
   onNext,
-  onToday,
   onViewChange,
   onOpenFilters,
 }: Props) {
@@ -110,7 +105,7 @@ export function CalendarToolbar({
     <>
       <div className="relative sm:hidden mb-4 flex items-center justify-between min-h-9">
         <div className="relative z-10">
-          <TodayMenu view={view} onToday={onToday} onViewChange={onViewChange} />
+          <ViewMenu view={view} onViewChange={onViewChange} />
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 flex justify-center">
@@ -156,9 +151,6 @@ export function CalendarToolbar({
 
       <div className="hidden sm:flex mb-4 items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Button variant="outline" size="sm" onClick={onToday}>
-            Today
-          </Button>
           <div className="flex items-center">
             <Button
               variant="ghost"

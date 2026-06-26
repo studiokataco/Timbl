@@ -164,15 +164,14 @@ export function CalendarView({
     })
   }, [view])
 
-  const onToday = useCallback(() => {
-    const today = new Date()
-    setVisibleDate(view === "month" ? startOfMonth(today) : today)
-  }, [view])
-
-  // When switching views, snap visibleDate to a sensible anchor
+  // Day view is the "Today" entry point - it always lands on today; arrows walk from there.
   const onViewChange = useCallback((v: ViewT) => {
     setView(v)
-    setVisibleDate((d) => (v === "month" ? startOfMonth(d) : d))
+    setVisibleDate((d) => {
+      if (v === "month") return startOfMonth(d)
+      if (v === "day") return new Date()
+      return d
+    })
   }, [])
 
   const onCellClick = useCallback(
@@ -306,7 +305,6 @@ export function CalendarView({
               view={view}
               onPrev={onPrev}
               onNext={onNext}
-              onToday={onToday}
               onViewChange={onViewChange}
               onOpenFilters={() => setRailOpen(true)}
             />

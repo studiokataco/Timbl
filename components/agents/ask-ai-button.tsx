@@ -14,7 +14,7 @@ export function AskAiButton() {
       aria-label="Ask AI"
       flashOnClick
       onClick={handleClick}
-      className="fixed bottom-6 left-1/2 z-40 h-11 -translate-x-1/2 gap-2 px-5"
+      className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-40 h-11 -translate-x-1/2 gap-2 px-5"
     >
       <Sparkles aria-hidden className="size-4 opacity-80" />
       <span>Ask AI</span>
