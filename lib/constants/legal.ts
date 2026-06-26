@@ -8,11 +8,12 @@
 
 export const LEGAL = {
   brand: "Timbl",
-  legalEntity: "KataCo",
+  legalEntity: "Katana Collective Creative Studio LLP",
   contactEmail: "hello@kataco.in",
   grievanceEmail: "hello@kataco.in",
-  grievanceOfficer: "Grievance officer",
-  registeredAddress: "India",
+  grievanceOfficer: "Administrator, Timbl",
+  registeredAddress:
+    "Flat 8, 1st Floor, Vaman Residency, Cariappa Colony, Nanawadi, Belagavi, Karnataka 590009, India",
   governingLawCountry: "India",
   jurisdictionCity: "Bengaluru, India",
   effectiveDate: "26 June 2026",
