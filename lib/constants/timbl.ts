@@ -18,3 +18,5 @@ export const TIMBL_FIREBASE_RULES_TEST = "timbl-rules-test"
 export const EMULATOR_ADMIN_SUB = "emulator-timbl-admin"
 
 export const AGENT_THREADS_DB_NAME = "timbl-agent-threads"
+
+export const HUMAN_ID_PREFIX = "TIM"

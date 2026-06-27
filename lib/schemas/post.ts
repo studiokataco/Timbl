@@ -119,6 +119,19 @@ export const postSchema = audit.extend({
 
   firstComment: z.string().max(2_200).optional(),
   isAiGenerated: z.boolean().optional(),
+  coverAssetId: z.string().optional(),
+
+  priority: z.enum(["urgent", "high", "normal", "low"]).optional(),
+  timeEstimateMinutes: z.number().int().nonnegative().optional(),
+  humanId: z.string().optional(),
+  recurrence: z
+    .object({
+      freq: z.enum(["daily", "weekly", "custom"]),
+      interval: z.number().int().positive().optional(),
+      until: isoDate.optional(),
+      rule: z.string().optional(),
+    })
+    .optional(),
 })
 export type Post = z.infer<typeof postSchema>
 

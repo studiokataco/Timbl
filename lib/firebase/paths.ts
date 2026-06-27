@@ -19,6 +19,19 @@ export const orgApprovalsLogPath = (orgId: string) => `${orgPath(orgId)}/approva
 export const orgPostStatusHistoryPath = (orgId: string, postId: string) =>
   `${orgPostsPath(orgId)}/${postId}/statusHistory`
 export const orgKanbanColumnsPath = (orgId: string) => `${orgPath(orgId)}/kanbanColumns`
+export const orgCountersDocPath = (orgId: string, name: string) =>
+  `${orgPath(orgId)}/counters/${name}`
+export const orgPostActivityPath = (orgId: string, postId: string) =>
+  `${orgPostsPath(orgId)}/${postId}/activity`
+export const orgPostCommentsPath = (orgId: string, postId: string) =>
+  `${orgPostsPath(orgId)}/${postId}/comments`
+export const orgPostFollowersPath = (orgId: string, postId: string) =>
+  `${orgPostsPath(orgId)}/${postId}/followers`
+export const orgPostSharesPath = (orgId: string, postId: string) =>
+  `${orgPostsPath(orgId)}/${postId}/shares`
+export const shareTokensPath = () => `postShareTokens`
+export const orgPostChecklistPath = (orgId: string, postId: string) =>
+  `${orgPostsPath(orgId)}/${postId}/checklist`
 
 /* Publishing layer - token vault + publish-attempt telemetry. */
 export const orgSocialAccountsPath = (orgId: string) => `${orgPath(orgId)}/socialAccounts`
@@ -79,3 +92,6 @@ export const orgOauthAuthCodesPath = (orgId: string) => `${orgPath(orgId)}/oauth
 export const orgOauthAccessTokensPath = (orgId: string) => `${orgPath(orgId)}/oauthAccessTokens`
 export const orgOauthRefreshTokensPath = (orgId: string) => `${orgPath(orgId)}/oauthRefreshTokens`
 export const orgConsentGrantsPath = (orgId: string) => `${orgPath(orgId)}/oauthConsentGrants`
+
+/* Per-org flat notifications collection, queryable by recipientId. */
+export const orgNotificationsPath = (orgId: string) => `${orgPath(orgId)}/notifications`

@@ -47,6 +47,8 @@ const PUBLIC_PREFIXES = [
   "/api/public/",
   "/api/mcp",
   "/.well-known/",
+  // Public post share + client approval - token-scoped, no session required.
+  "/p/",
 ]
 const SESSION_COOKIE = "__session"
 

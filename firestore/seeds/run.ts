@@ -9,6 +9,7 @@ import { seed0008AwarenessResearcher } from "./0008_awareness_researcher"
 import { seed0009EmbeddingsBackfill } from "./0009_embeddings_backfill"
 import { seed0010TenantOrg } from "./0010_tenant_org"
 import { seed0014InboxFixtures } from "./0014_inbox_fixtures"
+import { seed0015KanbanGroups } from "./0015_kanban_groups"
 
 /*
  * Seed runner. Each seed is independently idempotent - safe to re-run.
@@ -31,6 +32,7 @@ async function main() {
    * the demo seeds above; safe to run last. */
   await seed0010TenantOrg()
   await seed0014InboxFixtures()
+  await seed0015KanbanGroups()
   console.log("\nseed complete.")
 }
 

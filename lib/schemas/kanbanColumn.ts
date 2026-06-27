@@ -10,5 +10,6 @@ export const kanbanColumnSchema = audit.extend({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   /** Marks the 9 default columns seeded from the legacy PostStatus enum. */
   isSystemDefault: z.boolean().default(false),
+  group: z.enum(["active", "done", "closed"]).default("active"),
 })
 export type KanbanColumn = z.infer<typeof kanbanColumnSchema>

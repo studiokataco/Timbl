@@ -1,13 +1,16 @@
 "use server"
 
+import { addDays, addWeeks } from "date-fns"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
 import {
   orgCategoriesPath,
+  orgCountersDocPath,
   orgPostsPath,
   orgPostStatusHistoryPath,
 } from "@/lib/firebase/paths"
+import { HUMAN_ID_PREFIX } from "@/lib/constants/timbl"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
@@ -15,6 +18,21 @@ import { incrementUsage } from "@/lib/telemetry/agent-events"
 import { fetchPostsInRange } from "@/lib/queries/posts.server"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
 import { withSyncedPostTypes } from "@/lib/post-types"
+import { writePostActivity } from "@/lib/actions/post-activity"
+
+import type { Firestore } from "firebase-admin/firestore"
+
+export async function nextHumanId(orgId: string, db: Firestore): Promise<string> {
+  const counterRef = db.doc(orgCountersDocPath(orgId, "postSeq"))
+  let next = 1
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(counterRef)
+    const seq = snap.exists ? ((snap.data()?.seq as number) ?? 0) : 0
+    next = seq + 1
+    tx.set(counterRef, { seq: next }, { merge: true })
+  })
+  return `${HUMAN_ID_PREFIX}-${next}`
+}
 
 /* Client-callable wrapper around the server-only fetchPostsInRange. Used by
  * the calendar's client useQuery to refetch when the user navigates months
@@ -73,12 +91,14 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
 
   const postsRef = db.collection(orgPostsPath(orgId)).doc()
   const now = new Date().toISOString()
+  const humanId = await nextHumanId(orgId, db)
 
   const defaultType = category.defaultPostType ?? "grid"
   const typeFields = withSyncedPostTypes([defaultType])
 
   const doc: Post = {
     id: postsRef.id,
+    humanId,
     organizationId: orgId,
     scheduledDate: parsed.data.scheduledDate,
     status: "idea",
@@ -97,6 +117,7 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
   }
 
   await postsRef.set(doc)
+  await writePostActivity(orgId, postsRef.id, user.id, "created", { brief: doc.brief ?? null }, db)
   try {
     await embedIfChanged("post", orgId, postsRef.id, doc as unknown as Record<string, unknown>)
   } catch (err) {
@@ -163,6 +184,28 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
     )
   }
   await batch.commit()
+
+  // Emit activity entries — best-effort, never block the save.
+  try {
+    const prev = existing.data() as Partial<Post>
+    if (statusChanged) {
+      await writePostActivity(orgId, id, user.id, "status", { from: prevStatus ?? null, to: nextStatus }, db)
+    } else if (patch.scheduledDate !== undefined || patch.scheduledTime !== undefined) {
+      await writePostActivity(orgId, id, user.id, "dates", { date: patch.scheduledDate ?? prev.scheduledDate ?? null }, db)
+    } else if (patch.priority !== undefined && patch.priority !== prev.priority) {
+      await writePostActivity(orgId, id, user.id, "priority", { priority: patch.priority }, db)
+    } else if (patch.assigneeId !== undefined && patch.assigneeId !== prev.assigneeId) {
+      await writePostActivity(orgId, id, user.id, "assignee", { id: patch.assigneeId ?? null }, db)
+    } else if (patch.categoryId !== undefined && patch.categoryId !== prev.categoryId) {
+      await writePostActivity(orgId, id, user.id, "category", { id: patch.categoryId ?? null }, db)
+    } else if (patch.hashtags !== undefined) {
+      await writePostActivity(orgId, id, user.id, "hashtags", { tags: patch.hashtags }, db)
+    } else if (Object.keys(patch).some((k) => !["updatedAt", "postType", "postTypes"].includes(k))) {
+      await writePostActivity(orgId, id, user.id, "edit", {}, db)
+    }
+  } catch (err) {
+    console.warn(`[activity] updatePost soft-fail: ${err instanceof Error ? err.message : err}`)
+  }
 
   /* Bump the scheduledPosts counter AFTER the write succeeds so a failed
    * batch doesn't waste quota. Best-effort - never blocks the user. */
@@ -279,4 +322,51 @@ export async function countPublishablePosts(): Promise<{
     col.where("status", "==", "posted").limit(500).get(),
   ])
   return { scheduled: scheduledSnap.size, posted: postedSnap.size }
+}
+
+const RECURRENCE_OCCURRENCES = 12
+
+export async function expandRecurrence(input: { postId: string }): Promise<ServerActionResult> {
+  const { postId } = input
+  if (!postId) return { ok: false, error: "Missing postId" }
+
+  const orgId = await getCurrentOrgId()
+  const db = getDb()
+  const postsRef = db.collection(orgPostsPath(orgId))
+
+  const snap = await postsRef.doc(postId).get()
+  if (!snap.exists) return { ok: false, error: "Post not found" }
+
+  const post = snap.data() as Post
+  const recurrence = post.recurrence
+  if (!recurrence) return { ok: false, error: "Post has no recurrence rule" }
+
+  const baseDate = post.scheduledDate ? new Date(post.scheduledDate) : new Date()
+  const { freq, interval = 1 } = recurrence
+
+  const advance = (date: Date, step: number): Date =>
+    freq === "daily" ? addDays(date, step * interval) : addWeeks(date, step * interval)
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id: _id, humanId: _humanId, recurrence: _recurrence, ...basePost } = post
+
+  const batch = db.batch()
+  for (let i = 1; i <= RECURRENCE_OCCURRENCES; i++) {
+    const newRef = postsRef.doc()
+    const scheduledDate = advance(baseDate, i).toISOString().slice(0, 10)
+    const newHumanId = await nextHumanId(orgId, db)
+    const now = new Date().toISOString()
+    batch.set(newRef, {
+      ...basePost,
+      id: newRef.id,
+      humanId: newHumanId,
+      scheduledDate,
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+  await batch.commit()
+
+  revalidatePath("/calendar")
+  return { ok: true, id: postId }
 }

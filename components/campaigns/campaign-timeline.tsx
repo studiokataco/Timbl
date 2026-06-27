@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Campaign, Category, ChannelKey, Post, User } from "@/lib/schemas"
-import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
+import { PostModal } from "@/components/composer/post-modal"
 import { fetchPostAction } from "@/lib/actions/posts"
 import { postStatusLabel } from "@/lib/labels/enums"
 import { cn } from "@/lib/utils"
@@ -143,7 +143,7 @@ export function CampaignTimeline({ campaign, posts, categories, users, orgChanne
         ))}
       </div>
 
-      <PostComposerSheet
+      <PostModal
         open={composerOpen}
         onOpenChange={setComposerOpen}
         post={composerPost}

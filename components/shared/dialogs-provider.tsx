@@ -10,7 +10,7 @@ import {
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { QuickAddDialog } from "@/components/quick-add/quick-add-dialog"
-import { PostComposerSheet } from "@/components/composer/post-composer-sheet"
+import { PostModal } from "@/components/composer/post-modal"
 import { fetchPostAction } from "@/lib/actions/posts"
 import type { WithId } from "@/lib/firebase/serialize"
 import type {
@@ -142,7 +142,7 @@ export function DialogsProvider({
         onSaved={onSavedFromQuickAdd}
         onCreateAndOpenComposer={onCreateAndOpenComposer}
       />
-      <PostComposerSheet
+      <PostModal
         open={composerOpen}
         onOpenChange={setComposerOpen}
         post={composerPost}

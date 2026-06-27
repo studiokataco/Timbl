@@ -10,7 +10,9 @@ const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected #rrggbb")
 const labelSchema = z.string().trim().min(1).max(40)
 const idSchema = z.string().trim().min(1)
 
-const createInput = z.object({ label: labelSchema, color: colorSchema })
+const groupSchema = z.enum(["active", "done", "closed"]).default("active")
+const createInput = z.object({ label: labelSchema, color: colorSchema, group: groupSchema.optional() })
+const updateGroupInput = z.object({ id: idSchema, group: groupSchema })
 const renameInput = z.object({ id: idSchema, label: labelSchema })
 const recolorInput = z.object({ id: idSchema, color: colorSchema })
 const reorderInput = z.object({ ids: z.array(idSchema).min(1) })
@@ -46,6 +48,7 @@ export async function createKanbanColumn(input: unknown): Promise<ServerActionRe
     organizationId: orgId,
     label: parsed.data.label,
     color: parsed.data.color,
+    group: parsed.data.group ?? "active",
     sortOrder: nextOrder,
     isSystemDefault: false,
     createdAt: now,
@@ -138,4 +141,15 @@ export async function deleteKanbanColumn(input: unknown): Promise<ServerActionRe
   }
   revalidatePath("/kanban")
   return { ok: true }
+}
+
+export async function updateKanbanColumnGroup(input: unknown): Promise<ServerActionResult> {
+  const parsed = updateGroupInput.safeParse(input)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" }
+  const orgId = await getCurrentOrgId()
+  await getDb()
+    .doc(`${orgKanbanColumnsPath(orgId)}/${parsed.data.id}`)
+    .set({ group: parsed.data.group, updatedAt: new Date().toISOString() }, { merge: true })
+  revalidatePath("/kanban")
+  return { ok: true, id: parsed.data.id }
 }
