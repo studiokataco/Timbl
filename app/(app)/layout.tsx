@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { AgentCommandModal } from "@/components/agents/agent-command-modal"
 import { AgentDrawer } from "@/components/agents/agent-drawer"
 import { AskAiButton } from "@/components/agents/ask-ai-button"
-import { AiTestingBanner } from "@/components/shared/ai-testing-banner"
 import { AppHotkeys } from "@/components/shared/app-hotkeys"
 import { CommandPalette } from "@/components/shared/command-palette"
 import { DialogsProvider } from "@/components/shared/dialogs-provider"
@@ -65,7 +64,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <WorkspaceProvider orgId={orgId}>
         <PlanFeaturesProvider value={planFeatures}>
           <DialogsProvider data={referenceData}>
-            <AiTestingBanner />
             {impersonation ? <ImpersonationBanner orgName={org.name} /> : null}
             <DunningBanner />
             <div className="flex flex-1 min-h-0">

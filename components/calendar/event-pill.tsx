@@ -3,13 +3,26 @@
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
-import { Pencil } from "lucide-react"
+import { Flag, Pencil, Sparkles } from "lucide-react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 import { postStatusLabel } from "@/lib/labels/enums"
 import { categoryPillColors } from "./color"
 import { statusGlyph } from "./post-chip"
+
+const PRIORITY_COLOR: Record<string, string> = {
+  urgent: "#ef4444",
+  high: "#f59e0b",
+  normal: "#3b82f6",
+  low: "#94a3b8",
+}
+const PRIORITY_LABEL: Record<string, string> = {
+  urgent: "Urgent",
+  high: "High",
+  normal: "Normal",
+  low: "Low",
+}
 
 type Props = {
   post: WithId<Post>
@@ -31,6 +44,15 @@ export function EventPill({ post, category, onClick }: Props) {
     : null
 
   const pillStyle = categoryPillColors(category?.color)
+  const priority = post.priority
+  const showPriorityFlag = priority === "urgent" || priority === "high"
+  const isAi = Boolean(post.isAiGenerated || post.agentMeta)
+  const ariaSuffix = [
+    priority ? `${PRIORITY_LABEL[priority]} priority` : null,
+    isAi ? "AI-assisted" : null,
+  ]
+    .filter(Boolean)
+    .join(" - ")
 
   return (
     <div className="relative group/pill">
@@ -49,13 +71,23 @@ export function EventPill({ post, category, onClick }: Props) {
           "block w-full text-left rounded-sm px-1.5 py-0.5 text-[11px] leading-tight truncate",
           "cursor-pointer hover:brightness-95 transition-[filter]",
         )}
-        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}`}
+        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}${ariaSuffix ? ` - ${ariaSuffix}` : ""}`}
       >
+        {showPriorityFlag && (
+          <Flag
+            aria-hidden
+            className="mr-1 inline size-2.5 align-text-top"
+            style={{ color: PRIORITY_COLOR[priority] }}
+          />
+        )}
         <span aria-hidden className="font-bold mr-1">
           {statusGlyph(post.status)}
         </span>
         {time && <span className="font-semibold mr-1">{time}</span>}
         <span className="truncate">{post.brief ?? "Untitled"}</span>
+        {isAi && (
+          <Sparkles aria-hidden className="ml-1 inline size-2.5 align-text-top opacity-70" />
+        )}
       </button>
 
       {post.status === "scheduled" && (
@@ -99,6 +131,22 @@ export function EventPill({ post, category, onClick }: Props) {
         <div className="text-foreground line-clamp-3 leading-snug">
           {post.brief ?? "Untitled"}
         </div>
+        {(priority || isAi) && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {priority && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Flag aria-hidden className="size-3" style={{ color: PRIORITY_COLOR[priority] }} />
+                {PRIORITY_LABEL[priority]}
+              </span>
+            )}
+            {isAi && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Sparkles aria-hidden className="size-3" />
+                AI-assisted
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

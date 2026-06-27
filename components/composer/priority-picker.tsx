@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, Flag, Sparkles } from "lucide-react"
+import { Check, Flag } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Priority = "urgent" | "high" | "normal" | "low"
@@ -45,14 +45,6 @@ export function PriorityPicker({ value, onSave, disabled }: PriorityPickerProps)
         <Flag className="h-3.5 w-3.5 shrink-0 opacity-40" />
         <span className="flex-1 text-left">None</span>
         {value === undefined && <Check className="h-3.5 w-3.5 shrink-0" />}
-      </button>
-      <button
-        disabled
-        className="mt-1 flex w-full items-center gap-2 rounded-sm border-t border-border px-2 pt-2 pb-1 text-xs text-muted-foreground/60 cursor-not-allowed"
-        aria-label="Prioritize with AI (coming soon)"
-      >
-        <Sparkles className="h-3 w-3 shrink-0" />
-        Prioritize with AI
       </button>
     </div>
   )

@@ -8,6 +8,7 @@ import {
   isoTimestamp,
   linkProvider,
   nextActionSchema,
+  postPriority,
   postStatus,
   postType,
 } from "./_shared"
@@ -121,9 +122,10 @@ export const postSchema = audit.extend({
   isAiGenerated: z.boolean().optional(),
   coverAssetId: z.string().optional(),
 
-  priority: z.enum(["urgent", "high", "normal", "low"]).optional(),
+  priority: postPriority.optional(),
   timeEstimateMinutes: z.number().int().nonnegative().optional(),
   humanId: z.string().optional(),
+  relatedPostIds: z.array(z.string()).optional(),
   recurrence: z
     .object({
       freq: z.enum(["daily", "weekly", "custom"]),

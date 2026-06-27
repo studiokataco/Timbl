@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { format, parseISO } from "date-fns"
-import { Download, FilterX, ListChecks, Search, X } from "lucide-react"
+import { Download, FilterX, Flag, ListChecks, Search, Sparkles, X } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { SegmentedTabs } from "@/components/ui/segmented-tabs"
@@ -42,6 +42,25 @@ const STATUS_FILTER_OPTIONS = LEGACY_POST_STATUSES.map((s) => ({
   value: s,
   label: postStatusLabel(s),
 }))
+
+const PRIORITY_COLOR: Record<string, string> = {
+  urgent: "#ef4444",
+  high: "#f59e0b",
+  normal: "#3b82f6",
+  low: "#94a3b8",
+}
+const PRIORITY_RANK: Record<string, number> = {
+  urgent: 0,
+  high: 1,
+  normal: 2,
+  low: 3,
+}
+const PRIORITY_LABEL: Record<string, string> = {
+  urgent: "Urgent",
+  high: "High",
+  normal: "Normal",
+  low: "Low",
+}
 
 type Props = {
   orgId: string
@@ -123,6 +142,12 @@ export function PostsTable({
       )
     }
     rows = [...rows].sort((a, b) => {
+      if (sortBy === "priority") {
+        const ar = PRIORITY_RANK[a.priority ?? ""] ?? 99
+        const br = PRIORITY_RANK[b.priority ?? ""] ?? 99
+        const cmp = ar - br
+        return sortDir === "asc" ? cmp : -cmp
+      }
       const av = (a as unknown as Record<string, string>)[sortBy] ?? ""
       const bv = (b as unknown as Record<string, string>)[sortBy] ?? ""
       const cmp = av < bv ? -1 : av > bv ? 1 : 0
@@ -160,8 +185,10 @@ export function PostsTable({
 
   const exportCsv = () => {
     const head = [
+      "id",
       "date",
       "status",
+      "priority",
       "title",
       "category",
       "lead",
@@ -171,8 +198,10 @@ export function PostsTable({
     const lines = [head.join(",")]
     for (const p of filtered) {
       const cells = [
+        p.humanId ?? "",
         p.scheduledDate,
         p.status,
+        p.priority ?? "",
         (p.brief ?? "").replaceAll('"', '""'),
         categoryById.get(p.categoryId ?? "")?.name ?? "",
         userById.get(p.leadUserId ?? "")?.name ?? "",
@@ -509,9 +538,29 @@ export function PostsTable({
                   onClick={() => openComposer(p.id)}
                   className="w-full pr-8 text-left active:opacity-80"
                 >
-                  <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
-                    {p.brief ?? "Untitled post"}
-                  </p>
+                  <div className="flex items-start gap-1.5">
+                    {p.priority ? (
+                      <Flag
+                        aria-label={`${p.priority} priority`}
+                        className="mt-0.5 size-3 shrink-0"
+                        style={{ color: PRIORITY_COLOR[p.priority] }}
+                      />
+                    ) : null}
+                    <p className="line-clamp-2 min-w-0 flex-1 text-sm font-medium leading-snug text-foreground">
+                      {p.humanId ? (
+                        <span className="mr-1 font-mono text-[11px] font-normal text-muted-foreground">
+                          {p.humanId}
+                        </span>
+                      ) : null}
+                      {p.brief ?? "Untitled post"}
+                      {p.isAiGenerated || p.agentMeta ? (
+                        <Sparkles
+                          aria-label="AI-assisted"
+                          className="ml-1 inline size-3 align-text-top text-muted-foreground"
+                        />
+                      ) : null}
+                    </p>
+                  </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
                     <span>{format(parseISO(p.scheduledDate), "d MMM yyyy")}</span>
                     <span aria-hidden>·</span>
@@ -573,6 +622,7 @@ export function PostsTable({
             <col className="w-44" />
             <col className="w-24" />
             <col className="w-28" />
+            <col className="w-24" />
             <col className="w-16" />
             <col className="w-[6.5rem]" />
           </colgroup>
@@ -591,14 +641,15 @@ export function PostsTable({
               <Th>Category</Th>
               <Th>Lead</Th>
               <Th>Assignee</Th>
+              <Th onClick={() => toggleSort("priority")}>Priority</Th>
               <Th>Type</Th>
-              <th className="px-1.5 py-2" />
+              <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-6">
+                <td colSpan={10} className="p-6">
                   <EmptyState
                     icon={FilterX}
                     title="No posts match these filters"
@@ -613,6 +664,7 @@ export function PostsTable({
                 const cat = categoryById.get(p.categoryId ?? "")
                 const lead = userById.get(p.leadUserId ?? "")
                 const assg = userById.get(p.assigneeId ?? "")
+                const canSchedule = p.status === "idea" || p.status === "brief"
                 return (
                   <tr
                     key={p.id}
@@ -641,7 +693,22 @@ export function PostsTable({
                         {postStatusLabel(p.status)}
                       </Badge>
                     </RowCell>
-                    <RowCell className="min-w-0 truncate">{p.brief ?? "-"}</RowCell>
+                    <RowCell className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        {p.humanId ? (
+                          <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                            {p.humanId}
+                          </span>
+                        ) : null}
+                        <span className="min-w-0 truncate">{p.brief ?? "-"}</span>
+                        {p.isAiGenerated || p.agentMeta ? (
+                          <Sparkles
+                            aria-label="AI-assisted"
+                            className="size-3 shrink-0 text-muted-foreground"
+                          />
+                        ) : null}
+                      </div>
+                    </RowCell>
                     <RowCell className="min-w-0">
                       {cat ? (
                         <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-xs">
@@ -658,12 +725,32 @@ export function PostsTable({
                     </RowCell>
                     <RowCell className="min-w-0 truncate text-xs">{lead?.name ?? "-"}</RowCell>
                     <RowCell className="min-w-0 truncate text-xs">{assg?.name ?? "-"}</RowCell>
+                    <RowCell>
+                      {p.priority ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs">
+                          <Flag
+                            aria-hidden
+                            className="size-3.5 shrink-0"
+                            style={{ color: PRIORITY_COLOR[p.priority] }}
+                          />
+                          {PRIORITY_LABEL[p.priority]}
+                        </span>
+                      ) : (
+                        <Flag
+                          aria-label="No priority"
+                          className="size-3.5 text-muted-foreground/30"
+                        />
+                      )}
+                    </RowCell>
                     <RowCell className="text-xs capitalize">{formatPostTypes(p)}</RowCell>
                     <RowCell
-                      className="justify-end"
+                      className={cn(
+                        "justify-end",
+                        canSchedule ? "cursor-pointer" : "cursor-default",
+                      )}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {p.status === "idea" || p.status === "brief" ? (
+                      {canSchedule ? (
                         <SchedulePostPopover
                           initialDate={p.scheduledDate}
                           pending={pending}

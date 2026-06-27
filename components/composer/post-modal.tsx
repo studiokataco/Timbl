@@ -14,6 +14,7 @@ import {
   Clock,
   Flag,
   Layers,
+  LayoutTemplate,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -101,6 +102,8 @@ import { formatTimeEstimate } from "@/lib/post-time-estimate"
 import { ActivityPanel } from "./activity-panel"
 import { ShareDialog } from "./share-dialog"
 import { ChecklistPanel } from "./checklist-panel"
+import { RelatedPanel } from "./related-panel"
+import { TemplatePicker } from "./template-picker"
 
 const POST_TYPE_OPTIONS: PostType[] = ["grid", "carousel", "reel", "story", "video"]
 const CHANNEL_STATUS_OPTIONS: ChannelStatus[] = ["n/a", "scheduled", "published", "failed"]
@@ -156,6 +159,7 @@ const TABS: SegmentedTab[] = [
   { id: "design", label: "Design" },
   { id: "channels", label: "Channels" },
   { id: "preview", label: "Preview" },
+  { id: "related", label: "Related" },
 ]
 
 export function PostModal({
@@ -202,6 +206,7 @@ export function PostModal({
   const [templateName, setTemplateName] = useState("")
   const [templateCadence, setTemplateCadence] = useState<TemplateCadence>("ad-hoc")
   const [shareOpen, setShareOpen] = useState(false)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
 
   const lastSavedRef = useRef<string>("")
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -662,7 +667,15 @@ export function PostModal({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={openSaveAsTemplate} disabled={!post?.id}>
+                        <LayoutTemplate aria-hidden className="mr-2 size-4" />
                         Save as template
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setTemplatePickerOpen(true)}
+                        disabled={!post?.id}
+                      >
+                        <LayoutTemplate aria-hidden className="mr-2 size-4" />
+                        Apply template
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -1111,7 +1124,9 @@ export function PostModal({
                       {activeTab === "brief" && (
                         <div className="flex flex-col gap-4 px-5 py-4">
                           <div className="flex flex-col gap-1.5">
-                            <Label>Brief</Label>
+                            <div className="flex items-center justify-between">
+                              <Label>Brief</Label>
+                            </div>
                             <Textarea
                               rows={5}
                               value={draft.detailedBrief ?? ""}
@@ -1141,7 +1156,9 @@ export function PostModal({
                       {activeTab === "copy-tags" && (
                         <div className="flex flex-col gap-4 px-5 py-4">
                           <div className="flex flex-col gap-1.5">
-                            <Label>Caption</Label>
+                            <div className="flex items-center justify-between">
+                              <Label>Caption</Label>
+                            </div>
                             <Textarea
                               rows={6}
                               value={draft.blurb ?? ""}
@@ -1312,6 +1329,17 @@ export function PostModal({
                         </div>
                       )}
 
+                      {/* Related */}
+                      {activeTab === "related" && post?.id && (
+                        <RelatedPanel
+                          postId={post.id}
+                          campaignId={draft.campaignId}
+                          campaignName={
+                            allCampaigns.find((c) => c.id === draft.campaignId)?.name
+                          }
+                        />
+                      )}
+
                     </div>
                   </div>
 
@@ -1459,6 +1487,18 @@ export function PostModal({
           onOpenChange={setShareOpen}
           postId={post.id}
           postTitle={draft.brief}
+        />
+      )}
+
+      {post?.id && (
+        <TemplatePicker
+          open={templatePickerOpen}
+          onOpenChange={setTemplatePickerOpen}
+          postId={post.id}
+          onApplied={(tmpl) => {
+            if (tmpl.blurbTemplate) setField("blurb", tmpl.blurbTemplate)
+            if (tmpl.defaultHashtags?.length) setField("hashtags", tmpl.defaultHashtags)
+          }}
         />
       )}
 

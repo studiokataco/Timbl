@@ -5,7 +5,14 @@ import { randomUUID } from "node:crypto"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPostsPath, orgKanbanColumnsPath } from "@/lib/firebase/paths"
-import { isoDate, isoTime, nextActionKind, postType } from "@/lib/schemas/_shared"
+import {
+  channelKey,
+  isoDate,
+  isoTime,
+  nextActionKind,
+  postPriority,
+  postType,
+} from "@/lib/schemas/_shared"
 
 import { getRuntimeCtx } from "../runtime/context"
 
@@ -15,14 +22,6 @@ import { getRuntimeCtx } from "../runtime/context"
  * agent creates carry an `agentMeta` field so the UI can render the
  * "AI-assisted" badge and the review-state pill.
  */
-
-const channelKey = z.enum([
-  "instagram",
-  "facebook",
-  "linkedin",
-  "website",
-  "fb_groups",
-])
 
 const createInput = z.object({
   scheduledDate: isoDate,
@@ -36,6 +35,7 @@ const createInput = z.object({
   blurb: z.string().max(8_000).optional(),
   hashtags: z.array(z.string().min(1).max(64)).max(40).default([]),
   postType: postType.default("grid"),
+  priority: postPriority.optional(),
   channels: z.array(channelKey).default([]),
   status: z.string().min(1).default("idea"),
   confidence: z.number().min(0).max(1).optional(),
@@ -72,6 +72,7 @@ export const createDraftPostTool = new FunctionTool({
       campaignId: input.campaignId,
       awarenessDayId: input.awarenessDayId,
       postType: input.postType,
+      priority: input.priority,
       brief: input.brief,
       detailedBrief: input.detailedBrief,
       blurb: input.blurb,
@@ -122,6 +123,8 @@ const updateInput = z.object({
     detailedBrief: z.string().max(8_000).optional(),
     blurb: z.string().max(8_000).optional(),
     hashtags: z.array(z.string()).optional(),
+    priority: postPriority.optional(),
+    relatedPostIds: z.array(z.string()).optional(),
     rationale: z.string().max(4_000).optional(),
     reviewState: z.enum(["pending", "approved", "rejected"]).optional(),
   }),
@@ -205,10 +208,12 @@ export const listPostsTool = new FunctionTool({
         scheduledDate: p.scheduledDate,
         scheduledTime: p.scheduledTime ?? null,
         status: p.status,
+        priority: p.priority ?? null,
         brief: p.brief ?? null,
         blurb: p.blurb ?? null,
         categoryId: p.categoryId ?? null,
         campaignId: p.campaignId ?? null,
+        relatedPostIds: p.relatedPostIds ?? null,
         agentMeta: p.agentMeta ?? null,
       }))
     return { count: posts.length, posts }

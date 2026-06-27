@@ -13,6 +13,10 @@ import {
   listPostsTool,
 } from "../../tools/posts"
 import { listUpcomingAwarenessDaysTool } from "../../tools/awareness"
+import {
+  listTemplatesTool,
+  useTemplateTool,
+} from "../../tools/templates"
 
 /*
  * Cadence-planner - bulk-drafts a posting plan for an upcoming window
@@ -35,6 +39,8 @@ export function buildCadencePlannerAgent(config: AgentConfig): LlmAgent {
       findOpenSlotsTool,
       listPostsTool,
       createDraftPostTool,
+      listTemplatesTool,
+      useTemplateTool,
     ],
     instructionSuffix: CADENCE_INSTRUCTION,
   })
@@ -46,6 +52,6 @@ const CADENCE_INSTRUCTION = [
   "  - Read brandConfig.targetCadence (perWeek, preferredDays, preferredTimes).",
   "  - Call findOpenSlots with the user-supplied date range and the cadence preferences.",
   "  - For each returned slot, decide a topic - combine awareness days, brand priorities, and existing posts (use listPosts to avoid repeating).",
-  "  - Call createDraftPost once per slot. Set status='idea', reviewState='pending', and include a clear `brief`.",
+  "  - When a slot fits a recurring pattern the org already templated (call listTemplates once up front to see them), fill it with useTemplate instead of createDraftPost - pass the slot's `scheduledDate` and a finished `blurb` with every [PLACEHOLDER] resolved. Otherwise call createDraftPost once per slot. Set status='idea', reviewState='pending', and include a clear `brief`.",
   "  - Be terse in your final reply: just summarise how many drafts you created and the date range.",
 ].join("\n")

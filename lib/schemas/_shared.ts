@@ -43,6 +43,9 @@ export type PostType = z.infer<typeof postType>
 export const userRole = z.enum(["admin", "editor", "contributor"])
 export type UserRole = z.infer<typeof userRole>
 
+export const postPriority = z.enum(["urgent", "high", "normal", "low"])
+export type PostPriority = z.infer<typeof postPriority>
+
 export const channelKey = z.enum([
   "instagram",
   "facebook",

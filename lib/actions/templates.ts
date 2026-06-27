@@ -8,7 +8,7 @@ import {
   orgPostsPath,
   orgTemplatesPath,
 } from "@/lib/firebase/paths"
-import { snapToData } from "@/lib/firebase/serialize"
+import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { getPostTypes } from "@/lib/post-types"
 import { gateErrorToResult, requireFeature } from "@/lib/plans/gate"
@@ -260,4 +260,44 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
   }
   revalidatePath("/templates")
   return { ok: true, id }
+}
+
+export async function listTemplates(): Promise<WithId<Template>[]> {
+  const orgId = await getCurrentOrgId()
+  const snap = await getDb()
+    .collection(orgTemplatesPath(orgId))
+    .orderBy("name", "asc")
+    .get()
+  return snap.docs.map((d) => snapToData<Template>(d))
+}
+
+const applyTemplateSchema = z.object({
+  postId: z.string().min(1),
+  templateId: z.string().min(1),
+})
+
+export async function applyTemplate(input: unknown): Promise<ServerActionResult> {
+  const parsed = applyTemplateSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" }
+  const orgId = await getCurrentOrgId()
+  const db = getDb()
+  const [tmplSnap, postSnap] = await Promise.all([
+    db.doc(`${orgTemplatesPath(orgId)}/${parsed.data.templateId}`).get(),
+    db.collection(orgPostsPath(orgId)).doc(parsed.data.postId).get(),
+  ])
+  if (!tmplSnap.exists) return { ok: false, error: "Template not found" }
+  if (!postSnap.exists || postSnap.data()?.organizationId !== orgId) {
+    return { ok: false, error: "Post not found" }
+  }
+  const tmpl = snapToData<Template>(tmplSnap)
+  const now = new Date().toISOString()
+  const patch: Record<string, unknown> = { updatedAt: now, templateId: tmpl.id }
+  if (tmpl.blurbTemplate) patch.blurb = tmpl.blurbTemplate
+  if (tmpl.defaultHashtags?.length) patch.hashtags = tmpl.defaultHashtags
+  if (tmpl.defaultPostType) patch.postType = tmpl.defaultPostType
+  if (tmpl.defaultCtaId) patch.ctaId = tmpl.defaultCtaId
+  if (tmpl.designTemplateCanvaUrl) patch.canvaUrl = tmpl.designTemplateCanvaUrl
+  if (tmpl.categoryId && !postSnap.data()?.categoryId) patch.categoryId = tmpl.categoryId
+  await db.collection(orgPostsPath(orgId)).doc(parsed.data.postId).update(patch)
+  return { ok: true }
 }
