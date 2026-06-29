@@ -323,6 +323,80 @@ export async function listRecentRuns(limit = 50): Promise<RunRow[]> {
   return snap.docs.map(toRunRow)
 }
 
+export interface PlatformUserRow {
+  email: string
+  name: string
+  authUid: string | null
+  orgCount: number
+  activeOrgCount: number
+  roles: string[]
+  lastActiveAt: string | null
+  memberships: Array<{
+    organizationId: string
+    orgName: string
+    userId: string
+    role: string
+    active: boolean
+  }>
+}
+
+export async function listPlatformUsers(): Promise<PlatformUserRow[]> {
+  await requirePlatformAdmin()
+  const db = getAdminDb()
+  const [usersSnap, orgsSnap] = await Promise.all([
+    db.collectionGroup("users").get(),
+    db.collection("organizations").get(),
+  ])
+  const orgNames = new Map<string, string>()
+  for (const doc of orgsSnap.docs) {
+    orgNames.set(doc.id, (doc.data().name as string) ?? doc.id)
+  }
+
+  const byEmail = new Map<string, PlatformUserRow>()
+  for (const doc of usersSnap.docs) {
+    const orgId = doc.ref.parent.parent?.id
+    if (!orgId || !orgNames.has(orgId)) continue
+    const d = doc.data()
+    const email = ((d.email as string) ?? "").trim().toLowerCase()
+    if (!email) continue
+    const role = (d.role as string) ?? "contributor"
+    const active = d.active !== false
+    const lastActiveAt = (d.lastActiveAt as string | undefined) ?? null
+
+    let row = byEmail.get(email)
+    if (!row) {
+      row = {
+        email,
+        name: (d.name as string) ?? email.split("@")[0],
+        authUid: (d.authUid as string | undefined) ?? null,
+        orgCount: 0,
+        activeOrgCount: 0,
+        roles: [],
+        lastActiveAt: null,
+        memberships: [],
+      }
+      byEmail.set(email, row)
+    }
+    row.orgCount += 1
+    if (active) row.activeOrgCount += 1
+    if (!row.roles.includes(role)) row.roles.push(role)
+    if (lastActiveAt && (!row.lastActiveAt || lastActiveAt > row.lastActiveAt)) {
+      row.lastActiveAt = lastActiveAt
+    }
+    row.memberships.push({
+      organizationId: orgId,
+      orgName: orgNames.get(orgId) ?? orgId,
+      userId: doc.id,
+      role,
+      active,
+    })
+  }
+
+  const out = [...byEmail.values()]
+  out.sort((a, b) => a.name.localeCompare(b.name))
+  return out
+}
+
 export async function listOrgRuns(orgId: string, limit = 25): Promise<RunRow[]> {
   await requirePlatformAdmin()
   const snap = await getAdminDb()
