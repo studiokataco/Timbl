@@ -1,18 +1,17 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { Activity, Coins, Cpu, Gauge } from "lucide-react"
+import { Activity, Cpu, Gauge } from "lucide-react"
 
 import { getStudioUsage, type StudioUsage } from "@/lib/actions/usage"
-import { CostBars } from "@/components/control/widgets"
-import { compact, pct, usd } from "@/lib/platform/format"
+import { compact, pct } from "@/lib/platform/format"
 import type { LucideIcon } from "lucide-react"
 
 /*
- * Studio usage dashboard - the tenant-facing "where do my tokens, calls, and
- * spend go" view that replaces the old pipeline-stage graph. Efferd-style
- * shadcn blocks: a KPI stat-card row, a per-agent breakdown, and a
- * cost-by-model chart, all scoped to the caller's org and polled every 15s.
+ * Studio usage dashboard - the tenant-facing "where do my tokens and calls
+ * go" view that replaces the old pipeline-stage graph. Efferd-style shadcn
+ * blocks: a KPI stat-card row and a per-agent breakdown, scoped to the
+ * caller's org and polled every 15s. Cost stays admin-only in /control.
  */
 type Props = {
   initialUsage: StudioUsage
@@ -33,13 +32,7 @@ export function UsageDashboard({ initialUsage }: Props) {
 
   return (
     <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          icon={Coins}
-          label="Spend"
-          value={usd(usage.usdCost)}
-          sub={`${compact(usage.agentRuns)} runs this month`}
-        />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <StatCard
           icon={Cpu}
           label="Tokens"
@@ -60,21 +53,12 @@ export function UsageDashboard({ initialUsage }: Props) {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel
-          title="Usage by agent"
-          empty={usage.byAgent.length === 0 ? "No agent runs yet this month." : undefined}
-        >
-          <AgentBars data={usage.byAgent} />
-        </Panel>
-        <Panel title="Cost by model">
-          <CostBars
-            data={usage.byModel}
-            names={usage.modelNames}
-            empty="No model spend yet this month."
-          />
-        </Panel>
-      </div>
+      <Panel
+        title="Usage by agent"
+        empty={usage.byAgent.length === 0 ? "No agent runs yet this month." : undefined}
+      >
+        <AgentBars data={usage.byAgent} />
+      </Panel>
     </div>
   )
 }
@@ -152,7 +136,7 @@ function AgentBars({
               {row.agent}
             </span>
             <span className="shrink-0 tabular-nums text-muted-foreground">
-              {compact(row.calls)} calls · {compact(row.tokens)} tok · {usd(row.usd)}
+              {compact(row.calls)} calls · {compact(row.tokens)} tok
             </span>
           </div>
           <div className="relative h-2 overflow-hidden rounded-pill bg-secondary">
