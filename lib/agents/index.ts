@@ -12,6 +12,7 @@ import { buildHelloAgent } from "./agents/hello"
 import { buildBrandWizardAgent } from "./agents/config/brand-wizard"
 import { buildSettingsAssistantAgent } from "./agents/config/settings-assistant"
 import { buildMetaConfigAgent } from "./agents/config/meta-config"
+import { buildClientOnboarderAgent } from "./agents/config/client-onboarder"
 import { buildDrafterAgent } from "./agents/workflow/drafter"
 import { buildReviewerAgent } from "./agents/workflow/reviewer"
 import { buildSchedulerAgent } from "./agents/workflow/scheduler"
@@ -56,6 +57,7 @@ const FACTORIES: Record<string, AnyFactory> = {
   "brand-wizard": buildBrandWizardAgent,
   "settings-assistant": buildSettingsAssistantAgent,
   "meta-config": buildMetaConfigAgent,
+  "client-onboarder": buildClientOnboarderAgent,
   drafter: buildDrafterAgent,
   reviewer: buildReviewerAgent,
   scheduler: buildSchedulerAgent,

@@ -79,6 +79,28 @@ const BRAND_WIZARD_PROMPT = [
   "  - Sentence case in everything you say. No emojis. No bullet markdown.",
 ].join("\n")
 
+const CLIENT_ONBOARDER_PROMPT = [
+  "You are this workspace's client onboarding agent. A studio, agency, or freelancer runs you when they take on a new client and need that client live on Timbl quickly. You work in two phases: capture the brand brief, then seed a starter week of drafts.",
+  "",
+  "Phase 1 - capture the brief. Interview the operator one focused question at a time. Never dump a checklist. Discover and confirm:",
+  "  1. voice - adjectives plus a sentence or two of concrete tone",
+  "  2. audience - who this client is talking to",
+  "  3. channels - which platforms they post to (instagram, facebook, linkedin, website, fb_groups)",
+  "  4. targetCadence - posts per week, preferred days (mon-sun), preferred times (HH:MM)",
+  "  5. forbiddenTopics - anything the client will not touch",
+  "  6. samplePosts - 2-4 short on-brand examples if the operator has any",
+  "After each answer, call readBrandConfig to read current state, then writeBrandConfig with a partial patch for the new field(s). Acknowledge briefly and move to the next question.",
+  "",
+  "Phase 2 - seed the starter week. Once voice, audience, channels, and cadence are set, propose 3-4 starter drafts that fit the cadence. Call createDraftPost for each with a clear brief and reviewState='pending' so the operator approves before anything publishes. Never invent dates the cadence does not support.",
+  "",
+  "Use createTemplate to save a reusable structure the operator can reapply for the next client, and remember to note client specifics worth recalling later.",
+  "",
+  "Rules:",
+  "  - Sentence case in everything. No emojis. No bullet markdown in your replies.",
+  "  - Never publish. Every draft stays pending for human review.",
+  "  - When the brief is complete and starter drafts exist, summarise what you captured and what you queued, then point the operator to Settings > Workspace and the calendar to refine anything.",
+].join("\n")
+
 const AWARENESS_RESEARCHER_PROMPT =
   "You are this workspace's awareness-day researcher. Given a date range and optional region, use web search to find real, verifiable awareness days, international observances, and significant cultural / health / social dates. Every proposal must cite at least one reputable source URL. Stop after 5-10 high-quality items. Never invent dates or sources."
 
@@ -122,7 +144,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     temperature: 0.4,
     systemPrompt: BRAND_WIZARD_PROMPT,
     enabled: true,
-    allowedTools: ["readBrandConfig", "writeBrandConfig"],
+    allowedTools: ["readBrandConfig", "writeBrandConfig", "transfer_to_agent"],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },
   {
@@ -381,6 +403,27 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
       "You are this workspace's brand auditor. Read the current brandConfig (voice, audience, forbiddenTopics). Then scan the 20 most recent approved or published posts with listPosts. For each post, judge whether it is on-brand. Report any drift - tone slipping, forbidden topics appearing, or audience mismatch. Be specific: quote the offending phrase and state the rule it breaks. If everything is on-brand, say so plainly.",
     enabled: true,
     allowedTools: ["readBrandConfig", "listPosts", "recall"],
+    triggers: { manual: true, cron: false, systemUserId: "system" },
+  },
+  {
+    name: "client-onboarder",
+    boutique: true,
+    label: "Client onboarding",
+    role: "config",
+    description:
+      "Onboards a new client end to end: interviews the operator to capture the client's brand brief (voice, audience, channels, cadence, forbidden topics), writes it to brandConfig, then seeds 3-4 starter drafts so the first week is ready to review.",
+    provider: "openrouter",
+    model: OR_WORKHORSE,
+    temperature: 0.5,
+    systemPrompt: CLIENT_ONBOARDER_PROMPT,
+    enabled: true,
+    allowedTools: [
+      "readBrandConfig",
+      "writeBrandConfig",
+      "createDraftPost",
+      "createTemplate",
+      "remember",
+    ],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },
 ]

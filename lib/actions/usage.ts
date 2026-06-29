@@ -1,7 +1,7 @@
 "use server"
 
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
-import { isBoutiqueAgent } from "@/lib/agents/defaults"
+import { boutiqueAgentDefaults, isBoutiqueAgent } from "@/lib/agents/defaults"
 import { modelLabel, MODEL_SUGGESTIONS } from "@/lib/agents/provider-catalog"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentConfigsPath, orgSocialAccountsPath, orgUsersPath } from "@/lib/firebase/paths"
@@ -61,6 +61,14 @@ export async function getUsageOverview(): Promise<OrgUsage> {
   const boutiqueActive = agentConfigsSnap.docs.filter(
     (d) => isBoutiqueAgent(d.id) && d.data().enabled !== false,
   ).length
+  /* The raw tier cap (e.g. 20) outruns the catalog - showing "3 / 20" when
+   * only N agents exist to switch on reads as broken. Clamp to the real
+   * ceiling, matching add-agent-sheet. Unlimited tiers stay uncapped. */
+  const agentCatalogTotal = boutiqueAgentDefaults().length
+  const agentsLimit =
+    plan.quotas.agents === null
+      ? null
+      : Math.min(plan.quotas.agents, agentCatalogTotal)
 
   return {
     period: snapshot.period,
@@ -105,7 +113,7 @@ export async function getUsageOverview(): Promise<OrgUsage> {
         label: "AI agents",
         hint: "Agents switched on in Studio",
         used: boutiqueActive,
-        limit: plan.quotas.agents,
+        limit: agentsLimit,
         resets: false,
       },
     ],

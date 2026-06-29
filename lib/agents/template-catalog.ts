@@ -37,6 +37,8 @@ const TAGLINES: Record<string, string> = {
   repurposer: "Turns your best past posts into fresh new drafts.",
   "approval-triage": "Nudges drafts that are due but still unreviewed.",
   "brand-auditor": "Checks recent posts for off-brand drift.",
+  "client-onboarder":
+    "Gets a new client live: captures their brief and seeds a starter week.",
 }
 
 export const AGENT_TEMPLATES: AgentTemplate[] = AGENT_DEFAULTS.map((d) => ({

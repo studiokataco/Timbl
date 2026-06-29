@@ -55,6 +55,7 @@ const NAME_TO_STAGE: Record<string, Stage> = {
   "brand-wizard": "CONFIG",
   "meta-config": "CONFIG",
   "settings-assistant": "CONFIG",
+  "client-onboarder": "CONFIG",
 }
 
 export function stageForAgent(name: string): Stage {
