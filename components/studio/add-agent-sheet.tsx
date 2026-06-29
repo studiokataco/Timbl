@@ -26,13 +26,6 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -45,7 +38,6 @@ import {
   BOUTIQUE_TEMPLATES,
   type AgentTemplate,
 } from "@/lib/agents/template-catalog"
-import { MODEL_SUGGESTIONS, modelLabel } from "@/lib/agents/provider-catalog"
 import {
   createAgentConfig,
   deleteAgentConfig,
@@ -243,7 +235,6 @@ function TemplateRow({
   const [pending, startTransition] = useTransition()
 
   const [description, setDescription] = useState(template.description)
-  const [model, setModel] = useState(template.model)
   const [temperature, setTemperature] = useState<number>(template.temperature)
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null)
   const [originalPrompt, setOriginalPrompt] = useState<string | null>(null)
@@ -257,13 +248,8 @@ function TemplateRow({
   const blockedEnable = atCap && !enabled
   const label = template.label ?? template.name
 
-  const modelOptions = Array.from(
-    new Set([template.model, ...(MODEL_SUGGESTIONS[template.provider] ?? [])]),
-  )
-
   const changes: string[] = []
   if (description.trim() !== template.description.trim()) changes.push("Description")
-  if (model !== template.model) changes.push("Model")
   if (temperature !== template.temperature) changes.push("Temperature")
   if (
     originalPrompt !== null &&
@@ -292,14 +278,12 @@ function TemplateRow({
 
   function resetFields() {
     setDescription(template.description)
-    setModel(template.model)
     setTemperature(template.temperature)
     setSystemPrompt(originalPrompt)
   }
 
   function install(overrides?: {
     description?: string
-    model?: string
     temperature?: number
     systemPrompt?: string
   }) {
@@ -323,7 +307,6 @@ function TemplateRow({
     setConfirmOpen(false)
     install({
       description: description.trim() || undefined,
-      model: model.trim() || undefined,
       temperature,
       systemPrompt: systemPrompt?.trim() || undefined,
     })
@@ -467,23 +450,6 @@ function TemplateRow({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-          </Field>
-          <Field label="Model">
-            <Select
-              value={model}
-              onValueChange={(v) => setModel(v ?? template.model)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {modelOptions.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {modelLabel(m)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </Field>
           <Field
             label={`Temperature - ${temperatureLabel(temperature)} (${temperature.toFixed(1)})`}
