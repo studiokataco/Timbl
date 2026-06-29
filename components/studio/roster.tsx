@@ -67,7 +67,7 @@ export function Roster({ rosterAgents, installedAgents }: Props) {
   return (
     <nav
       aria-label="Agents"
-      className="flex flex-col gap-5 p-4 overflow-y-auto h-full"
+      className="flex flex-col gap-5 p-4 pb-[var(--ask-ai-clearance)] overflow-y-auto h-full"
     >
       {STAGES.map((stage) => {
         const items = grouped[stage]
