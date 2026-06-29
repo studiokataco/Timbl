@@ -94,7 +94,7 @@ export function BrandGlowButton({
       onFocus={handleEnter}
       onBlur={handleLeave}
       className={cn(
-        "relative inline-flex items-center justify-center rounded-full bg-background text-sm font-medium text-foreground will-change-transform shadow-lg disabled:pointer-events-none disabled:opacity-50",
+        "relative inline-flex items-center justify-center rounded-full bg-background text-sm font-medium text-foreground will-change-transform disabled:pointer-events-none disabled:opacity-50",
         className
       )}
       style={{ ...style, boxShadow: brandGlowBoxShadow() }}

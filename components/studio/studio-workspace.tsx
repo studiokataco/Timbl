@@ -59,12 +59,12 @@ export function StudioWorkspace({
   }
 
   return (
-    <div className="flex-1 min-h-0 min-w-0 grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_380px] divide-x divide-border">
+    <div className="flex-1 min-h-0 min-w-0 -mb-[var(--ask-ai-clearance)] grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_380px] divide-x divide-border">
       <aside className="hidden md:block min-h-0 overflow-hidden">
         <Roster rosterAgents={rosterAgents} installedAgents={agents} />
       </aside>
 
-      <main className="min-h-0 min-w-0 overflow-y-auto flex flex-col pb-24 md:pb-0">
+      <main className="min-h-0 min-w-0 overflow-y-auto flex flex-col pb-[var(--ask-ai-clearance)]">
         <div className="px-4 sm:px-6 pt-6 md:pt-8 pb-4 md:pb-2 border-b border-border md:border-b-0">
           <PageHeader
             size="sm"

@@ -1,0 +1,149 @@
+import "server-only"
+
+import { getAdminDb } from "@/lib/firebase/admin"
+import { orgBrandConfigDocPath, orgPath } from "@/lib/firebase/paths"
+import { brandConfigSchema } from "@/lib/schemas/brandConfig"
+import { resolveOrgChannels } from "@/lib/channels"
+import type { ChannelKey } from "@/lib/schemas"
+import {
+  getCurrentOrgId,
+  getCurrentUser,
+} from "@/lib/auth/server-helpers"
+import { listMembershipsForEmail, type MembershipRole } from "@/lib/auth/membership"
+import { getPlan, type PlanTier } from "@/lib/plans/plans"
+import {
+  IS_DEV_SHIM,
+  DEV_SESSIONS,
+  type DevOrgMode,
+} from "@/lib/auth/dev-session"
+
+export type WorkspaceSummary = {
+  id: string
+  name: string
+  role: MembershipRole
+  tier: PlanTier
+  channels: ChannelKey[]
+  current: boolean
+  /* Only set under the emulator shim - which dev cookie value activates it. */
+  devMode?: DevOrgMode
+}
+
+export type WorkspaceSwitcherData = {
+  current: WorkspaceSummary
+  workspaces: WorkspaceSummary[]
+  canCreateWorkspace: boolean
+  isDevShim: boolean
+}
+
+async function resolveChannelsForOrg(orgId: string): Promise<ChannelKey[]> {
+  const db = getAdminDb()
+  const [brandSnap, orgSnap] = await Promise.all([
+    db.doc(orgBrandConfigDocPath(orgId)).get(),
+    db.doc(orgPath(orgId)).get(),
+  ])
+
+  let brandChannels: ChannelKey[] | undefined
+  if (brandSnap.exists) {
+    const parsed = brandConfigSchema.safeParse({
+      ...(brandSnap.data() ?? {}),
+      id: "default",
+      organizationId: orgId,
+    })
+    if (parsed.success && parsed.data.channels.length) {
+      brandChannels = parsed.data.channels
+    }
+  }
+
+  const onboardingChannels = orgSnap.data()?.onboarding?.profile?.channels as
+    | string[]
+    | undefined
+
+  return resolveOrgChannels({ brandChannels, onboardingChannels })
+}
+
+async function resolveTierForOrg(orgId: string): Promise<PlanTier> {
+  const snap = await getAdminDb().doc(orgPath(orgId)).get()
+  return getPlan(snap.data()?.plan as string | undefined).tier
+}
+
+async function summarise(
+  base: { id: string; name: string; role: MembershipRole; devMode?: DevOrgMode },
+  currentOrgId: string,
+): Promise<WorkspaceSummary> {
+  const [channels, tier] = await Promise.all([
+    resolveChannelsForOrg(base.id),
+    resolveTierForOrg(base.id),
+  ])
+  return {
+    id: base.id,
+    name: base.name,
+    role: base.role,
+    tier,
+    channels,
+    current: base.id === currentOrgId,
+  }
+}
+
+/*
+ * View model for the sidebar workspace switcher. Lists every workspace the
+ * current user belongs to (their memberships), each with the connected
+ * channels and plan tier the dropdown renders. Under the emulator shim the
+ * two dev sessions (demo / tenant) stand in for real memberships, since
+ * switching there flips a cookie rather than re-minting a session.
+ */
+export async function getWorkspaceSwitcherData(): Promise<WorkspaceSwitcherData> {
+  const [user, currentOrgId] = await Promise.all([
+    getCurrentUser(),
+    getCurrentOrgId(),
+  ])
+
+  if (IS_DEV_SHIM) {
+    const modes = Object.keys(DEV_SESSIONS) as DevOrgMode[]
+    const workspaces = await Promise.all(
+      modes.map(async (mode) => {
+        const s = DEV_SESSIONS[mode]
+        const summary = await summarise(
+          { id: s.organisation.id, name: s.organisation.name, role: s.user.role },
+          currentOrgId,
+        )
+        return { ...summary, devMode: mode }
+      }),
+    )
+    workspaces.sort((a, b) => a.name.localeCompare(b.name))
+    const current = workspaces.find((w) => w.current) ?? workspaces[0]
+    return { current, workspaces, canCreateWorkspace: true, isDevShim: true }
+  }
+
+  const memberships = await listMembershipsForEmail(user.email)
+  const known = memberships.some((m) => m.organizationId === currentOrgId)
+  const rows = known
+    ? memberships
+    : [
+        ...memberships,
+        {
+          organizationId: currentOrgId,
+          name: currentOrgId,
+          role: user.role as MembershipRole,
+          userId: user.id,
+        },
+      ]
+
+  const workspaces = await Promise.all(
+    rows.map((m) =>
+      summarise(
+        { id: m.organizationId, name: m.name, role: m.role },
+        currentOrgId,
+      ),
+    ),
+  )
+  workspaces.sort((a, b) => a.name.localeCompare(b.name))
+  const current =
+    workspaces.find((w) => w.current) ?? workspaces[0]
+
+  return {
+    current,
+    workspaces,
+    canCreateWorkspace: process.env.NEW_ORG_SIGNUP !== "off",
+    isDevShim: false,
+  }
+}
