@@ -5,7 +5,7 @@ import { Menu, Search } from "lucide-react"
 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { TimblWordmark } from "@/components/brand/timbl-logo"
-import { SidebarNav } from "@/components/shared/sidebar"
+import { SidebarNav, FeedbackTrigger } from "@/components/shared/sidebar"
 import { WorkspaceSwitcher } from "@/components/shared/workspace-switcher"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 
@@ -44,6 +44,7 @@ export function MobileNav({ workspaces }: { workspaces: WorkspaceSwitcherData })
         </button>
         <nav className="flex flex-col gap-1">
           <SidebarNav onNavigate={() => setOpen(false)} />
+          <FeedbackTrigger onNavigate={() => setOpen(false)} className="mt-1" />
         </nav>
       </SheetContent>
     </Sheet>

@@ -26,21 +26,29 @@ export function TenantUsage({
           const over = !unlimited && u.used > (u.limit ?? 0)
           return (
             <div key={u.metric} className="text-sm">
-              <div className="mb-1 flex items-baseline justify-between gap-2">
+              <div className={cn("flex items-baseline justify-between gap-2", !unlimited && "mb-1")}>
                 <span className="font-medium">{METRIC_LABEL[u.metric] ?? u.metric}</span>
                 <span className={cn("tabular-nums text-muted-foreground", over && "text-red-600 dark:text-red-400")}>
-                  {compact(u.used)} / {unlimited ? "unlimited" : compact(u.limit ?? 0)}
+                  {unlimited ? (
+                    <>
+                      {compact(u.used)} <span className="font-medium text-emerald-600 dark:text-emerald-400">unlimited</span>
+                    </>
+                  ) : (
+                    `${compact(u.used)} / ${compact(u.limit ?? 0)}`
+                  )}
                 </span>
               </div>
-              <div className="relative h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full",
-                    over ? "bg-red-500" : ratio > 0.8 ? "bg-amber-500" : "bg-foreground/70",
-                  )}
-                  style={{ width: unlimited ? "8%" : `${Math.max(2, ratio * 100)}%` }}
-                />
-              </div>
+              {unlimited ? null : (
+                <div className="relative h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      "h-full rounded-full",
+                      over ? "bg-red-500" : ratio > 0.8 ? "bg-amber-500" : "bg-foreground/70",
+                    )}
+                    style={{ width: `${Math.max(2, ratio * 100)}%` }}
+                  />
+                </div>
+              )}
             </div>
           )
         })}

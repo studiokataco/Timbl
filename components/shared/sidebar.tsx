@@ -11,6 +11,7 @@ import {
   Globe,
   Sparkles,
   Settings,
+  MessageSquareText,
 } from "lucide-react"
 import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { WorkspaceSwitcher } from "@/components/shared/workspace-switcher"
@@ -103,6 +104,28 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+export function FeedbackTrigger({
+  onNavigate,
+  className,
+}: {
+  onNavigate?: () => void
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onNavigate}
+      className={cn(
+        "timbl-feedback-trigger flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
+        className,
+      )}
+    >
+      <MessageSquareText aria-hidden className="size-4" />
+      <span>Send feedback</span>
+    </button>
+  )
+}
+
 export function Sidebar({ workspaces }: { workspaces: WorkspaceSwitcherData }) {
   return (
     <nav
@@ -112,6 +135,7 @@ export function Sidebar({ workspaces }: { workspaces: WorkspaceSwitcherData }) {
       <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-4" />
       <WorkspaceSwitcher data={workspaces} className="mb-4" />
       <SidebarNav />
+      <FeedbackTrigger className="mt-auto" />
     </nav>
   )
 }
