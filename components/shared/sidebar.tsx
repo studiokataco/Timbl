@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -15,6 +16,7 @@ import {
 } from "lucide-react"
 import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { WorkspaceSwitcher } from "@/components/shared/workspace-switcher"
+import { FeedbackDialog } from "@/components/shared/feedback-dialog"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import { cn } from "@/lib/utils"
 
@@ -111,18 +113,25 @@ export function FeedbackTrigger({
   onNavigate?: () => void
   className?: string
 }) {
+  const [open, setOpen] = useState(false)
   return (
-    <button
-      type="button"
-      onClick={onNavigate}
-      className={cn(
-        "timbl-feedback-trigger flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
-        className,
-      )}
-    >
-      <MessageSquareText aria-hidden className="size-4" />
-      <span>Send feedback</span>
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true)
+          onNavigate?.()
+        }}
+        className={cn(
+          "timbl-feedback-trigger flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
+          className,
+        )}
+      >
+        <MessageSquareText aria-hidden className="size-4" />
+        <span>Send feedback</span>
+      </button>
+      <FeedbackDialog open={open} onOpenChange={setOpen} />
+    </>
   )
 }
 

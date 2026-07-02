@@ -15,6 +15,12 @@ const authProxyHost =
   (firebaseProjectId ? `${firebaseProjectId}.firebaseapp.com` : null)
 
 const nextConfig: NextConfig = {
+  // Next blocks dev-only resources (including the client hydration bundle)
+  // for origins outside the default allow-list. 127.0.0.1 isn't allow-listed
+  // out of the box even though it's the same host as localhost - without
+  // this, a page opened via 127.0.0.1 renders but never hydrates (no
+  // interactivity, no console errors, silent failure).
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   // PostHog ingestion proxy: keeps analytics same-origin so ad-blockers can't
   // drop events. The client posts to /ingest (see instrumentation-client.ts),
   // which we forward to the PostHog US ingestion + static-asset hosts. Applies

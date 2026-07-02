@@ -163,6 +163,7 @@ export const platformSignalKind = z.enum([
   "agent.failed",
   "quota.breached",
   "diagnostic.critical",
+  "feedback.submitted",
 ])
 export type PlatformSignalKind = z.infer<typeof platformSignalKind>
 
