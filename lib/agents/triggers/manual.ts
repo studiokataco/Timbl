@@ -4,7 +4,7 @@ import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
-import { requireActiveBilling, requireQuota } from "@/lib/plans/gate"
+import { requireActiveBilling, requireAgentBudget, requireQuota } from "@/lib/plans/gate"
 import { writePlatformSignal } from "@/lib/platform/signals"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
 import { estimateUsdCost } from "@/lib/agents/pricing"
@@ -73,6 +73,15 @@ export async function startAgentRun(
       `Unknown or unconfigured agent: ${input.agentName}. Did you seed agentConfigs?`,
     )
   }
+
+  /* Per-agent gate: tier-scaled invocation cap + monthlyUsdCap, on top of
+   * the blanket agentRuns quota above. See requireAgentBudget for why this
+   * needs the resolved config's budgets and so can't run earlier. */
+  await requireAgentBudget(
+    input.orgId,
+    input.agentName,
+    resolved.config.budgets.monthlyUsdCap,
+  )
 
   const runId = randomUUID()
   const sessionId = runId // 1:1 sessions and runs in v1 - simpler audit trail.

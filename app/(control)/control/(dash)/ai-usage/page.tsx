@@ -14,7 +14,7 @@ export default async function AiUsagePage() {
   const [rollup, orgs, trend, openRouter] = await Promise.all([
     getGlobalRollup(),
     listOrgRows(),
-    globalDailyTrend(14),
+    globalDailyTrend(90),
     getOpenRouterAccount(),
   ])
 
@@ -47,7 +47,7 @@ export default async function AiUsagePage() {
 
       <section className="mt-6 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
         <h2 className="mb-2 font-heading text-sm font-semibold tracking-tight">
-          Spend - last 14 days
+          Spend - last 90 days
         </h2>
         <SpendTrendChart data={trend} />
       </section>

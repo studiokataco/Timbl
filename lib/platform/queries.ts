@@ -4,6 +4,8 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
 import { orgAgentRunsPath, orgPath, orgUsersPath } from "@/lib/firebase/paths"
 import {
+  platformDiagnosticRunSchema,
+  platformDiagnosticsPath,
   platformOrgRollupDocPath,
   platformOrgRollupPeriodDocPath,
   platformOrgRollupsPath,
@@ -11,6 +13,7 @@ import {
   platformRollupDocPath,
   platformSignupRequestsPath,
   signupRequestSchema,
+  type PlatformDiagnosticRun,
   type SignupRequest,
 } from "@/lib/platform/schema"
 
@@ -585,4 +588,19 @@ export async function listRealtimeHealth(limit = 20): Promise<RealtimeHealthRow[
       degradedAt: (data.degradedAt as string) ?? "",
     }
   })
+}
+
+export async function getRecentDiagnostics(limit = 14): Promise<PlatformDiagnosticRun[]> {
+  await requirePlatformAdmin()
+  const snap = await getAdminDb()
+    .collection(platformDiagnosticsPath)
+    .orderBy("createdAt", "desc")
+    .limit(limit)
+    .get()
+  const out: PlatformDiagnosticRun[] = []
+  for (const d of snap.docs) {
+    const parsed = platformDiagnosticRunSchema.safeParse(d.data())
+    if (parsed.success) out.push(parsed.data)
+  }
+  return out
 }

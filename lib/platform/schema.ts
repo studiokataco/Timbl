@@ -18,6 +18,7 @@ import { coercePlatformRole, type PlatformRole } from "@/lib/auth/platform-rbac"
  *   platform/state/orgRollups/{orgId}                per-org snapshot (tenant list)
  *   platform/state/orgRollups/{orgId}/periods/{YYYY-MM}   per-org per-month
  *   platform/state/orgRollups/{orgId}/daily/{YYYY-MM-DD}  per-org per-day
+ *   platform/state/diagnostics/{YYYY-MM-DD}          daily cross-tenant findings digest
  *
  * `platform/state` itself is an implicit parent doc - subcollections exist
  * under it whether or not the doc is materialised.
@@ -71,6 +72,9 @@ export const platformOrgRollupDailyPath = (orgId: string) =>
   `${platformOrgRollupDocPath(orgId)}/daily`
 export const platformOrgRollupDailyDocPath = (orgId: string, date: string) =>
   `${platformOrgRollupDailyPath(orgId)}/${date}`
+export const platformDiagnosticsPath = `${ROOT}/diagnostics`
+export const platformDiagnosticsDocPath = (runId: string) =>
+  `${platformDiagnosticsPath}/${runId}`
 
 /* email -> doc id. hello@kataco.in -> hello-kataco-in. */
 export function emailSlug(email: string): string {
@@ -158,6 +162,7 @@ export const platformSignalKind = z.enum([
   "signup.requested",
   "agent.failed",
   "quota.breached",
+  "diagnostic.critical",
 ])
 export type PlatformSignalKind = z.infer<typeof platformSignalKind>
 
@@ -170,6 +175,33 @@ export const platformSignalSchema = z.object({
   createdAt: z.string(),
 })
 export type PlatformSignal = z.infer<typeof platformSignalSchema>
+
+/* Written by the platformDiagnostics scheduled function (functions/src/
+ * platformDiagnostics.ts - can't import this file, inlines the same shape).
+ * One doc per day, keyed by date so a re-run overwrites rather than
+ * accumulates. `raw` is always populated (pure data, no LLM involved);
+ * `findings` is best-effort - empty if the analysis call failed, so a
+ * narration outage never loses the underlying numbers. */
+export const platformDiagnosticSeverity = z.enum(["info", "warn", "critical"])
+export type PlatformDiagnosticSeverity = z.infer<typeof platformDiagnosticSeverity>
+
+export const platformDiagnosticFindingSchema = z.object({
+  severity: platformDiagnosticSeverity,
+  category: z.string(),
+  summary: z.string(),
+  suggestion: z.string(),
+})
+export type PlatformDiagnosticFinding = z.infer<typeof platformDiagnosticFindingSchema>
+
+export const platformDiagnosticRunSchema = z.object({
+  id: z.string(),
+  date: z.string(),
+  findings: z.array(platformDiagnosticFindingSchema).default([]),
+  raw: z.record(z.string(), z.unknown()).default({}),
+  narrationError: z.string().nullable().optional(),
+  createdAt: z.string(),
+})
+export type PlatformDiagnosticRun = z.infer<typeof platformDiagnosticRunSchema>
 
 export const impersonationSessionSchema = z.object({
   id: z.string(),

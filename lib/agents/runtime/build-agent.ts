@@ -41,7 +41,7 @@ export function buildLlmAgentFromConfig(
   const { config, instructionSuffix, name, description, webSearch, ...rest } =
     input
   const perm = makePermissionsCallback(config.allowedTools)
-  const budget = makeBudgetCallbacks(config.budgets)
+  const budget = makeBudgetCallbacks(config.budgets, config.model)
 
   const base = instructionSuffix
     ? `${config.systemPrompt}\n\n${instructionSuffix}`
@@ -63,6 +63,7 @@ export function buildLlmAgentFromConfig(
     instruction,
     contextCompactors: makeContextCompactors(config),
     beforeModelCallback: [budget.beforeModel],
+    afterModelCallback: [budget.afterModel],
     beforeToolCallback: [budget.beforeTool, perm],
   })
 }

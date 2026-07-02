@@ -74,12 +74,14 @@ export const SIGNAL_LABEL: Record<PlatformSignalKind, string> = {
   "signup.requested": "New signup",
   "agent.failed": "Agent failed",
   "quota.breached": "Quota exceeded",
+  "diagnostic.critical": "Critical finding",
 }
 
 export const SIGNAL_TONE: Record<PlatformSignalKind, string> = {
   "signup.requested": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   "agent.failed": "bg-red-500/15 text-red-700 dark:text-red-400",
   "quota.breached": "bg-amber-500/15 text-amber-700 dark:text-amber-500",
+  "diagnostic.critical": "bg-red-500/15 text-red-700 dark:text-red-400",
 }
 
 export function SignalPill({ kind }: { kind: PlatformSignalKind }) {

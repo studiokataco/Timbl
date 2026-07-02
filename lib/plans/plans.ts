@@ -43,6 +43,11 @@ export type PlanConfig = {
   perBrandPriceInr?: number
   /* `null` = unlimited. */
   quotas: Record<QuotaMetric, number | null>
+  /* Per-boutique-agent invocation cap for the billing period, keyed by
+   * agent name. An agent absent from this map has no agent-specific cap -
+   * only the blanket `agentRuns` quota applies to it. `null` = unlimited
+   * for that agent on this tier. */
+  agentInvocationCaps: Record<string, number | null>
   features: Record<PlanFeatureFlag, boolean>
   /* Brand/seat counts INCLUDED in the base price; overage is metered per
    * the per-brand surcharge above. */
@@ -57,6 +62,9 @@ export const PLANS: Record<string, PlanConfig> = {
     label: "Free",
     monthlyPriceInr: 0,
     quotas: { agentRuns: 100, scheduledPosts: 30, brands: 1, seats: 2, agents: 0 },
+    /* agents:0 already blocks every boutique agent on Free - explicit 0
+     * here documents intent rather than relying on that side effect. */
+    agentInvocationCaps: { "awareness-researcher": 0 },
     features: {
       multiStepApproval: false,
       customCategories: true,
@@ -80,6 +88,7 @@ export const PLANS: Record<string, PlanConfig> = {
     label: "Studio",
     monthlyPriceInr: 2999,
     quotas: { agentRuns: 1500, scheduledPosts: null, brands: 1, seats: 5, agents: 5 },
+    agentInvocationCaps: { "awareness-researcher": 1 },
     features: {
       multiStepApproval: false,
       customCategories: true,
@@ -101,6 +110,7 @@ export const PLANS: Record<string, PlanConfig> = {
     monthlyPriceInr: 11999,
     perBrandPriceInr: 5999,
     quotas: { agentRuns: 5000, scheduledPosts: null, brands: 3, seats: 15, agents: 20 },
+    agentInvocationCaps: { "awareness-researcher": 3 },
     features: {
       multiStepApproval: true,
       customCategories: true,
@@ -122,6 +132,9 @@ export const PLANS: Record<string, PlanConfig> = {
     /* Custom pricing - not self-serve. */
     monthlyPriceInr: null,
     quotas: { agentRuns: null, scheduledPosts: null, brands: null, seats: null, agents: null },
+    /* Scale's actual cap is TBD pending a business decision - unlimited is
+     * the safe placeholder until that number is set. */
+    agentInvocationCaps: { "awareness-researcher": null },
     features: {
       multiStepApproval: true,
       customCategories: true,
@@ -166,6 +179,7 @@ export type PlanFeatures = {
   label: string
   features: Record<PlanFeatureFlag, boolean>
   quotas: Record<QuotaMetric, number | null>
+  agentInvocationCaps: Record<string, number | null>
   /* Dunning state for UI affordances (the billing banner). Attached by
    * getOrgPlanFeatures; absent on the bare toPlanFeatures projection. */
   billingStatus?: BillingStatus
@@ -178,5 +192,6 @@ export function toPlanFeatures(plan: PlanConfig): PlanFeatures {
     label: plan.label,
     features: plan.features,
     quotas: plan.quotas,
+    agentInvocationCaps: plan.agentInvocationCaps,
   }
 }

@@ -189,6 +189,20 @@ export const serverActionResult = z.object({
         used: z.number(),
         currentTier: z.string(),
       }),
+      z.object({
+        kind: z.literal("agentInvocations"),
+        agentName: z.string(),
+        limit: z.number(),
+        used: z.number(),
+        currentTier: z.string(),
+      }),
+      z.object({
+        kind: z.literal("agentBudget"),
+        agentName: z.string(),
+        limitUsd: z.number(),
+        usedUsd: z.number(),
+        currentTier: z.string(),
+      }),
     ])
     .optional(),
 })

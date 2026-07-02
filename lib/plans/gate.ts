@@ -32,6 +32,8 @@ import { writePlatformSignal } from "@/lib/platform/signals"
 export type PlanGateReason =
   | { kind: "feature"; feature: PlanFeatureFlag; currentTier: string }
   | { kind: "quota"; metric: QuotaMetric; limit: number; used: number; currentTier: string }
+  | { kind: "agentInvocations"; agentName: string; limit: number; used: number; currentTier: string }
+  | { kind: "agentBudget"; agentName: string; limitUsd: number; usedUsd: number; currentTier: string }
 
 export class PlanGateError extends Error {
   readonly reason: PlanGateReason
@@ -43,10 +45,16 @@ export class PlanGateError extends Error {
 }
 
 function formatGateMessage(reason: PlanGateReason): string {
-  if (reason.kind === "feature") {
-    return `Feature "${reason.feature}" is not available on the ${reason.currentTier} plan.`
+  switch (reason.kind) {
+    case "feature":
+      return `Feature "${reason.feature}" is not available on the ${reason.currentTier} plan.`
+    case "quota":
+      return `Quota exceeded: ${reason.metric} (${reason.used}/${reason.limit}) on the ${reason.currentTier} plan.`
+    case "agentInvocations":
+      return `Quota exceeded: ${reason.agentName} runs (${reason.used}/${reason.limit}) on the ${reason.currentTier} plan this billing period.`
+    case "agentBudget":
+      return `Quota exceeded: ${reason.agentName} spend ($${reason.usedUsd.toFixed(2)}/$${reason.limitUsd.toFixed(2)}) this billing period.`
   }
-  return `Quota exceeded: ${reason.metric} (${reason.used}/${reason.limit}) on the ${reason.currentTier} plan.`
 }
 
 function emitQuotaBreachSignal(
@@ -61,6 +69,18 @@ function emitQuotaBreachSignal(
     orgId,
     summary: `Quota exceeded: ${metric} (${used}/${limit})`,
     meta: { metric, used, limit, tier },
+  }).catch(() => {})
+}
+
+function emitAgentGateBreachSignal(
+  orgId: string,
+  reason: Extract<PlanGateReason, { kind: "agentInvocations" | "agentBudget" }>,
+): void {
+  void writePlatformSignal({
+    kind: "quota.breached",
+    orgId,
+    summary: formatGateMessage(reason),
+    meta: { ...reason },
   }).catch(() => {})
 }
 
@@ -217,6 +237,74 @@ export async function requireQuota(
     })
   }
   return { plan, used, limit }
+}
+
+/* Read one agent's current-period run count and USD spend in a single get -
+ * both live as nested maps (agentRunsByAgent, usdByAgent) on the same usage
+ * doc `readUsage` reads from, written by emitAgentRun in
+ * lib/telemetry/agent-events.ts. */
+async function readAgentUsage(
+  orgId: string,
+  agentName: string,
+  period = currentPeriod(),
+): Promise<{ runs: number; usdSpent: number }> {
+  const snap = await getAdminDb().doc(orgUsageDocPath(orgId, period)).get()
+  const data = snap.data() ?? {}
+  const runsByAgent = data.agentRunsByAgent as Record<string, number> | undefined
+  const usdByAgent = data.usdByAgent as Record<string, number> | undefined
+  return {
+    runs: runsByAgent?.[agentName] ?? 0,
+    usdSpent: usdByAgent?.[agentName] ?? 0,
+  }
+}
+
+/*
+ * Per-agent gate, checked in addition to the blanket requireQuota(agentRuns)
+ * check. Two independent caps, both against the same billing-period usage:
+ *
+ *   1. Invocation cap (plan-tier, e.g. agency:3/studio:1) - how many times
+ *      this org may run this specific agent this period.
+ *   2. monthlyUsdCap (agentConfig.budgets) - how much this org may spend on
+ *      this specific agent this period, regardless of run count.
+ *
+ * Called from startAgentRun after resolveAgent (needs the agent's budgets),
+ * before the run doc is created - a blocked run never gets queued.
+ */
+export async function requireAgentBudget(
+  orgId: string,
+  agentName: string,
+  monthlyUsdCap: number,
+): Promise<void> {
+  const plan = await getOrgPlan(orgId)
+  const cap = plan.agentInvocationCaps[agentName]
+  const needsUsage = (cap !== undefined && cap !== null) || monthlyUsdCap > 0
+  if (!needsUsage) return
+
+  const { runs, usdSpent } = await readAgentUsage(orgId, agentName)
+
+  if (cap !== undefined && cap !== null && runs >= cap) {
+    const reason = {
+      kind: "agentInvocations" as const,
+      agentName,
+      limit: cap,
+      used: runs,
+      currentTier: plan.tier,
+    }
+    emitAgentGateBreachSignal(orgId, reason)
+    throw new PlanGateError(reason)
+  }
+
+  if (monthlyUsdCap > 0 && usdSpent >= monthlyUsdCap) {
+    const reason = {
+      kind: "agentBudget" as const,
+      agentName,
+      limitUsd: monthlyUsdCap,
+      usedUsd: usdSpent,
+      currentTier: plan.tier,
+    }
+    emitAgentGateBreachSignal(orgId, reason)
+    throw new PlanGateError(reason)
+  }
 }
 
 /* Helper for server actions: catch a PlanGateError and return it as the
