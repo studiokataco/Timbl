@@ -194,12 +194,17 @@ export const platformDiagnosticFindingSchema = z.object({
 })
 export type PlatformDiagnosticFinding = z.infer<typeof platformDiagnosticFindingSchema>
 
+export const platformDiagnosticTrigger = z.enum(["scheduled", "manual"])
+export type PlatformDiagnosticTrigger = z.infer<typeof platformDiagnosticTrigger>
+
 export const platformDiagnosticRunSchema = z.object({
   id: z.string(),
   date: z.string(),
   findings: z.array(platformDiagnosticFindingSchema).default([]),
   raw: z.record(z.string(), z.unknown()).default({}),
   narrationError: z.string().nullable().optional(),
+  /* Older docs predate this field; default keeps them readable as scheduled. */
+  trigger: platformDiagnosticTrigger.default("scheduled"),
   createdAt: z.string(),
 })
 export type PlatformDiagnosticRun = z.infer<typeof platformDiagnosticRunSchema>

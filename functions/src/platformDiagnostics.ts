@@ -246,6 +246,7 @@ export async function runDiagnostics(
       findings,
       raw,
       narrationError,
+      trigger: "scheduled",
       createdAt: nowIso,
     },
     { merge: false },
