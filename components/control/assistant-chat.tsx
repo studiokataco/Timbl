@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Markdown } from "@/components/agents/markdown"
 import { askPlatformAssistant } from "@/lib/actions/platform/assistant"
 
 interface Turn {
@@ -69,13 +70,17 @@ export function AssistantChat() {
                 className={turn.role === "user" ? "self-end" : "self-start"}
               >
                 <div
-                  className={`max-w-2xl whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
+                  className={`max-w-2xl rounded-lg px-3 py-2 text-sm ${
                     turn.role === "user"
-                      ? "bg-foreground text-background"
+                      ? "whitespace-pre-wrap bg-foreground text-background"
                       : "bg-muted text-foreground"
                   }`}
                 >
-                  {turn.text}
+                  {turn.role === "assistant" ? (
+                    <Markdown>{turn.text}</Markdown>
+                  ) : (
+                    turn.text
+                  )}
                 </div>
                 {turn.tool ? (
                   <div className="mt-1 text-xs text-muted-foreground">
