@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/signup",
+  "/pricing",
   "/request-invite",
   "/claim-access",
   "/welcome",
@@ -46,6 +47,9 @@ const PUBLIC_PREFIXES = [
   // cookie gate would 307 their clients into an HTML login page.
   "/api/public/",
   "/api/mcp",
+  // Razorpay webhook - external POST, verified by HMAC signature in the
+  // route itself. The cookie gate would 307 Razorpay's delivery to /login.
+  "/api/webhooks/",
   "/.well-known/",
   // Public post share + client approval - token-scoped, no session required.
   "/p/",
