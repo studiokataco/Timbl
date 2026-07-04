@@ -13,7 +13,7 @@ export async function submitInviteRequest(raw: unknown): Promise<ServerActionRes
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
-  const { name, email, company, useCase } = parsed.data
+  const { name, email, company, useCase, plan } = parsed.data
   const db = getAdminDb()
 
   const norm = email.trim().toLowerCase()
@@ -35,6 +35,7 @@ export async function submitInviteRequest(raw: unknown): Promise<ServerActionRes
     name: name.trim(),
     ...(company?.trim() ? { company: company.trim() } : {}),
     ...(useCase?.trim() ? { useCase: useCase.trim() } : {}),
+    ...(plan ? { plan } : {}),
     status: "pending",
     requestedAt: now,
     acceptedTerms: true,
@@ -63,6 +64,7 @@ export async function submitInviteRequest(raw: unknown): Promise<ServerActionRes
       name: name.trim(),
       ...(company?.trim() ? { company: company.trim() } : {}),
       ...(useCase?.trim() ? { useCase: useCase.trim() } : {}),
+      ...(plan ? { plan } : {}),
     },
   }).catch(() => {})
 

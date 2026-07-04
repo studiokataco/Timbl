@@ -9,6 +9,17 @@ import { Button } from "@/components/ui/button"
 import { approveSignupRequest, denySignupRequest } from "@/lib/actions/platform/signups"
 import type { SignupRequest } from "@/lib/platform/schema"
 
+const PLAN_LABELS: Record<string, string> = {
+  trial: "Trial",
+  studio_v1: "Studio",
+  agency_v1: "Agency",
+}
+
+function formatPlan(value: SignupRequest["plan"]) {
+  if (!value) return "-"
+  return PLAN_LABELS[value] ?? value
+}
+
 function formatRequestedAt(value: SignupRequest["requestedAt"]) {
   const t = Date.parse(String(value))
   if (Number.isNaN(t)) return "-"
@@ -73,6 +84,9 @@ export function SignupRequestsTable({
                 {req.company ? (
                   <div className="text-sm text-muted-foreground">{req.company}</div>
                 ) : null}
+                {req.plan ? (
+                  <div className="text-sm text-muted-foreground">{formatPlan(req.plan)}</div>
+                ) : null}
               </div>
               <div className="shrink-0 text-xs text-muted-foreground tabular-nums">
                 {formatRequestedAt(req.requestedAt)}
@@ -121,6 +135,7 @@ export function SignupRequestsTable({
               <th className="px-3 py-3 font-medium">Email</th>
               <th className="px-3 py-3 font-medium">Company</th>
               <th className="px-3 py-3 font-medium">Use case</th>
+              <th className="px-3 py-3 font-medium">Plan</th>
               <th className="px-3 py-3 font-medium">Requested</th>
               {status === "pending" ? (
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -141,6 +156,7 @@ export function SignupRequestsTable({
                 <td className="max-w-[220px] truncate px-3 py-3 text-muted-foreground">
                   {req.useCase ?? "-"}
                 </td>
+                <td className="px-3 py-3 text-muted-foreground">{formatPlan(req.plan)}</td>
                 <td className="px-3 py-3 text-muted-foreground tabular-nums">
                   {formatRequestedAt(req.requestedAt)}
                 </td>

@@ -78,6 +78,21 @@ export function TenantBilling({
         <Field label="Razorpay subscription ID (Phase H)">
           <Input value={form.razorpaySubscriptionId ?? ""} onChange={(e) => set("razorpaySubscriptionId", e.target.value)} />
         </Field>
+        <Field label="Razorpay subscription status">
+          <div className="flex h-9 items-center rounded-md border bg-muted/40 px-2 text-sm text-muted-foreground">
+            {profile.razorpaySubscriptionStatus ?? "-"}
+          </div>
+        </Field>
+        <Field label="Razorpay plan ID">
+          <div className="flex h-9 items-center rounded-md border bg-muted/40 px-2 text-sm text-muted-foreground">
+            {profile.razorpayPlanId ?? "-"}
+          </div>
+        </Field>
+        {profile.razorpaySubscriptionId ? (
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Status and subscription fields are managed by the Razorpay webhook - manual edits can be overwritten.
+          </p>
+        ) : null}
         <div className="sm:col-span-2">
           <Field label="Notes">
             <Input value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} />

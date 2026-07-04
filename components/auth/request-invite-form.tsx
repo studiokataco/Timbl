@@ -11,9 +11,19 @@ import { AuthFloatingField } from "@/components/auth/auth-floating-field"
 import { PolicyAcceptance } from "@/components/auth/policy-acceptance"
 import { Button } from "@/components/ui/button"
 import { submitInviteRequest } from "@/lib/actions/request-invite"
-import { signupRequestFormSchema, type SignupRequestFormInput } from "@/lib/schemas/signupRequest"
+import {
+  signupRequestFormSchema,
+  type PlanChoice,
+  type SignupRequestFormInput,
+} from "@/lib/schemas/signupRequest"
 
-export function RequestInviteForm() {
+const PLAN_CHIP_LABELS: Record<PlanChoice, string> = {
+  trial: "30-day Agency trial",
+  studio_v1: "Studio plan",
+  agency_v1: "Agency plan",
+}
+
+export function RequestInviteForm({ plan }: { plan?: PlanChoice }) {
   const [submitted, setSubmitted] = useState(false)
   const [accepted, setAccepted] = useState(false)
   const [acceptError, setAcceptError] = useState<string>()
@@ -26,7 +36,7 @@ export function RequestInviteForm() {
   } = useForm<SignupRequestFormInput>()
 
   async function onSubmit(data: SignupRequestFormInput) {
-    const parsed = signupRequestFormSchema.safeParse({ ...data, acceptedTerms: accepted })
+    const parsed = signupRequestFormSchema.safeParse({ ...data, plan, acceptedTerms: accepted })
     if (!parsed.success) {
       const issue = parsed.error.issues[0]
       if (issue?.path[0] === "acceptedTerms") {
@@ -75,6 +85,12 @@ export function RequestInviteForm() {
         <p className="mt-2 text-sm text-foreground/75">
           Timbl is in closed beta. Tell us about yourself and we will be in touch.
         </p>
+        {plan ? (
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground">
+            <CheckCircle aria-hidden className="size-3.5" />
+            Selected: {PLAN_CHIP_LABELS[plan]}
+          </span>
+        ) : null}
       </div>
 
       <form

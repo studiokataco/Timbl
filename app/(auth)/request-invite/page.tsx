@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { RequestInviteForm } from "@/components/auth/request-invite-form"
+import { PLAN_CHOICES, type PlanChoice } from "@/lib/schemas/signupRequest"
 
 export const dynamic = "force-dynamic"
 
@@ -10,6 +11,12 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 }
 
-export default function RequestInvitePage() {
-  return <RequestInviteForm />
+export default async function RequestInvitePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>
+}) {
+  const { plan } = await searchParams
+  const selected = PLAN_CHOICES.includes(plan as PlanChoice) ? (plan as PlanChoice) : undefined
+  return <RequestInviteForm plan={selected} />
 }

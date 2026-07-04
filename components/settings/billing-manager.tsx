@@ -121,6 +121,10 @@ export function BillingManager({
   const hasActiveSub = Boolean(current.razorpaySubscriptionId) && current.status === "active"
 
   const currentPlan = plans.find((p) => p.id === current.planId) ?? null
+  const pendingPlan =
+    current.pendingPlanId && current.pendingPlanId !== current.planId && !hasActiveSub
+      ? plans.find((p) => p.id === current.pendingPlanId) ?? null
+      : null
   const currentPrice = currentPlan?.monthlyPriceInr ?? Number.POSITIVE_INFINITY
   const freePlan = plans.find((p) => !p.billable && p.monthlyPriceInr === 0) ?? null
 
@@ -278,6 +282,21 @@ export function BillingManager({
         </div>
       </div>
 
+      {pendingPlan ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-secondary p-4 ring-1 ring-foreground/10">
+          <div>
+            <p className="text-sm font-medium">
+              You picked {pendingPlan.label} when you signed up
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {paidCheckoutAvailable
+                ? "Subscribe below to activate it."
+                : "It is saved here for when checkout opens."}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {current.trialEligible ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-mint/15 p-4 ring-1 ring-foreground/10">
           <div>
@@ -301,7 +320,11 @@ export function BillingManager({
               key={plan.id}
               className={cn(
                 "flex flex-col rounded-xl p-4 ring-1",
-                isCurrent ? "ring-foreground/40 bg-card" : "ring-foreground/10 bg-card",
+                isCurrent
+                  ? "ring-foreground/40 bg-card"
+                  : plan.id === pendingPlan?.id
+                    ? "ring-foreground/30 bg-card"
+                    : "ring-foreground/10 bg-card",
               )}
             >
               <p className="font-medium">{plan.label}</p>

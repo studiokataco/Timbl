@@ -12,7 +12,7 @@ import {
 } from "@/lib/platform/schema"
 import { bootstrapNewOrg } from "@/lib/org/bootstrap"
 import { orgIdForNewWorkspace } from "@/lib/auth/domains"
-import { orgUsersPath } from "@/lib/firebase/paths"
+import { orgPath, orgUsersPath } from "@/lib/firebase/paths"
 import { slugify } from "@/lib/auth/membership"
 import { sendInviteAcceptedEmail } from "@/lib/email/beta"
 import { FieldValue } from "firebase-admin/firestore"
@@ -43,6 +43,10 @@ export async function approveSignupRequest(raw: unknown): Promise<PlatformAction
 
   if (!(await orgRef.get()).exists) {
     await bootstrapNewOrg({ orgId, name: name })
+  }
+
+  if (req.data.plan) {
+    await db.doc(orgPath(orgId)).set({ pendingPlan: req.data.plan }, { merge: true })
   }
 
   const userId = slugify(email.split("@")[0])

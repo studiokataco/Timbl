@@ -84,12 +84,19 @@ export function CtaBand() {
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
           Try the free trial. No credit card required.
         </p>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button className="h-11 ps-6 text-sm flex items-center" render={<Link href="/signup" />}>
             Request a Free Workspace
             <span className="ms-2 flex items-center pe-[17.6px]">
               <ArrowRight data-icon="inline-end" />
             </span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 px-6 text-sm"
+            render={<Link href="/pricing" />}
+          >
+            View pricing
           </Button>
         </div>
       </Reveal>

@@ -56,6 +56,9 @@ export type SubscriptionStatus = {
   trialEndsAt: string | null
   trialDaysLeft: number | null
   trialEligible: boolean
+  /* Plan the customer picked on /pricing before their invite was approved -
+   * stamped on the org doc at approval, cleared once acted on. */
+  pendingPlanId: string | null
 }
 
 async function readBillingProfile(orgId: string): Promise<BillingProfile | null> {
@@ -258,5 +261,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     trialEndsAt,
     trialDaysLeft,
     trialEligible: !orgData?.trialStartedAt && !hasSub && status !== "trialing",
+    pendingPlanId: (orgData?.pendingPlan as string | undefined) ?? null,
   }
 }

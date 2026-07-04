@@ -15,6 +15,9 @@ export function MarketingFooter() {
           </p>
         </div>
         <nav className="flex gap-8 text-sm">
+          <Link href="/pricing" className="transition-colors hover:text-white">
+            Pricing
+          </Link>
           <Link href="/login" className="transition-colors hover:text-white">
             Log in
           </Link>

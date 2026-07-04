@@ -265,6 +265,7 @@ export const signupRequestSchema = z.object({
   name: z.string().min(1),
   company: z.string().nullish(),
   useCase: z.string().nullish(),
+  plan: z.enum(["trial", "studio_v1", "agency_v1"]).nullish(),
   status: z.enum(["pending", "approved", "denied"]).default("pending"),
   requestedAt: z.string(),
   decidedAt: z.string().nullish(),
