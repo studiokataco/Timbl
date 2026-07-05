@@ -178,6 +178,20 @@ env:
     availability:
       - RUNTIME
 
+  # Billing self-serve: trial + subscription management UI. Paid checkout
+  # additionally needs RAZORPAY_KEY_ID/SECRET + RAZORPAY_PLAN_* bindings -
+  # until those land, paidCheckoutAvailable() is false and paid tiers show
+  # "Coming soon" while the 30-day trial works end to end.
+  - variable: BILLING_SELF_SERVE_ENABLED
+    value: "1"
+    availability:
+      - RUNTIME
+
+  - variable: RAZORPAY_WEBHOOK_SECRET
+    secret: RAZORPAY_WEBHOOK_SECRET
+    availability:
+      - RUNTIME
+
   - variable: RESEND_API_KEY
     secret: RESEND_API_KEY
     availability:
