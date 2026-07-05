@@ -89,6 +89,7 @@ export function PricingCard({ tier, className }: { tier: PricingTier; className?
           href={tier.cta.href}
           className={cn(
             "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             dark
               ? "bg-badge-emerald/90 text-surface-dark shadow-[0_0_24px_-6px_var(--badge-emerald)] hover:bg-badge-emerald"
               : "bg-primary text-primary-foreground hover:bg-primary/85",

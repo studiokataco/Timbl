@@ -66,10 +66,13 @@ export function PricingSection({ tiers }: { tiers: PricingTier[] }) {
                       key={tier.id}
                       type="button"
                       role="tab"
+                      id={`pricing-tab-${tier.id}`}
                       aria-selected={active}
+                      aria-controls="pricing-tier-panel"
                       onClick={() => select(tier.id)}
                       className={cn(
                         "flex w-full items-center justify-between gap-4 rounded-2xl bg-background px-5 py-4 text-left transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-soft",
                         active
                           ? "shadow-[0_4px_16px_rgba(0,0,0,0.08)] ring-1 ring-foreground/15"
                           : "ring-1 ring-hairline hover:ring-foreground/20",
@@ -101,8 +104,14 @@ export function PricingSection({ tiers }: { tiers: PricingTier[] }) {
               </div>
             </div>
 
-            <div ref={cardRef} className="min-w-0">
-              {selected ? <PricingCard tier={selected} /> : null}
+            <div
+              ref={cardRef}
+              id="pricing-tier-panel"
+              role="tabpanel"
+              aria-labelledby={selected ? `pricing-tab-${selected.id}` : undefined}
+              className="min-w-0 md:min-h-[560px]"
+            >
+              {selected ? <PricingCard tier={selected} className="h-full" /> : null}
             </div>
           </div>
         </div>
