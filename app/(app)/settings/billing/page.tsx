@@ -58,7 +58,7 @@ export default async function SettingsPlanPage() {
         title="Billing"
         description={
           billingLive
-            ? "Manage your subscription and plan. Prices are in INR."
+            ? "Manage your subscription and plan."
             : "Plan changes and checkout are coming soon."
         }
       >

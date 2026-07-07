@@ -27,11 +27,19 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b]
 }
 
+type ShaderColors = {
+  a?: string
+  b?: string
+  c?: string
+  base?: string
+}
+
 type ShaderBackgroundProps = {
   flowSpeed?: number
   colorIntensity?: number
   noiseLayers?: number
   mouseInfluence?: number
+  colors?: ShaderColors
   className?: string
 }
 
@@ -40,8 +48,13 @@ export function ShaderBackground({
   colorIntensity = 2.2,
   noiseLayers = 4,
   mouseInfluence = 0.25,
+  colors,
   className = "",
 }: ShaderBackgroundProps) {
+  const colorA = colors?.a ?? BRAND_COLORS.green
+  const colorB = colors?.b ?? BRAND_COLORS.purple
+  const colorC = colors?.c ?? BRAND_COLORS.coral
+  const baseColor = colors?.base ?? BRAND_COLORS.base
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mousePos = useRef({ x: 0.5, y: 0.5 })
@@ -187,10 +200,10 @@ export function ShaderBackground({
     const uColorCLocation = gl.getUniformLocation(program, "uColorC")
     const uBaseColorLocation = gl.getUniformLocation(program, "uBaseColor")
 
-    const [rA, gA, bA] = hexToRgb(BRAND_COLORS.green)
-    const [rB, gB, bB] = hexToRgb(BRAND_COLORS.purple)
-    const [rC, gC, bC] = hexToRgb(BRAND_COLORS.coral)
-    const [rBase, gBase, bBase] = hexToRgb(BRAND_COLORS.base)
+    const [rA, gA, bA] = hexToRgb(colorA)
+    const [rB, gB, bB] = hexToRgb(colorB)
+    const [rC, gC, bC] = hexToRgb(colorC)
+    const [rBase, gBase, bBase] = hexToRgb(baseColor)
     gl.uniform3f(uColorALocation, rA, gA, bA)
     gl.uniform3f(uColorBLocation, rB, gB, bB)
     gl.uniform3f(uColorCLocation, rC, gC, bC)
@@ -253,12 +266,26 @@ export function ShaderBackground({
         gl.deleteBuffer(vertexBuffer)
       }
     }
-  }, [reducedMotion, flowSpeed, colorIntensity, noiseLayers, mouseInfluence])
+  }, [
+    reducedMotion,
+    flowSpeed,
+    colorIntensity,
+    noiseLayers,
+    mouseInfluence,
+    colorA,
+    colorB,
+    colorC,
+    baseColor,
+  ])
 
   if (reducedMotion) {
     return (
       <div
-        className={`pointer-events-none absolute inset-0 z-0 bg-[#0c1224] bg-gradient-to-br from-[#7B5EFF]/35 via-[#0c1224] to-[#FF5040]/30 ${className}`}
+        className={`pointer-events-none absolute inset-0 z-0 ${className}`}
+        style={{
+          backgroundColor: baseColor,
+          backgroundImage: `linear-gradient(to bottom right, ${colorB}59, ${baseColor}, ${colorC}4d)`,
+        }}
         aria-hidden
       />
     )
@@ -267,7 +294,8 @@ export function ShaderBackground({
   return (
     <div
       ref={containerRef}
-      className={`pointer-events-none absolute inset-0 z-0 bg-[#0c1224] ${className}`}
+      className={`pointer-events-none absolute inset-0 z-0 ${className}`}
+      style={{ backgroundColor: baseColor }}
       aria-hidden
     >
       <canvas ref={canvasRef} className="block h-full w-full" />

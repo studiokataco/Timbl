@@ -409,3 +409,25 @@
     background: var(--primary) !important;
   }
 }
+
+
+@keyframes pricing-glass {
+  0%,
+  100% {
+    transform: translate3d(-4%, -3%, 0) rotate(-6deg) scale(1.05);
+  }
+  50% {
+    transform: translate3d(4%, 5%, 0) rotate(7deg) scale(1.18);
+  }
+}
+
+.pricing-glass {
+  animation: pricing-glass 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pricing-glass {
+    animation: none;
+  }
+}

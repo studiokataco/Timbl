@@ -143,7 +143,7 @@ function WeekRow({
     <div className="border-b border-border last:border-b-0">
       {/* Awareness bars above the cells */}
       {barsInWeek.length > 0 && (
-        <div className="grid grid-cols-7 gap-y-0.5 px-1 pt-0.5 pb-0">
+        <div className="grid grid-cols-7 gap-y-0.5 pt-0.5 pb-0">
           {barsInWeek.map((b) => (
             <EventBar
               key={`${b.range.id}-${week.index}`}

@@ -53,6 +53,12 @@ export type PlanConfig = {
    * the per-brand surcharge above. */
   includedBrands: number
   includedSeats: number
+  /* Standing cap on custom categories (not a per-period quota). `null` =
+   * unlimited. Surfaced on /pricing; enforcement hooks in when category
+   * creation calls the gate. */
+  includedCustomCategories: number | null
+  /* Support level shown on /pricing. Display-only, not gated. */
+  supportLabel: string | null
 }
 
 export const PLANS: Record<string, PlanConfig> = {
@@ -61,7 +67,7 @@ export const PLANS: Record<string, PlanConfig> = {
     tier: "free",
     label: "Free",
     monthlyPriceInr: 0,
-    quotas: { agentRuns: 100, scheduledPosts: 30, brands: 1, seats: 2, agents: 0 },
+    quotas: { agentRuns: 0, scheduledPosts: 30, brands: 1, seats: 2, agents: 0 },
     /* agents:0 already blocks every boutique agent on Free - explicit 0
      * here documents intent rather than relying on that side effect. */
     agentInvocationCaps: { "awareness-researcher": 0 },
@@ -81,6 +87,8 @@ export const PLANS: Record<string, PlanConfig> = {
     },
     includedBrands: 1,
     includedSeats: 2,
+    includedCustomCategories: 5,
+    supportLabel: null,
   },
   studio_v1: {
     id: "studio_v1",
@@ -102,6 +110,8 @@ export const PLANS: Record<string, PlanConfig> = {
     },
     includedBrands: 1,
     includedSeats: 5,
+    includedCustomCategories: null,
+    supportLabel: "Basic support",
   },
   agency_v1: {
     id: "agency_v1",
@@ -124,6 +134,8 @@ export const PLANS: Record<string, PlanConfig> = {
     },
     includedBrands: 3,
     includedSeats: 15,
+    includedCustomCategories: null,
+    supportLabel: "24/7 support",
   },
   scale_v1: {
     id: "scale_v1",
@@ -148,6 +160,8 @@ export const PLANS: Record<string, PlanConfig> = {
     },
     includedBrands: 10,
     includedSeats: 50,
+    includedCustomCategories: null,
+    supportLabel: "24/7 priority support",
   },
 }
 
