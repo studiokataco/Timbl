@@ -26,6 +26,7 @@ export function buildIdeatorAgent(config: AgentConfig): LlmAgent {
     name: "ideator",
     config,
     webSearch: config.provider === "openrouter",
+    nativeTools: geminiGrounding,
     tools: [
       readBrandConfigTool,
       listUpcomingAwarenessDaysTool,

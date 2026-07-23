@@ -25,6 +25,7 @@ export function buildAwarenessResearcherAgent(
     name: "awareness-researcher",
     config,
     webSearch: config.provider === "openrouter",
+    nativeTools: geminiGrounding,
     tools: [
       ...(geminiGrounding ? [GOOGLE_SEARCH, URL_CONTEXT] : []),
       proposeAwarenessDayTool,

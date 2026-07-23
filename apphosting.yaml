@@ -136,6 +136,25 @@ env:
     availability:
       - RUNTIME
 
+  # Embeddings run on their own credential so an agent-run burst cannot
+  # exhaust the quota retrieval depends on. Gemini quota is enforced PER
+  # PROJECT, so this key must come from a different project than the one
+  # behind GEMINI_API_KEY - another key in the same project shares the pool
+  # and buys nothing. Currently minted in `timbl-embeddings`; agents run on
+  # the key from the AI Studio project named "Timbl".
+  - variable: EMBEDDING_API_KEY
+    secret: EMBEDDING_API_KEY
+    availability:
+      - RUNTIME
+
+  # Pinned, never inferred. The model name is stamped on every stored vector
+  # and retrieve() filters to it, so letting this drift silently empties
+  # retrieval results. Changing it requires a full re-embed backfill.
+  - variable: EMBEDDING_PROVIDER
+    value: gemini
+    availability:
+      - RUNTIME
+
   - variable: ANTHROPIC_API_KEY
     secret: ANTHROPIC_API_KEY
     availability:

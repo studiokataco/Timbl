@@ -4,6 +4,7 @@ import type { AgentProvider } from "@/lib/schemas/agentConfig"
 import { AnthropicLlm } from "./anthropic-llm"
 import { MockLlm } from "./mock-llm"
 import { OpenAiCompatibleLlm } from "./openai-compatible-llm"
+import { ResilientLlm } from "./resilient-llm"
 
 /*
  * Resolves a BaseLlm instance for a given agentConfig.{provider,model}.
@@ -17,6 +18,11 @@ import { OpenAiCompatibleLlm } from "./openai-compatible-llm"
  *      platform OPENROUTER_API_KEY).
  *   5. provider === "ollama" → OpenAiCompatibleLlm (local Ollama, no key).
  *   6. provider === "gemini" (default) → Gemini.
+ *
+ * Every real provider is then wrapped in ResilientLlm, which retries
+ * transient 429/503 with backoff and fails over to a second provider once
+ * retries are exhausted. Agents carrying provider-native server tools pass
+ * `nativeTools` to suppress that failover.
  *
  * `AgentProvider` is imported from the zod schema in lib/schemas/agentConfig
  * so the enum has a single source of truth.
@@ -54,6 +60,11 @@ export interface ResolveLlmInput {
   /** Enable OpenRouter's web-search server tool. Ignored by non-OpenAI-
    * compatible providers. */
   webSearch?: boolean
+  /** Set by agents that attach provider-native server tools (GOOGLE_SEARCH,
+   * URL_CONTEXT). Suppresses cross-provider fallback, which would hand those
+   * tool declarations to a model that cannot service them. Retry still
+   * applies. */
+  nativeTools?: boolean
 }
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -79,6 +90,72 @@ function readOllamaBaseUrl(): string {
   return process.env.OLLAMA_BASE_URL ?? DEFAULT_OLLAMA_BASE_URL
 }
 
+/* Fallback models. A model ID is provider-specific, so a cross-provider
+ * fallback cannot reuse the agent's configured model - it needs a designated
+ * equivalent on the target provider. Mid-tier on purpose: the fallback runs
+ * during someone else's outage, so it should be dependable rather than cheap. */
+const FALLBACK_OPENROUTER_MODEL = "google/gemini-3.1-flash-lite"
+const FALLBACK_GEMINI_MODEL = "gemini-3.5-flash"
+const FALLBACK_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+
+/*
+ * Picks a DIFFERENT provider to absorb the request once the primary has
+ * exhausted its retries. Returns undefined when no other provider is
+ * reachable, when the agent depends on provider-native tools, or when the
+ * primary is local/mock (nothing to fail over from).
+ */
+function resolveFallback(
+  input: ResolveLlmInput,
+): { llm: BaseLlm; label: string } | undefined {
+  if (input.nativeTools) return undefined
+  if (input.provider === "mock" || input.provider === "ollama") return undefined
+
+  const openRouterKey = readOpenRouterKey()
+  const geminiKey = readGeminiKey()
+  const anthropicKey = readAnthropicKey()
+
+  if (input.provider !== "openrouter" && openRouterKey) {
+    return {
+      label: "openrouter",
+      llm: new OpenAiCompatibleLlm({
+        model: FALLBACK_OPENROUTER_MODEL,
+        apiKey: openRouterKey,
+        baseUrl: OPENROUTER_BASE_URL,
+        webSearch: input.webSearch,
+      }),
+    }
+  }
+  if (input.provider !== "gemini" && geminiKey) {
+    return {
+      label: "gemini",
+      llm: new Gemini({ model: FALLBACK_GEMINI_MODEL, apiKey: geminiKey }),
+    }
+  }
+  if (input.provider !== "anthropic" && anthropicKey) {
+    return {
+      label: "anthropic",
+      llm: new AnthropicLlm({ model: FALLBACK_ANTHROPIC_MODEL }),
+    }
+  }
+  return undefined
+}
+
+/*
+ * Every real provider is wrapped in ResilientLlm so a 429/503 becomes a
+ * retry (and then a cross-provider failover) instead of a failed agentRun.
+ * MockLlm is returned bare - it cannot fail transiently and wrapping it
+ * would only obscure test stack traces.
+ */
+function withResilience(llm: BaseLlm, input: ResolveLlmInput): BaseLlm {
+  const fallback = resolveFallback(input)
+  return new ResilientLlm({
+    primary: llm,
+    fallback: fallback?.llm,
+    label: input.provider,
+    fallbackLabel: fallback?.label,
+  })
+}
+
 export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
   ensureRegistered()
   if (process.env.AGENT_MOCK_LLM === "1") return new MockLlm({ model: input.model })
@@ -90,7 +167,9 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
     case "mock":
       return new MockLlm({ model: input.model })
     case "anthropic": {
-      if (anthropicKey) return new AnthropicLlm({ model: input.model })
+      if (anthropicKey) {
+        return withResilience(new AnthropicLlm({ model: input.model }), input)
+      }
       warnOnce(
         "anthropic-missing-mock",
         "[llm-registry] No Anthropic key set - using MockLlm",
@@ -100,12 +179,15 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
     case "openrouter": {
       const openRouterKey = readOpenRouterKey()
       if (openRouterKey) {
-        return new OpenAiCompatibleLlm({
-          model: input.model,
-          apiKey: openRouterKey,
-          baseUrl: OPENROUTER_BASE_URL,
-          webSearch: input.webSearch,
-        })
+        return withResilience(
+          new OpenAiCompatibleLlm({
+            model: input.model,
+            apiKey: openRouterKey,
+            baseUrl: OPENROUTER_BASE_URL,
+            webSearch: input.webSearch,
+          }),
+          input,
+        )
       }
       warnOnce(
         "openrouter-missing-mock",
@@ -116,17 +198,25 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
     case "ollama": {
       // Ollama is a local server - no API key. On Cloud Run localhost is
       // unreachable; the UI gates this provider to dev/desktop (§6.5).
-      return new OpenAiCompatibleLlm({
-        model: input.model,
-        baseUrl: readOllamaBaseUrl(),
-      })
+      return withResilience(
+        new OpenAiCompatibleLlm({
+          model: input.model,
+          baseUrl: readOllamaBaseUrl(),
+        }),
+        input,
+      )
     }
     case "gemini":
     default: {
       // adk-js Gemini looks for GOOGLE_GENAI_API_KEY / GEMINI_API_KEY; the
       // rest of this repo (and our .env.example) standardise on
       // GOOGLE_API_KEY so we map it explicitly.
-      if (geminiKey) return new Gemini({ model: input.model, apiKey: geminiKey })
+      if (geminiKey) {
+        return withResilience(
+          new Gemini({ model: input.model, apiKey: geminiKey }),
+          input,
+        )
+      }
       if (anthropicKey) {
         warnOnce(
           "gemini-missing-anthropic-fallback",

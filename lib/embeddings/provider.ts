@@ -13,6 +13,18 @@ import { createHash } from "node:crypto"
  *      gemini; VOYAGE_API_KEY → voyage; OPENAI_API_KEY → openai.
  *   4. Mock (with a one-time warn).
  *
+ * SET EMBEDDING_PROVIDER EXPLICITLY IN ANY DEPLOYED ENVIRONMENT. Step 3 is a
+ * dev convenience that is actively dangerous in production: the embedding
+ * model is stamped on every stored vector and retrieve() filters to the
+ * current model, so an unrelated env change that adds or removes a provider
+ * key silently re-points the corpus and retrieval starts returning nothing.
+ * Step 3 warns loudly for that reason.
+ *
+ * Embedding traffic reads EMBEDDING_API_KEY before the shared Gemini keys so
+ * it can be pointed at its own credential (and therefore its own quota).
+ * Sharing one key with the agent runtime meant a burst of agent runs could
+ * exhaust the quota that retrieval depends on.
+ *
  * Real adapters are ~15 LOC each - one fetch against the provider's
  * embeddings endpoint. If a call throws, we re-throw so callers can decide;
  * the action-layer wrapper (embedIfChanged) turns it into a soft-fail.
@@ -31,10 +43,18 @@ function warnOnce(key: string, message: string) {
 
 function readGeminiKey(): string | undefined {
   return (
+    process.env.EMBEDDING_API_KEY ??
     process.env.GEMINI_API_KEY ??
     process.env.GOOGLE_GENAI_API_KEY ??
     process.env.GOOGLE_API_KEY
   )
+}
+
+function inferProvider(): ProviderName {
+  if (readGeminiKey()) return "gemini"
+  if (process.env.VOYAGE_API_KEY) return "voyage"
+  if (process.env.OPENAI_API_KEY) return "openai"
+  return "mock"
 }
 
 function resolveProvider(): ProviderName {
@@ -43,11 +63,22 @@ function resolveProvider(): ProviderName {
   if (explicit === "gemini" || explicit === "voyage" || explicit === "openai" || explicit === "mock") {
     return explicit
   }
-  if (readGeminiKey()) return "gemini"
-  if (process.env.VOYAGE_API_KEY) return "voyage"
-  if (process.env.OPENAI_API_KEY) return "openai"
-  warnOnce("embed-no-key", "[embed] No embedding provider key set - using deterministic mock")
-  return "mock"
+  if (explicit) {
+    throw new Error(
+      `[embed] EMBEDDING_PROVIDER="${explicit}" is not one of gemini | voyage | openai | mock. ` +
+        "Refusing to infer - a wrong embedding model invalidates the stored corpus.",
+    )
+  }
+
+  const inferred = inferProvider()
+  warnOnce(
+    `embed-inferred-${inferred}`,
+    inferred === "mock"
+      ? "[embed] No embedding provider key set - using deterministic mock. Set EMBEDDING_PROVIDER + EMBEDDING_API_KEY."
+      : `[embed] EMBEDDING_PROVIDER not set - inferred "${inferred}" from available keys. ` +
+          "Set it explicitly; inference re-points the corpus whenever provider keys change.",
+  )
+  return inferred
 }
 
 export async function embed(text: string): Promise<EmbedResult> {
@@ -106,7 +137,7 @@ const GEMINI_OUTPUT_DIM = 768
 
 async function embedGemini(text: string): Promise<EmbedResult> {
   const key = readGeminiKey()
-  if (!key) throw new Error("[embed:gemini] No Gemini key in env")
+  if (!key) throw new Error("[embed:gemini] No EMBEDDING_API_KEY / Gemini key in env")
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:embedContent?key=${key}`
   const res = await fetch(url, {
     method: "POST",

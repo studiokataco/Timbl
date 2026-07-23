@@ -33,12 +33,15 @@ export interface BuildLlmAgentInput
   /** Enable OpenRouter web search for this agent (research agents). Forwarded
    * to resolveLlm; a no-op unless the resolved provider is OpenRouter. */
   webSearch?: boolean
+  /** Set when `tools` includes provider-native server tools. Forwarded to
+   * resolveLlm to suppress cross-provider failover. */
+  nativeTools?: boolean
 }
 
 export function buildLlmAgentFromConfig(
   input: BuildLlmAgentInput,
 ): LlmAgent {
-  const { config, instructionSuffix, name, description, webSearch, ...rest } =
+  const { config, instructionSuffix, name, description, webSearch, nativeTools, ...rest } =
     input
   const perm = makePermissionsCallback(config.allowedTools)
   const budget = makeBudgetCallbacks(config.budgets, config.model)
@@ -59,6 +62,7 @@ export function buildLlmAgentFromConfig(
       provider: config.provider,
       model: config.model,
       webSearch,
+      nativeTools,
     }),
     instruction,
     contextCompactors: makeContextCompactors(config),
