@@ -2,14 +2,13 @@ import { z } from "zod"
 import { audit, channelKey, isoTime } from "./_shared"
 
 /*
- * The single doc that anchors every workflow agent. Captures voice, channels,
- * cadence, audience description, and explicit do/don'ts so the drafter,
- * reviewer, scheduler, and ideator can all read one source of truth.
+ * A brand: voice, channels, cadence, audience, and explicit do/don'ts, read as
+ * one source of truth by the drafter, reviewer, scheduler and ideator.
  *
- * Stored at /organizations/{orgId}/brandConfig/default - keyed by a fixed
- * doc id because there is exactly one brand per org. If we ever support
- * multi-brand orgs, switch to /brandConfig/{brandId} without changing the
- * schema shape.
+ * Lives at /organizations/{orgId}/brands/{brandId}. Every org has at least the
+ * DEFAULT_BRAND_ID brand; agencies add more. Legacy docs at
+ * /brandConfig/default migrate to /brands/default with the same shape plus a
+ * display `name`, so `default` stays a valid id string.
  */
 
 export const weekday = z.enum([
@@ -37,8 +36,9 @@ export const samplePostSchema = z.object({
 export type SamplePost = z.infer<typeof samplePostSchema>
 
 export const brandConfigSchema = audit.extend({
-  id: z.literal("default").default("default"),
+  id: z.string().default("default"),
   organizationId: z.string(),
+  name: z.string().min(1).max(120).default("Default brand"),
 
   voice: z.string().min(1).max(4_000),
   audience: z.string().min(1).max(4_000),

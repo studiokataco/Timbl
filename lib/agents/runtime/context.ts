@@ -16,6 +16,10 @@ export interface RuntimeCtx {
   userId: string
   runId: string
   agentName: string
+  /* Which brand this run acts on. Optional through the brands rollout - absent
+   * means the org's default brand. Tightens to required once every caller of
+   * startAgentRun supplies it (W3). */
+  brandId?: string
 }
 
 export const RUNTIME_STATE_KEY = "_runtime"

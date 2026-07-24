@@ -20,3 +20,8 @@ export const EMULATOR_ADMIN_SUB = "emulator-timbl-admin"
 export const AGENT_THREADS_DB_NAME = "timbl-agent-threads"
 
 export const HUMAN_ID_PREFIX = "TIM"
+
+/* Every org has this brand. Legacy single-brand orgs keep it as their only
+ * brand; it is also the fallback brandId for docs written before brands were
+ * real, so nothing is ever brand-less. */
+export const DEFAULT_BRAND_ID = "default"

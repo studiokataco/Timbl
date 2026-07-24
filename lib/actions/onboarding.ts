@@ -7,12 +7,13 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
 import {
   orgAgentConfigsPath,
-  orgBrandConfigDocPath,
   orgCategoriesPath,
   orgPath,
   orgTemplatesPath,
   orgUsersPath,
 } from "@/lib/firebase/paths"
+import { readBrand, writeBrand } from "@/lib/brand/brand-store"
+import type { BrandConfig } from "@/lib/schemas/brandConfig"
 import {
   getIndustryDefaults,
   type CategorySuggestion,
@@ -296,21 +297,14 @@ export async function applyOnboardingSelections(
   const voice = wizardProfile.tone?.trim() || defaults.toneHint
   const audience =
     wizardProfile.audience?.trim() || `${defaults.label} audience`
-  const brandRef = db.doc(orgBrandConfigDocPath(orgId))
-  const brandSnap = await brandRef.get()
-  const brandPatch: Record<string, unknown> = {
-    id: "default",
-    organizationId: orgId,
-    voice,
-    audience,
-    channels: brandChannels,
-    updatedAt: now,
-  }
-  if (!brandSnap.exists) {
+  const existingBrand = await readBrand(orgId)
+  const brandPatch: Partial<BrandConfig> = { voice, audience, channels: brandChannels }
+  /* Seed a starter cadence only on first run so a wizard re-run never clobbers
+   * a cadence the user has since tuned. */
+  if (!existingBrand) {
     brandPatch.targetCadence = { perWeek: 3, preferredDays: [], preferredTimes: [] }
-    brandPatch.createdAt = now
   }
-  await brandRef.set(brandPatch, { merge: true })
+  await writeBrand(orgId, brandPatch)
 
   revalidatePath("/calendar")
   revalidatePath("/studio")

@@ -1,7 +1,8 @@
 import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { orgPath } from "@/lib/firebase/paths"
+import { orgPath, orgBrandDocPath } from "@/lib/firebase/paths"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import {
   AGENT_DEFAULTS,
   getAgentDefaultBudgets,
@@ -140,6 +141,27 @@ export async function bootstrapNewOrg(
   }
 
   const installedCtas = await seedDefaultCtasIfEmpty(db, input.orgId)
+
+  /* Default brand shell. Voice/audience/cadence stay empty until the wizard
+   * fills them (brandConfigSchema tolerates the placeholders); the point here
+   * is that every org has a brand doc at /brands/default from creation, so no
+   * surface has to reason about a brand-less org. */
+  const brandRef = db.doc(orgBrandDocPath(input.orgId, DEFAULT_BRAND_ID))
+  if (!(await brandRef.get()).exists) {
+    await brandRef.set({
+      id: DEFAULT_BRAND_ID,
+      organizationId: input.orgId,
+      name: "Default brand",
+      voice: "",
+      audience: "",
+      channels: [],
+      targetCadence: { perWeek: 3, preferredDays: [], preferredTimes: [] },
+      forbiddenTopics: [],
+      samplePosts: [],
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
 
   return { orgId: input.orgId, installedAgents, skippedAgents, installedColumns, installedCtas }
 }

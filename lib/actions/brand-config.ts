@@ -1,47 +1,30 @@
 "use server"
 
-import { getAdminDb } from "@/lib/firebase/admin"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
-import { orgBrandConfigDocPath } from "@/lib/firebase/paths"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
+import { readBrand, writeBrand } from "@/lib/brand/brand-store"
 import {
-  brandConfigSchema,
   brandConfigPatchSchema,
   type BrandConfig,
 } from "@/lib/schemas/brandConfig"
 import type { ServerActionResult } from "@/lib/schemas"
 
-export async function fetchBrandConfig(): Promise<BrandConfig | null> {
+export async function fetchBrandConfig(
+  brandId: string = DEFAULT_BRAND_ID,
+): Promise<BrandConfig | null> {
   const orgId = await getCurrentOrgId()
-  const snap = await getAdminDb().doc(orgBrandConfigDocPath(orgId)).get()
-  if (!snap.exists) return null
-  const parsed = brandConfigSchema.safeParse({
-    ...(snap.data() ?? {}),
-    id: "default",
-    organizationId: orgId,
-  })
-  return parsed.success ? parsed.data : null
+  return readBrand(orgId, brandId)
 }
 
 export async function updateBrandConfig(
   input: unknown,
+  brandId: string = DEFAULT_BRAND_ID,
 ): Promise<ServerActionResult> {
   const parsed = brandConfigPatchSchema.safeParse(input)
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid patch" }
   }
   const orgId = await getCurrentOrgId()
-  const ref = getAdminDb().doc(orgBrandConfigDocPath(orgId))
-  const now = new Date().toISOString()
-  await ref.set(
-    {
-      id: "default",
-      organizationId: orgId,
-      ...parsed.data,
-      updatedAt: now,
-      // createdAt is preserved by merge:true if it already exists.
-      createdAt: now,
-    },
-    { merge: true },
-  )
-  return { ok: true, id: "default" }
+  await writeBrand(orgId, parsed.data, brandId)
+  return { ok: true, id: brandId }
 }

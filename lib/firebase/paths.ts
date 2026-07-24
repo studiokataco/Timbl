@@ -46,6 +46,12 @@ export const orgStorageAccountsPath = (orgId: string) => `${orgPath(orgId)}/stor
 export const awarenessDaysPath = "awarenessDays"
 
 /* Agent runtime collections - see lib/agents/** and plan §2. */
+export const orgBrandsPath = (orgId: string) => `${orgPath(orgId)}/brands`
+export const orgBrandDocPath = (orgId: string, brandId: string) =>
+  `${orgBrandsPath(orgId)}/${brandId}`
+
+/* Legacy single-brand location. Readers migrate to orgBrandDocPath; kept so the
+ * backfill can copy the old doc forward without a dangling reference. */
 export const orgBrandConfigPath = (orgId: string) => `${orgPath(orgId)}/brandConfig`
 export const orgBrandConfigDocPath = (orgId: string) =>
   `${orgBrandConfigPath(orgId)}/default`

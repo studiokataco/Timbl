@@ -1,12 +1,9 @@
 import { z } from "zod"
 import { FunctionTool } from "@google/adk"
 
-import { getAdminDb } from "@/lib/firebase/admin"
-import { orgBrandConfigDocPath } from "@/lib/firebase/paths"
-import {
-  brandConfigSchema,
-  brandConfigPatchSchema,
-} from "@/lib/schemas/brandConfig"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
+import { readBrand, writeBrand } from "@/lib/brand/brand-store"
+import { brandConfigPatchSchema } from "@/lib/schemas/brandConfig"
 
 import { getRuntimeCtx } from "../runtime/context"
 
@@ -27,15 +24,8 @@ export const readBrandConfigTool = new FunctionTool({
     "Read the organisation's current brand configuration. Returns `null` if the brand has not yet been set up.",
   parameters: z.object({}),
   execute: async (_input, ctx) => {
-    const { orgId } = getRuntimeCtx(ctx)
-    const snap = await getAdminDb().doc(orgBrandConfigDocPath(orgId)).get()
-    if (!snap.exists) return { brandConfig: null }
-    const parsed = brandConfigSchema.safeParse({
-      ...(snap.data() ?? {}),
-      id: "default",
-      organizationId: orgId,
-    })
-    return { brandConfig: parsed.success ? parsed.data : null }
+    const { orgId, brandId } = getRuntimeCtx(ctx)
+    return { brandConfig: await readBrand(orgId, brandId ?? DEFAULT_BRAND_ID) }
   },
 })
 
@@ -45,23 +35,8 @@ export const writeBrandConfigTool = new FunctionTool({
     "Persist a partial brand configuration. Provide only the fields you have new information for; existing fields are preserved. Returns the merged document.",
   parameters: writeInput,
   execute: async (input, ctx) => {
-    const { orgId } = getRuntimeCtx(ctx)
-    const ref = getAdminDb().doc(orgBrandConfigDocPath(orgId))
-    const now = new Date().toISOString()
-    await ref.set(
-      {
-        id: "default",
-        organizationId: orgId,
-        ...input,
-        updatedAt: now,
-        createdAt: now,
-      },
-      { merge: true },
-    )
-    const snap = await ref.get()
-    return {
-      ok: true,
-      brandConfig: { ...(snap.data() ?? {}), id: "default", organizationId: orgId },
-    }
+    const { orgId, brandId } = getRuntimeCtx(ctx)
+    const brandConfig = await writeBrand(orgId, input, brandId ?? DEFAULT_BRAND_ID)
+    return { ok: true, brandConfig }
   },
 })

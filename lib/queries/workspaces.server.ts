@@ -1,8 +1,8 @@
 import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { orgBrandConfigDocPath, orgPath } from "@/lib/firebase/paths"
-import { brandConfigSchema } from "@/lib/schemas/brandConfig"
+import { orgPath } from "@/lib/firebase/paths"
+import { readBrand } from "@/lib/brand/brand-store"
 import { resolveOrgChannels } from "@/lib/channels"
 import type { ChannelKey } from "@/lib/schemas"
 import {
@@ -36,23 +36,13 @@ export type WorkspaceSwitcherData = {
 }
 
 async function resolveChannelsForOrg(orgId: string): Promise<ChannelKey[]> {
-  const db = getAdminDb()
-  const [brandSnap, orgSnap] = await Promise.all([
-    db.doc(orgBrandConfigDocPath(orgId)).get(),
-    db.doc(orgPath(orgId)).get(),
+  const [brand, orgSnap] = await Promise.all([
+    readBrand(orgId),
+    getAdminDb().doc(orgPath(orgId)).get(),
   ])
 
-  let brandChannels: ChannelKey[] | undefined
-  if (brandSnap.exists) {
-    const parsed = brandConfigSchema.safeParse({
-      ...(brandSnap.data() ?? {}),
-      id: "default",
-      organizationId: orgId,
-    })
-    if (parsed.success && parsed.data.channels.length) {
-      brandChannels = parsed.data.channels
-    }
-  }
+  const brandChannels =
+    brand && brand.channels.length ? brand.channels : undefined
 
   const onboardingChannels = orgSnap.data()?.onboarding?.profile?.channels as
     | string[]
