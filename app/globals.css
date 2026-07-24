@@ -82,6 +82,9 @@
   --color-badge-emerald: var(--badge-emerald);
   --color-surface-card: var(--surface-card);
   --color-surface-soft: var(--surface-soft);
+  --color-hairline: var(--hairline);
+  --color-hairline-soft: var(--hairline-soft);
+  --color-body: var(--body);
   --color-surface-strong: var(--surface-strong);
   --color-surface-dark: var(--surface-dark);
 
@@ -126,6 +129,10 @@
   --border: #e5e7eb;                 /* hairline */
   --input: #e5e7eb;
   --ring: #3b82f6;                   /* brand-accent ring */
+
+  --hairline: #e5e7eb;               /* hairline */
+  --hairline-soft: #f3f4f6;          /* hairline-soft */
+  --body: #374151;                   /* body */
 
   --chart-1: #fb923c;                /* badge-orange */
   --chart-2: #ec4899;                /* badge-pink */
@@ -187,6 +194,9 @@
   --border: oklch(1 0 0 / 14%);
   --input: oklch(1 0 0 / 12%);
   --ring: #3b82f6;
+  --hairline: oklch(1 0 0 / 14%);
+  --hairline-soft: oklch(1 0 0 / 8%);
+  --body: #b4bcc8;
   --auth-field: #1a1f26;
 }
 
@@ -224,6 +234,10 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
   --ring: #3b82f6;
+
+  --hairline: oklch(1 0 0 / 10%);
+  --hairline-soft: oklch(1 0 0 / 6%);
+  --body: #a1a1aa;                   /* on-dark-soft */
 
   --chart-1: #fb923c;
   --chart-2: #ec4899;
