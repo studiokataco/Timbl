@@ -48,6 +48,13 @@ export type PlanConfig = {
    * only the blanket `agentRuns` quota applies to it. `null` = unlimited
    * for that agent on this tier. */
   agentInvocationCaps: Record<string, number | null>
+  /* Ceiling on TOTAL agent LLM spend for the org this billing period, in
+   * USD. This is the cost-of-goods backstop: agentConfig.budgets.monthlyUsdCap
+   * is per-agent, so without this an org's exposure is (agents x that cap) -
+   * multiples of the subscription price. Set from the tier so the ceiling can
+   * never exceed a known fraction of revenue. `null` = uncapped (never use on
+   * a self-serve tier); `0` = agents blocked outright. */
+  orgMonthlyUsdCap: number | null
   features: Record<PlanFeatureFlag, boolean>
   /* Brand/seat counts INCLUDED in the base price; overage is metered per
    * the per-brand surcharge above. */
@@ -71,6 +78,7 @@ export const PLANS: Record<string, PlanConfig> = {
     /* agents:0 already blocks every boutique agent on Free - explicit 0
      * here documents intent rather than relying on that side effect. */
     agentInvocationCaps: { "awareness-researcher": 0 },
+    orgMonthlyUsdCap: 0,
     features: {
       multiStepApproval: false,
       customCategories: true,
@@ -97,6 +105,7 @@ export const PLANS: Record<string, PlanConfig> = {
     monthlyPriceInr: 2999,
     quotas: { agentRuns: 1500, scheduledPosts: null, brands: 1, seats: 5, agents: 5 },
     agentInvocationCaps: { "awareness-researcher": 1 },
+    orgMonthlyUsdCap: 8,
     features: {
       multiStepApproval: false,
       customCategories: true,
@@ -118,9 +127,12 @@ export const PLANS: Record<string, PlanConfig> = {
     tier: "agency",
     label: "Agency",
     monthlyPriceInr: 11999,
-    perBrandPriceInr: 5999,
+    /* At or below the blended base rate (11999/3 brands = ~4000) so growing
+     * an account is never priced worse than starting one. */
+    perBrandPriceInr: 3999,
     quotas: { agentRuns: 5000, scheduledPosts: null, brands: 3, seats: 15, agents: 20 },
     agentInvocationCaps: { "awareness-researcher": 3 },
+    orgMonthlyUsdCap: 30,
     features: {
       multiStepApproval: true,
       customCategories: true,
@@ -147,6 +159,9 @@ export const PLANS: Record<string, PlanConfig> = {
     /* Scale's actual cap is TBD pending a business decision - unlimited is
      * the safe placeholder until that number is set. */
     agentInvocationCaps: { "awareness-researcher": null },
+    /* Finite even though every other Scale limit is unlimited - an uncapped
+     * spend ceiling is unbounded loss, not a feature. Raise per contract. */
+    orgMonthlyUsdCap: 200,
     features: {
       multiStepApproval: true,
       customCategories: true,

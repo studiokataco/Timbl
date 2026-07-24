@@ -4,7 +4,12 @@ import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
-import { requireActiveBilling, requireAgentBudget, requireQuota } from "@/lib/plans/gate"
+import {
+  requireActiveBilling,
+  requireAgentBudget,
+  requireOrgBudget,
+  requireQuota,
+} from "@/lib/plans/gate"
 import { writePlatformSignal } from "@/lib/platform/signals"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
 import { estimateUsdCost } from "@/lib/agents/pricing"
@@ -62,6 +67,10 @@ export async function startAgentRun(
    * surfaces it to the UI as a structured upsell. Cron triggers also
    * gate so a runaway schedule can't burn through a billing period. */
   await requireQuota(input.orgId, "agentRuns")
+
+  /* Needs only the orgId, so it runs before resolveAgent - a blocked run
+   * never pays for agent resolution. */
+  await requireOrgBudget(input.orgId)
 
   const resolved = await resolveAgent(
     input.orgId,

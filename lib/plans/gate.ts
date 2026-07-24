@@ -34,6 +34,7 @@ export type PlanGateReason =
   | { kind: "quota"; metric: QuotaMetric; limit: number; used: number; currentTier: string }
   | { kind: "agentInvocations"; agentName: string; limit: number; used: number; currentTier: string }
   | { kind: "agentBudget"; agentName: string; limitUsd: number; usedUsd: number; currentTier: string }
+  | { kind: "orgBudget"; limitUsd: number; usedUsd: number; currentTier: string }
 
 export class PlanGateError extends Error {
   readonly reason: PlanGateReason
@@ -54,6 +55,12 @@ function formatGateMessage(reason: PlanGateReason): string {
       return `Quota exceeded: ${reason.agentName} runs (${reason.used}/${reason.limit}) on the ${reason.currentTier} plan this billing period.`
     case "agentBudget":
       return `Quota exceeded: ${reason.agentName} spend ($${reason.usedUsd.toFixed(2)}/$${reason.limitUsd.toFixed(2)}) this billing period.`
+    case "orgBudget":
+      /* A zero cap is "agents not included", not "you spent your allowance" -
+       * a $0.00/$0.00 counter reads as a bug to the person who hits it. */
+      return reason.limitUsd === 0
+        ? `Agents are not included on the ${reason.currentTier} plan.`
+        : `Quota exceeded: workspace agent spend ($${reason.usedUsd.toFixed(2)}/$${reason.limitUsd.toFixed(2)}) on the ${reason.currentTier} plan this billing period.`
   }
 }
 
@@ -74,7 +81,7 @@ function emitQuotaBreachSignal(
 
 function emitAgentGateBreachSignal(
   orgId: string,
-  reason: Extract<PlanGateReason, { kind: "agentInvocations" | "agentBudget" }>,
+  reason: Extract<PlanGateReason, { kind: "agentInvocations" | "agentBudget" | "orgBudget" }>,
 ): void {
   void writePlatformSignal({
     kind: "quota.breached",
@@ -299,6 +306,35 @@ export async function requireAgentBudget(
       kind: "agentBudget" as const,
       agentName,
       limitUsd: monthlyUsdCap,
+      usedUsd: usdSpent,
+      currentTier: plan.tier,
+    }
+    emitAgentGateBreachSignal(orgId, reason)
+    throw new PlanGateError(reason)
+  }
+}
+
+async function readOrgUsdSpend(orgId: string, period = currentPeriod()): Promise<number> {
+  const snap = await getAdminDb().doc(orgUsageDocPath(orgId, period)).get()
+  const value = snap.data()?.usdCost
+  return typeof value === "number" ? value : 0
+}
+
+/* Workspace-wide spend ceiling, on top of the per-agent monthlyUsdCap. Without
+ * it an org's exposure is (number of agents it can run) x monthlyUsdCap, and
+ * `quotas.agents` is not enforced anywhere - so that product is unbounded on
+ * every tier, not just the ones with no agent limit. */
+export async function requireOrgBudget(orgId: string): Promise<void> {
+  const plan = await getOrgPlan(orgId)
+  const cap = plan.orgMonthlyUsdCap
+  /* null is uncapped; 0 blocks agent runs outright (Free). */
+  if (cap === null) return
+
+  const usdSpent = await readOrgUsdSpend(orgId)
+  if (usdSpent >= cap) {
+    const reason = {
+      kind: "orgBudget" as const,
+      limitUsd: cap,
       usedUsd: usdSpent,
       currentTier: plan.tier,
     }

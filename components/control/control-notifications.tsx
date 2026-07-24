@@ -199,6 +199,12 @@ function signalDetail(signal: PlatformSignal): string | null {
     if (typeof metric === "string" && typeof used === "number" && typeof limit === "number") {
       return `${metric}: ${used}/${limit}`
     }
+    const usedUsd = meta.usedUsd
+    const limitUsd = meta.limitUsd
+    if (typeof usedUsd === "number" && typeof limitUsd === "number") {
+      const scope = typeof meta.agentName === "string" ? meta.agentName : "workspace"
+      return `${scope} spend: $${usedUsd.toFixed(2)}/$${limitUsd.toFixed(2)}`
+    }
   }
   return null
 }

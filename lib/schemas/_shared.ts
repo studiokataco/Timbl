@@ -203,6 +203,12 @@ export const serverActionResult = z.object({
         usedUsd: z.number(),
         currentTier: z.string(),
       }),
+      z.object({
+        kind: z.literal("orgBudget"),
+        limitUsd: z.number(),
+        usedUsd: z.number(),
+        currentTier: z.string(),
+      }),
     ])
     .optional(),
 })
