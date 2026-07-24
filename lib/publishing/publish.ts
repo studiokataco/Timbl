@@ -37,16 +37,26 @@ function targetChannels(post: Post): ChannelKey[] {
     .map(([ch]) => ch as ChannelKey)
 }
 
-async function loadAccount(orgId: string, channel: ChannelKey): Promise<SocialAccount | null> {
+type AccountLookup =
+  | { ok: true; account: SocialAccount }
+  | { ok: false; reason: "none" | "ambiguous" | "invalid" }
+
+/* Deliberately unbounded, not limit(1). A doc id is `${channel}:${externalId}`,
+ * so an org can hold several active accounts on one channel - and the plan
+ * quota permits it (brands x CHANNELS_PER_BRAND). Taking the first match would
+ * publish to an arbitrary one of them, which for an agency means posting one
+ * client's content to another client's feed. Refuse instead: until accounts
+ * carry a brand, ambiguity has no safe resolution here. */
+async function loadAccount(orgId: string, channel: ChannelKey): Promise<AccountLookup> {
   const snap = await getAdminDb()
     .collection(orgSocialAccountsPath(orgId))
     .where("channel", "==", channel)
     .where("status", "==", "active")
-    .limit(1)
     .get()
-  if (snap.empty) return null
+  if (snap.empty) return { ok: false, reason: "none" }
+  if (snap.size > 1) return { ok: false, reason: "ambiguous" }
   const parsed = socialAccountSchema.safeParse(snapToData(snap.docs[0]))
-  return parsed.success ? parsed.data : null
+  return parsed.success ? { ok: true, account: parsed.data } : { ok: false, reason: "invalid" }
 }
 
 async function ensureFresh(
@@ -103,11 +113,23 @@ async function publishOne(
   if (!publisher) return { status: null, reauth: false }
 
   const started = Date.now()
-  const account = await loadAccount(orgId, channel)
-  if (!account) {
-    await recordRun(orgId, post.id, channel, { kind: "retry", reason: "no connected account" }, Date.now() - started)
+  const lookup = await loadAccount(orgId, channel)
+  if (!lookup.ok) {
+    /* "none" is transient - a reconnect fixes it, so keep retrying. The other
+     * two need a human, and retrying would only repeat the same wrong choice. */
+    const outcome =
+      lookup.reason === "none"
+        ? ({ kind: "retry", reason: "no connected account" } as const)
+        : lookup.reason === "ambiguous"
+          ? ({
+              kind: "error",
+              reason: `more than one active ${channel} account connected - disconnect the ones this post should not publish to`,
+            } as const)
+          : ({ kind: "error", reason: `connected ${channel} account is malformed` } as const)
+    await recordRun(orgId, post.id, channel, outcome, Date.now() - started)
     return { status: null, reauth: false }
   }
+  const account = lookup.account
 
   let result: PublishResult
   try {
