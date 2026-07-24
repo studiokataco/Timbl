@@ -343,7 +343,10 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Web-research-driven discovery of awareness days. Uses OpenRouter web search to find real observances in a window, writes them as proposals for human review before they enter the official awarenessDays collection.",
     provider: "openrouter",
-    model: OR_WORKHORSE,
+    /* gemini-3.1-flash-lite, not the minimax workhorse: in a head-to-head on
+     * this grounded-discovery task flash-lite returned accurate sourced days
+     * while minimax-m3 completed but wrote zero proposals. */
+    model: OR_CHEAP,
     temperature: 0.3,
     systemPrompt: AWARENESS_RESEARCHER_PROMPT,
     enabled: true,
