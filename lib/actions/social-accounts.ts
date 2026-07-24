@@ -12,31 +12,41 @@ import {
   type ServerActionResult,
 } from "@/lib/schemas"
 
-/* Connected accounts are gated against the plan's `brands` quota. Each brand
- * may connect up to this many channels - enough to cover all v1 platforms. */
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
+
+/* One connectable channel per platform, per brand. The plan's `brands` quota
+ * caps how many brands exist (enforced at brand creation); this caps channels
+ * within a single brand. */
 const CHANNELS_PER_BRAND = 4
 
-async function countActive(orgId: string): Promise<number> {
+/* Counts active accounts for one brand. Reads the whole (tiny) active set and
+ * filters in memory rather than a `where("brandId", ...)` query, because
+ * accounts connected before the brandId backfill have no brandId field at all
+ * and a Firestore equality filter would silently skip them - undercounting the
+ * cap. A missing field is treated as the default brand. */
+async function countActiveForBrand(orgId: string, brandId: string): Promise<number> {
   const snap = await getDb()
     .collection(orgSocialAccountsPath(orgId))
     .where("status", "in", ["active", "needs_reauth"])
     .get()
-  return snap.size
+  return snap.docs.filter(
+    (d) => ((d.data().brandId as string | undefined) ?? DEFAULT_BRAND_ID) === brandId,
+  ).length
 }
 
-/* Throws PlanGateError when the org has hit its connectable-account cap.
+/* Throws PlanGateError when the brand has hit its connectable-channel cap.
  * Called by the connect route before redirecting to the provider. */
-export async function assertCanConnect(orgId: string): Promise<void> {
+export async function assertCanConnect(
+  orgId: string,
+  brandId: string = DEFAULT_BRAND_ID,
+): Promise<void> {
   const plan = await getOrgPlan(orgId)
-  const brands = plan.quotas.brands
-  if (brands === null) return
-  const limit = brands * CHANNELS_PER_BRAND
-  const used = await countActive(orgId)
-  if (used >= limit) {
+  const used = await countActiveForBrand(orgId, brandId)
+  if (used >= CHANNELS_PER_BRAND) {
     throw new PlanGateError({
       kind: "quota",
       metric: "brands",
-      limit,
+      limit: CHANNELS_PER_BRAND,
       used,
       currentTier: plan.tier,
     })

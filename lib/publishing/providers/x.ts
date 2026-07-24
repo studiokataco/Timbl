@@ -74,9 +74,9 @@ export const xPublisher: Publisher = {
   key: "x",
   rules: CHANNEL_RULES.x,
 
-  async connect(orgId) {
+  async connect(orgId, brandId) {
     const app = await loadOauthApp(orgId, "x")
-    const state = signState(orgId)
+    const state = signState(orgId, brandId)
     const verifier = verifierFromState(state, app.clientId)
     const url = `${AUTH_URL}?${new URLSearchParams({
       response_type: "code",

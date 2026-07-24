@@ -356,9 +356,9 @@ function buildMetaPublisher(channel: MetaChannel): Publisher {
     key: channel,
     rules: CHANNEL_RULES[channel],
 
-    async connect(orgId) {
+    async connect(orgId, brandId) {
       const app = await loadOauthApp(orgId, channel)
-      const state = signState(orgId)
+      const state = signState(orgId, brandId)
       const url = `${AUTH_URL}?${new URLSearchParams({
         client_id: app.clientId,
         redirect_uri: redirectUri(channel),

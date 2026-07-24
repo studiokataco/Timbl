@@ -32,8 +32,10 @@ export type ValidationResult = { ok: true } | { ok: false; reason: string }
 export interface Publisher {
   key: ChannelKey
   rules: ChannelRules
-  connect(orgId: string): Promise<{ url: string; state: string }>
-  callback(orgId: string, code: string, state: string): Promise<SocialAccount>
+  connect(orgId: string, brandId: string): Promise<{ url: string; state: string }>
+  /* The publisher does not know which brand the connection is for - the OAuth
+   * callback route reads that from the signed state and stamps brandId on. */
+  callback(orgId: string, code: string, state: string): Promise<Omit<SocialAccount, "brandId">>
   refresh(account: SocialAccount): Promise<SocialAccount>
   validate(post: Post): ValidationResult
   publish(account: SocialAccount, post: Post): Promise<PublishResult>

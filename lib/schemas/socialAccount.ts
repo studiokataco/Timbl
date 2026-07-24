@@ -12,6 +12,9 @@ export type SocialAccountStatus = z.infer<typeof socialAccountStatus>
 export const socialAccountSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
+  /* Which brand owns this connection. Defaults to the org's single brand so
+   * accounts connected before brands were real still parse. */
+  brandId: z.string().default("default"),
   channel: channelKey,
   displayName: z.string(),
   externalId: z.string(),

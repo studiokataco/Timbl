@@ -49,9 +49,9 @@ export const linkedinPublisher: Publisher = {
   key: "linkedin",
   rules: CHANNEL_RULES.linkedin,
 
-  async connect(orgId) {
+  async connect(orgId, brandId) {
     const app = await loadOauthApp(orgId, "linkedin")
-    const state = signState(orgId)
+    const state = signState(orgId, brandId)
     const url = `${AUTH_URL}?${new URLSearchParams({
       response_type: "code",
       client_id: app.clientId,

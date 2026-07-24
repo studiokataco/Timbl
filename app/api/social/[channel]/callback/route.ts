@@ -33,13 +33,14 @@ export async function GET(
   if (!code || !state) return back("oauth")
 
   const orgId = await getCurrentOrgId()
-  if (!verifyState(orgId, state)) return back("state")
+  const brandId = verifyState(orgId, state)
+  if (!brandId) return back("state")
 
   try {
     const account = await publisher.callback(orgId, code, state)
     await getAdminDb()
       .doc(`${orgSocialAccountsPath(orgId)}/${account.id}`)
-      .set(account, { merge: true })
+      .set({ ...account, brandId }, { merge: true })
     return back()
   } catch (err) {
     return back("callback", err instanceof Error ? err.message : String(err))
