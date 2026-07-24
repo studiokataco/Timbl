@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import Link from "next/link"
+import { ArrowRight } from "lucide-react"
 
 import { MarketingFooter } from "@/components/marketing/marketing-footer"
 import { MarketingNav } from "@/components/marketing/marketing-nav"
@@ -67,11 +69,14 @@ function highlights(plan: PlanConfig): string[] {
   return out.slice(0, 7)
 }
 
+const SCALE_CONTACT_HREF = "/signup"
+const SCALE_CONTACT_LABEL = "Talk to us"
+
 function toTier(plan: PlanConfig): PricingTier {
   const paidCta = { label: "Get started", href: `/signup?plan=${plan.id}` }
   const cta =
     plan.monthlyPriceInr === null
-      ? { label: "Contact us", href: "mailto:hello@timbl.app?subject=Timbl%20Scale" }
+      ? { label: SCALE_CONTACT_LABEL, href: SCALE_CONTACT_HREF }
       : plan.monthlyPriceInr === 0
         ? { label: `Start ${TRIAL_DAYS}-day free trial`, href: "/signup?plan=trial" }
         : paidCta
@@ -97,7 +102,8 @@ function toTier(plan: PlanConfig): PricingTier {
   }
 }
 
-const TIER_ORDER = ["free_v1", "studio_v1", "agency_v1", "scale_v1"]
+const TIER_ORDER = ["free_v1", "studio_v1", "agency_v1"]
+const COMPARE_ORDER = [...TIER_ORDER, "scale_v1"]
 
 function quota(n: number | null): string {
   return n === null ? "Unlimited" : n.toLocaleString("en-IN")
@@ -187,8 +193,37 @@ function compareGroups(plans: PlanConfig[]): CompareGroup[] {
   ]
 }
 
+function ScaleContactBand() {
+  return (
+    <section
+      aria-labelledby="scale-contact-heading"
+      className="-mt-14 px-6 pb-24 md:-mt-20 md:pb-32"
+    >
+      <div className="mx-auto flex max-w-6xl flex-col gap-5 rounded-2xl bg-surface-soft px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:gap-10 sm:px-8">
+        <div className="min-w-0">
+          <h2 id="scale-contact-heading" className="text-sm font-semibold tracking-tight">
+            Scale
+          </h2>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            For large organizations. Unlimited agent runs and scheduled posts, SSO,
+            audit log and an SLA, priced to your contract.
+          </p>
+        </div>
+        <Link
+          href={SCALE_CONTACT_HREF}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-sm text-sm font-semibold text-foreground transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-soft"
+        >
+          {SCALE_CONTACT_LABEL}
+          <ArrowRight aria-hidden className="size-4" />
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 export default function PricingPage() {
   const plans = TIER_ORDER.filter((id) => PLANS[id]).map((id) => PLANS[id])
+  const comparePlans = COMPARE_ORDER.filter((id) => PLANS[id]).map((id) => PLANS[id])
   const tiers = plans.map(toTier)
 
   return (
@@ -199,7 +234,11 @@ export default function PricingPage() {
       <MarketingNav />
       <main>
         <PricingSection tiers={tiers} />
-        <PricingCompare plans={compareColumns(plans)} groups={compareGroups(plans)} />
+        <ScaleContactBand />
+        <PricingCompare
+          plans={compareColumns(comparePlans)}
+          groups={compareGroups(comparePlans)}
+        />
         <PricingBanner />
         <PricingFaq />
       </main>
