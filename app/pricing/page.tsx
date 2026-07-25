@@ -92,9 +92,11 @@ function toTier(plan: PlanConfig): PricingTier {
           ? "Free"
           : rupees(plan.monthlyPriceInr),
     priceSuffix: plan.monthlyPriceInr ? "/mo" : null,
-    perBrandNote: plan.perBrandPriceInr
-      ? `+ ${rupees(plan.perBrandPriceInr)}/mo per extra brand`
-      : null,
+    /* No self-serve per-brand overage: createBrand hard-caps at the included
+     * count and more brands means moving up a tier, so the page must not imply
+     * brands are individually buyable. Metered per-brand billing is a separate,
+     * unshipped phase (timbl-per-brand-metered-billing.md). */
+    perBrandNote: null,
     highlights: highlights(plan),
     featured: plan.id === "agency_v1",
     footnote: FOOTNOTES[plan.id] ?? "",
@@ -148,16 +150,6 @@ function compareGroups(plans: PlanConfig[]): CompareGroup[] {
           values: plans.map((p) => quota(p.quotas.scheduledPosts)),
         },
         { label: "Brands included", values: plans.map((p) => quota(p.includedBrands)) },
-        {
-          label: "Extra brands",
-          values: plans.map((p) =>
-            p.perBrandPriceInr
-              ? `${rupees(p.perBrandPriceInr)}/mo each`
-              : p.monthlyPriceInr === null
-                ? "Custom"
-                : null,
-          ),
-        },
         { label: "Team seats", values: plans.map((p) => quota(p.includedSeats)) },
         {
           label: "Boutique agents",

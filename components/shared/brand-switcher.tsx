@@ -14,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { createBrand, setCurrentBrand } from "@/lib/actions/brands"
+import { AddBrandDialog } from "@/components/shared/add-brand-dialog"
+import { setCurrentBrand } from "@/lib/actions/brands"
 import type { BrandSummary, BrandSwitcherData } from "@/lib/queries/brands.server"
 import { cn } from "@/lib/utils"
 
@@ -59,17 +60,16 @@ export function BrandSwitcher({
   const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
   const { current, brands, atCap } = data
 
-  function switchTo(brand: BrandSummary) {
-    if (brand.id === current.id) return
-    setBusyId(brand.id)
+  /* Point every brand-scoped surface (calendar, kanban, list) at the new brand:
+   * switch the cookie, drop the "posts" query family, re-render server data. */
+  function activate(brandId: string) {
     startTransition(async () => {
       try {
-        const res = await setCurrentBrand(brand.id)
+        const res = await setCurrentBrand(brandId)
         if (!res.ok) throw new Error(res.error ?? "Could not switch brand")
-        /* Every brand-scoped surface caches under a "posts" key family; drop it
-         * so calendar, kanban and the list refetch for the new brand. */
         await queryClient.invalidateQueries({ queryKey: ["posts"] })
         router.refresh()
       } catch (err) {
@@ -80,22 +80,14 @@ export function BrandSwitcher({
     })
   }
 
-  function addBrand() {
-    const name = window.prompt("New brand name")?.trim()
-    if (!name) return
-    startTransition(async () => {
-      const res = await createBrand({ name })
-      if (!res.ok) {
-        toast.error(res.error ?? "Could not create brand")
-        return
-      }
-      if (res.id) await setCurrentBrand(res.id)
-      toast.success(`Brand "${name}" created`)
-      router.refresh()
-    })
+  function switchTo(brand: BrandSummary) {
+    if (brand.id === current.id) return
+    setBusyId(brand.id)
+    activate(brand.id)
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         type="button"
@@ -145,7 +137,7 @@ export function BrandSwitcher({
 
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={addBrand}
+          onClick={() => setAddOpen(true)}
           disabled={pending || atCap}
           className="gap-2.5 py-2"
         >
@@ -158,5 +150,8 @@ export function BrandSwitcher({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <AddBrandDialog open={addOpen} onOpenChange={setAddOpen} onCreated={activate} />
+    </>
   )
 }
