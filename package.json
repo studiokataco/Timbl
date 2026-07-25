@@ -18,6 +18,7 @@
     "seed:platform-demo": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} FIREBASE_AUTH_EMULATOR_HOST=${FIREBASE_AUTH_EMULATOR_HOST:-127.0.0.1:9099} tsx --require ./scripts/stub-server-only.cjs scripts/seed-platform-demo.ts",
     "seed:razorpay": "tsx --env-file=.env.local --require ./scripts/stub-server-only.cjs scripts/seed-razorpay-plans.ts",
     "backfill:plans": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/backfill-org-plans.ts",
+    "backfill:brands": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/backfill-brands.ts",
     "verify:billing": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/verify-billing.ts",
     "grandfather:existing": "tsx --require ./scripts/stub-server-only.cjs scripts/grandfather-existing-orgs.ts",
     "test:rules": "firebase emulators:exec --only firestore --project timbl-rules-test \"vitest run\"",
