@@ -5,14 +5,19 @@ rules_version = '2';
 // Multi-tenant model: every domain doc lives under
 //   /organizations/{orgId}/...
 // Reads and writes are gated on the request.auth.token.organizationId
-// custom claim, which Phase 7's Cloud Function sets on every Firebase Auth
-// user based on their /organizations/{orgId}/users/{userId} membership.
+// custom claim, set on every Firebase Auth user from their
+// /organizations/{orgId}/users/{userId} membership.
 //
-// During Phases 0-6 the Admin SDK is used server-side and bypasses these
-// rules entirely. They still exist because:
-//   1. Emulator-based unit tests verify isolation works.
-//   2. Phase 7 simply swaps the server client and the rules engage with
-//      no callsite changes.
+// Most mutations go through the Admin SDK server-side and bypass these rules,
+// but they are NOT dormant: client-SDK onSnapshot listeners (e.g. the calendar
+// via lib/realtime/subscribe-posts.ts) read posts directly, so these rules are
+// live for those reads today. Emulator tests also verify isolation here.
+//
+// Brand scoping is a document FIELD (brandId), not a path level - brands are
+// isolated at the app-query layer, the same defense-in-depth posture as the
+// organizationId field. Membership is org-level: every member sees all brands
+// in their workspace. Per-brand access restriction is a deliberate future
+// feature, not enforced here.
 
 service cloud.firestore {
   match /databases/{database}/documents {
