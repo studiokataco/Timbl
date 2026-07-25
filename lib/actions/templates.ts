@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import {
   orgCategoriesPath,
   orgPostsPath,
@@ -178,6 +179,7 @@ export async function useTemplate(input: unknown): Promise<ServerActionResult> {
   const doc: Post = {
     id: postsRef.id,
     organizationId: orgId,
+    brandId: DEFAULT_BRAND_ID,
     scheduledDate: parsed.data.scheduledDate,
     status: "idea",
     categoryId: tmpl.categoryId,

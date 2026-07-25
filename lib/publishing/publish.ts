@@ -8,6 +8,7 @@ import {
   orgSocialAccountsPath,
 } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import { postSchema, type Post } from "@/lib/schemas/post"
 import { socialAccountSchema, type SocialAccount } from "@/lib/schemas/socialAccount"
 import type { ChannelKey, ChannelStatus } from "@/lib/schemas/_shared"
@@ -41,21 +42,29 @@ type AccountLookup =
   | { ok: true; account: SocialAccount }
   | { ok: false; reason: "none" | "ambiguous" | "invalid" }
 
-/* Deliberately unbounded, not limit(1). A doc id is `${channel}:${externalId}`,
- * so an org can hold several active accounts on one channel - and the plan
- * quota permits it (brands x CHANNELS_PER_BRAND). Taking the first match would
- * publish to an arbitrary one of them, which for an agency means posting one
- * client's content to another client's feed. Refuse instead: until accounts
- * carry a brand, ambiguity has no safe resolution here. */
-async function loadAccount(orgId: string, channel: ChannelKey): Promise<AccountLookup> {
+/* Selects the account for THIS post's brand. A doc id is
+ * `${channel}:${externalId}`, so an org can hold several active accounts on one
+ * channel - one per brand. Matching on brandId is what stops an agency
+ * publishing one client's post to another client's feed. Legacy accounts with
+ * no brandId field are treated as the default brand, so single-brand orgs need
+ * no backfill to keep publishing. Two active accounts on the same channel AND
+ * brand is genuine ambiguity - refuse rather than guess. */
+async function loadAccount(
+  orgId: string,
+  channel: ChannelKey,
+  brandId: string,
+): Promise<AccountLookup> {
   const snap = await getAdminDb()
     .collection(orgSocialAccountsPath(orgId))
     .where("channel", "==", channel)
     .where("status", "==", "active")
     .get()
-  if (snap.empty) return { ok: false, reason: "none" }
-  if (snap.size > 1) return { ok: false, reason: "ambiguous" }
-  const parsed = socialAccountSchema.safeParse(snapToData(snap.docs[0]))
+  const forBrand = snap.docs.filter(
+    (d) => ((d.data().brandId as string | undefined) ?? DEFAULT_BRAND_ID) === brandId,
+  )
+  if (forBrand.length === 0) return { ok: false, reason: "none" }
+  if (forBrand.length > 1) return { ok: false, reason: "ambiguous" }
+  const parsed = socialAccountSchema.safeParse(snapToData(forBrand[0]))
   return parsed.success ? { ok: true, account: parsed.data } : { ok: false, reason: "invalid" }
 }
 
@@ -113,7 +122,7 @@ async function publishOne(
   if (!publisher) return { status: null, reauth: false }
 
   const started = Date.now()
-  const lookup = await loadAccount(orgId, channel)
+  const lookup = await loadAccount(orgId, channel, post.brandId)
   if (!lookup.ok) {
     /* "none" is transient - a reconnect fixes it, so keep retrying. The other
      * two need a human, and retrying would only repeat the same wrong choice. */
@@ -123,7 +132,7 @@ async function publishOne(
         : lookup.reason === "ambiguous"
           ? ({
               kind: "error",
-              reason: `more than one active ${channel} account connected - disconnect the ones this post should not publish to`,
+              reason: `more than one active ${channel} account for this brand - disconnect the duplicate`,
             } as const)
           : ({ kind: "error", reason: `connected ${channel} account is malformed` } as const)
     await recordRun(orgId, post.id, channel, outcome, Date.now() - started)

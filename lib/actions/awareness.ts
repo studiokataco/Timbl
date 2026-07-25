@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
 import { awarenessDaysPath, orgPostsPath } from "@/lib/firebase/paths"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import { snapToData } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Post, ServerActionResult } from "@/lib/schemas"
 
@@ -44,6 +45,7 @@ export async function promoteAwarenessDay(
   const doc: Post = {
     id: ref.id,
     organizationId: orgId,
+    brandId: DEFAULT_BRAND_ID,
     scheduledDate: parsed.data.scheduledDate ?? day.date,
     status: "idea",
     categoryId: undefined,

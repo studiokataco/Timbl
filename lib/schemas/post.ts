@@ -71,6 +71,9 @@ export type DesignLink = z.infer<typeof designLinkSchema>
 export const postSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
+  /* Which brand this post belongs to. Defaults to the org's one brand so posts
+   * created before brands were real still parse and publish correctly. */
+  brandId: z.string().default("default"),
 
   scheduledDate: isoDate,
   scheduledTime: isoTime.optional(),
