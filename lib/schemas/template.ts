@@ -14,6 +14,7 @@ export type TemplateCadence = z.infer<typeof templateCadence>
 export const templateSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
+  brandId: z.string().default("default"),
   name: z.string().min(1),
   categoryId: z.string(),
   defaultPostType: postType.default("grid"),

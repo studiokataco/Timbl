@@ -8,6 +8,7 @@ export type CampaignStatus = z.infer<typeof campaignStatus>
 export const campaignSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
+  brandId: z.string().default("default"),
   name: z.string().min(1),
   slug: z.string().regex(/^[a-z0-9-]+$/),
   description: z.string().optional(),

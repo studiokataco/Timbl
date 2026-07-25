@@ -87,6 +87,7 @@ import {
 import { deletePost, updatePost } from "@/lib/actions/posts"
 import { fetchPostFollowers, togglePostFollow } from "@/lib/actions/post-activity"
 import { createCampaign } from "@/lib/actions/campaigns"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import { fetchOgImage } from "@/lib/actions/assets"
 import { saveAsTemplate } from "@/lib/actions/templates"
 import { getPostTypes, withSyncedPostTypes } from "@/lib/post-types"
@@ -495,6 +496,7 @@ export function PostModal({
       const created: WithId<Campaign> = {
         id: newId,
         organizationId: "",
+        brandId: DEFAULT_BRAND_ID,
         name: trimmed,
         slug: newId,
         status: "active",

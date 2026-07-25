@@ -15,6 +15,7 @@ export type PublishRunKind = z.infer<typeof publishRunKind>
 export const publishRunSchema = z.object({
   id: z.string(),
   organizationId: z.string(),
+  brandId: z.string().default("default"),
   postId: z.string(),
   channel: channelKey,
   kind: publishRunKind,

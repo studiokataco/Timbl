@@ -93,7 +93,7 @@ async function ensureFresh(
 
 async function recordRun(
   orgId: string,
-  postId: string,
+  post: Post,
   channel: ChannelKey,
   result: PublishResult | { kind: "error"; reason: string },
   latencyMs: number,
@@ -102,7 +102,8 @@ async function recordRun(
   await ref.set({
     id: ref.id,
     organizationId: orgId,
-    postId,
+    brandId: post.brandId,
+    postId: post.id,
     channel,
     kind: result.kind,
     reason: "reason" in result ? result.reason : undefined,
@@ -135,7 +136,7 @@ async function publishOne(
               reason: `more than one active ${channel} account for this brand - disconnect the duplicate`,
             } as const)
           : ({ kind: "error", reason: `connected ${channel} account is malformed` } as const)
-    await recordRun(orgId, post.id, channel, outcome, Date.now() - started)
+    await recordRun(orgId, post, channel, outcome, Date.now() - started)
     return { status: null, reauth: false }
   }
   const account = lookup.account
@@ -146,11 +147,11 @@ async function publishOne(
     result = await publisher.publish(fresh, post)
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err)
-    await recordRun(orgId, post.id, channel, { kind: "error", reason }, Date.now() - started)
+    await recordRun(orgId, post, channel, { kind: "error", reason }, Date.now() - started)
     return { status: null, reauth: false }
   }
 
-  await recordRun(orgId, post.id, channel, result, Date.now() - started)
+  await recordRun(orgId, post, channel, result, Date.now() - started)
 
   if (result.kind === "needs_reauth") {
     await getAdminDb()

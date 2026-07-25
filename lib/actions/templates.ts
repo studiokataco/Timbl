@@ -74,6 +74,7 @@ export async function createTemplate(input: unknown): Promise<ServerActionResult
     ...parsed.data,
     id,
     organizationId: orgId,
+    brandId: DEFAULT_BRAND_ID,
     createdAt: now,
     updatedAt: now,
   }
@@ -243,6 +244,7 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
   const doc = {
     id,
     organizationId: orgId,
+    brandId: DEFAULT_BRAND_ID,
     name: parsed.data.name,
     categoryId: post.categoryId,
     defaultPostType: getPostTypes(post)[0] ?? "grid",

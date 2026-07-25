@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import { orgCampaignsPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
@@ -44,7 +45,7 @@ export async function createCampaign(input: unknown): Promise<ServerActionResult
   const now = new Date().toISOString()
   const slug = parsed.data.slug || slugify(parsed.data.name)
   const ref = db.collection(orgCampaignsPath(orgId)).doc(slug)
-  const doc = { ...parsed.data, slug, organizationId: orgId, createdAt: now, updatedAt: now }
+  const doc = { ...parsed.data, slug, organizationId: orgId, brandId: DEFAULT_BRAND_ID, createdAt: now, updatedAt: now }
   await ref.set(doc)
   try {
     await embedIfChanged("campaign", orgId, slug, doc as Record<string, unknown>)
