@@ -29,6 +29,7 @@ import {
 import { isOnboardingComplete } from "@/lib/onboarding/state"
 import { getOrgPlanFeatures } from "@/lib/plans/gate"
 import { getWorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
+import { getBrandSwitcherData } from "@/lib/queries/brands.server"
 
 export const metadata = { robots: { index: false, follow: false } }
 
@@ -52,13 +53,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!(await isOnboardingComplete(orgId))) {
     redirect("/onboarding")
   }
-  const [referenceData, user, org, planFeatures, impersonation, workspaces] = await Promise.all([
+  const [referenceData, user, org, planFeatures, impersonation, workspaces, brands] = await Promise.all([
     fetchReferenceData(),
     getCurrentUser(),
     getCurrentOrganisation(),
     getOrgPlanFeatures(orgId),
     resolveImpersonation(),
     getWorkspaceSwitcherData(),
+    getBrandSwitcherData(),
   ])
   return (
     <QueryProvider>
@@ -69,7 +71,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {impersonation ? <ImpersonationBanner orgName={org.name} /> : null}
             <DunningBanner />
             <div className="flex flex-1 min-h-0">
-              <Sidebar workspaces={workspaces} />
+              <Sidebar workspaces={workspaces} brands={brands} />
               <div className="flex flex-col flex-1 min-w-0 overflow-y-auto pb-[var(--ask-ai-clearance)]">
                 <TopBar userName={user.name} workspaceName={org.name} workspaces={workspaces} />
                 {children}

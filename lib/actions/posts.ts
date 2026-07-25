@@ -10,7 +10,8 @@ import {
   orgPostsPath,
   orgPostStatusHistoryPath,
 } from "@/lib/firebase/paths"
-import { HUMAN_ID_PREFIX, DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
+import { HUMAN_ID_PREFIX } from "@/lib/constants/timbl"
+import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
@@ -72,6 +73,7 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
   }
 
   const orgId = await getCurrentOrgId()
+  const brandId = await getCurrentBrandId(orgId)
   const user = await getCurrentUser()
   const db = getDb()
 
@@ -100,7 +102,7 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
     id: postsRef.id,
     humanId,
     organizationId: orgId,
-    brandId: DEFAULT_BRAND_ID,
+    brandId,
     scheduledDate: parsed.data.scheduledDate,
     status: "idea",
     categoryId: parsed.data.categoryId,

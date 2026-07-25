@@ -80,3 +80,6 @@ functions/node_modules/
 
 # App Hosting local overrides
 apphosting.local.yaml
+
+# Local working plans (not source of truth)
+plans/

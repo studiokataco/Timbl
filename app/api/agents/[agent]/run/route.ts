@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server"
 import { z } from "zod"
 
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
+import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import { startAgentRun, markAgentRunStatus } from "@/lib/agents/triggers/manual"
 import {
   eventsToSseStream,
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     getCurrentOrgId(),
     getCurrentUser(),
   ])
+  const brandId = await getCurrentBrandId(orgId)
 
   let started
   try {
@@ -63,6 +65,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       orgId,
       userId: user.id,
       agentName,
+      brandId,
       input: payload.input,
       trigger: payload.trigger,
       dedupKey: payload.dedupKey,

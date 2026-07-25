@@ -16,8 +16,10 @@ import {
 } from "lucide-react"
 import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { WorkspaceSwitcher } from "@/components/shared/workspace-switcher"
+import { BrandSwitcher } from "@/components/shared/brand-switcher"
 import { FeedbackDialog } from "@/components/shared/feedback-dialog"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
+import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 import { cn } from "@/lib/utils"
 
 /*
@@ -135,14 +137,21 @@ export function FeedbackTrigger({
   )
 }
 
-export function Sidebar({ workspaces }: { workspaces: WorkspaceSwitcherData }) {
+export function Sidebar({
+  workspaces,
+  brands,
+}: {
+  workspaces: WorkspaceSwitcherData
+  brands: BrandSwitcherData
+}) {
   return (
     <nav
       aria-label="Primary"
       className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1 overflow-y-auto"
     >
       <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-4" />
-      <WorkspaceSwitcher data={workspaces} className="mb-4" />
+      <WorkspaceSwitcher data={workspaces} className="mb-2" />
+      <BrandSwitcher data={brands} className="mb-4" />
       <SidebarNav />
       <FeedbackTrigger className="mt-auto" />
     </nav>

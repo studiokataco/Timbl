@@ -1,8 +1,10 @@
 import "server-only"
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
+import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import { orgCategoriesPath, orgCtasPath, orgPostsPath, orgUsersPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { seedDefaultCtasIfEmpty } from "@/lib/org/seed-default-ctas"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import type { Category, Cta, Post, User } from "@/lib/schemas"
 
 /*
@@ -16,13 +18,20 @@ import type { Category, Cta, Post, User } from "@/lib/schemas"
 
 export async function fetchPostsInRange(start: string, end: string): Promise<WithId<Post>[]> {
   const orgId = await getCurrentOrgId()
+  const brandId = await getCurrentBrandId(orgId)
   const snap = await getDb()
     .collection(orgPostsPath(orgId))
     .where("scheduledDate", ">=", start)
     .where("scheduledDate", "<=", end)
     .orderBy("scheduledDate", "asc")
     .get()
-  return snap.docs.map((d) => snapToData<Post>(d))
+  /* Brand filter in memory, not a where() clause: the date range already
+   * bounds the set, and a Firestore equality on brandId would skip posts
+   * written before the backfill (no brandId field) - those are the default
+   * brand. Keeps the calendar correct with no composite index. */
+  return snap.docs
+    .map((d) => snapToData<Post>(d))
+    .filter((p) => (p.brandId ?? DEFAULT_BRAND_ID) === brandId)
 }
 
 export async function fetchPost(postId: string): Promise<WithId<Post> | null> {

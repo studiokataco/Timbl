@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
-import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
+import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import {
   orgCategoriesPath,
   orgPostsPath,
@@ -74,7 +74,7 @@ export async function createTemplate(input: unknown): Promise<ServerActionResult
     ...parsed.data,
     id,
     organizationId: orgId,
-    brandId: DEFAULT_BRAND_ID,
+    brandId: await getCurrentBrandId(orgId),
     createdAt: now,
     updatedAt: now,
   }
@@ -180,7 +180,7 @@ export async function useTemplate(input: unknown): Promise<ServerActionResult> {
   const doc: Post = {
     id: postsRef.id,
     organizationId: orgId,
-    brandId: DEFAULT_BRAND_ID,
+    brandId: await getCurrentBrandId(orgId),
     scheduledDate: parsed.data.scheduledDate,
     status: "idea",
     categoryId: tmpl.categoryId,
@@ -244,7 +244,7 @@ export async function saveAsTemplate(input: unknown): Promise<ServerActionResult
   const doc = {
     id,
     organizationId: orgId,
-    brandId: DEFAULT_BRAND_ID,
+    brandId: await getCurrentBrandId(orgId),
     name: parsed.data.name,
     categoryId: post.categoryId,
     defaultPostType: getPostTypes(post)[0] ?? "grid",

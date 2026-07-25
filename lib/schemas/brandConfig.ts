@@ -40,8 +40,11 @@ export const brandConfigSchema = audit.extend({
   organizationId: z.string(),
   name: z.string().min(1).max(120).default("Default brand"),
 
-  voice: z.string().min(1).max(4_000),
-  audience: z.string().min(1).max(4_000),
+  /* Empty until the wizard fills them - a freshly created brand is a shell an
+   * agency configures afterwards, so these cannot be min(1) or the shell would
+   * fail parse and vanish from listBrands. */
+  voice: z.string().max(4_000).default(""),
+  audience: z.string().max(4_000).default(""),
   channels: z.array(channelKey).default([]),
   targetCadence: cadenceSchema,
   forbiddenTopics: z.array(z.string().max(120)).default([]),

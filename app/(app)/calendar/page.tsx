@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic"
 
 import { addDays, format, startOfMonth, subDays } from "date-fns"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import { realtimeEnabledForOrg } from "@/lib/realtime/realtime-enabled"
 import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
 import { CalendarView } from "@/components/calendar/calendar-view"
@@ -25,6 +26,7 @@ export default async function CalendarPage() {
   const end = format(addDays(today, 60), "yyyy-MM-dd")
 
   const orgId = await getCurrentOrgId()
+  const brandId = await getCurrentBrandId(orgId)
 
   const [
     posts,
@@ -46,6 +48,7 @@ export default async function CalendarPage() {
   return (
     <CalendarView
       orgId={orgId}
+      brandId={brandId}
       initialPosts={posts}
       categories={categories}
       users={users}

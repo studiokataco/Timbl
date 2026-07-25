@@ -25,3 +25,7 @@ export const HUMAN_ID_PREFIX = "TIM"
  * brand; it is also the fallback brandId for docs written before brands were
  * real, so nothing is ever brand-less. */
 export const DEFAULT_BRAND_ID = "default"
+
+/* Which brand the current session is acting on. Scoped per session like
+ * DEV_ORG_COOKIE; absent or unknown-in-this-org falls back to DEFAULT_BRAND_ID. */
+export const BRAND_COOKIE = "timbl_brand"

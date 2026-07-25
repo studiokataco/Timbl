@@ -50,6 +50,7 @@ import { DayView } from "./day-view"
 
 type Props = {
   orgId: string
+  brandId: string
   initialPosts: WithId<Post>[]
   categories: WithId<Category>[]
   users: WithId<User>[]
@@ -63,6 +64,7 @@ type Props = {
 
 export function CalendarView({
   orgId,
+  brandId,
   initialPosts,
   categories,
   awarenessDays,
@@ -132,7 +134,7 @@ export function CalendarView({
     visibleRange.start === range.start && visibleRange.end === range.end
 
   const { data: posts = initialPosts } = useQuery({
-    queryKey: ["posts", orgId, visibleRange.start, visibleRange.end],
+    queryKey: ["posts", orgId, brandId, visibleRange.start, visibleRange.end],
     queryFn: () => fetchPostsInRangeAction(visibleRange),
     initialData: isSsrRange ? initialPosts : undefined,
     placeholderData: (prev) => prev ?? initialPosts,
