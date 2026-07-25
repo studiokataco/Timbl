@@ -8,6 +8,8 @@ import { orgAgentMemoryPath } from "@/lib/firebase/paths"
 import { snapToData } from "@/lib/firebase/serialize"
 import type { AgentMemory } from "@/lib/schemas"
 
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
+
 import { getRuntimeCtx } from "../runtime/context"
 import { fenceUntrusted } from "../runtime/guardrails"
 
@@ -36,12 +38,13 @@ export const rememberTool = new FunctionTool({
     "Persist a small fact or correction to agentMemory. Use for reviewer rationale, brand voice clarifications a human gave during approval, or campaign-specific guidance worth re-reading on future runs.",
   parameters: rememberInput,
   execute: async (input, ctx) => {
-    const { orgId } = getRuntimeCtx(ctx)
+    const { orgId, brandId } = getRuntimeCtx(ctx)
     const db = getAdminDb()
     const ref = db.collection(orgAgentMemoryPath(orgId)).doc()
     const now = new Date().toISOString()
     const doc: AgentMemory = {
       id: ref.id,
+      brandId: brandId ?? DEFAULT_BRAND_ID,
       topic: input.topic,
       body: input.body,
       createdAt: now,
@@ -68,12 +71,13 @@ export const recallTool = new FunctionTool({
     "Semantic recall over agentMemory. Returns up to k prior memories most relevant to the query. Inspect these BEFORE producing a draft or critique - applying a remembered correction is cheaper than re-asking the human.",
   parameters: recallInput,
   execute: async (input, ctx) => {
-    const { orgId } = getRuntimeCtx(ctx)
+    const { orgId, brandId } = getRuntimeCtx(ctx)
     const hits = await retrieve({
       orgId,
       kind: "agentMemory",
       query: input.query,
       k: input.k,
+      brandId: brandId ?? DEFAULT_BRAND_ID,
       filter: input.topic ? (d) => (d as { topic?: string }).topic === input.topic : undefined,
     })
     if (hits.length === 0) return { memories: [] }

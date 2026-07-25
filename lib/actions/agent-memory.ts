@@ -3,6 +3,7 @@
 import { z } from "zod"
 
 import { getCurrentOrgId, getDb } from "@/lib/auth/server-helpers"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { retrieve } from "@/lib/embeddings/retrieve"
 import { orgAgentMemoryPath } from "@/lib/firebase/paths"
@@ -33,6 +34,7 @@ export async function recordMemory(input: unknown): Promise<ServerActionResult> 
   const now = new Date().toISOString()
   const doc: AgentMemory = {
     id: ref.id,
+    brandId: DEFAULT_BRAND_ID,
     topic: parsed.data.topic,
     body: parsed.data.body,
     createdAt: now,
@@ -72,6 +74,7 @@ export async function listMemories(input: unknown): Promise<MemoryListItem[]> {
       kind: "agentMemory",
       query: parsed.data.query,
       k: parsed.data.k ?? 5,
+      brandId: DEFAULT_BRAND_ID,
       filter: parsed.data.topic
         ? (d) => (d as { topic?: string }).topic === parsed.data.topic
         : undefined,

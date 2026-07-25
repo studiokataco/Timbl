@@ -9,6 +9,10 @@ import { embeddingSchema } from "./embedding"
  */
 export const agentMemorySchema = z.object({
   id: z.string(),
+  /* Memories are brand-specific - a voice correction for one client must never
+   * surface when drafting for another. Defaults to the org's one brand so
+   * memories written before brands were real recall correctly. */
+  brandId: z.string().default("default"),
   topic: z.string().min(1),
   body: z.string().min(1),
   createdAt: isoTimestamp,

@@ -3,6 +3,7 @@ import { FunctionTool } from "@google/adk"
 
 import { retrieve } from "@/lib/embeddings/retrieve"
 import type { Kind } from "@/lib/embeddings/embeddable"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 
 import { getRuntimeCtx } from "../runtime/context"
 import { fenceUntrusted } from "../runtime/guardrails"
@@ -38,12 +39,16 @@ export const retrieveTool = new FunctionTool({
     "Top-k semantic search over an embeddable collection (post / campaign / template / awarenessDay / agentMemory). Returns items with id, snippet, and similarity score (higher = closer).",
   parameters: retrieveInput,
   execute: async (input, ctx) => {
-    const { orgId } = getRuntimeCtx(ctx)
+    const { orgId, brandId } = getRuntimeCtx(ctx)
+    /* awarenessDay is a global collection with no brand; every other kind is
+     * brand-scoped and must not leak across brands. */
+    const brandScoped = input.kind !== "awarenessDay"
     const hits = await retrieve({
       orgId,
       kind: input.kind as Kind,
       query: input.query,
       k: input.k,
+      brandId: brandScoped ? brandId ?? DEFAULT_BRAND_ID : undefined,
       filter: (doc) => {
         if (input.campaignId && doc.campaignId !== input.campaignId) return false
         if (input.approvedOnly && input.kind === "post") {

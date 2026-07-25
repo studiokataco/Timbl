@@ -1,6 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 
 import { collectionPathFor, toEmbeddingText, type Kind } from "./embeddable"
 import { embed } from "./provider"
@@ -24,6 +25,11 @@ export interface RetrieveOptions {
   kind: Kind
   query: string
   k?: number
+  /* When set, only docs belonging to this brand are returned - a doc with no
+   * brandId field counts as the default brand. Leave unset only for genuinely
+   * org-global kinds (awarenessDay). This is the guard that stops one client's
+   * memories and drafts leaking into another client's retrieval. */
+  brandId?: string
   filter?: (doc: Record<string, unknown>) => boolean
 }
 
@@ -61,6 +67,10 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
    * results, never cross-model garbage (§6.7). */
   const { vector, model } = await embed(opts.query)
 
+  const brandMatch = (data: Record<string, unknown>): boolean =>
+    opts.brandId === undefined ||
+    ((data.brandId as string | undefined) ?? DEFAULT_BRAND_ID) === opts.brandId
+
   if (useNativeKnn) {
     /* Over-fetch, then post-filter by model. findNearest can't prefilter
      * on embedding.model without a composite vector index; fetching a
@@ -77,6 +87,7 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
     const hits: RetrieveHit[] = []
     for (const d of snap.docs) {
       const data = d.data() as Record<string, unknown>
+      if (!brandMatch(data)) continue
       if (opts.filter && !opts.filter(data)) continue
       const emb = data.embedding as { model?: string } | undefined
       if (emb?.model !== model) continue
@@ -96,6 +107,7 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
   const scored: RetrieveHit[] = []
   for (const d of snap.docs) {
     const data = d.data() as Record<string, unknown>
+    if (!brandMatch(data)) continue
     if (opts.filter && !opts.filter(data)) continue
     const emb = data.embedding as
       | { vector?: number[]; model?: string }
