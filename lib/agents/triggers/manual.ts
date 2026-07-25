@@ -4,6 +4,7 @@ import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgAgentRunsPath } from "@/lib/firebase/paths"
+import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 import {
   requireActiveBilling,
   requireAgentBudget,
@@ -36,6 +37,9 @@ export interface StartRunInput {
   agentName: string
   input: string
   trigger: "manual" | "cron" | "pipeline"
+  /** Which brand this run acts on. Optional through the rollout - absent means
+   * the org's default brand. */
+  brandId?: string
   dedupKey?: string
   parentRunId?: string
   /** Per-conversation override of the agent's saved provider/model. Does
@@ -100,6 +104,7 @@ export async function startAgentRun(
     userId: input.userId,
     runId,
     agentName: input.agentName,
+    brandId: input.brandId ?? DEFAULT_BRAND_ID,
   }
 
   const sessionService = new FirestoreSessionService(input.orgId)
@@ -119,6 +124,7 @@ export async function startAgentRun(
     .set({
       id: runId,
       organizationId: input.orgId,
+      brandId: input.brandId ?? DEFAULT_BRAND_ID,
       agentName: input.agentName,
       sessionId,
       userId: input.userId,

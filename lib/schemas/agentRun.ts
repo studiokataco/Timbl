@@ -40,6 +40,7 @@ export type AgentRunError = z.infer<typeof agentRunErrorSchema>
 export const agentRunSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
+  brandId: z.string().default("default"),
   agentName: z.string().min(1),
   sessionId: z.string().min(1),
   userId: z.string().min(1),
