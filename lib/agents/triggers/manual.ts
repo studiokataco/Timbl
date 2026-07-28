@@ -263,6 +263,12 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
         usdCost,
         provider: (data.provider as string | null | undefined) ?? null,
         model: (data.model as string | null | undefined) ?? null,
+        /* A failure with no tokens on the clock never reached the model -
+         * provider quota, connection reset, missing key. It must not eat the
+         * per-agent invocation cap. */
+        chargeable:
+          input.status === "succeeded" ||
+          promptTokens + completionTokens > 0,
       })
       if (input.status === "failed") {
         const agentName = (data.agentName as string) ?? "unknown"

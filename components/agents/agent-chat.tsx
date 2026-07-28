@@ -98,6 +98,29 @@ interface StructuredEvent {
   detail?: unknown
 }
 
+/* The run route answers a plan gate with 402 and { ok, error, gate }. Reading
+ * the JSON `error` keeps the serialized body out of the transcript, where it
+ * used to land verbatim as the user's only explanation. */
+class StartRunError extends Error {
+  readonly gated: boolean
+  constructor(message: string, gated: boolean) {
+    super(message)
+    this.name = "StartRunError"
+    this.gated = gated
+  }
+}
+
+async function readStartError(res: Response): Promise<string> {
+  const body = await res.text().catch(() => "")
+  try {
+    const parsed = JSON.parse(body) as { error?: unknown }
+    if (typeof parsed.error === "string" && parsed.error) return parsed.error
+  } catch {
+    /* not JSON - fall through to the raw body */
+  }
+  return body || `Request failed (${res.status})`
+}
+
 
 const FALLBACK_AGENTS = [
   "brand-wizard",
@@ -344,8 +367,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
         signal: ctrl.signal,
       })
       if (!res.ok || !res.body) {
-        const detail = await res.text().catch(() => "")
-        throw new Error(detail || `Request failed (${res.status})`)
+        throw new StartRunError(await readStartError(res), res.status === 402)
       }
       const headerRunId = res.headers.get("X-Run-Id")
       if (headerRunId) setActiveRunId(headerRunId)
@@ -376,7 +398,10 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     } catch (err) {
       if ((err as Error).name === "AbortError") return
       const message = err instanceof Error ? err.message : "Unknown error"
-      toast.error("Agent failed", { description: message })
+      toast.error(
+        err instanceof StartRunError && err.gated ? "Plan limit reached" : "Agent failed",
+        { description: message },
+      )
       intoLatestAssistant((item) => {
         item.text = (item.text ?? "") + `\n\n⚠ ${message}`
       })

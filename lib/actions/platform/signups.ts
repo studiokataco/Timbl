@@ -11,8 +11,9 @@ import {
   signupRequestSchema,
 } from "@/lib/platform/schema"
 import { bootstrapNewOrg } from "@/lib/org/bootstrap"
+import { FREE_PLAN_ID, TRIAL_DAYS, TRIAL_PLAN_ID } from "@/lib/plans/plans"
 import { orgIdForNewWorkspace } from "@/lib/auth/domains"
-import { orgPath, orgUsersPath } from "@/lib/firebase/paths"
+import { orgUsersPath } from "@/lib/firebase/paths"
 import { slugify } from "@/lib/auth/membership"
 import { sendInviteAcceptedEmail } from "@/lib/email/beta"
 import { FieldValue } from "firebase-admin/firestore"
@@ -45,9 +46,33 @@ export async function approveSignupRequest(raw: unknown): Promise<PlatformAction
     await bootstrapNewOrg({ orgId, name: name })
   }
 
-  if (req.data.plan) {
-    await db.doc(orgPath(orgId)).set({ pendingPlan: req.data.plan }, { merge: true })
-  }
+  /* bootstrapNewOrg lands the org on Free, where agentRuns and the agent
+   * budget are both 0 - an approved tenant could not run a single agent, so
+   * the first thing they tried (usually awareness research) failed on a plan
+   * gate. Approval grants the standard 30-day trial instead; the plan they
+   * asked for is kept as pendingPlan for the billing conversion. Guarded so
+   * re-approving or approving a second user never restarts a spent trial. */
+  const orgData = (await orgRef.get()).data() ?? {}
+  const nowIso = new Date().toISOString()
+  const grantTrial =
+    !orgData.trialStartedAt &&
+    ((orgData.plan as string | undefined) ?? FREE_PLAN_ID) === FREE_PLAN_ID
+
+  await orgRef.set(
+    {
+      ...(req.data.plan ? { pendingPlan: req.data.plan } : {}),
+      ...(grantTrial
+        ? {
+            plan: TRIAL_PLAN_ID,
+            billingStatus: "trialing",
+            trialStartedAt: nowIso,
+            trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString(),
+            updatedAt: nowIso,
+          }
+        : {}),
+    },
+    { merge: true },
+  )
 
   const userId = slugify(email.split("@")[0])
   await db.doc(`${orgUsersPath(orgId)}/${userId}`).set(
@@ -75,7 +100,7 @@ export async function approveSignupRequest(raw: unknown): Promise<PlatformAction
     actorEmail: actor.email,
     action: "signup.approve",
     targetOrgId: orgId,
-    meta: { requestId: id, email, orgId },
+    meta: { requestId: id, email, orgId, trialGranted: grantTrial },
   })
 
   await sendInviteAcceptedEmail({ email, name })
