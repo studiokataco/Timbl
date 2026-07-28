@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Claude Code tooling - not app source
     ".claude/**",
+    // design-sync inputs - preview scaffolding for claude.ai/design, not app source
+    ".design-sync/**",
     // Cloud Functions compiled output - TS-emitted CommonJS, not source
     "functions/lib/**",
     // Node runtime stubs - CommonJS hooks, not app source
