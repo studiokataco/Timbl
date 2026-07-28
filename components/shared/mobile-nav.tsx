@@ -5,11 +5,17 @@ import { Menu, Search } from "lucide-react"
 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { TimblWordmark } from "@/components/brand/timbl-logo"
-import { SidebarNav, FeedbackTrigger } from "@/components/shared/sidebar"
-import { WorkspaceSwitcher } from "@/components/shared/workspace-switcher"
+import { SidebarNav, FeedbackTrigger, WorkspaceBrandCard } from "@/components/shared/sidebar"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
+import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 
-export function MobileNav({ workspaces }: { workspaces: WorkspaceSwitcherData }) {
+export function MobileNav({
+  workspaces,
+  brands,
+}: {
+  workspaces: WorkspaceSwitcherData
+  brands: BrandSwitcherData
+}) {
   const [open, setOpen] = useState(false)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -30,7 +36,7 @@ export function MobileNav({ workspaces }: { workspaces: WorkspaceSwitcherData })
         aria-label="Primary navigation"
       >
         <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-4 mt-1" />
-        <WorkspaceSwitcher data={workspaces} className="mb-3" />
+        <WorkspaceBrandCard workspaces={workspaces} brands={brands} className="mb-3" />
         <button
           type="button"
           onClick={() => {
