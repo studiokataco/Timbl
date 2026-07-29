@@ -14,6 +14,7 @@ import {
 import { writePlatformSignal } from "@/lib/platform/signals"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
 import { estimateUsdCost } from "@/lib/agents/pricing"
+import type { AgentRunError } from "@/lib/schemas/agentRun"
 
 import { resolveAgent, type ResolveOverride } from ".."
 import { AGENT_APP_NAME, buildRunner } from "../runtime/runner"
@@ -54,6 +55,10 @@ export interface StartRunResult {
   agentName: string
   appName: string
   newMessage: Content
+  /** Resolved provider/model this run is executing on, so a caller recording
+   * a failure can name the upstream without re-reading the run doc. */
+  provider: string
+  model: string
   /** Returned for the route handler / pipeline driver to iterate. */
   runner: ReturnType<typeof buildRunner>
 }
@@ -164,6 +169,8 @@ export async function startAgentRun(
       role: "user",
       parts: [{ text: input.input }],
     },
+    provider: resolved.config.provider,
+    model: resolved.config.model,
     runner,
   }
 }
@@ -172,7 +179,7 @@ export interface MarkRunStatusInput {
   orgId: string
   runId: string
   status: "in_progress" | "succeeded" | "failed" | "cancelled" | "awaiting_human"
-  error?: { code: string; message: string }
+  error?: AgentRunError
   metricsPatch?: Record<string, number>
   outputsPatch?: { postIds?: string[]; ideationItemIds?: string[] }
   /** OpenRouter generation handles collected across the run's LLM calls. */
@@ -281,6 +288,9 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
             runId: input.runId,
             agentName,
             error: input.error?.message ?? null,
+            errorName: input.error?.name ?? null,
+            lastGenerationId: input.error?.lastGenerationId ?? null,
+            clientDisconnected: input.error?.clientDisconnected ?? null,
             model: (data.model as string | null | undefined) ?? null,
             provider: (data.provider as string | null | undefined) ?? null,
           },

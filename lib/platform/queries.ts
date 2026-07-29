@@ -295,12 +295,25 @@ export interface RunRow {
   durationMs: number | null
   usdCost: number
   error: string | null
+  /* Forensics from agentRunErrorSchema. Present only on failed runs, and
+   * only for runs recorded after error capture landed - older docs carry
+   * nothing but the message. */
+  errorName: string | null
+  errorGenerationId: string | null
+  clientDisconnected: boolean | null
 }
 
 function toRunRow(doc: FirebaseFirestore.QueryDocumentSnapshot): RunRow {
   const d = doc.data()
   const metrics = (d.metrics ?? {}) as Record<string, number>
-  const error = d.error as { message?: string } | undefined
+  const error = d.error as
+    | {
+        message?: string
+        name?: string
+        lastGenerationId?: string
+        clientDisconnected?: boolean
+      }
+    | undefined
   return {
     id: doc.id,
     orgId: (d.organizationId as string) ?? doc.ref.parent.parent?.id ?? "",
@@ -313,6 +326,10 @@ function toRunRow(doc: FirebaseFirestore.QueryDocumentSnapshot): RunRow {
     durationMs: typeof d.durationMs === "number" ? d.durationMs : null,
     usdCost: num(metrics.usdCost),
     error: error?.message ?? null,
+    errorName: error?.name ?? null,
+    errorGenerationId: error?.lastGenerationId ?? null,
+    clientDisconnected:
+      typeof error?.clientDisconnected === "boolean" ? error.clientDisconnected : null,
   }
 }
 

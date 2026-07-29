@@ -2,7 +2,13 @@ import { BaseLlm } from "@google/adk"
 import type { LlmRequest, LlmResponse } from "@google/adk"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { orgPath, orgUsageDocPath } from "@/lib/firebase/paths"
+import {
+  orgAwarenessProposalsPath,
+  orgPath,
+  orgUsageDocPath,
+} from "@/lib/firebase/paths"
+import { proposeAwarenessDayTool } from "@/lib/agents/tools/awareness-research"
+import { RUNTIME_STATE_KEY } from "@/lib/agents/runtime/context"
 import { emitAgentRun } from "@/lib/telemetry/agent-events"
 import { PlanGateError, requireAgentBudget } from "@/lib/plans/gate"
 import { getPlan } from "@/lib/plans/plans"
@@ -10,9 +16,14 @@ import { ResilientLlm } from "@/lib/agents/runtime/resilient-llm"
 
 /*
  * Smoke test for the awareness-researcher availability fixes, against the
- * emulator. Covers the two failure modes that made the agent unusable:
- * quota consumed by runs that never reached a model, and a provider quota
- * error with nowhere to fail over to.
+ * emulator. Covers the failure modes that made the agent unusable: quota
+ * consumed by runs that never reached a model, a provider quota error with
+ * nowhere to fail over to, and proposals written from an ungrounded model's
+ * memory - fabricated citations and the same day twice.
+ *
+ * Needs a grounding-capable key in the environment (OPENROUTER_API_KEY or
+ * GEMINI_API_KEY) for the proposal checks: the tool refuses to write at all
+ * without one, which is itself correct behaviour.
  *
  *   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm verify:agent-quota
  */
@@ -155,9 +166,71 @@ async function main() {
   }
   assert(threw, "a bad credential surfaces rather than silently switching provider")
 
-  await getAdminDb().doc(orgUsageDocPath(ORG, period())).delete()
-  await getAdminDb().doc(orgPath(ORG)).delete()
-  console.log("\nAll agent quota checks passed.\n")
+  console.log("\n6. A proposal cited only by a search-redirect handle is refused")
+  const db = getAdminDb()
+  const proposals = db.collection(orgAwarenessProposalsPath(ORG))
+  for (const doc of (await proposals.get()).docs) await doc.ref.delete()
+
+  /* adk-js hands tools a ToolContext whose `state` is a Map-like store.
+   * Only the keys getRuntimeCtx demands need to be present. */
+  const toolContext = {
+    state: {
+      get: (key: string) =>
+        key === RUNTIME_STATE_KEY
+          ? {
+              orgId: ORG,
+              userId: "smoke-user",
+              runId: "r-smoke",
+              agentName: AGENT,
+              brandId: "default",
+            }
+          : undefined,
+    },
+  }
+
+  const propose = (item: Record<string, unknown>) =>
+    proposeAwarenessDayTool.runAsync({
+      args: item,
+      toolContext,
+    } as never) as Promise<{ ok: boolean; error?: string; proposalId?: string }>
+
+  const proxyCite = await propose({
+    date: "2026-09-10",
+    name: "World Suicide Prevention Day",
+    sourceUrls: [
+      "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEibg2-3dexkWI6S536",
+    ],
+    importance: "high",
+    recurringPattern: "annual",
+  })
+  assert(proxyCite.ok === false, "grounding-redirect handle is not accepted as a source")
+  assert((await proposals.get()).size === 0, "nothing was written for the refused proposal")
+
+  console.log("\n7. A real citation is accepted")
+  const good = await propose({
+    date: "2026-09-10",
+    name: "World Suicide Prevention Day",
+    sourceUrls: ["https://www.who.int/campaigns/world-suicide-prevention-day"],
+    importance: "high",
+    recurringPattern: "annual",
+  })
+  assert(good.ok === true, "a real source URL is accepted")
+
+  console.log("\n8. The same day proposed twice is refused")
+  const dupe = await propose({
+    date: "2026-09-10",
+    name: "World Suicide Prevention day!",
+    sourceUrls: ["https://www.who.int/campaigns/world-suicide-prevention-day"],
+    importance: "high",
+    recurringPattern: "annual",
+  })
+  assert(dupe.ok === false, "a repeat of a proposed day is refused across punctuation and case")
+  assert((await proposals.get()).size === 1, "the duplicate never reached Firestore")
+
+  for (const doc of (await proposals.get()).docs) await doc.ref.delete()
+  await db.doc(orgUsageDocPath(ORG, period())).delete()
+  await db.doc(orgPath(ORG)).delete()
+  console.log("\nAll agent quota and proposal checks passed.\n")
 }
 
 main().catch((err) => {
