@@ -4,6 +4,7 @@ import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
 import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import { startAgentRun, markAgentRunStatus } from "@/lib/agents/triggers/manual"
+import { gateErrorToResult } from "@/lib/plans/gate"
 import {
   eventsToSseStream,
   SSE_HEADERS,
@@ -75,6 +76,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           : undefined,
     })
   } catch (err) {
+    /* A plan gate is not a missing resource. 402 with the structured reason
+     * lets the client render an upgrade path instead of the raw JSON body it
+     * used to paste into the transcript. */
+    const gated = gateErrorToResult(err)
+    if (gated) return Response.json(gated, { status: 402 })
     return Response.json(
       {
         ok: false,
@@ -112,11 +118,14 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     onRawEvent: (event) =>
       collectMetrics(event, metrics, generationIds, sourceUrls),
     onFinish: async (last) => {
-      const status = req.signal.aborted
-        ? "cancelled"
-        : last?.type === "error"
-          ? "failed"
-          : "succeeded"
+      const errored = last?.type === "error"
+      /* An abort can surface as an error event before req.signal flips (the
+       * provider SDK rejects its in-flight fetch first). Recording it as a
+       * failure inflates the platform failure rate with runs nobody was
+       * waiting for any more. */
+      const aborted =
+        req.signal.aborted || (errored && isAbortError(last.error.message))
+      const status = aborted ? "cancelled" : errored ? "failed" : "succeeded"
       await markAgentRunStatus({
         orgId,
         runId: started.runId,
@@ -124,10 +133,12 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         metricsPatch: { ...metrics },
         generationIds: [...generationIds],
         sourceUrls: [...sourceUrls],
-        error:
-          last?.type === "error"
-            ? { code: "agent_error", message: last.error.message }
-            : undefined,
+        error: errored
+          ? {
+              code: aborted ? "aborted" : "agent_error",
+              message: last.error.message,
+            }
+          : undefined,
       })
     },
   })
@@ -140,6 +151,12 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "X-Session-Id": started.sessionId,
     },
   })
+}
+
+/* Abort reaches us as an AbortError from whichever fetch was in flight -
+ * each SDK words it slightly differently. */
+function isAbortError(message: string | undefined): boolean {
+  return /\b(abort(ed)?|AbortError)\b/i.test(message ?? "")
 }
 
 function collectMetrics(

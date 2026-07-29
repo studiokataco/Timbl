@@ -46,7 +46,13 @@ export type PlanConfig = {
   /* Per-boutique-agent invocation cap for the billing period, keyed by
    * agent name. An agent absent from this map has no agent-specific cap -
    * only the blanket `agentRuns` quota applies to it. `null` = unlimited
-   * for that agent on this tier. */
+   * for that agent on this tier.
+   *
+   * Size these against orgMonthlyUsdCap, not intuition: the USD ceiling is
+   * the real cost backstop, so a cap tight enough to be hit in normal use
+   * only produces support tickets. awareness-researcher runs on a cheap
+   * grounded model (~$0.01-0.03 a run), so its caps sit far below the tier's
+   * spend ceiling even when fully consumed. */
   agentInvocationCaps: Record<string, number | null>
   /* Ceiling on TOTAL agent LLM spend for the org this billing period, in
    * USD. This is the cost-of-goods backstop: agentConfig.budgets.monthlyUsdCap
@@ -104,7 +110,7 @@ export const PLANS: Record<string, PlanConfig> = {
     label: "Studio",
     monthlyPriceInr: 2999,
     quotas: { agentRuns: 1500, scheduledPosts: null, brands: 1, seats: 5, agents: 5 },
-    agentInvocationCaps: { "awareness-researcher": 1 },
+    agentInvocationCaps: { "awareness-researcher": 12 },
     orgMonthlyUsdCap: 8,
     features: {
       multiStepApproval: false,
@@ -131,7 +137,7 @@ export const PLANS: Record<string, PlanConfig> = {
      * an account is never priced worse than starting one. */
     perBrandPriceInr: 3999,
     quotas: { agentRuns: 5000, scheduledPosts: null, brands: 3, seats: 15, agents: 20 },
-    agentInvocationCaps: { "awareness-researcher": 3 },
+    agentInvocationCaps: { "awareness-researcher": 50 },
     orgMonthlyUsdCap: 30,
     features: {
       multiStepApproval: true,

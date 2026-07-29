@@ -1,0 +1,107 @@
+{
+  "projectId": "71785e10-432e-4372-b82c-78a907751074",
+  "shape": "package",
+  "pkg": "timbl",
+  "globalName": "Timbl",
+  "srcDir": "components",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".design-sync/.cache/compiled.css",
+  "buildCmd": "node .ds-sync/node_modules/@tailwindcss/cli/dist/index.mjs -i app/globals.css -o .design-sync/.cache/compiled.css",
+  "componentSrcMap": {
+    "Avatar": "components/ui/avatar.tsx",
+    "Badge": "components/ui/badge.tsx",
+    "Button": "components/ui/button.tsx",
+    "Card": "components/ui/card.tsx",
+    "Label": "components/ui/label.tsx",
+    "Separator": "components/ui/separator.tsx",
+    "Skeleton": "components/ui/skeleton.tsx",
+    "Checkbox": "components/ui/checkbox.tsx",
+    "Input": "components/ui/input.tsx",
+    "InputGroup": "components/ui/input-group.tsx",
+    "Select": "components/ui/select.tsx",
+    "Switch": "components/ui/switch.tsx",
+    "Textarea": "components/ui/textarea.tsx",
+    "Toggle": "components/ui/toggle.tsx",
+    "ToggleGroup": "components/ui/toggle-group.tsx",
+    "DropdownMenu": "components/ui/dropdown-menu.tsx",
+    "SegmentedTabs": "components/ui/segmented-tabs.tsx",
+    "Tabs": "components/ui/tabs.tsx",
+    "Dialog": "components/ui/dialog.tsx",
+    "Popover": "components/ui/popover.tsx",
+    "Sheet": "components/ui/sheet.tsx",
+    "Tooltip": "components/ui/tooltip.tsx",
+    "Toaster": "components/ui/sonner.tsx",
+    "BrandGlowButton": "components/ui/brand-glow-button.tsx",
+    "ChannelGlyph": "components/shared/channel-glyph.tsx",
+    "TimblLogo": "components/brand/timbl-logo.tsx",
+    "EmptyState": "components/shared/empty-state.tsx",
+    "PageHeader": "components/shared/page-header.tsx"
+  },
+  "docsMap": {
+    "Avatar": ".design-sync/docs/Avatar.md",
+    "Badge": ".design-sync/docs/Badge.md",
+    "Button": ".design-sync/docs/Button.md",
+    "Card": ".design-sync/docs/Card.md",
+    "Label": ".design-sync/docs/Label.md",
+    "Separator": ".design-sync/docs/Separator.md",
+    "Skeleton": ".design-sync/docs/Skeleton.md",
+    "Checkbox": ".design-sync/docs/Checkbox.md",
+    "Input": ".design-sync/docs/Input.md",
+    "InputGroup": ".design-sync/docs/InputGroup.md",
+    "Select": ".design-sync/docs/Select.md",
+    "Switch": ".design-sync/docs/Switch.md",
+    "Textarea": ".design-sync/docs/Textarea.md",
+    "Toggle": ".design-sync/docs/Toggle.md",
+    "ToggleGroup": ".design-sync/docs/ToggleGroup.md",
+    "DropdownMenu": ".design-sync/docs/DropdownMenu.md",
+    "SegmentedTabs": ".design-sync/docs/SegmentedTabs.md",
+    "Tabs": ".design-sync/docs/Tabs.md",
+    "Dialog": ".design-sync/docs/Dialog.md",
+    "Popover": ".design-sync/docs/Popover.md",
+    "Sheet": ".design-sync/docs/Sheet.md",
+    "Tooltip": ".design-sync/docs/Tooltip.md",
+    "Toaster": ".design-sync/docs/Toaster.md",
+    "BrandGlowButton": ".design-sync/docs/BrandGlowButton.md",
+    "ChannelGlyph": ".design-sync/docs/ChannelGlyph.md",
+    "TimblLogo": ".design-sync/docs/TimblLogo.md",
+    "EmptyState": ".design-sync/docs/EmptyState.md",
+    "PageHeader": ".design-sync/docs/PageHeader.md"
+  },
+  "libOverrides": {
+    "source-kit.mjs": "add 'shared' to GENERIC_DIR so components/shared/* group via docsMap category (brand/product)"
+  },
+  "overrides": {
+    "Dialog": {
+      "cardMode": "single",
+      "viewport": "520x380"
+    },
+    "Sheet": {
+      "cardMode": "single",
+      "viewport": "460x420"
+    },
+    "Popover": {
+      "cardMode": "single",
+      "viewport": "380x300"
+    },
+    "Tooltip": {
+      "cardMode": "single",
+      "viewport": "340x200"
+    },
+    "Select": {
+      "cardMode": "single",
+      "viewport": "340x340"
+    },
+    "DropdownMenu": {
+      "cardMode": "single",
+      "viewport": "340x360"
+    },
+    "Card": {
+      "cardMode": "column"
+    },
+    "PageHeader": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "guidelinesGlob": []
+}

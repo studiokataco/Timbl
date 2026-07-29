@@ -16,6 +16,11 @@ import { proposeAwarenessDayTool } from "../../tools/awareness-research"
  * web-search server tool; Gemini uses GOOGLE_SEARCH + URL_CONTEXT. The
  * proposeAwarenessDay tool short-circuits with a clear error if neither
  * grounding path is reachable (anthropic/mock).
+ *
+ * `webSearch` is requested unconditionally: on the Gemini path it is inert
+ * for the primary but arms the OpenRouter failover with web search, so a
+ * Gemini quota exhaustion degrades to a grounded OpenRouter run instead of
+ * failing the whole research session.
  */
 export function buildAwarenessResearcherAgent(
   config: AgentConfig,
@@ -24,7 +29,7 @@ export function buildAwarenessResearcherAgent(
   return buildLlmAgentFromConfig({
     name: "awareness-researcher",
     config,
-    webSearch: config.provider === "openrouter",
+    webSearch: true,
     nativeTools: geminiGrounding,
     tools: [
       ...(geminiGrounding ? [GOOGLE_SEARCH, URL_CONTEXT] : []),

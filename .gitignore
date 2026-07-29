@@ -1,85 +1,78 @@
-# Installed AI tools / skills / plugins
-.claude/skills/
-.claude/plugins/
-.claude/cache/
-.claude/local/
-.ruflo/
-.claude-mem/
-.skills/
-.claude/*
 
-
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Env / secrets
-.env
-.env.*
 !.env.example
-
-# OS / editor
-.DS_Store
-.vscode/
-.idea/
-*.swp
-docs/*
-
-# Next.js
-/.next/
-/out/
-/build
-/coverage
-.vercel
-*.tsbuildinfo
-next-env.d.ts
-
-# pnpm / yarn extras
-/.pnp
-.pnp.*
-.yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-.pnpm-debug.log*
-*.pem
-
+# App Hosting local overrides
+# Cloud Functions build output
+# Env / secrets
 # Firebase
-.firebase/
+# Installed AI tools / skills / plugins
+# Local working plans (not source of truth)
+# Local-only walkthroughs / docs (not source of truth - those live in PRD/plan files)
+# Next.js
+# Node
+# OS / editor
+# Playwright artifacts
+# pnpm / yarn extras
 *.log
+*.pem
+*.swp
+*.tsbuildinfo
+.DS_Store
+.agents/
+.claude-mem/
+.claude/
+.claude/*
+.claude/cache/
+.claude/local/
+.claude/plugins/
+.claude/skills/
+.cursor/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+.ds-sync/
+.env
+.env.*
+.firebase/
+.githooks/
+.github/hooks/
+.github/skills/
+.idea/
+.impeccable/
+.pnp.*
+.pnpm-debug.log*
+.ruflo/
+.skills/
+.vercel
+.vscode/
+.yarn/*
+/.next/
+/.pnp
+/blob-report/
+/build
+/coverage
+/out/
+/playwright-report/
+/playwright/.cache/
+/test-results/
+AGENTS.md
+agent/
+apphosting.local.yaml
+docs/*
+docs/AGENTS_WALKTHROUGH.md
+ds-bundle/
 firebase-debug.log*
 firestore-debug.log*
-ui-debug.log*
-
-# Local-only walkthroughs / docs (not source of truth - those live in PRD/plan files)
-docs/AGENTS_WALKTHROUGH.md
-docs/*
-AGENTS.md
-.claude/
-.cursor/
-.githooks/
-.github/skills/
-.github/hooks/
-.impeccable/
-.agents/
-agent/
-skills-lock.json
-
-# Cloud Functions build output
 functions/lib/
 functions/node_modules/
-
-# Playwright artifacts
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-
-# App Hosting local overrides
-apphosting.local.yaml
-
-# Local working plans (not source of truth)
+next-env.d.ts
+node_modules/
+npm-debug.log*
 plans/
+skills-lock.json
+ui-debug.log*
+yarn-debug.log*
+yarn-error.log*

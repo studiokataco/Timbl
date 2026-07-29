@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { Check, ChevronsUpDown, Loader2, Plus } from "lucide-react"
+import { Check, ChevronsUpDown, CornerDownRight, Loader2, Plus } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -52,9 +52,11 @@ function BrandAvatar({ name, className }: { name: string; className?: string }) 
 export function BrandSwitcher({
   data,
   className,
+  nested = false,
 }: {
   data: BrandSwitcherData
   className?: string
+  nested?: boolean
 }) {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -92,11 +94,20 @@ export function BrandSwitcher({
       <DropdownMenuTrigger
         type="button"
         className={cn(
-          "group flex w-full items-center gap-2.5 rounded-xl border border-border bg-background px-2.5 py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[popup-open]:bg-secondary/60",
+          "group flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[popup-open]:bg-secondary/60",
+          nested
+            ? "rounded-b-xl focus-visible:ring-inset"
+            : "rounded-xl border border-border bg-background",
           className,
         )}
         aria-label={`Current brand: ${current.name}. Switch brand`}
       >
+        {nested && (
+          <CornerDownRight
+            aria-hidden
+            className="size-3.5 shrink-0 text-muted-foreground/50"
+          />
+        )}
         <BrandAvatar name={current.name} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-caption uppercase tracking-wider text-muted-foreground">

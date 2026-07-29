@@ -137,6 +137,32 @@ export function FeedbackTrigger({
   )
 }
 
+/* Org is the tenant; brand is scoped beneath it. One bordered card carries
+ * both so the hierarchy reads at a glance instead of as two peer pickers -
+ * org anchors the top, brand nests below a hairline divider. */
+export function WorkspaceBrandCard({
+  workspaces,
+  brands,
+  className,
+}: {
+  workspaces: WorkspaceSwitcherData
+  brands: BrandSwitcherData
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-background",
+        className,
+      )}
+    >
+      <WorkspaceSwitcher data={workspaces} nested />
+      <div className="mx-2.5 border-t border-border" />
+      <BrandSwitcher data={brands} nested />
+    </div>
+  )
+}
+
 export function Sidebar({
   workspaces,
   brands,
@@ -150,8 +176,7 @@ export function Sidebar({
       className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1 overflow-y-auto"
     >
       <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-4" />
-      <WorkspaceSwitcher data={workspaces} className="mb-2" />
-      <BrandSwitcher data={brands} className="mb-4" />
+      <WorkspaceBrandCard workspaces={workspaces} brands={brands} className="mb-4" />
       <SidebarNav />
       <FeedbackTrigger className="mt-auto" />
     </nav>

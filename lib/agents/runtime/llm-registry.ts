@@ -22,7 +22,7 @@ import { ResilientLlm } from "./resilient-llm"
  * Every real provider is then wrapped in ResilientLlm, which retries
  * transient 429/503 with backoff and fails over to a second provider once
  * retries are exhausted. Agents carrying provider-native server tools pass
- * `nativeTools` to suppress that failover.
+ * `nativeTools`, which limits that failover to a grounding-capable provider.
  *
  * `AgentProvider` is imported from the zod schema in lib/schemas/agentConfig
  * so the enum has a single source of truth.
@@ -61,9 +61,8 @@ export interface ResolveLlmInput {
    * compatible providers. */
   webSearch?: boolean
   /** Set by agents that attach provider-native server tools (GOOGLE_SEARCH,
-   * URL_CONTEXT). Suppresses cross-provider fallback, which would hand those
-   * tool declarations to a model that cannot service them. Retry still
-   * applies. */
+   * URL_CONTEXT). Restricts cross-provider fallback to a provider that can
+   * ground the request another way; see resolveFallback. */
   nativeTools?: boolean
 }
 
@@ -101,13 +100,19 @@ const FALLBACK_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 /*
  * Picks a DIFFERENT provider to absorb the request once the primary has
  * exhausted its retries. Returns undefined when no other provider is
- * reachable, when the agent depends on provider-native tools, or when the
- * primary is local/mock (nothing to fail over from).
+ * reachable, or when the primary is local/mock (nothing to fail over from).
+ *
+ * `nativeTools` narrows rather than blocks the choice. GOOGLE_SEARCH /
+ * URL_CONTEXT declarations don't cross providers, but OpenRouter's
+ * web-search server tool is an equivalent grounding path, so a grounded
+ * agent keeps its grounding through the failover - the OpenAI-compatible
+ * adapter builds its tool list from `toolsDict` function declarations and
+ * ignores the Gemini-native entries. Text-only fallbacks are still refused
+ * for those agents: answering ungrounded is worse than failing.
  */
 function resolveFallback(
   input: ResolveLlmInput,
 ): { llm: BaseLlm; label: string } | undefined {
-  if (input.nativeTools) return undefined
   if (input.provider === "mock" || input.provider === "ollama") return undefined
 
   const openRouterKey = readOpenRouterKey()
@@ -121,10 +126,11 @@ function resolveFallback(
         model: FALLBACK_OPENROUTER_MODEL,
         apiKey: openRouterKey,
         baseUrl: OPENROUTER_BASE_URL,
-        webSearch: input.webSearch,
+        webSearch: input.webSearch || input.nativeTools,
       }),
     }
   }
+  if (input.nativeTools) return undefined
   if (input.provider !== "gemini" && geminiKey) {
     return {
       label: "gemini",

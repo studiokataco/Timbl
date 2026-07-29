@@ -18,7 +18,9 @@ import { safeFieldKey } from "@/lib/platform/schema"
  *   - LLM calls were made (and billed by Anthropic/Google) either way
  *   - A user-side retry of a failed run shouldn't be free-money
  *
- * Cancelled runs do not count.
+ * Cancelled runs do not count. Neither does a failure that burned no tokens
+ * (`chargeable: false`) against the tight per-agent invocation cap - see
+ * agentRunsByAgent below.
  *
  * Counter writes are best-effort (try/catch around the call site) - a
  * usage-write failure must not break the user's UI. The Razorpay
@@ -41,6 +43,12 @@ export interface AgentRunEvent {
    * on the agentRuns doc at start; passed through here by markAgentRunStatus. */
   provider?: string | null
   model?: string | null
+  /* False when the run reached a terminal state without burning any tokens -
+   * a provider 429, a connection reset, an unreachable key. Such a run must
+   * not consume the per-agent invocation cap (single digits on every tier),
+   * or a provider outage silently spends a customer's monthly allowance on
+   * nothing. Defaults to true. */
+  chargeable?: boolean
 }
 
 function currentPeriod(date = new Date()): string {
@@ -61,6 +69,7 @@ export async function emitAgentRun(event: AgentRunEvent): Promise<void> {
   const cachedTokens = event.cachedTokens ?? 0
   const providerKey = event.provider ? safeFieldKey(event.provider) : "unknown"
   const modelKey = event.model ? safeFieldKey(event.model) : "unknown"
+  const chargeable = event.chargeable ?? true
 
   /* Atomic increment so concurrent runs don't lose counts. The per-key maps
    * are written as nested objects (not "map.key" string keys): set(merge)
@@ -71,7 +80,13 @@ export async function emitAgentRun(event: AgentRunEvent): Promise<void> {
       period,
       organizationId: event.orgId,
       agentRuns: FieldValue.increment(1),
-      agentRunsByAgent: { [event.agentName]: FieldValue.increment(1) },
+      /* Gated on `chargeable` - this map is what requireAgentBudget reads for
+       * the per-agent cap. The blanket agentRuns counter above stays
+       * unconditional: it runs into the thousands, so one uncharged failure
+       * matters less than keeping it reconcilable with agentRunsByOutcome. */
+      ...(chargeable
+        ? { agentRunsByAgent: { [event.agentName]: FieldValue.increment(1) } }
+        : {}),
       agentRunsByOutcome: { [event.outcome]: FieldValue.increment(1) },
       tokensByAgent: {
         [event.agentName]: FieldValue.increment(promptTokens + completionTokens),
