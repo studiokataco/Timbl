@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { getDb } from "@/lib/auth/server-helpers"
-import { resolveShareToken, approveViaShareToken } from "@/lib/actions/post-shares"
+import { resolveShareToken } from "@/lib/actions/post-shares"
 import { orgPostsPath } from "@/lib/firebase/paths"
 import type { Post } from "@/lib/schemas"
 import { ApproveActions } from "./approve-actions"
