@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Check, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"

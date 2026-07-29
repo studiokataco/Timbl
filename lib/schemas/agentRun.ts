@@ -31,9 +31,32 @@ export const agentRunMetricsSchema = z.object({
 })
 export type AgentRunMetrics = z.infer<typeof agentRunMetricsSchema>
 
+/* `message` alone cannot answer "which layer raised this". An AbortError
+ * from a provider SDK, from our own request signal, and from a Firestore
+ * retry all read identically in a run doc, so a post-mortem stalls on the
+ * one field that was recorded. Everything past `message` is optional: it is
+ * forensic detail, and a run that fails without it must still be storable. */
 export const agentRunErrorSchema = z.object({
   code: z.string().min(1),
   message: z.string().min(1),
+  /** Error constructor name - AbortError, APIUserAbortError, TypeError. */
+  name: z.string().optional(),
+  stack: z.string().max(4_000).optional(),
+  /** Provider and model in flight when it failed. Copied from the run doc so
+   * the error survives independently of later edits to those fields. */
+  provider: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
+  /** Last upstream call handle issued before the failure - the join key to
+   * the provider's own logs. */
+  lastGenerationId: z.string().optional(),
+  /** Whether the client had already disconnected. Separates "the user walked
+   * away" from "the request died under us". */
+  clientDisconnected: z.boolean().optional(),
+  /** Completed LLM/tool calls at the point of failure - distinguishes a run
+   * that never started from one that died deep in a loop. */
+  llmCalls: z.number().int().nonnegative().optional(),
+  toolCalls: z.number().int().nonnegative().optional(),
+  failedAt: z.string().optional(),
 })
 export type AgentRunError = z.infer<typeof agentRunErrorSchema>
 

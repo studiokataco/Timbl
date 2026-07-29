@@ -193,19 +193,45 @@ function InFlightCard({ run }: { run: RunRow }) {
 
 function ActivityRow({ run }: { run: RunRow }) {
   return (
-    <li className="flex items-center gap-3 border-b border-foreground/5 px-2 py-2 text-sm last:border-0">
-      <span className={cn("size-2 shrink-0 rounded-full", STATUS_DOT[run.status] ?? "bg-muted-foreground")} />
-      <span className="min-w-0 flex-1 truncate">
-        <span className="font-medium">{run.agentName}</span>{" "}
-        <span className="text-muted-foreground">· {run.orgId}</span>
-      </span>
-      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-        {duration(run.durationMs)}
-      </span>
-      <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
-        {relativeTime(run.startedAt)}
-      </span>
+    <li className="border-b border-foreground/5 px-2 py-2 text-sm last:border-0">
+      <div className="flex items-center gap-3">
+        <span className={cn("size-2 shrink-0 rounded-full", STATUS_DOT[run.status] ?? "bg-muted-foreground")} />
+        <span className="min-w-0 flex-1 truncate">
+          <span className="font-medium">{run.agentName}</span>{" "}
+          <span className="text-muted-foreground">· {run.orgId}</span>
+        </span>
+        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+          {duration(run.durationMs)}
+        </span>
+        <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
+          {relativeTime(run.startedAt)}
+        </span>
+      </div>
+      {run.error && <RunError run={run} />}
     </li>
+  )
+}
+
+/* The failure line is the whole reason an operator opens this page. Error
+ * name and the upstream generation id are what make it actionable - the
+ * message alone is the thing that already proved unanswerable. */
+function RunError({ run }: { run: RunRow }) {
+  return (
+    <div className="mt-1 pl-5 text-xs">
+      <p className="text-red-600 dark:text-red-400">
+        {run.errorName && <span className="font-medium">{run.errorName}: </span>}
+        {run.error}
+      </p>
+      <p className="mt-0.5 flex flex-wrap gap-x-3 text-muted-foreground">
+        {run.model && <span>{run.provider ? `${run.provider}/${run.model}` : run.model}</span>}
+        {run.errorGenerationId && (
+          <span className="font-mono">{run.errorGenerationId}</span>
+        )}
+        {run.clientDisconnected !== null && (
+          <span>{run.clientDisconnected ? "client had disconnected" : "client still connected"}</span>
+        )}
+      </p>
+    </div>
   )
 }
 

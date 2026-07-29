@@ -67,10 +67,14 @@ export function eventsToSseStream(
           if (abortSignal?.aborted) break
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        send(
-          `event: error\ndata: ${JSON.stringify({ type: "error", error: message })}\n\n`,
-        )
+        /* A generator that THROWS never yielded an error event, so without
+         * this `lastStructured` still holds the last good event and onFinish
+         * marks the run succeeded - the failure disappears. Synthesising the
+         * error event here puts the throw path on the same footing as the
+         * yielded one, error identity included. */
+        const error = err instanceof Error ? err : new Error(String(err))
+        lastStructured = { type: "error", error } as StructuredEvent
+        send(`event: error\ndata: ${serializeEvent(lastStructured)}\n\n`)
       } finally {
         if (heartbeat) clearInterval(heartbeat)
         abortSignal?.removeEventListener("abort", onAbort)

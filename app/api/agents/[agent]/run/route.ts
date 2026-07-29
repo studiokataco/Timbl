@@ -119,12 +119,14 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       collectMetrics(event, metrics, generationIds, sourceUrls),
     onFinish: async (last) => {
       const errored = last?.type === "error"
+      const clientDisconnected = req.signal.aborted
       /* An abort can surface as an error event before req.signal flips (the
        * provider SDK rejects its in-flight fetch first). Recording it as a
        * failure inflates the platform failure rate with runs nobody was
-       * waiting for any more. */
+       * waiting for any more. The two are recorded separately: only
+       * `clientDisconnected` means the user actually left. */
       const aborted =
-        req.signal.aborted || (errored && isAbortError(last.error.message))
+        clientDisconnected || (errored && isAbortError(last.error.message))
       const status = aborted ? "cancelled" : errored ? "failed" : "succeeded"
       await markAgentRunStatus({
         orgId,
@@ -137,6 +139,21 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           ? {
               code: aborted ? "aborted" : "agent_error",
               message: last.error.message,
+              ...(last.error.name ? { name: last.error.name } : {}),
+              ...(last.error.stack
+                ? { stack: last.error.stack.slice(0, 4_000) }
+                : {}),
+              provider: started.provider,
+              model: started.model,
+              /* Insertion-ordered Set, so the last entry is the most recent
+               * upstream call - the one that was in flight. */
+              ...(lastOf(generationIds)
+                ? { lastGenerationId: lastOf(generationIds) }
+                : {}),
+              clientDisconnected,
+              llmCalls: metrics.llmCalls,
+              toolCalls: metrics.toolCalls,
+              failedAt: new Date().toISOString(),
             }
           : undefined,
       })
@@ -151,6 +168,12 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "X-Session-Id": started.sessionId,
     },
   })
+}
+
+function lastOf(set: Set<string>): string | undefined {
+  let last: string | undefined
+  for (const v of set) last = v
+  return last
 }
 
 /* Abort reaches us as an AbortError from whichever fetch was in flight -
