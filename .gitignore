@@ -72,6 +72,10 @@ next-env.d.ts
 node_modules/
 npm-debug.log*
 plans/
+
+.design-sync/
+.ds-sync/
+ds-bundle/
 skills-lock.json
 ui-debug.log*
 yarn-debug.log*
