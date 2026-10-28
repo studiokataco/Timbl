@@ -83,3 +83,7 @@ apphosting.local.yaml
 
 # Local working plans (not source of truth)
 plans/
+
+.design-sync/
+.ds-sync/
+ds-bundle/
