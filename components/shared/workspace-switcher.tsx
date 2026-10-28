@@ -85,9 +85,11 @@ function ChannelRow({ channels }: { channels: WorkspaceSummary["channels"] }) {
 export function WorkspaceSwitcher({
   data,
   className,
+  nested = false,
 }: {
   data: WorkspaceSwitcherData
   className?: string
+  nested?: boolean
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -127,7 +129,10 @@ export function WorkspaceSwitcher({
       <DropdownMenuTrigger
         type="button"
         className={cn(
-          "group flex w-full items-center gap-2.5 rounded-xl border border-border bg-background px-2.5 py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[popup-open]:bg-secondary/60",
+          "group flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[popup-open]:bg-secondary/60",
+          nested
+            ? "rounded-t-xl focus-visible:ring-inset"
+            : "rounded-xl border border-border bg-background",
           className,
         )}
         aria-label={`Current workspace: ${current.name}. Switch workspace`}

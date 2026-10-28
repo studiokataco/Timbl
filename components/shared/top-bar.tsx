@@ -15,6 +15,7 @@ import {
 import { useTheme } from "@/components/shared/theme-provider"
 import { MobileNav } from "@/components/shared/mobile-nav"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
+import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 import { NotificationsMenu } from "@/components/shared/notifications-menu"
 import { RealtimeDegradedBadge } from "@/components/shared/realtime-degraded-badge"
 import { useDialogs } from "@/components/shared/dialogs-provider"
@@ -23,10 +24,12 @@ export function TopBar({
   userName,
   workspaceName,
   workspaces,
+  brands,
 }: {
   userName: string
   workspaceName: string
   workspaces: WorkspaceSwitcherData
+  brands: BrandSwitcherData
 }) {
   const { openQuickAdd } = useDialogs()
   const { theme, setTheme } = useTheme()
@@ -41,7 +44,7 @@ export function TopBar({
   return (
     <header className="border-b border-border bg-background sticky top-0 z-30">
       <div className="flex items-center gap-4 px-6 sm:px-10 h-16">
-        <MobileNav workspaces={workspaces} />
+        <MobileNav workspaces={workspaces} brands={brands} />
         <h1 className="text-base font-semibold tracking-tight leading-none text-foreground truncate min-w-0">
           {workspaceName}
         </h1>

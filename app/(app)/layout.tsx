@@ -73,7 +73,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="flex flex-1 min-h-0">
               <Sidebar workspaces={workspaces} brands={brands} />
               <div className="flex flex-col flex-1 min-w-0 overflow-y-auto pb-[var(--ask-ai-clearance)]">
-                <TopBar userName={user.name} workspaceName={org.name} workspaces={workspaces} />
+                <TopBar userName={user.name} workspaceName={org.name} workspaces={workspaces} brands={brands} />
                 {children}
               </div>
             </div>

@@ -69,6 +69,13 @@ export async function forceRunAgent(raw: unknown): Promise<PlatformActionResult 
         error: {
           code: "agent_error",
           message: err instanceof Error ? err.message : String(err),
+          ...(err instanceof Error && err.name ? { name: err.name } : {}),
+          ...(err instanceof Error && err.stack
+            ? { stack: err.stack.slice(0, 4_000) }
+            : {}),
+          provider: started.provider,
+          model: started.model,
+          failedAt: new Date().toISOString(),
         },
       })
     }

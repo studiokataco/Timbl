@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { addDays, format } from "date-fns"
 import { Sparkles } from "lucide-react"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,7 @@ export function AwarenessResearchDialog({
     }
   }, [])
   const [running, setRunning] = useState<FormValues | null>(null)
+  const [streaming, setStreaming] = useState(false)
   const chatRef = useRef<AgentChatHandle>(null)
   const submittedKeyRef = useRef<string | null>(null)
 
@@ -60,11 +62,23 @@ export function AwarenessResearchDialog({
 
   function reset() {
     setRunning(null)
+    setStreaming(false)
     submittedKeyRef.current = null
     form.reset(defaults)
   }
 
+  /* Closing mid-run tears down the request the agent is streaming into, so
+   * the run dies wherever it got to. Say so, stop it deliberately, and
+   * refresh - research is incremental, and whatever the agent already
+   * proposed is on the board and worth showing. */
   function handleOpenChange(v: boolean) {
+    if (!v && streaming) {
+      chatRef.current?.stop()
+      toast.info("Research stopped", {
+        description: "Any days found so far are waiting in your proposals.",
+      })
+      router.refresh()
+    }
     if (!v) reset()
     onOpenChange(v)
   }
@@ -105,8 +119,8 @@ export function AwarenessResearchDialog({
             <Sparkles className="size-4" aria-hidden /> Find new awareness days
           </DialogTitle>
           <DialogDescription className="text-xs">
-            The awareness-researcher uses Gemini with Google Search grounding to discover real
-            observances in your window. Each finding lands as a proposal you can accept or reject.
+            The awareness-researcher searches the live web to discover real observances in your
+            window. Each finding lands as a proposal you can accept or reject.
           </DialogDescription>
         </DialogHeader>
 
@@ -168,6 +182,7 @@ export function AwarenessResearchDialog({
               ref={chatRef}
               agentName="awareness-researcher"
               placeholder={`Refine the search or ask a follow-up…`}
+              onStreamingChange={setStreaming}
               onFinish={() => router.refresh()}
             />
           </div>
@@ -182,6 +197,9 @@ function buildIntro(values: FormValues): string {
   const regionClause = region ? ` Focus on ${region}.` : " Focus on global observances."
   return [
     `Find real awareness days, observances, and significant cultural / health / social dates between ${values.from} and ${values.to}.${regionClause}`,
-    "Use Google Search and URL_CONTEXT to verify every date against a reputable source, then call proposeAwarenessDay for each one. Aim for 5-10 high-quality items.",
+    /* Provider-neutral on purpose: the agent's grounding tool differs per
+     * provider, and naming one sends the model hunting for a tool it has
+     * not been given. */
+    "Search the web to verify every date against a reputable source, then call proposeAwarenessDay for each one. Aim for 5-10 high-quality items.",
   ].join("\n\n")
 }

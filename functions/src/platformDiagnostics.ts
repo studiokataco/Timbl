@@ -113,32 +113,58 @@ async function loadDailySpend(db: FirebaseFirestore.Firestore, now: Date) {
   return { series, mostRecentDate, mostRecentCost, priorAverage, spikeDetected }
 }
 
-async function loadRecentFailures(db: FirebaseFirestore.Firestore) {
+/* Mirrors RECENT_WINDOW_DAYS in lib/platform/diagnostics/run.ts. Unbounded
+ * "last 20" reads keep resurfacing long-fixed incidents on a platform that
+ * fails rarely, and the narrator cannot tell a stale sample from a live one.
+ * The window is stamped into the payload so findings can date themselves. */
+const RECENT_WINDOW_DAYS = 14
+
+async function loadRecentFailures(db: FirebaseFirestore.Firestore, now: Date) {
+  const since = daysAgo(now, RECENT_WINDOW_DAYS).toISOString()
   const snap = await db
     .collectionGroup("agentRuns")
     .where("status", "==", "failed")
+    .where("startedAt", ">=", since)
     .orderBy("startedAt", "desc")
     .limit(20)
     .get()
 
   const byAgent = new Map<string, number>()
-  const sample: Array<{ agentName: string; orgId: string | null; error: string | null }> = []
+  const sample: Array<{
+    agentName: string
+    orgId: string | null
+    error: string | null
+    startedAt: string | null
+  }> = []
   for (const doc of snap.docs) {
     const d = doc.data()
     const agentName = (d.agentName as string) ?? "unknown"
     const orgId = (d.organizationId as string) ?? null
     const error = (d.error as { message?: string } | undefined)?.message ?? null
     byAgent.set(agentName, (byAgent.get(agentName) ?? 0) + 1)
-    sample.push({ agentName, orgId, error })
+    sample.push({
+      agentName,
+      orgId,
+      error,
+      startedAt: (d.startedAt as string | null) ?? null,
+    })
   }
 
-  return { total: snap.size, byAgent: Object.fromEntries(byAgent), sample }
+  return {
+    windowDays: RECENT_WINDOW_DAYS,
+    since,
+    total: snap.size,
+    byAgent: Object.fromEntries(byAgent),
+    sample,
+  }
 }
 
-async function loadQuotaBreaches(db: FirebaseFirestore.Firestore) {
+async function loadQuotaBreaches(db: FirebaseFirestore.Firestore, now: Date) {
+  const since = daysAgo(now, RECENT_WINDOW_DAYS).toISOString()
   const snap = await db
     .collection(`${ROOT}/signals`)
     .where("kind", "==", "quota.breached")
+    .where("createdAt", ">=", since)
     .orderBy("createdAt", "desc")
     .limit(20)
     .get()
@@ -152,7 +178,7 @@ async function loadQuotaBreaches(db: FirebaseFirestore.Firestore) {
     }
   })
 
-  return { total: snap.size, recent }
+  return { windowDays: RECENT_WINDOW_DAYS, since, total: snap.size, recent }
 }
 
 async function gatherData(db: FirebaseFirestore.Firestore, now: Date) {
@@ -166,8 +192,8 @@ async function gatherData(db: FirebaseFirestore.Firestore, now: Date) {
       loadRollup(db, period),
       loadRollup(db, priorPeriod),
       loadDailySpend(db, now),
-      loadRecentFailures(db),
-      loadQuotaBreaches(db),
+      loadRecentFailures(db, now),
+      loadQuotaBreaches(db, now),
     ])
 
   return {
@@ -191,7 +217,12 @@ async function analyzeWithLlm(
         "You are the automated health analyst for Timbl, a multi-tenant SaaS. Given ONLY the " +
         "structured data below, return a JSON array of findings, each " +
         '{"severity": ..., "category": ..., "summary": ..., "suggestion": ...}. severity is one ' +
-        "of info/warn/critical. Never invent numbers or claims not present in the data. If " +
+        "of info/warn/critical. Never invent numbers or claims not present in the data. " +
+        "recentFailures and quotaBreaches carry `since` and `windowDays`: everything in them " +
+        "happened inside that window, and each failure carries its own startedAt. Judge " +
+        "severity by how recent an item is - date anything older than a few days in the " +
+        "summary rather than reporting it as an active incident, and never call something " +
+        "critical on the strength of a single stale sample. If " +
         "nothing notable, return an empty array. Reply with ONLY the JSON array, no prose.",
       messages: [{ role: "user", content: JSON.stringify(raw) }],
     })

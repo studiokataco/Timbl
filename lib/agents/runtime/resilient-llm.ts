@@ -148,6 +148,18 @@ export class ResilientLlm extends BaseLlm {
         if (yielded || !retryable || abortSignal?.aborted) throw err
         if (attempt === MAX_ATTEMPTS - 1) break
 
+        /* A server asking for longer than we are willing to wait is telling
+         * us this is an exhausted allowance, not a momentary burst - a
+         * per-day Gemini quota does not refill inside a backoff window.
+         * Spending the remaining attempts on it just delays the failover by
+         * a minute while the user watches an empty stream. */
+        if (this.fallback && retryAfterMs !== undefined && retryAfterMs > MAX_DELAY_MS) {
+          console.warn(
+            `[llm-retry] ${this.label} asked for ${Math.round(retryAfterMs / 1000)}s on ${this.model} - failing over now`,
+          )
+          break
+        }
+
         const delay = backoffMs(attempt, retryAfterMs)
         console.warn(
           `[llm-retry] ${this.label} ${status ?? "error"} on ${this.model} - retry ${attempt + 1}/${MAX_ATTEMPTS - 1} in ${Math.round(delay)}ms`,
