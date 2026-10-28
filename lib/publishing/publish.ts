@@ -15,6 +15,7 @@ import type { ChannelKey, ChannelStatus } from "@/lib/schemas/_shared"
 import { SYSTEM_USER } from "@/lib/agents/triggers/system-user"
 import { getPublisher, publishableChannels } from "./registry"
 import type { Publisher, PublishResult } from "./types"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 
 export type PublishSweepSummary = {
   postsScanned: number
@@ -211,6 +212,13 @@ async function processPost(orgId: string, post: Post, now: Date, summary: Publis
     })
   }
   await batch.commit()
+
+  if (anyPublished) {
+    await recordActivationMilestone(orgId, "first_post_published", post.assigneeId ?? SYSTEM_USER.id, {
+      source: "auto_publish",
+      channels: Object.keys(patch).filter((ch) => patch[ch] === "published"),
+    })
+  }
 }
 
 export async function runPublishSweepForOrg(orgId: string, now = new Date()): Promise<PublishSweepSummary> {

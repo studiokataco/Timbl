@@ -2,7 +2,7 @@
 
 import { useRef, type ReactNode } from "react"
 
-import { gsap, landingScroller, useGSAP } from "./gsap"
+import { gsap, useGSAP } from "./gsap"
 
 export function Reveal({
   children,
@@ -35,7 +35,6 @@ export function Reveal({
           stagger: stagger ? 0.1 : 0,
           scrollTrigger: {
             trigger: node,
-            scroller: landingScroller(node),
             start: "top 88%",
           },
         })

@@ -4,7 +4,7 @@ import { useRef } from "react"
 
 import { Check, Sparkles } from "lucide-react"
 
-import { gsap, landingScroller, ScrollTrigger, useGSAP } from "./gsap"
+import { gsap, ScrollTrigger, useGSAP } from "./gsap"
 
 const SIG = {
   coral: "#fb923c",
@@ -48,7 +48,6 @@ function GridBg() {
 function gate(root: HTMLElement, anims: gsap.core.Animation[]) {
   const st = ScrollTrigger.create({
     trigger: root,
-    scroller: landingScroller(root),
     start: "top 95%",
     end: "bottom 5%",
     onToggle: (self) =>

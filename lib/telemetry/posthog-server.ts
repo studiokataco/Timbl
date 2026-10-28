@@ -20,6 +20,15 @@ export function captureServerEvent(
   distinctId: string,
   event: string,
   properties?: Record<string, unknown>,
+  groups?: Record<string, string>,
 ): void {
-  getPostHog()?.capture({ distinctId, event, properties })
+  getPostHog()?.capture({ distinctId, event, properties, groups })
+}
+
+export function identifyServerGroup(
+  groupType: string,
+  groupKey: string,
+  properties: Record<string, unknown>,
+): void {
+  getPostHog()?.groupIdentify({ groupType, groupKey, properties })
 }

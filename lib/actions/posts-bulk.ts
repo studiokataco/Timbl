@@ -7,6 +7,7 @@ import {
   orgPostStatusHistoryPath,
 } from "@/lib/firebase/paths"
 import type { PostStatus } from "@/lib/schemas"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 
 /*
  * Bulk transition. Walks each id, writes a status patch + a statusHistory
@@ -44,6 +45,11 @@ export async function bulkSetStatus(
       updated: 0,
       error: err instanceof Error ? err.message : "Bulk update failed",
     }
+  }
+  if (status === "scheduled") {
+    await recordActivationMilestone(orgId, "first_post_scheduled", user.id, { source: "bulk" })
+  } else if (status === "posted") {
+    await recordActivationMilestone(orgId, "first_post_published", user.id, { source: "marked_posted" })
   }
   revalidatePath("/calendar")
   revalidatePath("/posts")

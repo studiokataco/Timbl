@@ -388,6 +388,18 @@
   }
 }
 
+/* Unlayered so it beats the body's h-screen / overflow-hidden utilities. Marketing pages
+   scroll the window so ScrollTrigger pins use native position: fixed; CSS smooth
+   scrolling fights scrubbed pins. */
+html:has(#landing-scroll) {
+  scroll-behavior: auto;
+}
+body:has(#landing-scroll) {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
 @layer components {
   [data-sonner-toaster].toaster [data-sonner-toast].cn-toast {
     gap: 12px;

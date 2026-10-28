@@ -11,7 +11,7 @@ export function AuthPageShell({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 grid min-h-screen place-items-center p-6">
         <div className="w-full max-w-sm space-y-8">
           <div className="flex justify-center">
-            <TimblWordmark logoSize={40} href="/login" />
+            <TimblWordmark logoSize={40} href="/" />
           </div>
           {children}
         </div>

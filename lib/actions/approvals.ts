@@ -18,6 +18,7 @@ import type {
   NextActionKind,
   ServerActionResult,
 } from "@/lib/schemas/_shared"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 
 /*
  * Unified approval dispatcher.
@@ -274,6 +275,11 @@ async function resolveSchedulePost(i: ResolverInput): Promise<ResolverOutcome> {
   await ref.set(patch, { merge: true })
 
   if (finalize && !wasScheduled) {
+    if (i.actorUserId) {
+      await recordActivationMilestone(i.orgId, "first_post_scheduled", i.actorUserId, {
+        source: "approval",
+      })
+    }
     try {
       await incrementUsage(i.orgId, "scheduledPosts")
     } catch (err) {
@@ -360,6 +366,11 @@ async function resolveCreateDraft(i: ResolverInput): Promise<ResolverOutcome> {
     .collection(orgIdeationFeedPath(i.orgId))
     .doc(i.itemId)
     .set({ status: "used", promotedPostId: postId, updatedAt: now }, { merge: true })
+  if (i.actorUserId) {
+    await recordActivationMilestone(i.orgId, "first_draft_created", i.actorUserId, {
+      source: "approval",
+    })
+  }
   return { ok: true, artifactId: postId, artifactType: "post" }
 }
 

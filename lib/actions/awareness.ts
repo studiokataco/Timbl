@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 import { awarenessDaysPath, orgPostsPath } from "@/lib/firebase/paths"
 import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import { snapToData } from "@/lib/firebase/serialize"
@@ -67,5 +68,6 @@ export async function promoteAwarenessDay(
   await ref.set(doc)
   revalidatePath("/calendar")
   revalidatePath("/awareness")
+  await recordActivationMilestone(orgId, "first_draft_created", user.id, { source: "awareness_day" })
   return { ok: true, id: ref.id }
 }

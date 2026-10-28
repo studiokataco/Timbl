@@ -39,6 +39,10 @@ function daysAgo(date: Date, days: number): Date {
   return d
 }
 
+function hoursAgo(date: Date, hours: number): Date {
+  return new Date(date.getTime() - hours * 60 * 60 * 1000)
+}
+
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
@@ -113,20 +117,22 @@ async function loadDailySpend(db: FirebaseFirestore.Firestore, now: Date) {
   return { series, mostRecentDate, mostRecentCost, priorAverage, spikeDetected }
 }
 
-/* Mirrors RECENT_WINDOW_DAYS in lib/platform/diagnostics/run.ts. Unbounded
- * "last 20" reads keep resurfacing long-fixed incidents on a platform that
- * fails rarely, and the narrator cannot tell a stale sample from a live one.
- * The window is stamped into the payload so findings can date themselves. */
-const RECENT_WINDOW_DAYS = 14
+/* Failures and quota breaches are read from a short window: long windows kept
+ * resurfacing fixed incidents as critical on a platform that fails rarely.
+ * capStaleCriticals enforces it in code, so nothing quiet for 24h can be
+ * critical whatever the narrator says. Keep in sync with the other runner. */
+const RECENT_WINDOW_HOURS = 48
+const CRITICAL_WINDOW_HOURS = 24
 
 async function loadRecentFailures(db: FirebaseFirestore.Firestore, now: Date) {
-  const since = daysAgo(now, RECENT_WINDOW_DAYS).toISOString()
+  const since = hoursAgo(now, RECENT_WINDOW_HOURS).toISOString()
+  const criticalSince = hoursAgo(now, CRITICAL_WINDOW_HOURS).toISOString()
   const snap = await db
     .collectionGroup("agentRuns")
     .where("status", "==", "failed")
     .where("startedAt", ">=", since)
     .orderBy("startedAt", "desc")
-    .limit(20)
+    .limit(50)
     .get()
 
   const byAgent = new Map<string, number>()
@@ -151,16 +157,19 @@ async function loadRecentFailures(db: FirebaseFirestore.Firestore, now: Date) {
   }
 
   return {
-    windowDays: RECENT_WINDOW_DAYS,
+    windowHours: RECENT_WINDOW_HOURS,
     since,
+    criticalSince,
     total: snap.size,
+    last24h: sample.filter((f) => f.startedAt !== null && f.startedAt >= criticalSince).length,
     byAgent: Object.fromEntries(byAgent),
-    sample,
+    sample: sample.slice(0, 20),
   }
 }
 
 async function loadQuotaBreaches(db: FirebaseFirestore.Firestore, now: Date) {
-  const since = daysAgo(now, RECENT_WINDOW_DAYS).toISOString()
+  const since = hoursAgo(now, RECENT_WINDOW_HOURS).toISOString()
+  const criticalSince = hoursAgo(now, CRITICAL_WINDOW_HOURS).toISOString()
   const snap = await db
     .collection(`${ROOT}/signals`)
     .where("kind", "==", "quota.breached")
@@ -178,7 +187,14 @@ async function loadQuotaBreaches(db: FirebaseFirestore.Firestore, now: Date) {
     }
   })
 
-  return { windowDays: RECENT_WINDOW_DAYS, since, total: snap.size, recent }
+  return {
+    windowHours: RECENT_WINDOW_HOURS,
+    since,
+    criticalSince,
+    total: snap.size,
+    last24h: recent.filter((q) => q.createdAt !== null && q.createdAt >= criticalSince).length,
+    recent,
+  }
 }
 
 async function gatherData(db: FirebaseFirestore.Firestore, now: Date) {
@@ -205,6 +221,20 @@ async function gatherData(db: FirebaseFirestore.Firestore, now: Date) {
   }
 }
 
+function capStaleCriticals(
+  findings: DiagnosticFinding[],
+  raw: Awaited<ReturnType<typeof gatherData>>,
+): DiagnosticFinding[] {
+  const spendDayCutoff = isoDate(hoursAgo(new Date(raw.generatedAt), CRITICAL_WINDOW_HOURS))
+  const freshSpike =
+    raw.dailySpend.spikeDetected &&
+    raw.dailySpend.mostRecentDate !== null &&
+    raw.dailySpend.mostRecentDate >= spendDayCutoff
+  const live = raw.recentFailures.last24h > 0 || raw.quotaBreaches.last24h > 0 || freshSpike
+  if (live) return findings
+  return findings.map((f) => (f.severity === "critical" ? { ...f, severity: "warn" } : f))
+}
+
 async function analyzeWithLlm(
   raw: Record<string, unknown>,
 ): Promise<{ findings: DiagnosticFinding[]; narrationError: string | null }> {
@@ -218,11 +248,10 @@ async function analyzeWithLlm(
         "structured data below, return a JSON array of findings, each " +
         '{"severity": ..., "category": ..., "summary": ..., "suggestion": ...}. severity is one ' +
         "of info/warn/critical. Never invent numbers or claims not present in the data. " +
-        "recentFailures and quotaBreaches carry `since` and `windowDays`: everything in them " +
-        "happened inside that window, and each failure carries its own startedAt. Judge " +
-        "severity by how recent an item is - date anything older than a few days in the " +
-        "summary rather than reporting it as an active incident, and never call something " +
-        "critical on the strength of a single stale sample. If " +
+        "recentFailures and quotaBreaches only cover the last `windowHours` hours (from `since`); " +
+        "`last24h` counts the items newer than `criticalSince`. Reserve critical for problems " +
+        "with activity in the last 24 hours. Anything only seen 24 to 48 hours ago is at most " +
+        "warn, and its summary should say when it happened. If " +
         "nothing notable, return an empty array. Reply with ONLY the JSON array, no prose.",
       messages: [{ role: "user", content: JSON.stringify(raw) }],
     })
@@ -268,7 +297,9 @@ export async function runDiagnostics(
   const dateStr = isoDate(now)
 
   const raw = await gatherData(db, now)
-  const { findings, narrationError } = await analyzeWithLlm(raw)
+  const narrated = await analyzeWithLlm(raw)
+  const findings = capStaleCriticals(narrated.findings, raw)
+  const { narrationError } = narrated
 
   await db.doc(`${ROOT}/diagnostics/${dateStr}`).set(
     {

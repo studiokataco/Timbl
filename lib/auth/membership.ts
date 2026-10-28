@@ -9,6 +9,8 @@ import {
 } from "@/lib/firebase/paths"
 import { sendNewWorkspaceEmail } from "@/lib/email/beta"
 import { bootstrapNewOrg } from "@/lib/org/bootstrap"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
+import { identifyServerGroup } from "@/lib/telemetry/posthog-server"
 import {
   defaultOrgNameForNewWorkspace,
   isConsumerEmailDomain,
@@ -193,6 +195,8 @@ export async function provisionNewWorkspace(opts: {
       via: "signup",
     })
     await sendNewWorkspaceEmail({ name: opts.displayName ?? email, email, orgName })
+    identifyServerGroup("organization", orgId, { name: orgName })
+    await recordActivationMilestone(orgId, "signed_up", claims.userId, { via: "self_serve" })
     return claims
   }
 
@@ -213,6 +217,8 @@ export async function provisionNewWorkspace(opts: {
   })
   if (createdNewOrg) {
     await sendNewWorkspaceEmail({ name: opts.displayName ?? email, email, orgName })
+    identifyServerGroup("organization", orgId, { name: orgName })
+    await recordActivationMilestone(orgId, "signed_up", claims.userId, { via: "self_serve" })
   }
   return claims
 }

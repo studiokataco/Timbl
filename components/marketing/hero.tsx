@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 
 import { CalendarPreview } from "./calendar-preview"
 import { FacebookIcon, InstagramIcon, LinkedInIcon, XIcon } from "./brand-icons"
-import { PIN_QUERY, gsap, landingScroller, useGSAP } from "./gsap"
+import { PIN_QUERY, gsap, useGSAP } from "./gsap"
 import { TypewriterWord } from "./typewriter-word"
 
 const HERO_AUDIENCES = ["Creators", "Agencies", "Studios", "Teams"]
@@ -63,12 +63,9 @@ export function Hero() {
           const { canPin, motion } = ctx.conditions as { canPin: boolean; motion: boolean }
           if (!motion) return
 
-          const scroller = landingScroller(root.current)
-
           if (!canPin) {
             const scrubbed = (start: string, end: string) => ({
               trigger: stage.current,
-              scroller,
               start,
               end,
               scrub: 0.5,
@@ -117,10 +114,9 @@ export function Hero() {
           const tl = gsap.timeline({
           scrollTrigger: {
             trigger: root.current,
-            scroller,
             start: "top top",
-            end: "+=110%",
-            scrub: 0.6,
+            end: "+=60%",
+            scrub: 0.8,
             pin: pin.current,
             anticipatePin: 1,
           },
@@ -180,6 +176,8 @@ export function Hero() {
             0.3
           )
           }
+
+        tl.to({}, { duration: 0.15 })
         }
       )
     },
@@ -187,7 +185,7 @@ export function Hero() {
   )
 
   return (
-    <section ref={root} className="relative min-h-screen px-6 max-md:overflow-x-clip">
+    <section ref={root} className="relative min-h-screen overflow-x-clip px-6">
       <div
         ref={pin}
         className="mx-auto flex min-h-screen max-w-6xl flex-col items-center pb-24 pt-20 md:pt-28"

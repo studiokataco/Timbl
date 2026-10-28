@@ -6,11 +6,13 @@ import { getAdminDb } from "@/lib/firebase/admin"
 import {
   orgAgentConfigsPath,
   orgAgentRunsPath,
+  orgPath,
 } from "@/lib/firebase/paths"
 import { agentConfigSchema } from "@/lib/schemas/agentConfig"
 import { startAgentRun, markAgentRunStatus } from "@/lib/agents/triggers/manual"
 import { collectCustomMetadata } from "@/lib/agents/runtime/events"
 import { SYSTEM_USER } from "@/lib/agents/triggers/system-user"
+import { isWorkspaceIdle } from "@/lib/org/activity"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -81,6 +83,13 @@ export async function POST(req: NextRequest) {
   }
   if (!cfg.data.enabled || !cfg.data.triggers.cron) {
     return Response.json({ ok: true, skipped: true, reason: "disabled" })
+  }
+
+  /* Scheduled work on a workspace nobody has opened in a week only burns
+   * model quota. The first visit stamps lastActiveAt and resumes it. */
+  const orgSnap = await getAdminDb().doc(orgPath(payload.orgId)).get()
+  if (isWorkspaceIdle(orgSnap.data() ?? {})) {
+    return Response.json({ ok: true, skipped: true, reason: "idle_workspace" })
   }
 
   /* Refuse to fire if a previous cron run for this agent is still in

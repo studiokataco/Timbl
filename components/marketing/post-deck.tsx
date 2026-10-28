@@ -2,7 +2,7 @@
 
 import { useRef } from "react"
 
-import { PIN_QUERY, gsap, landingScroller, useGSAP } from "./gsap"
+import { PIN_QUERY, gsap, useGSAP } from "./gsap"
 
 type DeckPost = {
   category: string
@@ -111,8 +111,6 @@ export function PostDeck() {
 
           if (!motion) return
 
-          const scroller = landingScroller(root.current)
-
           if (!canPin) {
             // Scroll-linked but NOT pinned: scrub ties the fan-in to scroll
             // position so the user drives it, while no pin keeps native momentum
@@ -127,7 +125,6 @@ export function PostDeck() {
               stagger: { each: 0.06, from: "start" },
               scrollTrigger: {
                 trigger: deck.current,
-                scroller,
                 start: "top 88%",
                 end: "top 28%",
                 scrub: 0.5,
@@ -136,24 +133,27 @@ export function PostDeck() {
             return
           }
 
-          gsap.from(".deck-card", {
-            x: 0,
-            y: 28,
-            rotate: 0,
-            scale: 0.9,
-            autoAlpha: 0,
-            ease: "power3.out",
-            stagger: { each: 0.05, from: "center" },
-            scrollTrigger: {
-              trigger: root.current,
-              scroller,
-              start: "top top",
-              end: "+=120%",
-              scrub: 0.6,
-              pin: pin.current,
-              anticipatePin: 1,
-            },
-          })
+          gsap
+            .timeline({
+              scrollTrigger: {
+                trigger: root.current,
+                start: "top top",
+                end: "+=60%",
+                scrub: 0.8,
+                pin: pin.current,
+                anticipatePin: 1,
+              },
+            })
+            .from(".deck-card", {
+              x: 0,
+              y: 28,
+              rotate: 0,
+              scale: 0.9,
+              autoAlpha: 0,
+              ease: "power3.out",
+              stagger: { each: 0.05, from: "center" },
+            })
+            .to({}, { duration: 0.12 })
         }
       )
     },

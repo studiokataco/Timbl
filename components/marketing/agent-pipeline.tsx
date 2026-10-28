@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import { ArrowRight } from "lucide-react"
 
-import { ScrollTrigger, gsap, landingScroller, useGSAP } from "./gsap"
+import { ScrollTrigger, gsap, useGSAP } from "./gsap"
 import { Reveal } from "./reveal"
 
 const STAGES = [
@@ -21,15 +21,13 @@ export function AgentPipeline() {
     () => {
       const mm = gsap.matchMedia()
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const scroller = landingScroller(root.current)
-
         gsap.from(".pipe-pill", {
           y: 24,
           autoAlpha: 0,
           stagger: 0.1,
           duration: 0.5,
           ease: "power2.out",
-          scrollTrigger: { trigger: root.current, scroller, start: "top 78%" },
+          scrollTrigger: { trigger: root.current, start: "top 78%" },
         })
 
         const pulse = gsap.timeline({ repeat: -1, repeatDelay: 0.6, paused: true })
@@ -42,7 +40,6 @@ export function AgentPipeline() {
 
         ScrollTrigger.create({
           trigger: root.current,
-          scroller,
           start: "top 80%",
           end: "bottom 20%",
           onToggle: (self) => (self.isActive ? pulse.play() : pulse.pause()),

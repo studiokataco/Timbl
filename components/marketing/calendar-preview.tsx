@@ -42,7 +42,7 @@ const WEEK: Array<{
 
 export function CalendarPreview() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] md:overflow-x-auto">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
       <div className="md:min-w-[680px]">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
           <span className="text-sm font-semibold">This week</span>

@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Building2, CheckCircle, Mail, MessageSquare, User } from "lucide-react"
-import { useForm } from "react-hook-form"
+import { ArrowRight, Building2, CheckCircle, Mail, User } from "lucide-react"
+import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import { AuthCard } from "@/components/auth/auth-card"
@@ -26,29 +26,31 @@ const PLAN_CHIP_LABELS: Record<PlanChoice, string> = {
 export function RequestInviteForm({ plan }: { plan?: PlanChoice }) {
   const [submitted, setSubmitted] = useState(false)
   const [accepted, setAccepted] = useState(false)
-  const [acceptError, setAcceptError] = useState<string>()
 
   const {
     register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<SignupRequestFormInput>()
+
+  const values = useWatch({ control })
+  const canSubmit = signupRequestFormSchema.safeParse({
+    ...values,
+    plan,
+    acceptedTerms: accepted,
+  }).success
 
   async function onSubmit(data: SignupRequestFormInput) {
     const parsed = signupRequestFormSchema.safeParse({ ...data, plan, acceptedTerms: accepted })
     if (!parsed.success) {
       const issue = parsed.error.issues[0]
-      if (issue?.path[0] === "acceptedTerms") {
-        setAcceptError(issue.message)
-        return
-      }
       setError((issue?.path[0] as keyof SignupRequestFormInput) ?? "email", {
         message: issue?.message ?? "Invalid input",
       })
       return
     }
-    setAcceptError(undefined)
     const result = await submitInviteRequest(parsed.data)
     if (!result.ok) {
       toast.error(result.error ?? "Something went wrong. Try again.")
@@ -129,19 +131,13 @@ export function RequestInviteForm({ plan }: { plan?: PlanChoice }) {
           <label htmlFor="invite_usecase" className="text-sm font-medium text-foreground">
             How will you use Timbl? (optional)
           </label>
-          <div className="relative">
-            <MessageSquare
-              aria-hidden
-              className="pointer-events-none absolute top-3 left-3 size-4 text-muted-foreground"
-            />
-            <textarea
-              id="invite_usecase"
-              rows={3}
-              placeholder="e.g. Manage social media for 5 clients..."
-              className="flex w-full resize-none rounded-lg border border-border bg-[var(--auth-field)] px-3 py-2.5 pl-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-accent/25"
-              {...register("useCase")}
-            />
-          </div>
+          <textarea
+            id="invite_usecase"
+            rows={3}
+            placeholder="e.g. Manage social media for 5 clients..."
+            className="flex w-full resize-none rounded-lg border border-border bg-[var(--auth-field)] px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-accent/25"
+            {...register("useCase")}
+          />
           {errors.useCase?.message ? (
             <p className="text-xs text-destructive">{errors.useCase.message}</p>
           ) : null}
@@ -150,16 +146,12 @@ export function RequestInviteForm({ plan }: { plan?: PlanChoice }) {
         <PolicyAcceptance
           id="invite_accept_terms"
           checked={accepted}
-          onCheckedChange={(value) => {
-            setAccepted(value)
-            if (value) setAcceptError(undefined)
-          }}
-          error={acceptError}
+          onCheckedChange={setAccepted}
         />
 
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={!canSubmit || isSubmitting}
           className="group h-11 w-full text-base"
           size="lg"
         >

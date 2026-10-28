@@ -221,7 +221,7 @@ export default function PricingPage() {
   return (
     <div
       id="landing-scroll"
-      className="flex-1 overflow-y-auto bg-background text-foreground"
+      className="flex-1 bg-background text-foreground"
     >
       <MarketingNav />
       <main>

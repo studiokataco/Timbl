@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import {
   orgCategoriesPath,
@@ -203,6 +204,7 @@ export async function useTemplate(input: unknown): Promise<ServerActionResult> {
   await postsRef.set(doc)
   revalidatePath("/calendar")
   revalidatePath("/templates")
+  await recordActivationMilestone(orgId, "first_draft_created", user.id, { source: "template" })
   return { ok: true, id: postsRef.id }
 }
 

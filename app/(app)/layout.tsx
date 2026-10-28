@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { after } from "next/server"
 
 import { AgentCommandModal } from "@/components/agents/agent-command-modal"
 import { AgentDrawer } from "@/components/agents/agent-drawer"
@@ -8,6 +9,7 @@ import { CommandPalette } from "@/components/shared/command-palette"
 import { DialogsProvider } from "@/components/shared/dialogs-provider"
 import { DunningBanner } from "@/components/shared/dunning-banner"
 import { Onboarding } from "@/components/shared/onboarding"
+import { PostHogIdentify } from "@/components/shared/posthog-identify"
 import { ProductTourAutostart } from "@/components/tour/product-tour"
 import { PlanFeaturesProvider } from "@/components/shared/plan-features-provider"
 import { QueryProvider } from "@/components/shared/query-provider"
@@ -27,6 +29,7 @@ import {
   requireActiveOrg,
 } from "@/lib/auth/server-helpers"
 import { isOnboardingComplete } from "@/lib/onboarding/state"
+import { touchWorkspaceActivity } from "@/lib/org/activity"
 import { getOrgPlanFeatures } from "@/lib/plans/gate"
 import { getWorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import { getBrandSwitcherData } from "@/lib/queries/brands.server"
@@ -62,6 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getWorkspaceSwitcherData(),
     getBrandSwitcherData(),
   ])
+  if (!impersonation) after(() => touchWorkspaceActivity(orgId, user.id))
   return (
     <QueryProvider>
       <RealtimeDegradedProvider>
@@ -86,6 +90,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <AskAiButton />
             <ProductTourAutostart enabled />
             <WorkspaceReminders />
+            <PostHogIdentify
+              userId={user.id}
+              email={user.email ?? null}
+              name={user.name}
+              orgId={orgId}
+              orgName={org.name}
+              impersonating={Boolean(impersonation)}
+            />
           </DialogsProvider>
         </PlanFeaturesProvider>
       </WorkspaceProvider>

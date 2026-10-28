@@ -16,6 +16,8 @@ import { orgIdForNewWorkspace } from "@/lib/auth/domains"
 import { orgUsersPath } from "@/lib/firebase/paths"
 import { slugify } from "@/lib/auth/membership"
 import { sendInviteAcceptedEmail } from "@/lib/email/beta"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
+import { identifyServerGroup } from "@/lib/telemetry/posthog-server"
 import { FieldValue } from "firebase-admin/firestore"
 import type { PlatformActionResult } from "@/lib/actions/platform/orgs"
 
@@ -104,6 +106,11 @@ export async function approveSignupRequest(raw: unknown): Promise<PlatformAction
   })
 
   await sendInviteAcceptedEmail({ email, name })
+  identifyServerGroup("organization", orgId, { name })
+  await recordActivationMilestone(orgId, "signed_up", userId, {
+    via: "invite_approved",
+    plan: req.data.plan ?? null,
+  })
   return { ok: true }
 }
 

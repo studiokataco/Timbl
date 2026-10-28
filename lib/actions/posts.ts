@@ -20,6 +20,7 @@ import { fetchPostsInRange } from "@/lib/queries/posts.server"
 import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
 import { withSyncedPostTypes } from "@/lib/post-types"
 import { writePostActivity } from "@/lib/actions/post-activity"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 
 import type { Firestore } from "firebase-admin/firestore"
 
@@ -126,6 +127,7 @@ export async function createQuickAddPost(input: unknown): Promise<ServerActionRe
   } catch (err) {
     console.warn(`[embed] post create soft-fail: ${err instanceof Error ? err.message : err}`)
   }
+  await recordActivationMilestone(orgId, "first_draft_created", user.id, { source: "quick_add" })
   revalidatePath("/calendar")
   return { ok: true, id: postsRef.id }
 }
@@ -220,6 +222,12 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
         `[usage] scheduledPosts increment failed: ${err instanceof Error ? err.message : err}`,
       )
     }
+  }
+
+  if (statusChanged && nextStatus === "scheduled") {
+    await recordActivationMilestone(orgId, "first_post_scheduled", user.id, { source: "status_change" })
+  } else if (statusChanged && nextStatus === "posted") {
+    await recordActivationMilestone(orgId, "first_post_published", user.id, { source: "marked_posted" })
   }
 
   try {

@@ -4,7 +4,8 @@ import { z } from "zod"
 import { randomUUID } from "node:crypto"
 
 import { getAdminDb } from "@/lib/firebase/admin"
-import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { getCurrentOrgId, getCurrentUser } from "@/lib/auth/server-helpers"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 import {
   orgIdeationFeedPath,
   orgPostsPath,
@@ -137,6 +138,8 @@ export async function promoteIdeationItem(
     },
     { merge: true },
   )
+  const user = await getCurrentUser()
+  await recordActivationMilestone(orgId, "first_draft_created", user.id, { source: "ideation" })
   return { ok: true, id: postId }
 }
 

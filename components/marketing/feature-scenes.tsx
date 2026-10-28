@@ -5,7 +5,7 @@ import { useRef, type ComponentType, type SVGProps } from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 
 import { FacebookIcon, InstagramIcon, LinkedInIcon, XIcon } from "./brand-icons"
-import { gsap, landingScroller, ScrollTrigger, useGSAP } from "./gsap"
+import { gsap, ScrollTrigger, useGSAP } from "./gsap"
 
 const SIG = {
   coral: "#fb923c",
@@ -31,7 +31,6 @@ function lighten(hex: string, amount = 0.8) {
 function gate(root: HTMLElement, anims: gsap.core.Animation[]) {
   const st = ScrollTrigger.create({
     trigger: root,
-    scroller: landingScroller(root),
     start: "top 95%",
     end: "bottom 5%",
     onToggle: (self) =>

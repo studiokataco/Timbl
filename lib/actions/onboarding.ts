@@ -30,6 +30,7 @@ import { sendOnboardingEmail } from "@/lib/email/beta"
 import { channelKey, type ChannelKey } from "@/lib/schemas/_shared"
 import { ONBOARDING_STEP_IDS } from "@/lib/onboarding/steps"
 import type { ServerActionResult } from "@/lib/schemas"
+import { recordActivationMilestone } from "@/lib/telemetry/activation"
 
 /*
  * Onboarding mutations. The wizard calls these in order - each step
@@ -387,6 +388,12 @@ export async function completeOnboarding(
     target: { type: "organization", id: orgId },
     meta: { skippedSteps: parsed.data.skippedSteps },
   })
+
+  if (!alreadyCompleted && actor) {
+    await recordActivationMilestone(orgId, "brand_set_up", actor.id, {
+      skippedSteps: parsed.data.skippedSteps,
+    })
+  }
 
   if (!alreadyCompleted && actor?.email) {
     await sendOnboardingEmail({
