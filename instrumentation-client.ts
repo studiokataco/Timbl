@@ -32,6 +32,7 @@ if (key && !usingEmulators) {
     capture_pageview: "history_change",
     capture_pageleave: true,
     person_profiles: "identified_only",
+    enable_heatmaps: true,
     session_recording: {
       maskAllInputs: true,
     },
