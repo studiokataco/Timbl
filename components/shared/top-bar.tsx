@@ -1,6 +1,7 @@
 "use client"
 
-import { LogOut, Monitor, Moon, Plus, Search, Sparkles, Sun } from "lucide-react"
+import Link from "next/link"
+import { LogOut, Monitor, Moon, Plus, Search, Settings, Sparkles, Sun, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -19,35 +20,29 @@ import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 import { NotificationsMenu } from "@/components/shared/notifications-menu"
 import { RealtimeDegradedBadge } from "@/components/shared/realtime-degraded-badge"
 import { useDialogs } from "@/components/shared/dialogs-provider"
+import { IdentityAvatar } from "@/components/shared/identity-avatar"
 
 export function TopBar({
-  userName,
+  user,
   workspaceName,
   workspaces,
   brands,
 }: {
-  userName: string
+  user: { name: string; email: string; avatarUrl?: string }
   workspaceName: string
   workspaces: WorkspaceSwitcherData
   brands: BrandSwitcherData
 }) {
   const { openQuickAdd } = useDialogs()
   const { theme, setTheme } = useTheme()
-  const initials = userName
-    .split(/[\s_-]+/)
-    .map((p) => p[0])
-    .filter(Boolean)
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "?"
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-30">
       <div className="flex items-center gap-4 px-6 sm:px-10 h-16">
         <MobileNav workspaces={workspaces} brands={brands} />
-        <h1 className="text-base font-semibold tracking-tight leading-none text-foreground truncate min-w-0">
+        <p className="text-base font-semibold tracking-tight leading-none text-foreground truncate min-w-0">
           {workspaceName}
-        </h1>
+        </p>
 
         <div className="flex-1" />
 
@@ -95,14 +90,39 @@ export function TopBar({
           <DropdownMenuTrigger
             type="button"
             aria-label="Account menu"
-            className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:after:mix-blend-lighten"
+            className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {initials}
+            <IdentityAvatar
+              name={user.name}
+              src={user.avatarUrl}
+              shape="circle"
+              initials={2}
+              className="size-9 text-xs"
+            />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-44">
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-              {userName}
-            </DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="min-w-56">
+            <div className="flex items-center gap-2.5 px-2 py-2">
+              <IdentityAvatar
+                name={user.name}
+                src={user.avatarUrl}
+                shape="circle"
+                initials={2}
+                className="size-8 text-xs"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem render={<Link href="/settings/profile" />}>
+              <UserRound aria-hidden />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/settings/workspace" />}>
+              <Settings aria-hidden />
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               Theme

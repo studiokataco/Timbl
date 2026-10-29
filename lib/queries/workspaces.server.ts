@@ -24,6 +24,8 @@ export type WorkspaceSummary = {
   tier: PlanTier
   channels: ChannelKey[]
   current: boolean
+  logoUrl?: string
+  color?: string
   /* Only set under the emulator shim - which dev cookie value activates it. */
   devMode?: DevOrgMode
 }
@@ -51,26 +53,34 @@ async function resolveChannelsForOrg(orgId: string): Promise<ChannelKey[]> {
   return resolveOrgChannels({ brandChannels, onboardingChannels })
 }
 
-async function resolveTierForOrg(orgId: string): Promise<PlanTier> {
-  const snap = await getAdminDb().doc(orgPath(orgId)).get()
-  return getPlan(snap.data()?.plan as string | undefined).tier
+async function resolveOrgIdentity(orgId: string) {
+  const data = (await getAdminDb().doc(orgPath(orgId)).get()).data() ?? {}
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined)
+  return {
+    tier: getPlan(data.plan as string | undefined).tier as PlanTier,
+    name: str(data.name),
+    logoUrl: str(data.logoUrl),
+    color: str(data.primaryColor),
+  }
 }
 
 async function summarise(
   base: { id: string; name: string; role: MembershipRole; devMode?: DevOrgMode },
   currentOrgId: string,
 ): Promise<WorkspaceSummary> {
-  const [channels, tier] = await Promise.all([
+  const [channels, identity] = await Promise.all([
     resolveChannelsForOrg(base.id),
-    resolveTierForOrg(base.id),
+    resolveOrgIdentity(base.id),
   ])
   return {
     id: base.id,
-    name: base.name,
+    name: identity.name ?? base.name,
     role: base.role,
-    tier,
+    tier: identity.tier,
     channels,
     current: base.id === currentOrgId,
+    logoUrl: identity.logoUrl,
+    color: identity.color,
   }
 }
 

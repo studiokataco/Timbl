@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useId, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { format, parseISO } from "date-fns"
-import { ChevronDown, ChevronRight } from "lucide-react"
 
 import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import {
@@ -12,6 +11,7 @@ import {
 } from "@/lib/actions/agent-sessions"
 import { getPostsByIds } from "@/lib/actions/posts"
 import { Badge } from "@/components/ui/badge"
+import { DisclosureBody, DisclosureTrigger, ShowMore } from "@/components/ui/disclosure"
 import { cn } from "@/lib/utils"
 import { STATUS_TONE } from "./status-tone"
 import { JsonHighlight, safeStringify } from "./json-pretty"
@@ -288,12 +288,14 @@ const CONTENT_LINE_CAP = 6
 
 function ContentBlock({ text, muted }: { text: string; muted?: boolean }) {
   const [expanded, setExpanded] = useState(false)
+  const bodyId = useId()
   const lines = text.split("\n")
   const isLong = lines.length > CONTENT_LINE_CAP
   const shown = expanded || !isLong ? text : lines.slice(0, CONTENT_LINE_CAP).join("\n")
   return (
     <div>
       <p
+        id={bodyId}
         className={cn(
           "text-[12px] whitespace-pre-wrap leading-relaxed",
           muted ? "text-muted-foreground italic" : "text-foreground",
@@ -302,13 +304,14 @@ function ContentBlock({ text, muted }: { text: string; muted?: boolean }) {
         {shown}
       </p>
       {isLong && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="mt-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {expanded ? "Show less" : `Show more (${lines.length - CONTENT_LINE_CAP} more lines)`}
-        </button>
+        <ShowMore
+          expanded={expanded}
+          onExpandedChange={setExpanded}
+          hiddenCount={lines.length - CONTENT_LINE_CAP}
+          noun="lines"
+          controls={bodyId}
+          className="mt-1 text-[11px]"
+        />
       )}
     </div>
   )
@@ -324,6 +327,7 @@ function ExpandableJson({
   data: unknown
 }) {
   const [open, setOpen] = useState(false)
+  const bodyId = useId()
   if (data == null) return null
 
   const json = safeStringify(data)
@@ -331,16 +335,13 @@ function ExpandableJson({
 
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-1.5 px-3 py-2 text-left hover:bg-secondary/40 transition-colors"
+      <DisclosureTrigger
+        open={open}
+        onOpenChange={setOpen}
+        controls={bodyId}
+        chevronClassName="size-3"
+        className="gap-1.5 px-3 py-2 hover:bg-secondary/40"
       >
-        {open ? (
-          <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
-        ) : (
-          <ChevronRight className="size-3 text-muted-foreground" aria-hidden />
-        )}
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
           {title}
         </span>
@@ -349,12 +350,12 @@ function ExpandableJson({
             {preview}
           </span>
         )}
-      </button>
-      {open && (
+      </DisclosureTrigger>
+      <DisclosureBody id={bodyId} open={open}>
         <pre className="px-3 pb-3 text-[11px] font-mono leading-relaxed text-foreground/90 whitespace-pre-wrap break-words overflow-x-auto max-h-[280px]">
           <JsonHighlight json={json} />
         </pre>
-      )}
+      </DisclosureBody>
     </div>
   )
 }

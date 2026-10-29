@@ -63,6 +63,9 @@ export function getAdminApp(): App {
               projectId:
                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
                 "timbl-dev",
+              storageBucket:
+                process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ??
+                `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "timbl-dev"}.appspot.com`,
             },
       )
     }

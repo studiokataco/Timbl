@@ -148,7 +148,24 @@ function deriveTitle(transcript: ThreadMessage[]): string | undefined {
   return cleaned.length > 60 ? `${cleaned.slice(0, 57)}…` : cleaned
 }
 
-export async function appendMessage(
+/* Appends are read-modify-write across separate transactions, so two in
+ * flight for one thread would drop a message. Chain them per thread. */
+const appendQueues = new Map<string, Promise<void>>()
+
+export function appendMessage(
+  threadId: string,
+  msg: ThreadMessage,
+): Promise<void> {
+  const prev = appendQueues.get(threadId) ?? Promise.resolve()
+  const next = prev.then(() => writeMessage(threadId, msg))
+  appendQueues.set(threadId, next)
+  void next.then(() => {
+    if (appendQueues.get(threadId) === next) appendQueues.delete(threadId)
+  })
+  return next
+}
+
+async function writeMessage(
   threadId: string,
   msg: ThreadMessage,
 ): Promise<void> {

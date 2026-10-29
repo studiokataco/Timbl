@@ -49,9 +49,8 @@ const AWARENESS_RESEARCHER_INSTRUCTION = [
   "      name - short canonical name (e.g. \"World Health Day\")",
   "      description - one or two sentences of context",
   "      sourceUrls - the URLs you grounded the claim in (at least one)",
-  "      importance - low | medium | high based on cultural weight",
   "      recurringPattern - annual | weekly | fixed-date | custom",
   "  - Stop after 5-10 high-quality items. Quality > quantity.",
   "  - Refuse to invent facts. If you cannot find a reputable source for a candidate day, skip it.",
-  "  - When done, briefly summarise what you proposed. Say nothing else.",
+  "  - When done, reply with one short line saying how many days you proposed, then a markdown bullet list with one line per proposed day: `date - name`. Mention any day you skipped in one line at the end. Say nothing else.",
 ].join("\n")

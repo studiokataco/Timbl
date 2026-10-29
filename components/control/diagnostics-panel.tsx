@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, CheckCircle2, Clock, RefreshCw } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ChevronDown, Clock, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -113,7 +113,8 @@ function RawSnapshot({ raw }: { raw: Record<string, unknown> }) {
   if (!raw || Object.keys(raw).length === 0) return null
   return (
     <details className="group rounded-xl bg-card ring-1 ring-foreground/10">
-      <summary className="cursor-pointer select-none px-4 py-3 text-xs font-medium text-muted-foreground hover:text-foreground group-open:text-foreground">
+      <summary className="flex cursor-pointer select-none list-none items-center gap-1.5 rounded-xl px-4 py-3 text-xs font-medium text-muted-foreground hover:text-foreground group-open:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+        <ChevronDown aria-hidden className="size-3.5 shrink-0 -rotate-90 transition-transform duration-200 group-open:rotate-0 motion-reduce:transition-none" />
         <span className="group-open:hidden">Show underlying data</span>
         <span className="hidden group-open:inline">Hide underlying data</span>
       </summary>

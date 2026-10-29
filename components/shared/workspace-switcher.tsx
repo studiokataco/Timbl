@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Check, ChevronsUpDown, Loader2, Plus } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2, Plus, Settings2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -13,14 +13,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChannelGlyph } from "@/components/shared/channel-glyph"
 import { activateWorkspaceClient } from "@/lib/auth/activate-workspace-client"
 import { setDevOrg } from "@/lib/actions/dev-org"
 import type {
   WorkspaceSummary,
   WorkspaceSwitcherData,
 } from "@/lib/queries/workspaces.server"
+import { IdentityAvatar } from "@/components/shared/identity-avatar"
 import { cn } from "@/lib/utils"
+
+const ROLE_ARTICLE: Record<WorkspaceSummary["role"], string> = {
+  admin: "an admin",
+  editor: "an editor",
+  contributor: "a contributor",
+}
 
 const TIER_LABELS: Record<WorkspaceSummary["tier"], string> = {
   free: "Free",
@@ -29,57 +35,9 @@ const TIER_LABELS: Record<WorkspaceSummary["tier"], string> = {
   scale: "Scale",
 }
 
-/* Pastel avatar fills from the DESIGN.md badge set - deterministic per name
- * so a workspace keeps the same colour across sessions. */
-const AVATAR_FILLS = [
-  { bg: "#ede9fe", fg: "#7c3aed" },
-  { bg: "#dcfce7", fg: "#16a34a" },
-  { bg: "#ffedd5", fg: "#ea580c" },
-  { bg: "#fce7f3", fg: "#db2777" },
-] as const
 
-function fillFor(name: string) {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0
-  return AVATAR_FILLS[Math.abs(hash) % AVATAR_FILLS.length]
-}
-
-function WorkspaceAvatar({
-  name,
-  className,
-}: {
-  name: string
-  className?: string
-}) {
-  const fill = fillFor(name)
-  const initial = name.trim().charAt(0).toUpperCase() || "?"
-  return (
-    <span
-      aria-hidden
-      style={{ backgroundColor: fill.bg, color: fill.fg }}
-      className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold",
-        className,
-      )}
-    >
-      {initial}
-    </span>
-  )
-}
-
-function ChannelRow({ channels }: { channels: WorkspaceSummary["channels"] }) {
-  if (channels.length === 0) {
-    return (
-      <span className="text-caption text-muted-foreground">No channels yet</span>
-    )
-  }
-  return (
-    <span className="flex items-center gap-1">
-      {channels.slice(0, 5).map((ch) => (
-        <ChannelGlyph key={ch} channel={ch} className="size-3.5" />
-      ))}
-    </span>
-  )
+function workspaceFacts(ws: WorkspaceSummary) {
+  return `${TIER_LABELS[ws.tier]} plan · you're ${ROLE_ARTICLE[ws.role]}`
 }
 
 export function WorkspaceSwitcher({
@@ -137,13 +95,13 @@ export function WorkspaceSwitcher({
         )}
         aria-label={`Current workspace: ${current.name}. Switch workspace`}
       >
-        <WorkspaceAvatar name={current.name} />
+        <IdentityAvatar name={current.name} src={current.logoUrl} color={current.color} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-sm font-semibold leading-tight text-foreground">
             {current.name}
           </span>
-          <span className="truncate text-caption capitalize text-muted-foreground">
-            {current.role} · {TIER_LABELS[current.tier]}
+          <span className="truncate text-caption text-muted-foreground">
+            Workspace
           </span>
         </span>
         <ChevronsUpDown
@@ -159,8 +117,8 @@ export function WorkspaceSwitcher({
       >
         {hasMultiple ? (
           <>
-            <DropdownMenuLabel className="text-caption uppercase tracking-wider text-muted-foreground">
-              Workspaces
+            <DropdownMenuLabel className="text-caption text-muted-foreground">
+              Your workspaces
             </DropdownMenuLabel>
             <div className="max-h-72 overflow-y-auto">
               {workspaces.map((ws) => (
@@ -174,12 +132,12 @@ export function WorkspaceSwitcher({
                     ws.current && "bg-secondary/50",
                   )}
                 >
-                  <WorkspaceAvatar name={ws.name} className="size-7 text-xs" />
+                  <IdentityAvatar name={ws.name} src={ws.logoUrl} color={ws.color} className="size-7 text-xs" />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-sm font-medium leading-tight">
                       {ws.name}
                     </span>
-                    <ChannelRow channels={ws.channels} />
+                    <span className="truncate text-caption text-muted-foreground">{workspaceFacts(ws)}</span>
                   </span>
                   {busyId === ws.id ? (
                     <Loader2 aria-hidden className="size-4 shrink-0 animate-spin text-muted-foreground" />
@@ -194,10 +152,18 @@ export function WorkspaceSwitcher({
           <div className="px-2 py-1.5">
             <p className="text-sm font-medium">{current.name}</p>
             <p className="text-caption text-muted-foreground">
-              You belong to one workspace.
+              {workspaceFacts(current)}
             </p>
           </div>
         )}
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/settings/workspace")} className="gap-2.5 py-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground">
+            <Settings2 aria-hidden className="size-4" />
+          </span>
+          <span className="text-sm font-medium">Workspace settings</span>
+        </DropdownMenuItem>
 
         {canCreateWorkspace ? (
           <>

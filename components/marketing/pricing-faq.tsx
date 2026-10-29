@@ -78,7 +78,7 @@ export function PricingFaq() {
                     <ChevronDown
                       aria-hidden
                       className={cn(
-                        "size-5 shrink-0 text-muted-foreground transition-transform duration-300",
+                        "size-5 shrink-0 text-muted-foreground transition-transform duration-300 motion-reduce:transition-none",
                         isOpen && "rotate-180",
                       )}
                     />
@@ -88,7 +88,7 @@ export function PricingFaq() {
                     role="region"
                     aria-labelledby={`pricing-faq-trigger-${i}`}
                     className={cn(
-                      "grid transition-all duration-300 ease-out",
+                      "grid transition-all duration-300 ease-out motion-reduce:transition-none",
                       isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
                     )}
                   >

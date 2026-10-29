@@ -1,14 +1,13 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   Loader2,
 } from "lucide-react"
 
+import { DisclosureBody, DisclosureTrigger, useRemembered } from "@/components/ui/disclosure"
 import { cn } from "@/lib/utils"
 
 interface PanelStep {
@@ -40,8 +39,15 @@ export function AgentPlanPanel({
       ? "failed"
       : "done"
 
-  const [open, setOpen] = useState(true)
-  useRunStopCollapse(isStreaming, pending, setOpen)
+  const [preferOpen, setPreferOpen] = useRemembered("agent.plan", true)
+  const [autoCollapsed, setAutoCollapsed] = useState(false)
+  const open = preferOpen && !autoCollapsed
+  const setOpen = (v: boolean) => {
+    setAutoCollapsed(false)
+    setPreferOpen(v)
+  }
+  const bodyId = useId()
+  useRunStopCollapse(isStreaming, pending, setAutoCollapsed)
 
   const earliest = steps.reduce(
     (acc, s) => (acc === 0 || s.startedAt < acc ? s.startedAt : acc),
@@ -70,11 +76,12 @@ export function AgentPlanPanel({
 
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary/40 transition-colors"
+      <DisclosureTrigger
+        open={open}
+        onOpenChange={setOpen}
+        controls={bodyId}
+        chevronClassName="size-3.5"
+        className="gap-3 px-3 py-2.5 hover:bg-secondary/40"
       >
         <span
           aria-hidden
@@ -116,19 +123,14 @@ export function AgentPlanPanel({
             </span>
           </div>
         </div>
-        <span aria-hidden className="shrink-0">
-          {open ? (
-            <ChevronDown className="size-3.5 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="size-3.5 text-muted-foreground" />
-          )}
-        </span>
-      </button>
-      {open && (
-        <div className="border-t border-border px-3 py-2.5 flex flex-col gap-2">
-          {children}
-        </div>
-      )}
+      </DisclosureTrigger>
+      <DisclosureBody
+        id={bodyId}
+        open={open}
+        className="border-t border-border px-3 py-2.5 flex flex-col gap-2"
+      >
+        {children}
+      </DisclosureBody>
     </div>
   )
 }
@@ -136,13 +138,13 @@ export function AgentPlanPanel({
 function useRunStopCollapse(
   isStreaming: boolean,
   pending: number,
-  setOpen: (v: boolean) => void,
+  setCollapsed: (v: boolean) => void,
 ) {
   const collapsedOnce = useRef(false)
   useEffect(() => {
     if (!isStreaming && pending === 0 && !collapsedOnce.current) {
       collapsedOnce.current = true
-      setOpen(false)
+      setCollapsed(true)
     }
-  }, [isStreaming, pending, setOpen])
+  }, [isStreaming, pending, setCollapsed])
 }

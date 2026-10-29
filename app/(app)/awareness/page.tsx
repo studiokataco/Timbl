@@ -29,7 +29,9 @@ export default async function AwarenessPage() {
           className="flex-col items-stretch gap-4 sm:flex-row sm:items-end"
         />
         <AwarenessProposalsStrip proposals={proposals} />
-        <AwarenessList days={days} plannedIds={plannedIds} />
+        {(days.length > 0 || proposals.length === 0) && (
+          <AwarenessList days={days} plannedIds={plannedIds} />
+        )}
       </div>
     </div>
   )

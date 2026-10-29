@@ -1,70 +1,68 @@
 "use client"
 
 import { useState, useSyncExternalStore } from "react"
-import { Check, Copy } from "lucide-react"
-import { toast } from "sonner"
+import { Eye, EyeOff } from "lucide-react"
 
+import { ChoiceChips } from "@/components/shared/choice-chips"
+import { CopyButton, CopyField } from "@/components/settings/integrations-bits"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { SettingDisclosure } from "@/components/settings/setting-disclosure"
-import { cn } from "@/lib/utils"
 
 const CLIENTS = [
-  { id: "cursor", label: "Cursor" },
-  { id: "claude-code", label: "Claude Code" },
-  { id: "claude-desktop", label: "Claude Desktop" },
-  { id: "vscode", label: "VS Code" },
+  { key: "cursor", label: "Cursor" },
+  { key: "claude-code", label: "Claude Code" },
+  { key: "claude-desktop", label: "Claude Desktop" },
+  { key: "vscode", label: "VS Code" },
 ] as const
 
-type ClientId = (typeof CLIENTS)[number]["id"]
+type ClientId = (typeof CLIENTS)[number]["key"]
+
+type Method = "key" | "oauth" | "cli"
+
+const METHODS: { key: Method; label: string }[] = [
+  { key: "key", label: "API key" },
+  { key: "oauth", label: "Sign in" },
+  { key: "cli", label: "Command line" },
+]
+
+const METHOD_COPY: Record<Method, string> = {
+  key: "Simplest for personal use and automations. Paste a key, or create one above and it fills in here.",
+  oauth:
+    "Your app opens a browser, you sign in and pick permissions, and it gets a short-lived token. Nothing to copy. Works with apps that support MCP sign-in.",
+  cli: "The timbl command line tool uses the same API, and installs a skill so Claude Code or Codex can run it for you.",
+}
+
+const CLIENT_PATH: Record<ClientId, string> = {
+  cursor: "Add this to ~/.cursor/mcp.json, or .cursor/mcp.json in your project.",
+  "claude-code": "Run this in your terminal.",
+  "claude-desktop": "Add this to claude_desktop_config.json (Settings > Developer > Edit config).",
+  vscode: "Add this to .vscode/mcp.json in your workspace.",
+}
+
+const KEY_PLACEHOLDER = "tmbl_pk_<your-key>"
+
+const CLI_SNIPPET = [
+  "npm i -g @timbl/cli",
+  "timbl init                  # paste your tmbl_pk_ key and base URL",
+  "timbl install --claude-code # or: timbl install --codex",
+  "timbl posts list",
+].join("\n")
 
 const subscribeOrigin = () => () => {}
 const getOriginSnapshot = () => window.location.origin
 const getOriginServerSnapshot = () => "https://app.timbl.co"
 
-function CopyBlock({ code, lang }: { code: string; lang?: string }) {
-  const [copied, setCopied] = useState(false)
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(code)
-      setCopied(true)
-      toast.success("Copied to clipboard")
-      setTimeout(() => setCopied(false), 1500)
-    } catch {
-      toast.error("Couldn't copy - select and copy manually")
-    }
-  }
-
-  return (
-    <div className="relative group">
-      <button
-        type="button"
-        onClick={copy}
-        className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:text-foreground"
-        aria-label="Copy"
-      >
-        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-      </button>
-      <pre className="overflow-x-auto rounded-lg border border-border bg-muted px-3 py-3 pr-12 text-xs leading-relaxed">
-        <code className={lang ? `language-${lang}` : undefined}>{code}</code>
-      </pre>
-    </div>
-  )
-}
-
-function apiKeySnippet(client: ClientId, url: string, key: string): string {
-  const k = key || "tmbl_pk_<your-key>"
+function keySnippet(client: ClientId, url: string, key: string): string {
   switch (client) {
     case "claude-code":
-      return `claude mcp add --transport http timbl ${url} \\\n  --header "Authorization: Bearer ${k}"`
+      return `claude mcp add --transport http timbl ${url} \\\n  --header "Authorization: Bearer ${key}"`
     case "claude-desktop":
       return JSON.stringify(
         {
           mcpServers: {
             timbl: {
               command: "npx",
-              args: ["-y", "mcp-remote", url, "--header", `Authorization: Bearer ${k}`],
+              args: ["-y", "mcp-remote", url, "--header", `Authorization: Bearer ${key}`],
             },
           },
         },
@@ -73,14 +71,13 @@ function apiKeySnippet(client: ClientId, url: string, key: string): string {
       )
     case "vscode":
       return JSON.stringify(
-        { servers: { timbl: { type: "http", url, headers: { Authorization: `Bearer ${k}` } } } },
+        { servers: { timbl: { type: "http", url, headers: { Authorization: `Bearer ${key}` } } } },
         null,
         2,
       )
     case "cursor":
-    default:
       return JSON.stringify(
-        { mcpServers: { timbl: { url, headers: { Authorization: `Bearer ${k}` } } } },
+        { mcpServers: { timbl: { url, headers: { Authorization: `Bearer ${key}` } } } },
         null,
         2,
       )
@@ -100,33 +97,21 @@ function oauthSnippet(client: ClientId, url: string): string {
     case "vscode":
       return JSON.stringify({ servers: { timbl: { type: "http", url } } }, null, 2)
     case "cursor":
-    default:
       return JSON.stringify({ mcpServers: { timbl: { url } } }, null, 2)
   }
 }
 
-function clientPath(client: ClientId): string {
-  switch (client) {
-    case "cursor":
-      return "Add to ~/.cursor/mcp.json (or .cursor/mcp.json in your project)."
-    case "claude-code":
-      return "Run in your terminal."
-    case "claude-desktop":
-      return "Add to claude_desktop_config.json (Settings -> Developer -> Edit config)."
-    case "vscode":
-      return "Add to .vscode/mcp.json in your workspace."
-  }
+function mask(key: string): string {
+  return key.length > 12 ? `${key.slice(0, 12)}${"•".repeat(12)}` : key
 }
 
 export function McpConnector({ apiKey }: { apiKey: string | null }) {
-  const origin = useSyncExternalStore(
-    subscribeOrigin,
-    getOriginSnapshot,
-    getOriginServerSnapshot,
-  )
+  const origin = useSyncExternalStore(subscribeOrigin, getOriginSnapshot, getOriginServerSnapshot)
+  const [method, setMethod] = useState<Method>("key")
   const [client, setClient] = useState<ClientId>("cursor")
   const [key, setKey] = useState(apiKey ?? "")
   const [seededKey, setSeededKey] = useState(apiKey)
+  const [revealed, setRevealed] = useState(false)
 
   if (apiKey && apiKey !== seededKey) {
     setSeededKey(apiKey)
@@ -134,109 +119,95 @@ export function McpConnector({ apiKey }: { apiKey: string | null }) {
   }
 
   const url = `${origin}/api/mcp`
+  const trimmed = key.trim()
+  const realKey = trimmed || KEY_PLACEHOLDER
+  const shownKey = trimmed && !revealed ? mask(trimmed) : realKey
+
+  const snippet =
+    method === "cli" ? CLI_SNIPPET : method === "oauth" ? oauthSnippet(client, url) : keySnippet(client, url, realKey)
+  const display = method === "key" ? keySnippet(client, url, shownKey) : snippet
 
   return (
-    <div className="space-y-2">
-      <SettingDisclosure
-        title="API key"
-        summary="Simplest - paste a key, drop the config in"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Simplest for personal use and automations. Paste a key (or create
-            one above - it auto-fills here right after creation).
-          </p>
-          <div className="space-y-1.5">
-            <Label htmlFor="mcp-key">API key</Label>
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <ChoiceChips label="How to connect" options={METHODS} value={method} onChange={setMethod} />
+        <p className="max-w-[64ch] text-[13px] leading-relaxed text-muted-foreground">{METHOD_COPY[method]}</p>
+      </div>
+
+      {method !== "cli" ? (
+        <div className="space-y-2">
+          <p className="text-[13px] font-medium text-foreground">App</p>
+          <ChoiceChips
+            label="App"
+            options={CLIENTS.map((c) => ({ key: c.key, label: c.label }))}
+            value={client}
+            onChange={setClient}
+          />
+        </div>
+      ) : null}
+
+      {method === "key" ? (
+        <div className="space-y-2">
+          <label htmlFor="mcp-key" className="text-[13px] font-medium text-foreground">
+            API key
+          </label>
+          <div className="flex items-center gap-2">
             <Input
               id="mcp-key"
+              type={revealed ? "text" : "password"}
               value={key}
               onChange={(e) => setKey(e.target.value)}
               placeholder="tmbl_pk_..."
-              className="font-mono text-xs"
+              autoComplete="off"
+              spellCheck={false}
+              className="h-9 max-w-md font-mono text-[13px]"
             />
-          </div>
-          <ClientPicker client={client} onChange={setClient} />
-          <p className="text-xs text-muted-foreground">{clientPath(client)}</p>
-          <CopyBlock
-            code={apiKeySnippet(client, url, key)}
-            lang={client === "claude-code" ? "bash" : "json"}
-          />
-        </div>
-      </SettingDisclosure>
-
-      <SettingDisclosure
-        title="OAuth (sign in)"
-        summary="User-delegated - no key to copy"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            User-delegated. The client opens a browser, you sign in and pick
-            scopes, and it receives a short-lived <code>tmbl_at_</code> token -
-            no key to copy. Works with clients that support MCP OAuth discovery.
-          </p>
-          <ClientPicker client={client} onChange={setClient} />
-          <p className="text-xs text-muted-foreground">{clientPath(client)}</p>
-          <CopyBlock
-            code={oauthSnippet(client, url)}
-            lang={client === "claude-code" ? "bash" : "json"}
-          />
-          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground space-y-0.5">
-            <p className="font-medium text-foreground">Discovery endpoints</p>
-            <p className="font-mono break-all">{origin}/.well-known/oauth-protected-resource</p>
-            <p className="font-mono break-all">{origin}/.well-known/oauth-authorization-server</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-lg"
+              onClick={() => setRevealed((v) => !v)}
+              aria-label={revealed ? "Hide key" : "Show key"}
+              aria-pressed={revealed}
+            >
+              {revealed ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+            </Button>
           </div>
         </div>
-      </SettingDisclosure>
+      ) : null}
 
-      <SettingDisclosure
-        title="CLI"
-        summary="The timbl CLI over the same REST API"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Not MCP - the <code>timbl</code> CLI drives the same REST API, and
-            installs a skill so Claude Code or Codex can run it for you.
-          </p>
-          <CopyBlock
-            code={[
-              "npm i -g @timbl/cli",
-              "timbl init                  # paste your tmbl_pk_ key + base URL",
-              "timbl install --claude-code # or: timbl install --codex",
-              "timbl posts list",
-            ].join("\n")}
-            lang="bash"
+      {method !== "cli" ? (
+        <div className="space-y-2">
+          <p className="text-[13px] font-medium text-foreground">Server URL</p>
+          <CopyField value={url} label="Copy server URL" />
+        </div>
+      ) : null}
+
+      <div className="space-y-2">
+        <p className="text-[13px] text-muted-foreground">
+          {method === "cli" ? "Run this in your terminal." : CLIENT_PATH[client]}
+        </p>
+        <div className="relative">
+          <pre className="whitespace-pre-wrap rounded-lg bg-secondary py-3 pl-3 pr-14 font-mono text-[12px] leading-relaxed text-foreground wrap-anywhere">
+            <code>{display}</code>
+          </pre>
+          <CopyButton value={snippet} label="Copy config" className="absolute right-1.5 top-1.5" />
+        </div>
+      </div>
+
+      {method === "oauth" ? (
+        <div className="space-y-2">
+          <p className="text-[13px] font-medium text-foreground">Discovery endpoints</p>
+          <CopyField
+            value={`${origin}/.well-known/oauth-protected-resource`}
+            label="Copy protected resource endpoint"
+          />
+          <CopyField
+            value={`${origin}/.well-known/oauth-authorization-server`}
+            label="Copy authorization server endpoint"
           />
         </div>
-      </SettingDisclosure>
-    </div>
-  )
-}
-
-function ClientPicker({
-  client,
-  onChange,
-}: {
-  client: ClientId
-  onChange: (c: ClientId) => void
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {CLIENTS.map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => onChange(c.id)}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs transition-colors",
-            client === c.id
-              ? "border-foreground bg-foreground text-background"
-              : "border-border text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {c.label}
-        </button>
-      ))}
+      ) : null}
     </div>
   )
 }

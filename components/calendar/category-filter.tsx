@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useId } from "react"
 import Link from "next/link"
-import { ChevronDown } from "lucide-react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category } from "@/lib/schemas"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DisclosureBody, DisclosureTrigger, useRemembered } from "@/components/ui/disclosure"
 
 type Props = {
   categories: WithId<Category>[]
@@ -26,28 +26,31 @@ export function CategoryFilter({
   onAll,
   onNone,
 }: Props) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useRemembered("calendar.categories", true)
+  const bodyId = useId()
+  const shown = categories.filter((c) => visibleIds.has(c.id)).length
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="flex items-center gap-1.5 text-left"
+      <div className="flex items-center justify-between gap-2">
+        <DisclosureTrigger
+          heading={3}
+          open={open}
+          onOpenChange={setOpen}
+          controls={bodyId}
+          chevronClassName="size-3.5"
+          className="min-w-0 flex-1 gap-1.5 rounded-sm"
         >
-          <h3 className="text-caption uppercase tracking-wider text-muted-foreground">
+          <span className="text-caption uppercase tracking-wider text-muted-foreground">
             Categories
-          </h3>
-          <ChevronDown
-            aria-hidden
-            className={`size-3.5 text-muted-foreground transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        <div className="flex gap-2 text-[11px]">
+          </span>
+          {!open && (
+            <span className="min-w-0 truncate text-[11px] tabular-nums text-muted-foreground">
+              {shown} of {categories.length} shown
+            </span>
+          )}
+        </DisclosureTrigger>
+        <div className="flex shrink-0 gap-2 text-[11px]">
           <button
             type="button"
             onClick={onAll}
@@ -65,8 +68,7 @@ export function CategoryFilter({
           </button>
         </div>
       </div>
-      {open && (
-        <>
+      <DisclosureBody id={bodyId} open={open} className="flex flex-col gap-2">
       <ul className="flex flex-col gap-1">
         {categories.map((c) => (
           <li key={c.id}>
@@ -97,8 +99,7 @@ export function CategoryFilter({
       >
         Manage categories
       </Link>
-        </>
-      )}
+      </DisclosureBody>
     </div>
   )
 }

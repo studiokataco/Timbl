@@ -29,11 +29,11 @@ export default async function KanbanPage() {
   const realtimeEnabled = await realtimeEnabledForOrg(orgId)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-10 lg:py-14">
+    <div className="flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-10 lg:pt-10 lg:pb-6">
       <PageHeader
         title="Kanban"
-        description="Move posts through your workflow."
-        className="mb-4 md:mb-8"
+        description="Track every post from idea to posted."
+        className="mb-5 md:mb-6"
         size="sm"
       />
       <KanbanBoard

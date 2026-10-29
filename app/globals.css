@@ -457,3 +457,13 @@ body:has(#landing-scroll) {
     animation: none;
   }
 }
+
+@keyframes studio-row-return {
+  0%,
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

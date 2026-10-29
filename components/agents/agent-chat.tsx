@@ -4,14 +4,14 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from "react"
 import {
-  ChevronDown,
-  ChevronRight,
+  Check,
   Loader2,
   Send,
   Square,
@@ -21,6 +21,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { DisclosureBody, DisclosureTrigger } from "@/components/ui/disclosure"
 import { cn } from "@/lib/utils"
 import { JsonPretty } from "@/components/studio/json-pretty"
 import { getTool } from "@/components/studio/tool-catalog"
@@ -255,11 +256,9 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     let cancelled = false
     void getThread(threadId, organizationId).then((thread) => {
       if (cancelled) return
-      if (!thread) {
-        setTranscript([])
-        lastEmittedRef.current = new Map()
-        return
-      }
+      /* A run can start before an empty thread finishes loading (auto-
+       * submitted prompts). Keep what is already streaming. */
+      if (!thread || thread.transcript.length === 0) return
       const items: TranscriptItem[] = thread.transcript.map((m) => ({
         id: m.id,
         role: m.role,
@@ -272,6 +271,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
           result: c.result,
           error: c.error,
           startedAt: 0,
+          finishedAt: 0,
         })),
       }))
       setTranscript(items)
@@ -324,7 +324,11 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
       setTranscript((prev) => {
         const last = prev[prev.length - 1]
         if (last?.role === "assistant") {
-          const next = { ...last, toolCalls: last.toolCalls?.slice() }
+          const next = {
+            ...last,
+            toolCalls: last.toolCalls?.slice(),
+            thoughts: last.thoughts?.slice(),
+          }
           mutate(next)
           return [...prev.slice(0, -1), next]
         }
@@ -406,6 +410,13 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
         item.text = (item.text ?? "") + `\n\n⚠ ${message}`
       })
     } finally {
+      const now = Date.now()
+      intoLatestAssistant((item) => {
+        if (!item.toolCalls?.some(isPending)) return
+        item.toolCalls = item.toolCalls.map((c) =>
+          isPending(c) ? { ...c, finishedAt: now } : c,
+        )
+      })
       setStreaming(false)
       abortRef.current = null
       onFinish?.()
@@ -679,11 +690,13 @@ function AgentActivity({
   isStreaming: boolean
   hasAnswer: boolean
 }) {
-  const pending = toolCalls.filter((c) => c.result === undefined && !c.error).length
-  const errored = toolCalls.filter((c) => Boolean(c.error)).length
+  const pending = toolCalls.filter(isPending).length
+  const errored = toolCalls.filter((c) => failureOf(c) !== null).length
   const running = isStreaming || pending > 0
+  const groups = useMemo(() => groupConsecutive(toolCalls), [toolCalls])
   // Auto-collapse once the final answer starts arriving.
   const [open, setOpen] = useState(true)
+  const bodyId = useId()
   const collapsedOnAnswerRef = useRef(false)
   useEffect(() => {
     if (hasAnswer && !collapsedOnAnswerRef.current) {
@@ -699,28 +712,28 @@ function AgentActivity({
   if (stepCount > 0) parts.push(`${stepCount} step${stepCount === 1 ? "" : "s"}`)
   const summary = parts.join(" · ") || "Activity"
   const statusLabel = running
-    ? "Thinking…"
+    ? hasAnswer
+      ? "Writing…"
+      : "Working…"
     : errored > 0
-      ? "Completed with errors"
+      ? `Done · ${errored} skipped`
       : "Done"
 
   return (
     <div className="rounded-lg border border-border bg-secondary/30 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-secondary/60 transition-colors"
+      <DisclosureTrigger
+        open={open}
+        onOpenChange={setOpen}
+        controls={bodyId}
+        chevronClassName={cn("size-3.5", running && "hidden")}
+        className="px-3 py-2 hover:bg-secondary/60"
       >
-        <span aria-hidden className="shrink-0">
-          {running ? (
-            <Loader2 className="size-3.5 text-muted-foreground motion-safe:animate-spin" />
-          ) : open ? (
-            <ChevronDown className="size-3.5 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="size-3.5 text-muted-foreground" />
-          )}
-        </span>
+        {running && (
+          <Loader2
+            aria-hidden
+            className="size-3.5 shrink-0 text-muted-foreground motion-safe:animate-spin"
+          />
+        )}
         <span className="text-caption font-semibold text-foreground">
           Agent activity
         </span>
@@ -730,30 +743,36 @@ function AgentActivity({
         <span className="ml-auto text-caption text-muted-foreground">
           {statusLabel}
         </span>
-      </button>
-      {open && (
-        <div className="border-t border-border bg-background px-3 py-3 space-y-3">
-          {thoughts.length > 0 && (
-            <div className="space-y-2">
-              {thoughts.map((t, i) => (
-                <Markdown
-                  key={i}
-                  className="text-[12px] text-muted-foreground"
-                >
-                  {t}
-                </Markdown>
-              ))}
-            </div>
-          )}
-          {toolCalls.length > 0 && (
-            <div className="flex flex-col gap-2">
-              {toolCalls.map((c) => (
-                <ToolChiclet key={c.id} call={c} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      </DisclosureTrigger>
+      <DisclosureBody
+        id={bodyId}
+        open={open}
+        className="border-t border-border bg-background px-3 py-3 space-y-3"
+      >
+        {thoughts.length > 0 && (
+          <div className="space-y-2">
+            {thoughts.map((t, i) => (
+              <Markdown
+                key={i}
+                className="text-[12px] text-muted-foreground"
+              >
+                {t}
+              </Markdown>
+            ))}
+          </div>
+        )}
+        {toolCalls.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {groups.map((g) =>
+              g.length === 1 ? (
+                <ToolChiclet key={g[0].id} call={g[0]} />
+              ) : (
+                <ToolGroup key={g[0].id} calls={g} />
+              ),
+            )}
+          </div>
+        )}
+      </DisclosureBody>
     </div>
   )
 }
@@ -762,15 +781,17 @@ function AgentActivity({
 
 function ToolChiclet({ call }: { call: ToolCall }) {
   const [open, setOpen] = useState(false)
+  const bodyId = useId()
   const tool = getTool(call.name)
-  const pending = call.result === undefined && !call.error
+  const pending = isPending(call)
+  const failure = failureOf(call)
   const durationS =
     call.finishedAt && call.startedAt
       ? ((call.finishedAt - call.startedAt) / 1000).toFixed(1)
       : null
 
-  const status = call.error
-    ? `error: ${call.error}`
+  const status = failure
+    ? failure
     : pending
       ? "calling…"
       : durationS
@@ -779,10 +800,12 @@ function ToolChiclet({ call }: { call: ToolCall }) {
 
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary/40 transition-colors"
+      <DisclosureTrigger
+        open={open}
+        onOpenChange={setOpen}
+        controls={bodyId}
+        chevronClassName="size-3.5"
+        className="gap-3 px-3 py-2.5 hover:bg-secondary/40"
       >
         <span
           aria-hidden
@@ -800,7 +823,7 @@ function ToolChiclet({ call }: { call: ToolCall }) {
             </span>
           </div>
           <div className="mt-0.5 flex items-center gap-1.5">
-            {call.error && (
+            {failure && (
               <span
                 aria-hidden
                 className="size-1.5 rounded-full bg-rose-500 shrink-0"
@@ -809,7 +832,7 @@ function ToolChiclet({ call }: { call: ToolCall }) {
             <span
               className={cn(
                 "text-[11px] truncate",
-                call.error
+                failure
                   ? "text-rose-700 dark:text-rose-300"
                   : "text-muted-foreground",
               )}
@@ -818,36 +841,184 @@ function ToolChiclet({ call }: { call: ToolCall }) {
             </span>
           </div>
         </div>
-        <span aria-hidden className="shrink-0">
-          {pending ? (
-            <Loader2 className="size-3.5 text-muted-foreground motion-safe:animate-spin" />
-          ) : open ? (
-            <ChevronDown className="size-3.5 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="size-3.5 text-muted-foreground" />
-          )}
-        </span>
-      </button>
-      {open && (
-        <div className="border-t border-border px-3 py-2.5 space-y-2">
+        {pending && (
+          <Loader2
+            aria-hidden
+            className="size-3.5 shrink-0 text-muted-foreground motion-safe:animate-spin"
+          />
+        )}
+      </DisclosureTrigger>
+      <DisclosureBody
+        id={bodyId}
+        open={open}
+        className="border-t border-border px-3 py-2.5 space-y-2"
+      >
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+            Arguments
+          </p>
+          <JsonPretty data={call.args} />
+        </div>
+        {call.result !== undefined && (
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-              Arguments
+              Result
             </p>
-            <JsonPretty data={call.args} />
+            <JsonPretty data={call.result} />
           </div>
-          {call.result !== undefined && (
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Result
-              </p>
-              <JsonPretty data={call.result} />
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </DisclosureBody>
     </div>
   )
+}
+
+function ToolGroup({ calls }: { calls: ToolCall[] }) {
+  const [open, setOpen] = useState(true)
+  const bodyId = useId()
+  const tool = getTool(calls[0].name)
+  const pending = calls.filter(isPending).length
+  const failed = calls.filter((c) => failureOf(c) !== null).length
+  const settled = calls.length - pending
+
+  const status =
+    pending > 0
+      ? `${settled} of ${calls.length} done`
+      : failed > 0
+        ? `${calls.length - failed} done · ${failed} skipped`
+        : `${calls.length} done`
+
+  return (
+    <div className="rounded-lg border border-border bg-background overflow-hidden">
+      <DisclosureTrigger
+        open={open}
+        onOpenChange={setOpen}
+        controls={bodyId}
+        chevronClassName="size-3.5"
+        className="gap-3 px-3 py-2.5 hover:bg-secondary/40"
+      >
+        <span
+          aria-hidden
+          className="size-6 shrink-0 rounded-md bg-secondary flex items-center justify-center"
+        >
+          <Wrench className="size-3.5 text-foreground" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[13px] font-semibold text-foreground truncate">
+              {tool.title}
+            </span>
+            <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+              ×{calls.length}
+            </span>
+          </div>
+          <span className="mt-0.5 block text-[11px] text-muted-foreground tabular-nums">
+            {status}
+          </span>
+        </div>
+        {pending > 0 && (
+          <Loader2
+            aria-hidden
+            className="size-3.5 shrink-0 text-muted-foreground motion-safe:animate-spin"
+          />
+        )}
+      </DisclosureTrigger>
+      <DisclosureBody id={bodyId} open={open}>
+        <ul className="border-t border-border divide-y divide-border">
+          {calls.map((c, i) => (
+            <ToolGroupRow key={c.id} call={c} index={i} />
+          ))}
+        </ul>
+      </DisclosureBody>
+    </div>
+  )
+}
+
+function ToolGroupRow({ call, index }: { call: ToolCall; index: number }) {
+  const [open, setOpen] = useState(false)
+  const pending = isPending(call)
+  const failure = failureOf(call)
+  const label = callLabel(call) ?? `Call ${index + 1}`
+  const args = (call.args ?? {}) as Record<string, unknown>
+  const meta = typeof args.date === "string" && args.date !== label ? args.date : null
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary/40 transition-colors"
+      >
+        <span aria-hidden className="size-4 shrink-0 flex items-center justify-center">
+          {pending ? (
+            <Loader2 className="size-3.5 text-muted-foreground motion-safe:animate-spin" />
+          ) : failure ? (
+            <span className="size-1.5 rounded-full bg-rose-500" />
+          ) : (
+            <Check className="size-3.5 text-foreground" />
+          )}
+        </span>
+        <span
+          className={cn(
+            "flex-1 min-w-0 truncate text-[12px]",
+            failure ? "text-muted-foreground line-through" : "text-foreground",
+          )}
+        >
+          {label}
+        </span>
+        {meta && (
+          <span className="shrink-0 text-[11px] font-mono text-muted-foreground tabular-nums">
+            {meta}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="px-3 pb-2.5 pl-9 space-y-2">
+          {failure && (
+            <p className="text-[11px] text-rose-700 dark:text-rose-300">{failure}</p>
+          )}
+          <JsonPretty data={call.args} />
+          {call.result !== undefined && <JsonPretty data={call.result} />}
+        </div>
+      )}
+    </li>
+  )
+}
+
+function isPending(call: ToolCall): boolean {
+  return call.result === undefined && !call.error && call.finishedAt === undefined
+}
+
+/* Tools report soft failures as `{ ok: false, error }` instead of throwing. */
+function failureOf(call: ToolCall): string | null {
+  if (call.error) return call.error
+  const r = call.result as { ok?: unknown; error?: unknown } | null | undefined
+  if (r && typeof r === "object" && r.ok === false) {
+    return typeof r.error === "string" && r.error ? r.error : "Failed"
+  }
+  return null
+}
+
+const LABEL_KEYS = ["name", "title", "summary", "query", "date", "id"] as const
+
+function callLabel(call: ToolCall): string | null {
+  const args = call.args
+  if (!args || typeof args !== "object") return null
+  for (const key of LABEL_KEYS) {
+    const v = (args as Record<string, unknown>)[key]
+    if (typeof v === "string" && v.trim()) return v.trim()
+  }
+  return null
+}
+
+function groupConsecutive(calls: ToolCall[]): ToolCall[][] {
+  const groups: ToolCall[][] = []
+  for (const c of calls) {
+    const last = groups[groups.length - 1]
+    if (last && last[0].name === c.name) last.push(c)
+    else groups.push([c])
+  }
+  return groups
 }
 
 /* ---------------- human-gate sidecar ---------------- */
@@ -1021,12 +1192,22 @@ function applyEvent(
     case "tool_result":
       intoLatestAssistant((item) => {
         const calls = item.toolCalls ?? []
-        const target = calls.find(
-          (c) => c.id === event.result?.id || c.name === event.result?.name,
-        )
-        if (target) {
-          target.result = event.result?.response
-          target.finishedAt = Date.now()
+        /* Parallel calls share a name, so a name match alone pins every
+         * result on the first call. Id first, then the oldest unanswered
+         * call with that name. */
+        let idx = event.result?.id
+          ? calls.findIndex((c) => c.id === event.result?.id)
+          : -1
+        if (idx < 0) {
+          idx = calls.findIndex(
+            (c) => c.name === event.result?.name && isPending(c),
+          )
+        }
+        if (idx < 0) return
+        calls[idx] = {
+          ...calls[idx],
+          result: event.result?.response,
+          finishedAt: Date.now(),
         }
       })
       break

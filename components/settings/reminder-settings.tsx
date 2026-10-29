@@ -1,361 +1,402 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useTransition, type ReactNode } from "react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { Controller, useForm, useWatch } from "react-hook-form"
+import { Bell, Eye } from "lucide-react"
 import { toast } from "sonner"
 
+import { ChoiceChips } from "@/components/shared/choice-chips"
+import { FormRow } from "@/components/shared/form-row"
+import { UnsavedBar } from "@/components/shared/unsaved-bar"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { SettingDisclosure } from "@/components/settings/setting-disclosure"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { updateReminderSettings } from "@/lib/actions/reminder-settings"
 import {
   GOES_LIVE_WINDOW_LABELS,
   REMINDER_FREQUENCY_LABELS,
-  labelOr,
 } from "@/lib/labels/enums"
-import type { ReminderPreferences } from "@/lib/schemas/organisation"
+import {
+  reminderPreferencesSchema,
+  type ReminderPreferences,
+} from "@/lib/schemas/organisation"
+import { cn } from "@/lib/utils"
 
-type KindKey = keyof Pick<
-  ReminderPreferences,
-  "approvalDue" | "overdue" | "goesLiveSoon" | "silentCategory"
->
+type KindKey = "approvalDue" | "overdue" | "goesLiveSoon" | "silentCategory"
+type DaysKey = "approvalHorizonDays" | "silentCategoryDays"
+type OverdueScope = "both" | "draft" | "scheduled" | "none"
 
-const KIND_ROWS: {
-  key: KindKey
-  label: string
-  description: string
-  testTitle: string
-  testDescription: string
-}[] = [
-  {
-    key: "approvalDue",
-    label: "Drafts needing review",
-    description: "Agent drafts still pending approval before their slot.",
-    testTitle: "1 draft needs review",
-    testDescription: "Scheduled in the next 3 days",
-  },
-  {
-    key: "overdue",
-    label: "Overdue posts",
-    description: "Posts whose scheduled date has already passed.",
-    testTitle: "Overdue post",
-    testDescription: "Scheduled date has passed",
-  },
-  {
-    key: "goesLiveSoon",
-    label: "Publish readiness",
-    description: "Scheduled posts going live soon with incomplete channels.",
-    testTitle: "Final check before publish",
-    testDescription: "Channels still need setup",
-  },
-  {
-    key: "silentCategory",
-    label: "Quiet categories",
-    description: "Categories with no recent posts, nudging you to plan content.",
-    testTitle: "Plan a category post",
-    testDescription: "No posts in 14+ days",
-  },
+const KINDS: { key: KindKey; title: string; action: string }[] = [
+  { key: "approvalDue", title: "Drafts waiting for review", action: "Review drafts" },
+  { key: "overdue", title: "Overdue posts", action: "Open post" },
+  { key: "goesLiveSoon", title: "Posts not ready to go live", action: "Final check" },
+  { key: "silentCategory", title: "Quiet categories", action: "Plan a post" },
 ]
 
-function clampInt(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, Math.round(value)))
+const DAYS: Record<DaysKey, { kind: KindKey; min: number; max: number; label: string }> = {
+  approvalHorizonDays: { kind: "approvalDue", min: 1, max: 14, label: "Days ahead to check" },
+  silentCategoryDays: { kind: "silentCategory", min: 7, max: 90, label: "Days without a post" },
+}
+const DAY_KEYS = Object.keys(DAYS) as DaysKey[]
+
+const FREQUENCIES = (
+  Object.keys(REMINDER_FREQUENCY_LABELS) as ReminderPreferences["frequency"][]
+).map((key) => ({ key, label: REMINDER_FREQUENCY_LABELS[key] }))
+
+const WINDOWS = (
+  Object.keys(GOES_LIVE_WINDOW_LABELS) as ReminderPreferences["goesLiveWindow"][]
+).map((key) => ({ key, label: GOES_LIVE_WINDOW_LABELS[key] }))
+
+const MAX_OPTIONS = ["1", "2", "3", "4", "5"].map((key) => ({ key, label: key }))
+
+const OVERDUE_SCOPES: { key: OverdueScope; label: string }[] = [
+  { key: "both", label: "Drafts and scheduled" },
+  { key: "draft", label: "Drafts only" },
+  { key: "scheduled", label: "Scheduled only" },
+]
+
+function overdueScope(v: ReminderPreferences): OverdueScope {
+  if (v.overdueIncludeDraft && v.overdueIncludeScheduled) return "both"
+  if (v.overdueIncludeDraft) return "draft"
+  if (v.overdueIncludeScheduled) return "scheduled"
+  return "none"
+}
+
+function sample(key: KindKey, v: ReminderPreferences, category: string) {
+  switch (key) {
+    case "approvalDue": {
+      const n = v.approvalHorizonDays
+      return {
+        title: "2 drafts need review",
+        description: `Scheduled in the next ${n} day${n === 1 ? "" : "s"}`,
+      }
+    }
+    case "overdue":
+      return { title: "Overdue post", description: "Scheduled date has passed" }
+    case "goesLiveSoon":
+      return { title: "Final check before publish", description: "Channels still need setup" }
+    case "silentCategory":
+      return {
+        title: `Plan a ${category} post`,
+        description: `No posts in ${v.silentCategoryDays}+ days`,
+      }
+  }
+}
+
+function settleDays(key: DaysKey, raw: number, fallback: number): number {
+  const { min, max } = DAYS[key]
+  if (!Number.isFinite(raw)) return fallback
+  return Math.min(max, Math.max(min, Math.round(raw)))
+}
+
+function inRange(key: DaysKey, raw: number): boolean {
+  const { min, max } = DAYS[key]
+  return Number.isInteger(raw) && raw >= min && raw <= max
 }
 
 export function ReminderSettings({
   initial,
+  sampleCategory,
 }: {
   initial: ReminderPreferences
+  sampleCategory?: string
 }) {
-  const [prefs, setPrefs] = useState(initial)
-  const [pending, startTransition] = useTransition()
+  const [saving, startSave] = useTransition()
+  const form = useForm<ReminderPreferences>({ defaultValues: initial })
+  const { control, register, handleSubmit, reset, setValue, getValues, setError, clearErrors, formState } = form
+  const { isDirty, errors } = formState
+  const values = useWatch({ control }) as ReminderPreferences
 
-  function patch(next: Partial<ReminderPreferences>) {
-    setPrefs((prev) => ({ ...prev, ...next }))
+  const savedDays = (key: DaysKey) => formState.defaultValues?.[key] ?? DAYS[key].min
+  const shown: ReminderPreferences = {
+    ...values,
+    approvalHorizonDays: settleDays("approvalHorizonDays", values.approvalHorizonDays, savedDays("approvalHorizonDays")),
+    silentCategoryDays: settleDays("silentCategoryDays", values.silentCategoryDays, savedDays("silentCategoryDays")),
+  }
+  const category = sampleCategory?.trim() || "category"
+  const enabled = values.enabled
+  const activeKinds = KINDS.filter((k) => values[k.key])
+  const max = values.maxToastsPerSession
+
+  function commitDays(key: DaysKey) {
+    const raw = getValues(key)
+    const next = settleDays(key, raw, savedDays(key))
+    if (next !== raw) setValue(key, next, { shouldDirty: true })
+    clearErrors(key)
   }
 
-  function handleSave() {
-    startTransition(async () => {
-      const result = await updateReminderSettings(prefs)
-      if (!result.ok) {
-        toast.error("Could not save notification settings")
+  function setOverdueScope(scope: OverdueScope) {
+    setValue("overdueIncludeDraft", scope !== "scheduled", { shouldDirty: true })
+    setValue("overdueIncludeScheduled", scope !== "draft", { shouldDirty: true })
+  }
+
+  function preview() {
+    for (const kind of activeKinds.slice(0, max)) {
+      const s = sample(kind.key, shown, category)
+      toast(s.title, {
+        id: `reminder-preview-${kind.key}`,
+        description: s.description,
+        action: { label: kind.action, onClick: () => {} },
+      })
+    }
+  }
+
+  const onSubmit = handleSubmit((raw) => {
+    if (!isDirty) return
+    const draft = { ...raw }
+    let blocked = false
+    for (const key of DAY_KEYS) {
+      if (inRange(key, draft[key])) continue
+      if (draft[DAYS[key].kind]) {
+        setError(key, { message: `Pick ${DAYS[key].min} to ${DAYS[key].max} days` })
+        blocked = true
+      } else {
+        draft[key] = settleDays(key, draft[key], savedDays(key))
+      }
+    }
+    if (blocked) return
+
+    const parsed = reminderPreferencesSchema.safeParse(draft)
+    if (!parsed.success) {
+      toast.error("Couldn't save reminders", { description: "Reload the page and try again." })
+      return
+    }
+    const next = parsed.data
+    startSave(async () => {
+      const res = await updateReminderSettings(next)
+      if (!res.ok) {
+        toast.error("Couldn't save reminders", { description: "Try again in a moment." })
         return
       }
-      toast.success("Notification settings saved")
+      toast.success("Reminders saved")
+      reset(next)
     })
+  })
+
+  function daysInput(key: DaysKey) {
+    return (
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={DAYS[key].min}
+        max={DAYS[key].max}
+        aria-label={DAYS[key].label}
+        aria-invalid={!!errors[key]}
+        className="h-9 w-16 text-center tabular-nums sm:h-8"
+        {...register(key, { valueAsNumber: true, onBlur: () => commitDays(key) })}
+      />
+    )
   }
 
-  function sendTestToast(kind: KindKey) {
-    const row = KIND_ROWS.find((r) => r.key === kind)
-    if (!row) return
-    toast(row.testTitle, {
-      description: row.testDescription,
-      action: { label: "Preview", onClick: () => {} },
-    })
+  function daysError(key: DaysKey) {
+    const message = errors[key]?.message
+    return message ? (
+      <p role="alert" className="mt-1.5 text-[12px] text-destructive">
+        {message}
+      </p>
+    ) : null
   }
+
+  function detail(key: KindKey): ReactNode {
+    switch (key) {
+      case "approvalDue":
+        return (
+          <>
+            <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+              <span>Count drafts scheduled in the next</span>
+              {daysInput("approvalHorizonDays")}
+              <span>days</span>
+            </div>
+            {daysError("approvalHorizonDays")}
+          </>
+        )
+      case "overdue":
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[13px] text-muted-foreground">Include</span>
+            <ChoiceChips
+              label="Overdue posts to include"
+              options={OVERDUE_SCOPES}
+              value={overdueScope(values)}
+              onChange={setOverdueScope}
+            />
+          </div>
+        )
+      case "goesLiveSoon":
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[13px] text-muted-foreground">Going live</span>
+            <Controller
+              control={control}
+              name="goesLiveWindow"
+              render={({ field }) => (
+                <ChoiceChips label="When to check posts going live" options={WINDOWS} value={field.value} onChange={field.onChange} />
+              )}
+            />
+          </div>
+        )
+      case "silentCategory":
+        return (
+          <>
+            <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+              <span>Flag a category after</span>
+              {daysInput("silentCategoryDays")}
+              <span>days without a post</span>
+            </div>
+            {daysError("silentCategoryDays")}
+          </>
+        )
+    }
+  }
+
+  const status = !enabled
+    ? "Off. Nobody in this workspace sees reminders."
+    : activeKinds.length === 0
+      ? "On, but every reminder type below is off."
+      : `${activeKinds.length} of ${KINDS.length} types on, up to ${max} at a time.`
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border p-4 space-y-4">
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="reminders-enabled"
-            checked={prefs.enabled}
-            disabled={pending}
-            onCheckedChange={(v) => patch({ enabled: v === true })}
-            className="mt-0.5"
+    <form onSubmit={onSubmit} noValidate>
+      <FormRow
+        title="Reminders"
+        hint="Short nudges that pop up when someone opens Timbl. Applies to everyone in this workspace."
+      >
+        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border px-4 py-3 transition-colors duration-150 ease-out hover:bg-secondary/40">
+          <span className="min-w-0">
+            <span className="block text-[13px] font-medium text-foreground">Show reminders</span>
+            <span className="block text-[12px] text-muted-foreground tabular-nums">{status}</span>
+          </span>
+          <Controller
+            control={control}
+            name="enabled"
+            render={({ field }) => (
+              <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Show reminders" />
+            )}
           />
-          <div className="space-y-1">
-            <Label htmlFor="reminders-enabled" className="text-sm font-medium">
-              Show reminder toasts
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              Occasional toasts when you open the app. Turn off to hide all
-              workspace reminders.
-            </p>
-          </div>
-        </div>
+        </label>
+      </FormRow>
 
-        {prefs.enabled ? (
-          <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border">
-            <div className="space-y-1.5">
-              <Label htmlFor="reminder-frequency" className="text-xs">
-                How often
-              </Label>
-              <Select
-                value={prefs.frequency}
-                onValueChange={(v) =>
-                  patch({
-                    frequency: v as ReminderPreferences["frequency"],
-                  })
-                }
-                disabled={pending}
-              >
-                <SelectTrigger id="reminder-frequency" className="h-9">
-                  <SelectValue>
-                    {(v) => labelOr(REMINDER_FREQUENCY_LABELS, v)}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="per-session">
-                    Each browser session
-                  </SelectItem>
-                  <SelectItem value="once-per-day">Once per day</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="reminder-max" className="text-xs">
-                Max toasts per visit
-              </Label>
-              <Select
-                value={String(prefs.maxToastsPerSession)}
-                onValueChange={(v) =>
-                  patch({ maxToastsPerSession: Number(v) })
-                }
-                disabled={pending}
-              >
-                <SelectTrigger id="reminder-max" className="h-9">
-                  <SelectValue>
-                    {(v) => {
-                      const n = Number(v)
-                      if (!n) return ""
-                      return n === 1 ? "1 toast" : `${n} toasts`
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      {prefs.enabled ? (
-        <SettingDisclosure
-          title="Reminder types"
-          summary={`${KIND_ROWS.filter((r) => prefs[r.key]).length} of ${KIND_ROWS.length} on - tune when each one fires`}
+      <fieldset
+        disabled={!enabled}
+        className={cn(
+          "min-w-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
+          !enabled && "opacity-50 [&_:disabled]:opacity-100!",
+        )}
+      >
+        <FormRow
+          className="first:pt-6"
+          title="What to remind about"
+          hint="Each line is a sample of what the reminder says. Turn one on to tune when it fires."
         >
-          <ul className="space-y-2">
-            {KIND_ROWS.map((row) => (
-              <li key={row.key}>
-                <SettingDisclosure
-                  title={row.label}
-                  summary={prefs[row.key] ? `On - ${row.description}` : "Off"}
-                >
-                <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id={`reminder-${row.key}`}
-                    checked={prefs[row.key]}
-                    disabled={pending}
-                    onCheckedChange={(v) => patch({ [row.key]: v === true })}
-                    className="mt-0.5"
-                  />
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <Label
-                      htmlFor={`reminder-${row.key}`}
-                      className="text-sm font-medium"
-                    >
-                      Show this reminder
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {row.description}
-                    </p>
-                  </div>
-                </div>
-
-                {prefs[row.key] ? (
-                  <div className="pl-7 space-y-3 border-t border-border/60 pt-3">
-                    {row.key === "approvalDue" ? (
-                      <div className="space-y-1.5 max-w-[12rem]">
-                        <Label htmlFor="approval-horizon" className="text-xs">
-                          Days before scheduled date
-                        </Label>
-                        <Input
-                          id="approval-horizon"
-                          type="number"
-                          min={1}
-                          max={14}
-                          disabled={pending}
-                          value={prefs.approvalHorizonDays}
-                          onChange={(e) =>
-                            patch({
-                              approvalHorizonDays: clampInt(
-                                Number(e.target.value) || 1,
-                                1,
-                                14,
-                              ),
-                            })
-                          }
+          <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+            {KINDS.map((kind) => {
+              const s = sample(kind.key, shown, category)
+              return (
+                <li key={kind.key}>
+                  <label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors duration-150 ease-out hover:bg-secondary/40 has-[:disabled]:cursor-default has-[:disabled]:hover:bg-transparent">
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-medium text-foreground">{kind.title}</span>
+                      <span className="mt-0.5 flex items-start gap-1.5 text-[12px] leading-snug text-muted-foreground">
+                        <Bell className="mt-[3px] size-3 shrink-0" aria-hidden />
+                        <span className="min-w-0 tabular-nums">
+                          <span className="text-foreground/80">{s.title}</span>
+                          <span aria-hidden> · </span>
+                          <span className="sr-only">, </span>
+                          {s.description}
+                        </span>
+                      </span>
+                    </span>
+                    <Controller
+                      control={control}
+                      name={kind.key}
+                      render={({ field }) => (
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          aria-label={kind.title}
+                          className="mt-0.5"
                         />
-                      </div>
-                    ) : null}
-
-                    {row.key === "overdue" ? (
-                      <div className="flex flex-wrap gap-4">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="overdue-draft"
-                            checked={prefs.overdueIncludeDraft}
-                            disabled={pending}
-                            onCheckedChange={(v) =>
-                              patch({ overdueIncludeDraft: v === true })
-                            }
-                          />
-                          <Label htmlFor="overdue-draft" className="text-xs">
-                            Draft posts
-                          </Label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="overdue-scheduled"
-                            checked={prefs.overdueIncludeScheduled}
-                            disabled={pending}
-                            onCheckedChange={(v) =>
-                              patch({ overdueIncludeScheduled: v === true })
-                            }
-                          />
-                          <Label
-                            htmlFor="overdue-scheduled"
-                            className="text-xs"
-                          >
-                            Scheduled posts
-                          </Label>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {row.key === "goesLiveSoon" ? (
-                      <div className="space-y-1.5 max-w-xs">
-                        <Label htmlFor="goes-live-window" className="text-xs">
-                          Remind when slot is
-                        </Label>
-                        <Select
-                          value={prefs.goesLiveWindow}
-                          onValueChange={(v) =>
-                            patch({
-                              goesLiveWindow:
-                                v as ReminderPreferences["goesLiveWindow"],
-                            })
-                          }
-                          disabled={pending}
-                        >
-                          <SelectTrigger id="goes-live-window" className="h-9">
-                            <SelectValue>
-                              {(v) => labelOr(GOES_LIVE_WINDOW_LABELS, v)}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="today">Today only</SelectItem>
-                            <SelectItem value="today-and-tomorrow">
-                              Today or tomorrow
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : null}
-
-                    {row.key === "silentCategory" ? (
-                      <div className="space-y-1.5 max-w-[12rem]">
-                        <Label htmlFor="silent-days" className="text-xs">
-                          Days without a post
-                        </Label>
-                        <Input
-                          id="silent-days"
-                          type="number"
-                          min={7}
-                          max={90}
-                          disabled={pending}
-                          value={prefs.silentCategoryDays}
-                          onChange={(e) =>
-                            patch({
-                              silentCategoryDays: clampInt(
-                                Number(e.target.value) || 7,
-                                7,
-                                90,
-                              ),
-                            })
-                          }
-                        />
-                      </div>
-                    ) : null}
-
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => sendTestToast(row.key)}
-                    >
-                      Send test toast
-                    </Button>
-                  </div>
-                ) : null}
-                </div>
-                </SettingDisclosure>
-              </li>
-            ))}
+                      )}
+                    />
+                  </label>
+                  <Reveal show={values[kind.key]}>
+                    <div className="px-4 pb-3 pt-1">{detail(kind.key)}</div>
+                  </Reveal>
+                </li>
+              )
+            })}
           </ul>
-        </SettingDisclosure>
-      ) : null}
+        </FormRow>
 
-      <Button size="sm" onClick={handleSave} disabled={pending}>
-        {pending ? "Saving…" : "Save"}
-      </Button>
-    </div>
+        <FormRow title="How often" hint="A few well-timed reminders get read. A pile of them gets ignored.">
+          <div className="space-y-5">
+            <div>
+              <p className="mb-2 text-[13px] font-medium text-foreground">Repeat each reminder</p>
+              <Controller
+                control={control}
+                name="frequency"
+                render={({ field }) => (
+                  <ChoiceChips label="Repeat each reminder" options={FREQUENCIES} value={field.value} onChange={field.onChange} />
+                )}
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-[13px] font-medium text-foreground">Most at once</p>
+              <Controller
+                control={control}
+                name="maxToastsPerSession"
+                render={({ field }) => (
+                  <ChoiceChips
+                    label="Most reminders at once"
+                    options={MAX_OPTIONS}
+                    value={String(field.value)}
+                    onChange={(k) => field.onChange(Number(k))}
+                  />
+                )}
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[13px] text-muted-foreground tabular-nums">
+                {activeKinds.length === 0
+                  ? "Turn on a reminder above to preview it."
+                  : `Up to ${max} per visit, in the order listed above.`}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="max-sm:h-9"
+                onClick={preview}
+                disabled={activeKinds.length === 0}
+              >
+                <Eye aria-hidden />
+                Preview
+              </Button>
+            </div>
+          </div>
+        </FormRow>
+      </fieldset>
+
+      <UnsavedBar show={isDirty} saving={saving} onDiscard={() => reset()} />
+    </form>
+  )
+}
+
+function Reveal({ show, children }: { show: boolean; children: ReactNode }) {
+  const reduced = useReducedMotion()
+  return (
+    <AnimatePresence initial={false}>
+      {show && (
+        <motion.div
+          initial={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          animate={reduced ? { opacity: 1 } : { height: "auto", opacity: 1 }}
+          exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="overflow-hidden"
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

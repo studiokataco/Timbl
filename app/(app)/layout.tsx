@@ -10,7 +10,7 @@ import { DialogsProvider } from "@/components/shared/dialogs-provider"
 import { DunningBanner } from "@/components/shared/dunning-banner"
 import { Onboarding } from "@/components/shared/onboarding"
 import { PostHogIdentify } from "@/components/shared/posthog-identify"
-import { ProductTourAutostart } from "@/components/tour/product-tour"
+import { ProductTourRouteGuard } from "@/components/tour/product-tour"
 import { PlanFeaturesProvider } from "@/components/shared/plan-features-provider"
 import { QueryProvider } from "@/components/shared/query-provider"
 import { ShortcutsDialog } from "@/components/shared/shortcuts-dialog"
@@ -25,7 +25,6 @@ import { resolveImpersonation } from "@/lib/auth/impersonation"
 import {
   getCurrentOrgId,
   getCurrentOrganisation,
-  getCurrentUser,
   requireActiveOrg,
 } from "@/lib/auth/server-helpers"
 import { isOnboardingComplete } from "@/lib/onboarding/state"
@@ -33,6 +32,7 @@ import { touchWorkspaceActivity } from "@/lib/org/activity"
 import { getOrgPlanFeatures } from "@/lib/plans/gate"
 import { getWorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import { getBrandSwitcherData } from "@/lib/queries/brands.server"
+import { getCurrentUserProfile } from "@/lib/identity/profile.server"
 
 export const metadata = { robots: { index: false, follow: false } }
 
@@ -58,7 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
   const [referenceData, user, org, planFeatures, impersonation, workspaces, brands] = await Promise.all([
     fetchReferenceData(),
-    getCurrentUser(),
+    getCurrentUserProfile(),
     getCurrentOrganisation(),
     getOrgPlanFeatures(orgId),
     resolveImpersonation(),
@@ -77,7 +77,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="flex flex-1 min-h-0">
               <Sidebar workspaces={workspaces} brands={brands} />
               <div className="flex flex-col flex-1 min-w-0 overflow-y-auto pb-[var(--ask-ai-clearance)]">
-                <TopBar userName={user.name} workspaceName={org.name} workspaces={workspaces} brands={brands} />
+                <TopBar user={user} workspaceName={org.name} workspaces={workspaces} brands={brands} />
                 {children}
               </div>
             </div>
@@ -88,7 +88,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <AgentDrawer key={orgId} />
             <AgentCommandModal key={orgId} />
             <AskAiButton />
-            <ProductTourAutostart enabled />
+            <ProductTourRouteGuard />
             <WorkspaceReminders />
             <PostHogIdentify
               userId={user.id}

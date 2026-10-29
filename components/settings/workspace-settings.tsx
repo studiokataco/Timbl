@@ -3,158 +3,180 @@
 import { useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Compass, RotateCcw } from "lucide-react"
+import { Controller, useForm, useWatch } from "react-hook-form"
+import { Compass, Loader2, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
+import { FormGroupTitle, FormRow } from "@/components/shared/form-row"
+import { UnsavedBar } from "@/components/shared/unsaved-bar"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { SettingDisclosure } from "@/components/settings/setting-disclosure"
-import { resetOnboarding } from "@/lib/actions/onboarding"
+import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { ColorSwatches } from "@/components/settings/color-swatches"
+import { IdentityImageField } from "@/components/settings/identity-image-field"
+import { startProductTour } from "@/components/tour/product-tour"
 import { setDevOrg } from "@/lib/actions/dev-org"
-import {
-  resetProductTourSeen,
-  startProductTour,
-} from "@/components/tour/product-tour"
+import { updateWorkspaceIdentity } from "@/lib/actions/identity"
+import { resetOnboarding } from "@/lib/actions/onboarding"
 import type { DevOrgMode } from "@/lib/auth/dev-session"
+import { parseInto } from "@/lib/forms/zod-form"
+import type { WorkspaceIdentity } from "@/lib/identity/profile.server"
+import {
+  workspaceIdentityFormSchema,
+  type WorkspaceIdentityForm,
+} from "@/lib/schemas/identity"
 
 export function WorkspaceSettings({
+  workspace,
+  canEdit,
   completedAt,
   industry,
   devShim,
   devOrgMode,
 }: {
+  workspace: WorkspaceIdentity
+  canEdit: boolean
   completedAt?: string
   industry?: string
-  /* True in emulator dev mode - gates the demo-workspace switch, which is
-   * meaningless once real auth (Phase 7) provides the org. */
   devShim: boolean
   devOrgMode: DevOrgMode
 }) {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
-  const [switching, startSwitching] = useTransition()
+  const [saving, startSave] = useTransition()
+  const [rerunning, startRerun] = useTransition()
+  const [switching, startSwitch] = useTransition()
+  const form = useForm<WorkspaceIdentityForm>({
+    defaultValues: { name: workspace.name, color: workspace.color },
+  })
+  const { isDirty, errors } = form.formState
+  const [name, color] = useWatch({ control: form.control, name: ["name", "color"] })
 
-  function handleRerun() {
-    startTransition(async () => {
-      const result = await resetOnboarding()
-      if (!result.ok) {
-        toast.error(result.error ?? "Could not start re-run")
+  const onSubmit = form.handleSubmit((raw) => {
+    const values = parseInto(workspaceIdentityFormSchema, raw, form.setError)
+    if (!values) return
+    startSave(async () => {
+      const res = await updateWorkspaceIdentity(values)
+      if (!res.ok) {
+        toast.error("Couldn't save", { description: res.error })
+        return
+      }
+      form.reset(values)
+      toast.success("Workspace updated")
+    })
+  })
+
+  function rerunSetup() {
+    startRerun(async () => {
+      const res = await resetOnboarding()
+      if (!res.ok) {
+        toast.error(res.error ?? "Couldn't start the setup wizard")
         return
       }
       router.push("/onboarding")
     })
   }
 
-  function handleDemoToggle(checked: boolean) {
-    const mode: DevOrgMode = checked ? "demo" : "tenant"
-    startSwitching(async () => {
-      const result = await setDevOrg({ mode })
-      if (!result.ok) {
-        toast.error(result.error ?? "Could not switch workspace")
+  function toggleDemo(on: boolean) {
+    startSwitch(async () => {
+      const res = await setDevOrg({ mode: on ? "demo" : "tenant" })
+      if (!res.ok) {
+        toast.error(res.error ?? "Couldn't switch workspace")
         return
       }
-      toast.success(
-        checked
-          ? "Switched to the demo workspace"
-          : "Switched to your workspace",
-      )
-      /* Re-resolves the (app) layout against the new org. If the tenant
-       * org hasn't completed onboarding yet, the layout redirects to the
-       * wizard. */
+      toast.success(on ? "Switched to the demo workspace" : "Switched to your workspace")
       router.refresh()
     })
   }
 
-  const setupSummary = completedAt
+  const setupStatus = completedAt
     ? `Completed ${new Date(completedAt).toLocaleDateString("en-GB", {
         day: "numeric",
         month: "short",
         year: "numeric",
-      })}${
-        industry ? ` · ${industry}` : ""
-      }`
-    : "Not completed yet"
+      })}${industry ? ` for ${industry}` : ""}.`
+    : "Not completed yet."
 
   return (
-    <div className="space-y-3">
+    <form onSubmit={onSubmit} noValidate>
+      <FormRow
+        title="Logo"
+        hint={canEdit ? "Shown in the workspace switcher and on invites. Saves as soon as you pick one." : "Only admins can change the logo."}
+      >
+        <IdentityImageField
+          target={{ kind: "workspace" }}
+          name={name || workspace.name}
+          src={workspace.logoUrl}
+          color={color}
+          disabled={!canEdit}
+        />
+      </FormRow>
+      <FormRow title="Name" hint="Your agency or company. Brands live inside it." htmlFor="workspace-name">
+        <Input
+          id="workspace-name"
+          disabled={!canEdit}
+          aria-invalid={!!errors.name}
+          className="max-w-sm"
+          {...form.register("name")}
+        />
+        {errors.name ? (
+          <p className="mt-1.5 text-[12px] text-rose-600 dark:text-rose-400">{errors.name.message}</p>
+        ) : null}
+      </FormRow>
+      <FormRow title="Accent" hint="Tints the initials when there's no logo.">
+        <Controller
+          control={form.control}
+          name="color"
+          render={({ field }) => (
+            <ColorSwatches
+              label="Workspace accent"
+              value={field.value}
+              onChange={field.onChange}
+              disabled={!canEdit}
+            />
+          )}
+        />
+      </FormRow>
+
+      <FormGroupTitle>Setup</FormGroupTitle>
+      <FormRow title="Setup wizard" hint={setupStatus}>
+        <p className="max-w-[60ch] text-[13px] text-muted-foreground">
+          Re-running adds newly suggested categories without touching yours, and re-tailors agents to the profile you confirm.
+        </p>
+        <Button type="button" variant="outline" size="sm" className="mt-3" onClick={rerunSetup} disabled={rerunning}>
+          {rerunning ? <Loader2 className="animate-spin" aria-hidden /> : <RotateCcw aria-hidden />}
+          Re-run setup
+        </Button>
+      </FormRow>
+      <FormRow title="Product tour" hint="A two-minute walk through the calendar, posts, studio and settings.">
+        <Button type="button" variant="outline" size="sm" onClick={() => startProductTour()}>
+          <Compass aria-hidden />
+          Take the tour
+        </Button>
+      </FormRow>
       {devShim ? (
-        <SettingDisclosure
-          title="Demo workspace mode"
-          summary={devOrgMode === "demo" ? "On - demo workspace" : "Off - your workspace"}
-        >
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="demo-workspace-mode"
+        <FormRow title="Demo workspace" hint="Emulator only. Swap to the fully seeded demo for walkthroughs.">
+          <label className="flex max-w-md items-center justify-between gap-4 rounded-lg border border-border px-3 py-2.5">
+            <span>
+              <span className="block text-[13px] font-medium text-foreground">Use the demo workspace</span>
+              <span className="block text-[12px] text-muted-foreground">
+                Or open the{" "}
+                <Link href="/welcome" className="underline underline-offset-2 hover:text-foreground">
+                  workspace chooser
+                </Link>
+                .
+              </span>
+            </span>
+            <Switch
               checked={devOrgMode === "demo"}
               disabled={switching}
-              onCheckedChange={(v) => handleDemoToggle(v === true)}
-              className="mt-0.5"
+              onCheckedChange={toggleDemo}
+              aria-label="Use the demo workspace"
             />
-            <div className="space-y-1">
-              <Label htmlFor="demo-workspace-mode" className="text-sm font-medium">
-                Use the demo workspace
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                On - load the fully-seeded Timbl demo workspace (its agents,
-                categories, and awareness days) for demos. Off - work in your
-                own wizard-built workspace. Emulator dev only.
-              </p>
-              <Link
-                href="/welcome"
-                className="inline-block text-xs font-medium text-foreground underline underline-offset-2"
-              >
-                Open the workspace chooser
-              </Link>
-            </div>
-          </div>
-        </SettingDisclosure>
+          </label>
+        </FormRow>
       ) : null}
 
-      <SettingDisclosure title="Setup wizard" summary={setupSummary}>
-        <p className="text-xs text-muted-foreground">
-          Re-running the wizard adds any newly-suggested categories without
-          touching ones you already have, and re-tailors your agents to the
-          profile you confirm.
-        </p>
-        <div className="mt-3">
-          <Button size="sm" variant="outline" onClick={handleRerun} disabled={pending}>
-            <RotateCcw className="size-4" />
-            {pending ? "Opening…" : "Re-run setup"}
-          </Button>
-        </div>
-      </SettingDisclosure>
-
-      <SettingDisclosure
-        title="Product tour"
-        summary="Guided walkthrough - replay any time"
-      >
-        <p className="text-xs text-muted-foreground">
-          A guided walkthrough of the calendar, posts, kanban, studio, templates,
-          and settings. New users see it once on first visit; replay it any time
-          to brief teammates.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => startProductTour()}
-          >
-            <Compass className="size-4" />
-            Take the tour
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              resetProductTourSeen()
-              toast.success("Tour will auto-play on next visit")
-            }}
-          >
-            Reset auto-play
-          </Button>
-        </div>
-      </SettingDisclosure>
-    </div>
+      <UnsavedBar show={isDirty} saving={saving} onDiscard={() => form.reset()} />
+    </form>
   )
 }

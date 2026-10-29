@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { format, parseISO, startOfISOWeek, getISOWeek } from "date-fns"
 import { CalendarRange } from "lucide-react"
@@ -75,12 +74,6 @@ export function CampaignTimeline({ campaign, posts, categories, users, orgChanne
 
   return (
     <>
-      <p className="text-xs text-muted-foreground mb-4">
-        Posts use workspace categories shared across campaigns.{" "}
-        <Link href="/settings/categories" className="underline hover:text-foreground">
-          Manage categories
-        </Link>
-      </p>
       <div className="space-y-6">
         {weekGroups.map((week) => (
           <div key={week.weekLabel}>

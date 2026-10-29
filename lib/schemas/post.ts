@@ -126,6 +126,8 @@ export const postSchema = audit.extend({
   coverAssetId: z.string().optional(),
 
   priority: postPriority.optional(),
+  /* Manual position within a kanban column. Unranked posts fall back to their date. */
+  boardRank: z.number().optional(),
   timeEstimateMinutes: z.number().int().nonnegative().optional(),
   humanId: z.string().optional(),
   relatedPostIds: z.array(z.string()).optional(),

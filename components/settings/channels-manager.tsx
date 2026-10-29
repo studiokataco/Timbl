@@ -2,11 +2,19 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, Check, Copy, Link2, Settings2, Unplug } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { ChevronRight, KeyRound, Loader2, Settings2 } from "lucide-react"
 import { toast } from "sonner"
+import { z } from "zod"
 
-import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { ChannelGlyph } from "@/components/shared/channel-glyph"
+import { ListPanel } from "@/components/shared/list-panel"
+import {
+  ConnectionRow,
+  CopyField,
+  LogoTile,
+} from "@/components/settings/integrations-bits"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -15,10 +23,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { setPlatformOauthApp } from "@/lib/actions/oauth-apps"
 import { disconnectAccount } from "@/lib/actions/social-accounts"
+import { parseInto } from "@/lib/forms/zod-form"
+import { CHANNEL_LABELS } from "@/lib/labels/enums"
 import { cn } from "@/lib/utils"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { ChannelKey } from "@/lib/schemas/_shared"
@@ -26,77 +36,69 @@ import type { SocialAccountPublic } from "@/lib/schemas"
 
 type ChannelDef = {
   key: ChannelKey
-  label: string
-  /* Friendly name shown inside the setup dialog - Meta shares one app
-   * pair across Facebook + Instagram, so the dialog labels it accordingly. */
   appLabel: string
-  /* https://...console URL surfaced as a help link in the setup dialog. */
+  consoleName: string
   consoleUrl: string
-  /* One-line setup hint describing what to enable in the console. */
   consoleHint: string
-  /* Optional note shown on the card explaining how the connect flow behaves
-   * (e.g. Instagram authenticates through Facebook). */
   connectHint?: string
-  /* Numbered, channel-specific console steps shown in the setup dialog. */
-  setupSteps?: string[]
+  setupSteps: string[]
 }
 
 const CHANNELS: ChannelDef[] = [
   {
     key: "linkedin",
-    label: "LinkedIn",
     appLabel: "LinkedIn app",
+    consoleName: "LinkedIn developer console",
     consoleUrl: "https://www.linkedin.com/developers/apps",
-    consoleHint: "Create an app, enable Sign In with LinkedIn + Share on LinkedIn.",
+    consoleHint: "Create an app and turn on Sign In with LinkedIn and Share on LinkedIn.",
     setupSteps: [
-      "Open the LinkedIn developers console and create a new app linked to a Company Page.",
+      "Open the LinkedIn developer console and create a new app linked to a Company Page.",
       "On the Products tab, request Sign In with LinkedIn using OpenID Connect and Share on LinkedIn.",
-      "On the Auth tab, paste the redirect URI above into Authorized redirect URLs for your app.",
+      "On the Auth tab, paste the redirect URI into Authorized redirect URLs for your app.",
       "Copy the Client ID and Client Secret from the Auth tab.",
     ],
   },
   {
     key: "x",
-    label: "X",
     appLabel: "X app",
+    consoleName: "X developer portal",
     consoleUrl: "https://developer.x.com/en/portal/dashboard",
-    consoleHint: "Create a project, enable OAuth 2.0 with read+write+offline scopes.",
+    consoleHint: "Create a project and turn on OAuth 2.0 with read, write and offline access.",
     setupSteps: [
-      "Open the developer portal and create a project + app (free tier is fine).",
+      "Open the developer portal and create a project and app (the free tier is fine).",
       "Under User authentication settings, set App permissions to Read and write.",
       "Set Type of App to Web App and Confidential client.",
-      "Paste the redirect URI above into Callback URI / Redirect URL.",
-      "Add any website URL into Website URL (X requires this even if unused).",
-      "Save, then on the Keys and tokens tab, copy the OAuth 2.0 Client ID and Client Secret below.",
+      "Paste the redirect URI into Callback URI / Redirect URL.",
+      "Add any website URL into Website URL. X requires it even if unused.",
+      "Save, then copy the OAuth 2.0 Client ID and Client Secret from the Keys and tokens tab.",
     ],
   },
   {
     key: "facebook",
-    label: "Facebook",
-    appLabel: "Meta app (Facebook + Instagram)",
+    appLabel: "Meta app (Facebook and Instagram)",
+    consoleName: "Meta developer console",
     consoleUrl: "https://developers.facebook.com/apps",
-    consoleHint: "Create a Business app; the same credentials power Facebook + Instagram.",
+    consoleHint: "Create a Business app. The same credentials power Facebook and Instagram.",
     setupSteps: [
-      "Open the Meta developers console and create a Business-type app.",
+      "Open the Meta developer console and create a Business type app.",
       "Add the Facebook Login for Business product.",
-      "Under Settings > Basic, paste the redirect URI above into Valid OAuth Redirect URIs and App Domains.",
-      "Request pages_show_list, pages_manage_posts, and pages_read_engagement permissions.",
+      "Under Settings > Basic, paste the redirect URI into Valid OAuth Redirect URIs and App Domains.",
+      "Request the pages_show_list, pages_manage_posts and pages_read_engagement permissions.",
       "Copy the App ID (Client ID) and App Secret (Client Secret) from Settings > Basic.",
     ],
   },
   {
     key: "instagram",
-    label: "Instagram",
-    appLabel: "Meta app (Facebook + Instagram)",
+    appLabel: "Meta app (Facebook and Instagram)",
+    consoleName: "Meta developer console",
     consoleUrl: "https://developers.facebook.com/apps",
-    consoleHint: "Create a Business app; the same credentials power Facebook + Instagram.",
-    connectHint:
-      "Connects via Facebook - Use Instagram Business account linked to your Facebook Page.",
+    consoleHint: "Create a Business app. The same credentials power Facebook and Instagram.",
+    connectHint: "Connects through your Facebook Page",
     setupSteps: [
-      "Reuse the Meta app you set up for Facebook (same App ID + Secret).",
-      "Confirm the Instagram Business account is linked to a Facebook Page you admin.",
-      "Add instagram_basic, instagram_content_publish, pages_show_list, and pages_read_engagement permissions.",
-      "Paste the same redirect URI above into Valid OAuth Redirect URIs.",
+      "Reuse the Meta app you set up for Facebook (same App ID and Secret).",
+      "Make sure the Instagram business account is linked to a Facebook Page you manage.",
+      "Add the instagram_basic, instagram_content_publish, pages_show_list and pages_read_engagement permissions.",
+      "Paste the same redirect URI into Valid OAuth Redirect URIs.",
     ],
   },
 ]
@@ -108,6 +110,8 @@ type Props = {
   configuredChannels: ChannelKey[]
   redirectUriByChannel: Record<ChannelKey, string>
   isAdmin: boolean
+  brandId: string
+  brandName: string
 }
 
 export function ChannelsManager({
@@ -115,266 +119,227 @@ export function ChannelsManager({
   configuredChannels,
   redirectUriByChannel,
   isAdmin,
+  brandId,
+  brandName,
 }: Props) {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
-  const [busyId, setBusyId] = useState<string | null>(null)
+  const [setupKey, setSetupKey] = useState<ChannelKey | null>(null)
+  const [setupOpen, setSetupOpen] = useState(false)
   const configured = new Set(configuredChannels)
+  const setupChannel = CHANNELS.find((c) => c.key === setupKey) ?? null
 
-  function onDisconnect(id: string) {
-    setBusyId(id)
-    startTransition(async () => {
-      const res = await disconnectAccount(id)
-      if (res.ok) toast.success("Channel disconnected")
-      else toast.error(res.error ?? "Could not disconnect")
-      setBusyId(null)
-      router.refresh()
-    })
+  function openSetup(key: ChannelKey) {
+    setSetupKey(key)
+    setSetupOpen(true)
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {CHANNELS.map((ch) => {
-        const linked = accounts.filter((a) => a.channel === ch.key)
-        const isConfigured = configured.has(ch.key)
-        return (
-          <div key={ch.key} className="rounded-xl border border-border bg-canvas p-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-medium">{ch.label}</h2>
-              <div className="flex items-center gap-2">
-                {isAdmin && isConfigured && (
-                  <SetupDialog
-                    channel={ch}
-                    redirectUri={redirectUriByChannel[ch.key]}
-                    isConfigured
-                    onSaved={() => router.refresh()}
-                  />
-                )}
-                {isConfigured ? (
-                  <a
-                    href={`/api/social/${ch.key}/connect`}
-                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                  >
-                    <Link2 aria-hidden />
-                    {linked.length > 0 ? "Connect another" : "Connect"}
-                  </a>
-                ) : isAdmin ? (
-                  <SetupDialog
-                    channel={ch}
-                    redirectUri={redirectUriByChannel[ch.key]}
-                    isConfigured={false}
-                    onSaved={() => router.refresh()}
-                  />
-                ) : null}
-              </div>
-            </div>
+    <>
+      <ListPanel>
+        <ul className="divide-y divide-border">
+          {CHANNELS.map((ch) => {
+            const label = CHANNEL_LABELS[ch.key]
+            const isConfigured = configured.has(ch.key)
+            return (
+              <ConnectionRow
+                key={ch.key}
+                name={label}
+                leading={
+                  <LogoTile className={cn(ch.key === "x" && "dark:[&>*]:invert")}>
+                    <ChannelGlyph channel={ch.key} />
+                  </LogoTile>
+                }
+                accounts={accounts.filter((a) => a.channel === ch.key)}
+                connectHref={
+                  isConfigured
+                    ? `/api/social/${ch.key}/connect?brand=${encodeURIComponent(brandId)}`
+                    : null
+                }
+                idleHint={ch.connectHint}
+                blockedHint={isAdmin ? "Add app credentials to turn it on" : "An admin needs to set it up"}
+                blockedAction={
+                  isAdmin ? (
+                    <Button variant="outline" className="h-9 px-3 text-[13px]" onClick={() => openSetup(ch.key)}>
+                      <Settings2 aria-hidden />
+                      Set up
+                    </Button>
+                  ) : undefined
+                }
+                menuExtras={
+                  isAdmin && isConfigured ? (
+                    <DropdownMenuItem className="gap-2 py-1.5 text-[13px]" onClick={() => openSetup(ch.key)}>
+                      <KeyRound aria-hidden />
+                      App credentials
+                    </DropdownMenuItem>
+                  ) : undefined
+                }
+                disconnect={disconnectAccount}
+                disconnectNote={`${brandName} stops publishing to this ${label} account until you connect it again.`}
+              />
+            )
+          })}
+        </ul>
+      </ListPanel>
 
-            {!isConfigured && (
-              <p className="mt-3 text-xs text-muted-foreground">
-                {isAdmin
-                  ? "Add this channel's OAuth credentials once to enable connecting."
-                  : "Not yet set up. Ask an admin to add OAuth credentials."}
-              </p>
-            )}
-
-            {isConfigured && linked.length === 0 && (
-              <p className="mt-3 text-xs text-muted-foreground">Not connected.</p>
-            )}
-
-            {ch.connectHint && linked.length === 0 && (
-              <p className="mt-2 text-[11px] text-muted-foreground/80">{ch.connectHint}</p>
-            )}
-
-            {linked.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {linked.map((a) => (
-                  <li
-                    key={a.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border/60 px-3 py-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm">{a.displayName}</p>
-                      {a.status === "needs_reauth" ? (
-                        <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600">
-                          <AlertTriangle aria-hidden className="size-3" />
-                          Reconnect needed
-                        </span>
-                      ) : (
-                        <Badge variant="secondary" className="mt-0.5 text-[10px]">
-                          Active
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {a.status === "needs_reauth" && (
-                        <a
-                          href={`/api/social/${ch.key}/connect`}
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                        >
-                          Re-auth
-                        </a>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={pending && busyId === a.id}
-                        onClick={() => onDisconnect(a.id)}
-                      >
-                        <Unplug aria-hidden />
-                        Disconnect
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )
-      })}
-    </div>
+      {setupChannel ? (
+        <SetupDialog
+          key={setupChannel.key}
+          channel={setupChannel}
+          redirectUri={redirectUriByChannel[setupChannel.key]}
+          isConfigured={configured.has(setupChannel.key)}
+          open={setupOpen}
+          onClose={() => setSetupOpen(false)}
+          onSaved={() => {
+            setSetupOpen(false)
+            router.refresh()
+          }}
+        />
+      ) : null}
+    </>
   )
 }
+
+const credentialsSchema = z.object({
+  clientId: z.string().trim().min(1, "Enter the client ID"),
+  clientSecret: z.string().trim().min(1, "Enter the client secret"),
+})
+type Credentials = z.infer<typeof credentialsSchema>
 
 function SetupDialog({
   channel,
   redirectUri,
   isConfigured,
+  open,
+  onClose,
   onSaved,
 }: {
   channel: ChannelDef
   redirectUri: string
   isConfigured: boolean
+  open: boolean
+  onClose: () => void
   onSaved: () => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [clientId, setClientId] = useState("")
-  const [clientSecret, setClientSecret] = useState("")
-  const [copied, setCopied] = useState(false)
   const [saving, startSaving] = useTransition()
+  const form = useForm<Credentials>({ defaultValues: { clientId: "", clientSecret: "" } })
+  const { errors } = form.formState
+  const label = CHANNEL_LABELS[channel.key]
+  const idField = `${channel.key}-client-id`
+  const secretField = `${channel.key}-client-secret`
 
-  function onCopyRedirect() {
-    navigator.clipboard.writeText(redirectUri).then(() => {
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
-    })
+  function close() {
+    if (saving) return
+    form.reset()
+    onClose()
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  const onSubmit = form.handleSubmit((raw) => {
+    const values = parseInto(credentialsSchema, raw, form.setError)
+    if (!values) return
     startSaving(async () => {
-      const res = await setPlatformOauthApp(channel.key, clientId, clientSecret)
-      if (res.ok) {
-        toast.success(`${channel.label} is ready to connect`)
-        setClientId("")
-        setClientSecret("")
-        setOpen(false)
-        onSaved()
-      } else {
+      const res = await setPlatformOauthApp(channel.key, values.clientId, values.clientSecret)
+      if (!res.ok) {
         toast.error(res.error ?? "Couldn't save credentials")
+        return
       }
+      toast.success(`${label} is ready to connect`)
+      form.reset()
+      onSaved()
     })
-  }
-
-  const formId = `${channel.key}-oauth-setup`
+  })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button
-        variant={isConfigured ? "ghost" : "outline"}
-        size="sm"
-        onClick={() => setOpen(true)}
-      >
-        <Settings2 aria-hidden />
-        {isConfigured ? "Edit" : "Set up"}
-      </Button>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={(next) => !next && close()}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isConfigured ? "Edit" : "Set up"} {channel.appLabel}</DialogTitle>
-          <DialogDescription>
-            One-time setup. Once saved, anyone in your org can click Connect.
+          <DialogTitle>
+            {isConfigured ? "Update" : "Set up"} {channel.appLabel}
+          </DialogTitle>
+          <DialogDescription className="text-[13px]">
+            An admin does this once. After that, anyone in the workspace can connect {label}.
           </DialogDescription>
         </DialogHeader>
-        <form id={formId} onSubmit={onSubmit} className="grid gap-4">
-          <div className="grid gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Redirect URI
-            </Label>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-              <code className="block min-w-0 flex-1 break-all rounded bg-background px-2 py-1.5 text-[11px]">
-                {redirectUri}
-              </code>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 sm:self-start"
-                onClick={onCopyRedirect}
-              >
-                {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
-                {copied ? "Copied" : "Copy"}
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Paste this exactly into your{" "}
+
+        <form id={`${channel.key}-oauth-setup`} onSubmit={onSubmit} noValidate className="grid gap-5">
+          <div className="grid gap-2">
+            <p className="text-[13px] font-medium text-foreground">Redirect URI</p>
+            <CopyField value={redirectUri} label="Copy redirect URI" />
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
+              Paste it exactly into the{" "}
               <a
                 href={channel.consoleUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="underline underline-offset-2"
+                className="font-medium text-foreground underline underline-offset-2"
               >
-                {channel.appLabel.includes("Meta") ? "Meta" : channel.label} developer console
+                {channel.consoleName}
               </a>{" "}
               as the OAuth redirect URL. {channel.consoleHint}
             </p>
           </div>
 
-          {channel.setupSteps && channel.setupSteps.length > 0 && (
-            <div className="grid gap-2 rounded-lg border border-border bg-muted/20 p-3">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                Where to find these
-              </Label>
-              <ol className="ml-4 list-decimal space-y-1 text-[11px] leading-relaxed text-muted-foreground">
-                {channel.setupSteps.map((step, i) => (
-                  <li key={i}>{step}</li>
-                ))}
-              </ol>
-            </div>
-          )}
+          <details className="group rounded-lg bg-secondary/50">
+            <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-lg px-3 text-[13px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                aria-hidden
+                className="size-3.5 text-muted-foreground transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none"
+              />
+              Where to find these
+            </summary>
+            <ol className="ml-8 list-decimal space-y-1.5 pb-3 pr-3 text-[12px] leading-relaxed text-muted-foreground">
+              {channel.setupSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </details>
 
-          <div className="grid gap-2">
-            <Label htmlFor={`${channel.key}-client-id`}>Client ID</Label>
+          <div className="grid gap-1.5">
+            <label htmlFor={idField} className="text-[13px] font-medium text-foreground">
+              Client ID
+            </label>
             <Input
-              id={`${channel.key}-client-id`}
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              placeholder={isConfigured ? "Leave blank to keep current" : ""}
+              id={idField}
               autoComplete="off"
-              required={!isConfigured}
+              aria-invalid={!!errors.clientId}
+              className="h-9"
+              {...form.register("clientId")}
             />
+            {errors.clientId ? (
+              <p className="text-[12px] text-rose-600 dark:text-rose-400">{errors.clientId.message}</p>
+            ) : null}
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor={`${channel.key}-client-secret`}>Client secret</Label>
+          <div className="grid gap-1.5">
+            <label htmlFor={secretField} className="text-[13px] font-medium text-foreground">
+              Client secret
+            </label>
             <Input
-              id={`${channel.key}-client-secret`}
+              id={secretField}
               type="password"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.target.value)}
-              placeholder={isConfigured ? "Leave blank to keep current" : ""}
               autoComplete="off"
-              required={!isConfigured}
+              aria-invalid={!!errors.clientSecret}
+              className="h-9"
+              {...form.register("clientSecret")}
             />
-            <p className="text-[11px] text-muted-foreground">
-              Stored AES-256-GCM encrypted in Firestore. Never logged or returned to the browser.
-            </p>
+            {errors.clientSecret ? (
+              <p className="text-[12px] text-rose-600 dark:text-rose-400">{errors.clientSecret.message}</p>
+            ) : (
+              <p className="text-[12px] text-muted-foreground">
+                {isConfigured
+                  ? "Enter both values to replace the saved pair. Stored encrypted and never shown again."
+                  : "Stored encrypted and never shown again."}
+              </p>
+            )}
           </div>
         </form>
+
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button type="button" variant="ghost" className="h-9" onClick={close} disabled={saving}>
             Cancel
           </Button>
-          <Button type="submit" form={formId} disabled={saving}>
-            {saving ? "Saving…" : "Save"}
+          <Button type="submit" form={`${channel.key}-oauth-setup`} className="h-9" disabled={saving}>
+            {saving && <Loader2 className="animate-spin" aria-hidden />}
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>

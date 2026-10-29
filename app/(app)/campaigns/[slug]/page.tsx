@@ -90,7 +90,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <div className="flex items-center gap-6">
               <div className="flex-1 max-w-sm space-y-2">
                 <div className="flex justify-between text-caption text-muted-foreground">
-                  <span>{posts.length} posts</span>
+                  <span>{posts.length} {posts.length === 1 ? "post" : "posts"}</span>
                   <span>{pct}% ready</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-secondary overflow-hidden">

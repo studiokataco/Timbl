@@ -10,13 +10,13 @@ import type { ChannelKey } from "@/lib/schemas/_shared"
 import type { SocialAccountPublic } from "@/lib/schemas"
 
 const ERRORS: Record<string, string> = {
-  plan: "You've reached your plan's connected-channel limit.",
-  state: "Connection expired or was tampered with. Try again.",
+  plan: "This brand has reached its plan's limit for connected accounts.",
+  state: "The connection expired before it finished. Try again.",
   callback: "Couldn't finish connecting. Try again.",
   connect: "Couldn't start the connection. Try again.",
-  not_configured: "Set up this channel's OAuth credentials first.",
-  oauth: "The provider didn't return an authorization code.",
-  unknown_channel: "Unknown channel.",
+  not_configured: "Add this platform's app credentials first.",
+  oauth: "The platform didn't send back an approval. Try again.",
+  unknown_channel: "That platform isn't supported.",
 }
 
 export function ChannelsClient({
@@ -24,11 +24,15 @@ export function ChannelsClient({
   configuredChannels,
   redirectUriByChannel,
   isAdmin,
+  brandId,
+  brandName,
 }: {
   accounts: WithId<SocialAccountPublic>[]
   configuredChannels: ChannelKey[]
   redirectUriByChannel: Record<ChannelKey, string>
   isAdmin: boolean
+  brandId: string
+  brandName: string
 }) {
   const params = useSearchParams()
 
@@ -39,7 +43,7 @@ export function ChannelsClient({
       toast.error(ERRORS[error] ?? "Something went wrong.", {
         description: detail ?? undefined,
       })
-    } else if (params.get("connected")) toast.success("Channel connected")
+    } else if (params.get("connected")) toast.success("Account connected")
   }, [params])
 
   return (
@@ -48,6 +52,8 @@ export function ChannelsClient({
       configuredChannels={configuredChannels}
       redirectUriByChannel={redirectUriByChannel}
       isAdmin={isAdmin}
+      brandId={brandId}
+      brandName={brandName}
     />
   )
 }

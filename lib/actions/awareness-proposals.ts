@@ -9,6 +9,7 @@ import {
   orgAwarenessProposalsPath,
 } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
+import { awarenessImportance } from "@/lib/schemas/awarenessDay"
 
 /*
  * Server actions for the awareness-day proposals queue.
@@ -16,7 +17,8 @@ import { snapToData, type WithId } from "@/lib/firebase/serialize"
  * - listProposals: returns proposals for the current org, default
  *   filtered to status="proposed". Newest first by createdAt.
  * - acceptProposal: copies the proposal into the official global
- *   awarenessDays collection, then marks the proposal accepted.
+ *   awarenessDays collection with the priority the reviewer picked,
+ *   then marks the proposal accepted. The agent never sets priority.
  * - rejectProposal: marks the proposal rejected (kept for audit).
  */
 
@@ -29,7 +31,6 @@ export interface AwarenessProposal {
   name: string
   description: string | null
   sourceUrls: string[]
-  importance: "low" | "medium" | "high"
   recurringPattern: "annual" | "weekly" | "fixed-date" | "custom"
   proposed: boolean
   status: AwarenessProposalStatus
@@ -59,6 +60,7 @@ export async function listProposals(
 }
 
 const idSchema = z.object({ id: z.string().min(1) })
+const acceptSchema = idSchema.extend({ importance: awarenessImportance })
 
 type ActionResult =
   | { ok: true; id?: string }
@@ -67,7 +69,7 @@ type ActionResult =
 export async function acceptProposal(
   input: unknown,
 ): Promise<ActionResult> {
-  const parsed = idSchema.safeParse(input)
+  const parsed = acceptSchema.safeParse(input)
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" }
   }
@@ -96,7 +98,7 @@ export async function acceptProposal(
     name: data.name,
     description: data.description ?? undefined,
     sourceUrl: data.sourceUrls?.[0] ?? undefined,
-    importance: data.importance ?? "medium",
+    importance: parsed.data.importance,
     recurringPattern: data.recurringPattern ?? "annual",
     createdAt: now,
     updatedAt: now,

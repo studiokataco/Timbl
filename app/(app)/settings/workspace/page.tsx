@@ -1,42 +1,35 @@
 export const dynamic = "force-dynamic"
 
+import { SettingsPage } from "@/components/settings/settings-page"
 import { WorkspaceSettings } from "@/components/settings/workspace-settings"
-import { SettingsSection } from "@/components/settings/settings-section"
 import { getDevOrgMode } from "@/lib/actions/dev-org"
 import { IS_DEV_SHIM } from "@/lib/auth/dev-session"
 import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { getCurrentUserProfile, getCurrentWorkspaceIdentity } from "@/lib/identity/profile.server"
 import { getOnboardingState } from "@/lib/onboarding/state"
-
-import { BrandWizardClient } from "./brand-client"
 
 export default async function SettingsWorkspacePage() {
   const orgId = await getCurrentOrgId()
-  const [state, devOrgMode] = await Promise.all([
+  const [state, devOrgMode, workspace, profile] = await Promise.all([
     getOnboardingState(orgId),
     getDevOrgMode(),
+    getCurrentWorkspaceIdentity(),
+    getCurrentUserProfile(),
   ])
 
   return (
-    <div className="px-4 sm:px-6 pt-4 pb-24 flex-1">
-      <SettingsSection
-        title="Setup"
-        description="Re-run the onboarding wizard, replay the product tour, or switch workspaces."
-        isFirst
-      >
-        <WorkspaceSettings
-          completedAt={state.completedAt}
-          industry={state.profile?.industry}
-          devShim={IS_DEV_SHIM}
-          devOrgMode={devOrgMode}
-        />
-      </SettingsSection>
-
-      <SettingsSection
-        title="Brand"
-        description="Teach the AI your brand voice, audience, channels, and posting cadence."
-      >
-        <BrandWizardClient />
-      </SettingsSection>
-    </div>
+    <SettingsPage
+      title="Workspace"
+      description={`${workspace.name} is shared by everyone on your team. Brands, members and billing all live here.`}
+    >
+      <WorkspaceSettings
+        workspace={workspace}
+        canEdit={profile.role === "admin"}
+        completedAt={state.completedAt}
+        industry={state.profile?.industry}
+        devShim={IS_DEV_SHIM}
+        devOrgMode={devOrgMode}
+      />
+    </SettingsPage>
   )
 }

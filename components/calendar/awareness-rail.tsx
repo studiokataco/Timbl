@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useId, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { format, parseISO } from "date-fns"
-import { Bell, Check, ChevronDown, Sparkles, TrendingDown } from "lucide-react"
+import { differenceInCalendarDays, format, parseISO } from "date-fns"
+import { Bell, Check, Sparkles, TrendingDown } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { DisclosureBody, DisclosureTrigger, useRemembered } from "@/components/ui/disclosure"
 import { promoteAwarenessDay } from "@/lib/actions/awareness"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay } from "@/lib/schemas"
@@ -43,6 +44,19 @@ function suggestionMetric(s: Suggestion): string {
   return ""
 }
 
+function suggestionSummary(s: Suggestion): string {
+  if (s.kind === "silent-category") return `${s.name}, ${s.neverUsed ? "not posted yet" : `${s.daysSilent}d silent`}`
+  if (s.kind === "template-due") return `${s.name} due`
+  if (s.kind === "campaign-ending") return `${s.name} ends in ${s.daysAway} ${s.daysAway === 1 ? "day" : "days"}`
+  return ""
+}
+
+function relativeDay(days: number): string {
+  if (days === 0) return "today"
+  if (days === 1) return "tomorrow"
+  if (days < 0) return `${-days} ${days === -1 ? "day" : "days"} ago`
+  return `in ${days} days`
+}
 
 export function CalendarAwarenessRail({
   awarenessDays,
@@ -51,8 +65,10 @@ export function CalendarAwarenessRail({
 }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [awarenessOpen, setAwarenessOpen] = useState(false)
-  const [remindersOpen, setRemindersOpen] = useState(false)
+  const [awarenessOpen, setAwarenessOpen] = useRemembered("calendar.awareness", true)
+  const [remindersOpen, setRemindersOpen] = useRemembered("calendar.reminders", true)
+  const remindersId = useId()
+  const awarenessId = useId()
   const planned = new Set(plannedAwarenessIds)
 
   const promote = (day: WithId<AwarenessDay>) => {
@@ -114,6 +130,13 @@ export function CalendarAwarenessRail({
     )
   }
 
+  const byDate = [...awarenessDays].sort((a, b) => a.date.localeCompare(b.date))
+  const nextDay = byDate.find((d) => differenceInCalendarDays(parseISO(d.date), new Date()) >= 0) ?? byDate[0]
+  const awarenessSummary = nextDay
+    ? `${nextDay.name} ${relativeDay(differenceInCalendarDays(parseISO(nextDay.date), new Date()))}`
+    : null
+  const remindersSummary = suggestions[0] ? suggestionSummary(suggestions[0]) : null
+
   const suggestionCards: React.ReactNode[] = suggestions
     .slice(0, FAN_MAX)
     .map((s, i) => (
@@ -142,16 +165,18 @@ export function CalendarAwarenessRail({
   return (
     <>
       <section className="flex flex-col gap-3 border-t border-border py-6">
-        <button
-          type="button"
-          className="flex w-full items-center gap-1.5 text-left"
-          onClick={() => setRemindersOpen((o) => !o)}
-          aria-expanded={remindersOpen}
+        <DisclosureTrigger
+          heading={2}
+          open={remindersOpen}
+          onOpenChange={setRemindersOpen}
+          controls={remindersId}
+          chevronClassName="size-3.5"
+          className="gap-1.5 rounded-sm"
         >
           <Bell aria-hidden className="size-3.5 text-muted-foreground" />
-          <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Reminders
-          </h2>
+          </span>
           {suggestions.length > 0 && (
             <Badge
               variant="secondary"
@@ -160,16 +185,15 @@ export function CalendarAwarenessRail({
               {suggestions.length}
             </Badge>
           )}
-          <ChevronDown
-            aria-hidden
-            className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
-              remindersOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
+          {!remindersOpen && remindersSummary && (
+            <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+              {remindersSummary}
+            </span>
+          )}
+        </DisclosureTrigger>
 
-        {remindersOpen ? (
-          suggestions.length === 0 ? (
+        <DisclosureBody id={remindersId} open={remindersOpen}>
+          {suggestions.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               All caught up - no reminders right now.
             </p>
@@ -227,27 +251,31 @@ export function CalendarAwarenessRail({
                 </li>
               ))}
             </ul>
-          )
-        ) : suggestions.length > 0 ? (
+          )}
+        </DisclosureBody>
+
+        {!remindersOpen && suggestions.length > 0 && (
           <StackedDeck
             cards={suggestionCards}
             slotHeight={60}
             onClick={() => setRemindersOpen(true)}
           />
-        ) : null}
+        )}
       </section>
 
       <section className="flex flex-col gap-3 border-t border-border py-6">
-        <button
-          type="button"
-          className="flex w-full items-center gap-1.5 text-left"
-          onClick={() => setAwarenessOpen((o) => !o)}
-          aria-expanded={awarenessOpen}
+        <DisclosureTrigger
+          heading={2}
+          open={awarenessOpen}
+          onOpenChange={setAwarenessOpen}
+          controls={awarenessId}
+          chevronClassName="size-3.5"
+          className="gap-1.5 rounded-sm"
         >
           <Sparkles aria-hidden className="size-3.5 text-muted-foreground" />
-          <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Awareness this period
-          </h2>
+          </span>
           {awarenessDays.length > 0 && (
             <Badge
               variant="secondary"
@@ -256,16 +284,15 @@ export function CalendarAwarenessRail({
               {awarenessDays.length}
             </Badge>
           )}
-          <ChevronDown
-            aria-hidden
-            className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
-              awarenessOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
+          {!awarenessOpen && awarenessSummary && (
+            <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+              {awarenessSummary}
+            </span>
+          )}
+        </DisclosureTrigger>
 
-        {awarenessOpen ? (
-          awarenessDays.length === 0 ? (
+        <DisclosureBody id={awarenessId} open={awarenessOpen}>
+          {awarenessDays.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               None in the visible window.
             </p>
@@ -314,14 +341,16 @@ export function CalendarAwarenessRail({
                 })}
               </AnimatePresence>
             </motion.ul>
-          )
-        ) : awarenessDays.length > 0 ? (
+          )}
+        </DisclosureBody>
+
+        {!awarenessOpen && awarenessDays.length > 0 && (
           <StackedDeck
             cards={awarenessCards}
             slotHeight={72}
             onClick={() => setAwarenessOpen(true)}
           />
-        ) : null}
+        )}
       </section>
     </>
   )

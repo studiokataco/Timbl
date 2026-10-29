@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { Plus, Sparkles, X } from "lucide-react"
 
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
@@ -9,206 +9,290 @@ import type { AgentRunDoc } from "@/lib/schemas/agentRun"
 import type { IdeationItem } from "@/lib/schemas/ideationItem"
 import type { ApprovalLogRow } from "@/lib/actions/approvals"
 import type { StudioUsage } from "@/lib/actions/usage"
+import { isBoutiqueAgent } from "@/lib/agents/defaults"
+import { usePlanFeatures } from "@/lib/plans/client"
+import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { PageHeader } from "@/components/shared/page-header"
-import { useMediaQuery } from "@/lib/hooks/use-media-query"
-import { usePlanFeatures } from "@/lib/plans/client"
-import { AGENT_TEMPLATES } from "@/lib/agents/template-catalog"
-import { cn } from "@/lib/utils"
-
-import { Roster } from "./roster"
-import { UsageDashboard } from "./usage-dashboard"
-import { ActivityStream } from "./activity-stream"
-import { Inspector } from "./inspector"
 import { EmptyRosterCta } from "./empty-roster-cta"
-import { AddAgentSheet } from "./add-agent-sheet"
-import { agentsForStudioRoster } from "@/lib/onboarding/agent-catalog"
-
-const AGENT_LABELS: Record<string, string> = Object.fromEntries(
-  AGENT_TEMPLATES.map((t) => [t.name, t.label ?? t.name]),
-)
+import { IdeationTriage, IdeationTriageEmpty } from "./ideation-triage"
+import { RunTimeline } from "./run-timeline"
+import { agentLabel } from "./agent-meta"
+import { ActivityList } from "./activity-list"
+import { AddAgentPanel } from "./add-agent-panel"
+import { AgentDetail } from "./agent-detail"
+import { AgentList } from "./agent-list"
+import { NeedsYou } from "./needs-you"
+import { StatsStrip } from "./charts"
+import { useRemembered } from "@/components/ui/disclosure"
+import {
+  useStudioApprovals,
+  useStudioHistory,
+  useStudioIdeation,
+  useStudioRuns,
+  useStudioUsage,
+  useStudioView,
+  useToggleAgent,
+} from "./use-studio-data"
 
 type Props = {
   agents: AgentConfig[]
   runs: AgentRunDoc[]
   ideation: IdeationItem[]
-  approvals?: ApprovalLogRow[]
+  approvals: ApprovalLogRow[]
   usage: StudioUsage
+  history: AgentRunDoc[]
 }
 
-export function StudioWorkspace({
-  agents,
-  runs,
-  ideation,
-  approvals = [],
-  usage,
-}: Props) {
-  const router = useRouter()
-  const params = useSearchParams()
-  const focus = params.get("focus") ?? ""
-  const hasFocus = focus.length > 0
-  const isWide = useMediaQuery("(min-width: 1280px)")
-  const showSheet = hasFocus && !isWide
-  const rosterAgents = useMemo(() => agentsForStudioRoster(agents), [agents])
+export function StudioWorkspace(props: Props) {
+  const runs = useStudioRuns(props.runs)
+  const history = useStudioHistory(props.history, runs)
+  const ideation = useStudioIdeation(props.ideation)
+  const approvals = useStudioApprovals(props.approvals)
+  const usage = useStudioUsage(props.usage)
+  const { view, dir, update, dismiss } = useStudioView()
+  const { agents, toggle, pending } = useToggleAgent(props.agents)
+  const planFeatures = usePlanFeatures()
+  const isFree = planFeatures.quotas.agents === 0
+  const [addOpen, setAddOpen] = useState(false)
+  const [trendOpen, setTrendOpen] = useRemembered("trend", false)
+  const reduced = useReducedMotion()
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  function closeFocus() {
-    const next = new URLSearchParams(params.toString())
-    next.delete("focus")
-    const qs = next.toString()
-    router.replace(qs ? `/studio?${qs}` : "/studio", { scroll: false })
+  const boutique = useMemo(() => agents.filter((a) => isBoutiqueAgent(a.name)), [agents])
+  const active = boutique.filter((a) => a.enabled)
+  const off = boutique.filter((a) => !a.enabled)
+  const agentCap =
+    planFeatures.quotas.agents == null ? boutique.length : Math.min(planFeatures.quotas.agents, boutique.length)
+  const selected = view.agent ? agents.find((a) => a.name === view.agent) ?? null : null
+  const waiting = runs.filter((r) => r.status === "awaiting_human")
+  const runningCount = runs.filter((r) => r.status === "in_progress").length
+  const openRun = view.run ? history.runs.find((r) => r.id === view.run) ?? null : null
+  const openIdea = view.idea ? ideation.find((i) => i.id === view.idea) ?? null : null
+
+  const homeScroll = useRef<number | null>(null)
+  const lastAgent = useRef<string | null>(null)
+  const [flash, setFlash] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (view.agent) lastAgent.current = view.agent
+  }, [view.agent])
+
+  function openAgent(name: string) {
+    if (!view.agent) homeScroll.current = scrollRef.current?.scrollTop ?? 0
+    update({ agent: name, tab: null })
   }
 
+  function settleScroll() {
+    const el = scrollRef.current
+    if (!el) return
+    if (view.agent) {
+      el.scrollTo({ top: 0 })
+      return
+    }
+    const from = lastAgent.current
+    requestAnimationFrame(() => {
+      if (homeScroll.current != null) el.scrollTo({ top: homeScroll.current })
+      homeScroll.current = null
+      const row = from ? el.querySelector(`[data-agent-row="${from}"]`) : null
+      if (!row) return
+      const box = el.getBoundingClientRect()
+      const r = row.getBoundingClientRect()
+      if (r.top < box.top || r.bottom > box.bottom - 96) {
+        row.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" })
+      }
+    })
+    if (from) {
+      setFlash(from)
+      window.setTimeout(() => setFlash(null), 1600)
+    }
+  }
+
+  const summary = [
+    `${active.length} ${active.length === 1 ? "agent" : "agents"} on`,
+    runningCount > 0 && `${runningCount} running now`,
+    waiting.length > 0 && `${waiting.length} waiting on you`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
+  const addButton = isFree ? (
+    <Button variant="outline" size="sm" render={<a href="/settings/billing" />} nativeButton={false}>
+      <Sparkles className="size-3.5" aria-hidden />
+      Upgrade for agents
+    </Button>
+  ) : (
+    <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+      <Plus className="size-3.5" aria-hidden />
+      Add agent
+    </Button>
+  )
+
+  const slide = {
+    enter: (d: number) => (reduced ? { opacity: 0 } : { opacity: 0, x: d * 28 }),
+    center: { opacity: 1, x: 0, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const } },
+    exit: (d: number) =>
+      reduced ? { opacity: 0 } : { opacity: 0, x: d * -20, transition: { duration: 0.14, ease: [0.4, 0, 1, 1] as const } },
+  }
+  const motionProps = { custom: dir, variants: slide, initial: "enter", animate: "center", exit: "exit" }
+
   return (
-    <div className="flex-1 min-h-0 min-w-0 -mb-[var(--ask-ai-clearance)] grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_380px] divide-x divide-border">
-      <aside className="hidden md:block min-h-0 overflow-hidden">
-        <Roster rosterAgents={rosterAgents} installedAgents={agents} />
-      </aside>
-
-      <main className="min-h-0 min-w-0 overflow-y-auto flex flex-col pb-[var(--ask-ai-clearance)]">
-        <div className="px-4 sm:px-6 pt-6 md:pt-8 pb-4 md:pb-2 border-b border-border md:border-b-0">
-          <PageHeader
-            size="sm"
-            title="AI Studio"
-            description="Control AI agents work from idea to schedule. Agents can be enabled/disabled, and their settings can be edited."
-          />
-          <div className="md:hidden mt-6">
-            <MobileAgentPicker agents={rosterAgents} installedAgents={agents} />
-          </div>
-        </div>
-
-        {rosterAgents.length === 0 ? (
-          <EmptyRosterCta agents={agents} />
-        ) : (
-          <>
-            <UsageDashboard initialUsage={usage} />
-            <ActivityStream
-              initialRuns={runs}
-              initialIdeation={ideation}
-              initialApprovals={approvals}
-            />
-          </>
-        )}
-      </main>
-
-      <aside className="hidden xl:block min-h-0 overflow-hidden bg-background">
-        <Inspector agents={rosterAgents} runs={runs} ideation={ideation} />
-      </aside>
-
-      {!isWide && (
-        <Sheet
-          open={showSheet}
-          onOpenChange={(open) => {
-            if (!open) closeFocus()
-          }}
-        >
-          <SheetContent
-            side="right"
-            className="w-full sm:max-w-md p-0 overflow-hidden flex flex-col bg-background text-foreground"
-            showCloseButton={false}
+    <div
+      ref={scrollRef}
+      className="-mb-[var(--ask-ai-clearance)] min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[var(--ask-ai-clearance)]"
+    >
+      <AnimatePresence mode="wait" initial={false} custom={dir} onExitComplete={settleScroll}>
+        {selected ? (
+          <motion.div
+            key={`agent:${selected.name}`}
+            {...motionProps}
+            className="mx-auto w-full max-w-6xl"
           >
-            <SheetHeader className="px-5 py-4 border-b border-border flex-row items-center justify-between gap-2 space-y-0">
-              <SheetTitle className="text-title-sm">Inspector</SheetTitle>
-              <button
-                type="button"
-                onClick={closeFocus}
-                aria-label="Close inspector"
-                className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-              >
-                <X className="size-4" aria-hidden />
-              </button>
-            </SheetHeader>
-            <div className="flex-1 min-h-0">
-              <Inspector agents={rosterAgents} runs={runs} ideation={ideation} />
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
+            <AgentDetail
+              agent={selected}
+              runs={history.runs}
+              usage={usage}
+              tab={view.tab}
+              togglePending={pending === selected.name}
+              onTab={(tab) => update({ tab: tab === "overview" ? null : tab }, "replace")}
+              onBack={() => dismiss({ agent: null, tab: null })}
+              onToggle={(v) => toggle(selected.name, v)}
+              onOpenRun={(id) => update({ run: id })}
+              allAgentNames={active.map((a) => a.name)}
+              onSwitchAgent={(name) => update({ agent: name, tab: "chat" }, "replace")}
+              agents={boutique}
+              onNavigate={(name, d) => update({ agent: name }, "replace", d)}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="home"
+            {...motionProps}
+            className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 md:pt-8 lg:px-10"
+          >
+            <PageHeader size="sm" title="AI Studio" description={summary} action={<span className="hidden sm:block">{addButton}</span>} />
+
+            {boutique.length === 0 ? (
+              <div className="mt-8">
+                <EmptyRosterCta onAdd={() => setAddOpen(true)} />
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-[auto_auto_1fr] xl:gap-x-10 xl:gap-y-8">
+                <div className="min-w-0 xl:col-start-1 xl:row-start-2">
+                  <NeedsYou
+                    approvals={waiting}
+                    ideas={ideation}
+                    onOpenRun={(id) => update({ run: id })}
+                    onOpenIdea={(id) => update({ idea: id })}
+                  />
+                </div>
+                <div className="min-w-0 xl:col-span-2 xl:row-start-1">
+                  <StatsStrip
+                    runs={history.runs}
+                    complete={history.complete}
+                    runsUsed={usage.agentRuns}
+                    runsQuota={planFeatures.quotas.agentRuns}
+                    activeCount={active.length}
+                    agentCap={agentCap}
+                    trendOpen={trendOpen}
+                    onTrend={setTrendOpen}
+                  />
+                </div>
+                <div className="min-w-0 xl:col-start-1 xl:row-start-3">
+                  <AgentList
+                    active={active}
+                    off={off}
+                    runs={history.runs}
+                    pending={pending}
+                    onOpen={openAgent}
+                    highlight={flash}
+                    onToggle={toggle}
+                    action={<span className="sm:hidden">{addButton}</span>}
+                  />
+                </div>
+                <div className="min-w-0 xl:sticky xl:top-6 xl:col-start-2 xl:row-span-2 xl:row-start-2 xl:self-start">
+                  <ActivityList
+                    runs={runs}
+                    approvals={approvals}
+                    onOpenRun={(id) => update({ run: id })}
+                    limit={6}
+                    compact
+                  />
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Sheet open={!!view.run} onOpenChange={(o) => !o && dismiss({ run: null })}>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="flex w-full flex-col gap-0 overflow-hidden bg-background p-0 text-foreground sm:max-w-lg"
+        >
+          <SheetPanelHeader
+            title={openRun ? `${agentLabel(openRun.agentName)} run` : "Run"}
+            onClose={() => dismiss({ run: null })}
+          />
+          <div className="min-h-0 flex-1">
+            {openRun ? (
+              <RunTimeline run={openRun} />
+            ) : (
+              <p className="p-5 text-[13px] text-muted-foreground">This run is no longer in the recent list.</p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={!!view.idea} onOpenChange={(o) => !o && dismiss({ idea: null })}>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="flex w-full flex-col gap-0 overflow-hidden bg-background p-0 text-foreground sm:max-w-lg"
+        >
+          <SheetPanelHeader
+            title={ideation.length > 0 ? `Ideas · ${ideation.length} to review` : "Ideas"}
+            onClose={() => dismiss({ idea: null })}
+          />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {openIdea ? (
+              <IdeationTriage
+                item={openIdea}
+                initialItems={ideation}
+                onNavigate={(id) => (id ? update({ idea: id }, "replace") : dismiss({ idea: null }))}
+              />
+            ) : (
+              <IdeationTriageEmpty />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <AddAgentPanel
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        agents={agents}
+        pending={pending}
+        onToggle={toggle}
+        onOpenAgent={openAgent}
+      />
     </div>
   )
 }
 
-function MobileAgentPicker({
-  agents,
-  installedAgents,
-}: {
-  agents: AgentConfig[]
-  installedAgents: AgentConfig[]
-}) {
-  const router = useRouter()
-  const params = useSearchParams()
-  const planFeatures = usePlanFeatures()
-  const focus = params.get("focus") ?? ""
-  const selected = focus.startsWith("agent:") ? focus.slice(6) : null
-  const [addOpen, setAddOpen] = useState(false)
-  const isFree = planFeatures.quotas.agents === 0
-
-  function select(name: string) {
-    const next = new URLSearchParams(params.toString())
-    if (selected === name) next.delete("focus")
-    else next.set("focus", `agent:${name}`)
-    const qs = next.toString()
-    router.replace(qs ? `/studio?${qs}` : "/studio", { scroll: false })
-  }
-
+function SheetPanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
-    <>
-      <nav aria-label="Agents" className="py-0">
-        <div className="grid grid-cols-2 gap-2">
-          {agents.map((a) => {
-            const active = selected === a.name
-            const label = AGENT_LABELS[a.name] ?? a.name
-            return (
-              <button
-                key={a.name}
-                type="button"
-                onClick={() => select(a.name)}
-                aria-pressed={active}
-                className={cn(
-                  "flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors",
-                  active
-                    ? "border-foreground/25 bg-secondary"
-                    : "border-border bg-background hover:bg-secondary/60",
-                )}
-              >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "size-1.5 shrink-0 rounded-full",
-                    a.enabled ? "bg-emerald-500" : "bg-border",
-                  )}
-                />
-                <span className="min-w-0 text-[13px] font-medium leading-tight text-foreground line-clamp-2">
-                  {label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-
-        {isFree ? (
-          <a
-            href="/settings/billing"
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-[13px] text-muted-foreground"
-          >
-            <Sparkles className="size-3.5" aria-hidden />
-            Upgrade to add agents
-          </a>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-[13px] text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-          >
-            <Plus className="size-3.5" aria-hidden />
-            Add agent
-          </button>
-        )}
-      </nav>
-      <AddAgentSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        installedAgents={installedAgents}
-      />
-    </>
+    <SheetHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border px-5 py-3.5">
+      <SheetTitle className="text-[15px] font-semibold">{title}</SheetTitle>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <X className="size-4" aria-hidden />
+      </button>
+    </SheetHeader>
   )
 }

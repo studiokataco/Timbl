@@ -21,8 +21,11 @@ export default async function SettingsTeamPage() {
   ])
 
   return (
-    <div className="px-4 sm:px-6 py-4 flex-1">
-      <TeamManager members={members} invites={invites} requests={requests} />
-    </div>
+    <TeamManager
+      members={members}
+      invites={invites}
+      requests={requests}
+      currentUserId={user.id}
+    />
   )
 }

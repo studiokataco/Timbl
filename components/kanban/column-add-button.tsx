@@ -2,23 +2,18 @@
 
 import { Plus } from "lucide-react"
 
-type Props = {
-  onClick: () => void
-}
-
-/*
- * Dashed-border placeholder card at the right of the column row. Clicking
- * opens the column-edit-dialog in "create" mode.
- */
-export function KanbanColumnAddButton({ onClick }: Props) {
+export function KanbanColumnAddButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center justify-center gap-1.5 w-[200px] shrink-0 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors min-h-full"
-    >
-      <Plus aria-hidden className="size-5" />
-      <span className="text-xs font-medium">Add column</span>
-    </button>
+    <div className="flex shrink-0 flex-col pt-10">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Add column"
+        title="Add column"
+        className="flex h-11 w-11 items-center justify-center rounded-xl border border-dashed border-border text-muted-foreground outline-none transition-colors duration-150 hover:border-foreground/30 hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Plus aria-hidden className="size-4" />
+      </button>
+    </div>
   )
 }

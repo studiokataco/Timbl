@@ -21,14 +21,11 @@ import { cn } from "@/lib/utils"
 import { faviconUrl, hostname } from "@/lib/url"
 
 /*
- * Ideation triage - the inspector's focused single-item view.
+ * Ideation triage - the focused single-item view in the Studio ideas sheet.
  *
- * Replaces the Phase A read-only IdeationPanel stub. Owns its own list
- * query (seeded by props.initialItems) so it can compute prev/next for
- * J/K keyboard navigation without piping a callback through three
- * components. Promote / dismiss delegates to existing
- * `promoteIdeationItem` and `markIdeationStatus` server actions - no
- * signature changes.
+ * Owns its own list query (seeded by props.initialItems) so it can compute
+ * prev/next for J/K keyboard navigation. Promote / dismiss delegate to the
+ * `promoteIdeationItem` and `markIdeationStatus` server actions.
  *
  * Keyboard:
  *   P → promote
@@ -36,17 +33,17 @@ import { faviconUrl, hostname } from "@/lib/url"
  *   J → next pending
  *   K → previous pending
  *
- * The listener is scoped to mount of this component, which is itself
- * gated by `?focus=ideation:<id>` in the inspector - so the shortcuts
- * never fire elsewhere.
+ * The listener is scoped to mount of this component, which only renders
+ * while the ideas sheet is open - so the shortcuts never fire elsewhere.
  */
 
 type Props = {
   item: IdeationItem
   initialItems: IdeationItem[]
+  onNavigate?: (id: string | null) => void
 }
 
-export function IdeationTriage({ item, initialItems }: Props) {
+export function IdeationTriage({ item, initialItems, onNavigate }: Props) {
   const router = useRouter()
   const params = useSearchParams()
   const queryClient = useQueryClient()
@@ -71,13 +68,14 @@ export function IdeationTriage({ item, initialItems }: Props) {
 
   const focusItem = useCallback(
     (id: string | null) => {
+      if (onNavigate) return onNavigate(id)
       const sp = new URLSearchParams(params.toString())
       if (id) sp.set("focus", `ideation:${id}`)
       else sp.delete("focus")
       const qs = sp.toString()
       router.replace(qs ? `/studio?${qs}` : "/studio", { scroll: false })
     },
-    [params, router],
+    [params, router, onNavigate],
   )
 
   const promote = useCallback(() => {

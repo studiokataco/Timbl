@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
@@ -77,7 +77,7 @@ import type {
   TemplateCadence,
   User,
 } from "@/lib/schemas"
-import { LEGACY_POST_STATUSES } from "@/lib/schemas"
+import { LEGACY_POST_STATUSES, columnGroup } from "@/lib/schemas"
 import {
   CADENCE_LABELS,
   CHANNEL_STATUS_LABELS,
@@ -105,6 +105,7 @@ import { ShareDialog } from "./share-dialog"
 import { ChecklistPanel } from "./checklist-panel"
 import { RelatedPanel } from "./related-panel"
 import { TemplatePicker } from "./template-picker"
+import { DisclosureBody, DisclosureChevron } from "@/components/ui/disclosure"
 
 const POST_TYPE_OPTIONS: PostType[] = ["grid", "carousel", "reel", "story", "video"]
 const CHANNEL_STATUS_OPTIONS: ChannelStatus[] = ["n/a", "scheduled", "published", "failed"]
@@ -199,6 +200,7 @@ export function PostModal({
   const [priorityPickerOpen, setPriorityPickerOpen] = useState(false)
   const [timeEstimateOpen, setTimeEstimateOpen] = useState(false)
   const [recurrenceOpen, setRecurrenceOpen] = useState(false)
+  const recurrenceBodyId = useId()
 
   const [thumbnail, setThumbnail] = useState<string | null>(null)
   const [thumbnailLoading, setThumbnailLoading] = useState(false)
@@ -315,7 +317,7 @@ export function PostModal({
     if (!kanbanColumns?.length) return null
     const g = { active: [] as WithId<KanbanColumn>[], done: [] as WithId<KanbanColumn>[], closed: [] as WithId<KanbanColumn>[] }
     for (const c of kanbanColumns) {
-      const key = (c.group ?? "active") as "active" | "done" | "closed"
+      const key = columnGroup(c)
       g[key].push(c)
     }
     for (const key of ["active", "done", "closed"] as const) {
@@ -797,8 +799,10 @@ export function PostModal({
                         <div className="border-t">
                           <button
                             type="button"
+                            aria-expanded={recurrenceOpen}
+                            aria-controls={recurrenceBodyId}
                             onClick={() => setRecurrenceOpen((o) => !o)}
-                            className="flex w-full items-center justify-between px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                            className="group flex w-full items-center justify-between rounded-md px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                           >
                             <span className="flex items-center gap-1.5">
                               <Repeat2 aria-hidden className="size-3" />
@@ -806,10 +810,9 @@ export function PostModal({
                                 ? `Repeat: ${draft.recurrence.freq}${draft.recurrence.interval && draft.recurrence.interval > 1 ? ` x${draft.recurrence.interval}` : ""}`
                                 : "Set recurring"}
                             </span>
-                            <ChevronDown aria-hidden className={`size-3 transition-transform ${recurrenceOpen ? "rotate-180" : ""}`} />
+                            <DisclosureChevron open={recurrenceOpen} className="size-3" />
                           </button>
-                          {recurrenceOpen && (
-                            <div className="flex flex-col gap-2 px-3 pb-3">
+                          <DisclosureBody id={recurrenceBodyId} open={recurrenceOpen} className="flex flex-col gap-2 px-3 pb-3">
                               <div className="flex gap-1.5">
                                 {(["daily", "weekly", "custom"] as const).map((freq) => (
                                   <button
@@ -831,8 +834,7 @@ export function PostModal({
                                   Clear recurrence
                                 </button>
                               )}
-                            </div>
-                          )}
+                          </DisclosureBody>
                         </div>
                       </PopoverContent>
                     </Popover>

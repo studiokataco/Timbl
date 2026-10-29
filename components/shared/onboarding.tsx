@@ -65,9 +65,11 @@ export function Onboarding() {
 
   useEffect(() => {
     let cancelled = false
-    void fetchCurrentUserPreferences().then(({ onboarded }) => {
-      if (!cancelled && !onboarded) setOpen(true)
-    })
+    fetchCurrentUserPreferences()
+      .then(({ onboarded }) => {
+        if (!cancelled && !onboarded) setOpen(true)
+      })
+      .catch(() => undefined)
     return () => {
       cancelled = true
     }

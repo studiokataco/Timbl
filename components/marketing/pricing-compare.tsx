@@ -59,12 +59,12 @@ export function PricingCompare({
         </p>
 
         <div className="mt-10 overflow-x-auto">
-          <table className="w-full min-w-[720px] table-fixed border-collapse">
+          <table className="w-full min-w-[612px] table-fixed border-collapse md:min-w-[720px]">
             <thead>
               <tr className="border-b border-hairline">
-                <th className="w-[32%]" aria-hidden />
+                <th className="sticky left-0 z-10 w-[132px] bg-background md:static md:w-[32%]" aria-hidden />
                 {plans.map((plan) => (
-                  <th key={plan.id} className="px-3 pb-5 text-left align-top">
+                  <th key={plan.id} className="w-[120px] px-3 pb-5 text-left align-top md:w-auto">
                     <span className="flex items-center gap-2">
                       <span
                         aria-hidden
@@ -97,12 +97,12 @@ export function PricingCompare({
                     colSpan={plans.length + 1}
                     className="pb-3 pt-10 text-left text-sm font-semibold"
                   >
-                    {group.title}
+                    <span className="sticky left-0">{group.title}</span>
                   </th>
                 </tr>
                 {group.rows.map((row) => (
                   <tr key={row.label} className="border-b border-hairline-soft">
-                    <td className="py-3.5 pr-4 text-sm text-muted-foreground">
+                    <td className="sticky left-0 z-10 bg-background py-3.5 pr-4 text-sm text-muted-foreground md:static">
                       {row.label}
                     </td>
                     {row.values.map((value, i) => (

@@ -1,21 +1,34 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useOptimistic, useState, useTransition, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { Check, Mail, Trash2, UserPlus, Users, X } from "lucide-react"
+import { format, parseISO } from "date-fns"
+import { Check, Loader2, Mail, MoreHorizontal, RotateCcw, Send, UserMinus, UserPlus, X } from "lucide-react"
 import { toast } from "sonner"
 
+import { IdentityAvatar } from "@/components/shared/identity-avatar"
+import { ListEmpty, ListGroup, ListPanel, ListRow } from "@/components/shared/list-panel"
+import { SettingsPage } from "@/components/settings/settings-page"
+import { InviteDialog, announceInvite } from "@/components/settings/team-invite-dialog"
+import { RolePicker, RoleText, roleWithArticle } from "@/components/settings/team-roles"
+import { ago } from "@/components/studio/bits"
+import { Section } from "@/components/studio/section"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { RolePill } from "@/components/common/role-pill"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   approveAccessRequest,
   createMemberInvite,
@@ -25,342 +38,479 @@ import {
   type OrgAccessRequest,
   type OrgInvite,
 } from "@/lib/actions/members"
-import type { UserRole } from "@/lib/schemas/_shared"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { User } from "@/lib/schemas"
+import type { UserRole } from "@/lib/schemas/_shared"
 
-const ROLES: UserRole[] = ["admin", "editor", "contributor"]
-
-const ROLE_META: Record<UserRole, { label: string; tone: string }> = {
-  admin: { label: "Admin", tone: "bg-sky-500/15 text-sky-700 dark:text-sky-400" },
-  editor: { label: "Editor", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" },
-  contributor: { label: "Contributor", tone: "bg-muted text-muted-foreground" },
-}
-
-function RoleSelect({
-  value,
-  onValueChange,
-  disabled,
-  id,
-}: {
-  value: UserRole
-  onValueChange: (role: UserRole) => void
-  disabled?: boolean
-  id?: string
-}) {
-  return (
-    <Select
-      value={value}
-      onValueChange={(v) => onValueChange(v as UserRole)}
-      disabled={disabled}
-    >
-      <SelectTrigger id={id} size="sm" className="min-w-32">
-        <SelectValue>{ROLE_META[value].label}</SelectValue>
-      </SelectTrigger>
-      <SelectContent alignItemWithTrigger={false}>
-        {ROLES.map((r) => (
-          <SelectItem key={r} value={r}>
-            {ROLE_META[r].label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
+type Member = WithId<User>
 
 type Props = {
-  members: WithId<User>[]
+  members: Member[]
   invites: OrgInvite[]
   requests: OrgAccessRequest[]
+  currentUserId: string
 }
 
-export function TeamManager({ members, invites, requests }: Props) {
+type Confirm = {
+  title: string
+  body: string
+  action: string
+  run: () => void
+}
+
+type Busy = { id: string; kind: string } | null
+
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`
+}
+
+function joinedLabel(iso?: string) {
+  if (!iso) return null
+  try {
+    return `Joined ${format(parseISO(iso), "d MMM yyyy")}`
+  } catch {
+    return null
+  }
+}
+
+export function TeamManager({ members, invites, requests, currentUserId }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [showInvite, setShowInvite] = useState(false)
-  const [selectedId, setSelectedId] = useState<string | null>(members[0]?.id ?? null)
+  const [busy, setBusy] = useState<Busy>(null)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [confirm, setConfirm] = useState<Confirm | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [requestRoles, setRequestRoles] = useState<Record<string, UserRole>>({})
-  const [inviteForm, setInviteForm] = useState({
-    email: "",
-    name: "",
-    role: "contributor" as UserRole,
-  })
+  const [optimisticMembers, setMemberRole] = useOptimistic(
+    members,
+    (state, next: { id: string; role: UserRole }) =>
+      state.map((m) => (m.id === next.id ? { ...m, role: next.role } : m)),
+  )
 
-  const selected = members.find((m) => m.id === selectedId)
+  const sorted = [...optimisticMembers].sort(
+    (a, b) => Number(b.id === currentUserId) - Number(a.id === currentUserId),
+  )
+  const active = sorted.filter((m) => m.active !== false)
+  const deactivated = sorted.filter((m) => m.active === false)
+
+  const isBusy = (id: string, kind?: string) =>
+    pending && busy?.id === id && (kind == null || busy.kind === kind)
 
   function run(
-    fn: () => Promise<{ ok: boolean; error?: string; emailSent?: boolean; emailError?: string }>,
-    okMsg: string,
+    target: { id: string; kind: string },
+    fn: () => Promise<{ ok: boolean; error?: string }>,
+    success: { title: string; description?: string },
+    optimistic?: () => void,
   ) {
+    setBusy(target)
     startTransition(async () => {
+      optimistic?.()
       const res = await fn()
-      if (res.ok) {
-        if (res.emailSent === false) {
-          toast.warning(
-            res.emailError
-              ? `Invite saved but email failed: ${res.emailError}`
-              : "Invite saved but email was not sent (Resend not configured).",
-          )
-        } else {
-          toast.success(res.emailSent ? `${okMsg} - email sent` : okMsg)
-        }
-        router.refresh()
-      } else toast.error(res.error ?? "Something went wrong")
+      if (!res.ok) {
+        toast.error(res.error ?? "Something went wrong")
+        return
+      }
+      toast.success(success.title, { description: success.description })
+      router.refresh()
     })
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="max-w-xl text-xs text-muted-foreground">
-          Invite teammates by email, approve sign-ins that were not invited, and
-          manage roles. Invited users sign in with Google using that exact email.
-        </p>
-        <Button
-          size="sm"
-          className="shrink-0"
-          data-icon="inline-start"
-          onClick={() => setShowInvite((v) => !v)}
-        >
-          <Mail />
-          Invite by email
-        </Button>
-      </div>
+  function ask(next: Confirm) {
+    setConfirm(next)
+    setConfirmOpen(true)
+  }
 
-      {showInvite && (
-        <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-medium">Invite member</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="invite-name">Name</Label>
-              <Input
-                id="invite-name"
-                value={inviteForm.name}
-                onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="invite-email">Email</Label>
-              <Input
-                id="invite-email"
-                type="email"
-                value={inviteForm.email}
-                onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="invite-role" className="text-xs text-muted-foreground">
-              Role
-            </Label>
-            <RoleSelect
-              id="invite-role"
-              value={inviteForm.role}
-              onValueChange={(role) => setInviteForm((f) => ({ ...f, role }))}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Sends an invite email when Resend is configured. With test mode, mail
-            goes to the Resend sandbox inbox, not the recipient. They must sign
-            in with Google using this exact address.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowInvite(false)}>
+  function changeRole(member: Member, role: UserRole) {
+    if (role === member.role) return
+    const apply = () =>
+      run(
+        { id: member.id, kind: "role" },
+        () => updateOrgMember({ userId: member.id, role }),
+        { title: "Role updated", description: `${member.name} is now ${roleWithArticle(role)}.` },
+        () => setMemberRole({ id: member.id, role }),
+      )
+    if (member.id === currentUserId && member.role === "admin" && role !== "admin") {
+      ask({
+        title: "Give up admin access?",
+        body: `You'll become ${roleWithArticle(role)} and lose access to this page straight away. Only another admin can make you an admin again.`,
+        action: "Change my role",
+        run: apply,
+      })
+      return
+    }
+    apply()
+  }
+
+  function askDeactivate(member: Member) {
+    ask({
+      title: `Deactivate ${member.name}?`,
+      body: "They won't be able to sign in to this workspace. Their posts and history stay, and you can reactivate them any time.",
+      action: "Deactivate",
+      run: () =>
+        run(
+          { id: member.id, kind: "active" },
+          () => updateOrgMember({ userId: member.id, active: false }),
+          { title: `${member.name} deactivated` },
+        ),
+    })
+  }
+
+  function reactivate(member: Member) {
+    run(
+      { id: member.id, kind: "active" },
+      () => updateOrgMember({ userId: member.id, active: true }),
+      { title: `${member.name} reactivated` },
+    )
+  }
+
+  function askRevoke(invite: OrgInvite) {
+    ask({
+      title: `Revoke the invite for ${invite.name}?`,
+      body: `${invite.email} won't be able to join with this invite. You can invite them again later.`,
+      action: "Revoke invite",
+      run: () =>
+        run(
+          { id: invite.id, kind: "revoke" },
+          () => revokeMemberInvite({ email: invite.email }),
+          { title: "Invite revoked" },
+        ),
+    })
+  }
+
+  function resend(invite: OrgInvite) {
+    setBusy({ id: invite.id, kind: "resend" })
+    startTransition(async () => {
+      const res = await createMemberInvite({ email: invite.email, name: invite.name, role: invite.role })
+      if (!res.ok) {
+        toast.error("Couldn't resend the invite", { description: res.error })
+        return
+      }
+      announceInvite(res, invite.email, "Invite sent again")
+      router.refresh()
+    })
+  }
+
+  function approve(req: OrgAccessRequest) {
+    const role = requestRoles[req.uid] ?? "contributor"
+    run(
+      { id: req.uid, kind: "approve" },
+      () => approveAccessRequest({ uid: req.uid, role }),
+      { title: "Access granted", description: `${req.displayName} joined as ${roleWithArticle(role)}.` },
+    )
+  }
+
+  function decline(req: OrgAccessRequest) {
+    run(
+      { id: req.uid, kind: "decline" },
+      () => denyAccessRequest({ uid: req.uid }),
+      { title: "Request declined" },
+    )
+  }
+
+  const description = [
+    plural(active.length, "person has access", "people have access"),
+    invites.length > 0 && plural(invites.length, "invite waiting", "invites waiting"),
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
+  const inviteButton = (
+    <Button className="h-9" onClick={() => setInviteOpen(true)}>
+      <UserPlus aria-hidden />
+      <span className="sm:hidden">Invite</span>
+      <span className="hidden sm:inline">Invite people</span>
+    </Button>
+  )
+
+  return (
+    <SettingsPage
+      title="Members"
+      description={`${description}. Choose what each person can do and approve anyone who asks to join.`}
+      action={inviteButton}
+    >
+      {requests.length > 0 && (
+        <Section
+          id="settings-team-needs"
+          title="Needs you"
+          count={requests.length}
+          summary={plural(requests.length, "person asked to join", "people asked to join")}
+          className="mb-8"
+        >
+          <ListPanel>
+            <ListGroup label="Asked to join">
+              {requests.map((req) => {
+                const role = requestRoles[req.uid] ?? "contributor"
+                const rowBusy = isBusy(req.uid)
+                return (
+                  <li
+                    key={req.id}
+                    className="flex flex-col gap-2.5 px-3 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-4"
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <IdentityAvatar name={req.displayName} src={req.photoURL} shape="circle" initials={2} />
+                      <div className="min-w-0">
+                        <p className="truncate text-[14px] font-medium text-foreground">{req.displayName}</p>
+                        <p className="truncate text-[13px] text-muted-foreground">
+                          {req.email}
+                          {req.requestedAt ? ` · asked ${ago(req.requestedAt)}` : null}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5 pl-11 sm:pl-0">
+                      <RolePicker
+                        label={`Role for ${req.displayName}`}
+                        value={role}
+                        disabled={rowBusy}
+                        onChange={(r) => setRequestRoles((m) => ({ ...m, [req.uid]: r }))}
+                      />
+                      <Button
+                        className="h-9 md:h-8"
+                        disabled={rowBusy}
+                        onClick={() => approve(req)}
+                        aria-label={`Approve ${req.displayName} as ${roleWithArticle(role)}`}
+                      >
+                        {isBusy(req.uid, "approve") ? (
+                          <Loader2 className="motion-safe:animate-spin" aria-hidden />
+                        ) : (
+                          <Check aria-hidden />
+                        )}
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-9 min-w-9 md:h-8 md:min-w-8"
+                        disabled={rowBusy}
+                        onClick={() => decline(req)}
+                        aria-label={`Decline ${req.displayName}`}
+                      >
+                        {isBusy(req.uid, "decline") ? (
+                          <Loader2 className="motion-safe:animate-spin" aria-hidden />
+                        ) : (
+                          <X aria-hidden />
+                        )}
+                        <span className="hidden sm:inline">Decline</span>
+                      </Button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ListGroup>
+          </ListPanel>
+        </Section>
+      )}
+
+      {members.length === 0 && invites.length === 0 ? (
+        <ListPanel>
+          <ListEmpty
+            title="No one here yet"
+            body="Invite teammates by email. They join by signing in with Google using that address."
+            action={inviteButton}
+          />
+        </ListPanel>
+      ) : (
+        <ListPanel>
+          {active.length > 0 && (
+            <ListGroup label="Members" count={active.length}>
+              {active.map((m) => (
+                <MemberRow
+                  key={m.id}
+                  member={m}
+                  isYou={m.id === currentUserId}
+                  busy={isBusy(m.id)}
+                  onRole={(role) => changeRole(m, role)}
+                  onDeactivate={() => askDeactivate(m)}
+                  onReactivate={() => reactivate(m)}
+                />
+              ))}
+            </ListGroup>
+          )}
+
+          {invites.length > 0 && (
+            <ListGroup label="Invited" count={invites.length}>
+              {invites.map((inv) => (
+                <ListRow
+                  key={inv.id}
+                  leading={
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                      <Mail className="size-4" aria-hidden />
+                    </span>
+                  }
+                  title={inv.name}
+                  subtitle={inv.email}
+                  meta={
+                    <>
+                      <span>{inv.invitedAt ? `Invited ${ago(inv.invitedAt)}` : "Invited"}</span>
+                      {inv.invitedByName ? <span>by {inv.invitedByName}</span> : null}
+                    </>
+                  }
+                  actions={
+                    <>
+                      <RoleText role={inv.role} />
+                      <RowMenu label={`More actions for the invite to ${inv.name}`} busy={isBusy(inv.id)}>
+                        <DropdownMenuItem className="py-2 md:py-1.5" onClick={() => resend(inv)}>
+                          <Send aria-hidden />
+                          Resend invite
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          className="py-2 md:py-1.5"
+                          onClick={() => askRevoke(inv)}
+                        >
+                          <X aria-hidden />
+                          Revoke invite
+                        </DropdownMenuItem>
+                      </RowMenu>
+                    </>
+                  }
+                />
+              ))}
+            </ListGroup>
+          )}
+
+          {deactivated.length > 0 && (
+            <ListGroup label="Deactivated" count={deactivated.length}>
+              {deactivated.map((m) => (
+                <MemberRow
+                  key={m.id}
+                  member={m}
+                  isYou={m.id === currentUserId}
+                  busy={isBusy(m.id)}
+                  onRole={(role) => changeRole(m, role)}
+                  onDeactivate={() => askDeactivate(m)}
+                  onReactivate={() => reactivate(m)}
+                />
+              ))}
+            </ListGroup>
+          )}
+        </ListPanel>
+      )}
+
+      <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} onInvited={() => router.refresh()} />
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="text-[15px] font-semibold">{confirm?.title}</DialogTitle>
+            <DialogDescription className="text-[13px]">{confirm?.body}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" className="h-9" onClick={() => setConfirmOpen(false)}>
               Cancel
             </Button>
             <Button
-              size="sm"
-              disabled={pending || !inviteForm.email || !inviteForm.name}
-              onClick={() => run(() => createMemberInvite(inviteForm), "Invite saved")}
+              variant="destructive"
+              className="h-9"
+              onClick={() => {
+                confirm?.run()
+                setConfirmOpen(false)
+              }}
             >
-              Save invite
+              {confirm?.action}
             </Button>
-          </div>
-        </div>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </SettingsPage>
+  )
+}
 
-      {requests.length > 0 && (
-        <div className="space-y-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-          <h2 className="flex items-center gap-1.5 text-sm font-medium text-blue-700 dark:text-blue-400">
-            <UserPlus className="size-4" />
-            Access requests ({requests.length})
-          </h2>
-          {requests.map((req) => {
-            const role = requestRoles[req.uid] ?? "contributor"
-            return (
-              <div
-                key={req.id}
-                className="flex flex-col gap-2 rounded-lg border border-foreground/10 bg-card p-3 sm:flex-row sm:items-center"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{req.displayName}</p>
-                  <p className="truncate text-xs text-muted-foreground">{req.email}</p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <RoleSelect
-                    value={role}
-                    onValueChange={(r) =>
-                      setRequestRoles((m) => ({ ...m, [req.uid]: r }))
-                    }
-                  />
-                  <Button
-                    size="sm"
-                    disabled={pending}
-                    data-icon="inline-start"
-                    onClick={() =>
-                      run(() => approveAccessRequest({ uid: req.uid, role }), "Access granted")
-                    }
-                  >
-                    <Check />
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={pending}
-                    data-icon="inline-start"
-                    onClick={() =>
-                      run(() => denyAccessRequest({ uid: req.uid }), "Request denied")
-                    }
-                  >
-                    <X />
-                    Deny
-                  </Button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {invites.length > 0 && (
-        <div className="space-y-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <h2 className="text-sm font-medium text-amber-700 dark:text-amber-500">
-            Pending invites ({invites.length})
-          </h2>
-          {invites.map((inv) => (
-            <div
-              key={inv.id}
-              className="flex flex-col gap-2 rounded-lg border border-foreground/10 bg-card p-3 sm:flex-row sm:items-center"
-            >
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="truncate text-sm font-medium">{inv.name}</span>
-                <RolePill label={ROLE_META[inv.role].label} tone={ROLE_META[inv.role].tone} />
-              </div>
-              <p className="truncate text-xs text-muted-foreground sm:flex-1">{inv.email}</p>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                data-icon="inline-start"
-                onClick={() =>
-                  run(() => revokeMemberInvite({ email: inv.email }), "Invite revoked")
-                }
-              >
-                <Trash2 />
-                Revoke
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {members.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border py-14 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <Users className="size-5" />
+function MemberRow({
+  member,
+  isYou,
+  busy,
+  onRole,
+  onDeactivate,
+  onReactivate,
+}: {
+  member: Member
+  isYou: boolean
+  busy: boolean
+  onRole: (role: UserRole) => void
+  onDeactivate: () => void
+  onReactivate: () => void
+}) {
+  const active = member.active !== false
+  return (
+    <ListRow
+      muted={!active}
+      leading={
+        <IdentityAvatar
+          name={member.name}
+          src={member.avatarUrl}
+          shape="circle"
+          initials={2}
+          className={active ? undefined : "opacity-60"}
+        />
+      }
+      title={member.name}
+      badge={
+        isYou ? (
+          <span className="shrink-0 rounded-md bg-secondary px-1.5 py-0.5 text-[12px] font-medium text-muted-foreground">
+            You
           </span>
-          <p className="text-sm font-medium">No members yet</p>
-          <p className="max-w-xs text-xs text-muted-foreground">
-            Invite a teammate by email to get started.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="shrink-0 space-y-1.5 lg:w-80">
-            {members.map((m) => {
-              const active = m.active !== false
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setSelectedId(m.id)}
-                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                    selectedId === m.id
-                      ? "border-foreground/20 bg-muted/40"
-                      : "border-border hover:bg-muted/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`size-1.5 shrink-0 rounded-full ${
-                        active ? "bg-emerald-500" : "bg-muted-foreground/50"
-                      }`}
-                    />
-                    <span className="truncate text-sm font-medium">{m.name}</span>
-                    <RolePill
-                      label={ROLE_META[m.role].label}
-                      tone={ROLE_META[m.role].tone}
-                      className="ml-auto"
-                    />
-                  </div>
-                  <p className="ml-3.5 truncate text-xs text-muted-foreground">{m.email}</p>
-                </button>
-              )
-            })}
-          </div>
-
-          {selected ? (
-            <div className="flex-1 space-y-4 rounded-xl border border-border bg-card p-4">
-              <div>
-                <h2 className="font-medium">{selected.name}</h2>
-                <p className="text-xs text-muted-foreground">{selected.email}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {selected.active !== false ? "Active" : "Deactivated"}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-                <Label htmlFor="member-role" className="text-xs text-muted-foreground">
-                  Role
-                </Label>
-                <RoleSelect
-                  id="member-role"
-                  value={selected.role}
-                  disabled={pending}
-                  onValueChange={(role) =>
-                    run(
-                      () => updateOrgMember({ userId: selected.id, role }),
-                      "Role updated",
-                    )
-                  }
-                />
-                <Button
-                  size="sm"
-                  variant={selected.active !== false ? "outline" : "default"}
-                  className="ml-auto"
-                  disabled={pending}
-                  onClick={() =>
-                    run(
-                      () =>
-                        updateOrgMember({
-                          userId: selected.id,
-                          active: selected.active === false,
-                        }),
-                      selected.active !== false ? "Member deactivated" : "Member activated",
-                    )
-                  }
-                >
-                  {selected.active !== false ? "Deactivate" : "Activate"}
-                </Button>
-              </div>
-            </div>
+        ) : null
+      }
+      subtitle={member.email}
+      meta={joinedLabel(member.createdAt)}
+      actions={
+        <>
+          <RolePicker
+            label={`Role for ${member.name}`}
+            value={member.role}
+            disabled={busy}
+            onChange={onRole}
+          />
+          {isYou ? (
+            <span aria-hidden className="size-9 shrink-0 md:size-8" />
           ) : (
-            <div className="flex flex-1 items-center justify-center py-12 text-sm text-muted-foreground">
-              Select a member
-            </div>
+            <RowMenu label={`More actions for ${member.name}`} busy={busy}>
+              {active ? (
+                <DropdownMenuItem variant="destructive" className="py-2 md:py-1.5" onClick={onDeactivate}>
+                  <UserMinus aria-hidden />
+                  Deactivate
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem className="py-2 md:py-1.5" onClick={onReactivate}>
+                  <RotateCcw aria-hidden />
+                  Reactivate
+                </DropdownMenuItem>
+              )}
+            </RowMenu>
           )}
-        </div>
-      )}
-    </div>
+        </>
+      }
+    />
+  )
+}
+
+function RowMenu({
+  label,
+  busy,
+  children,
+}: {
+  label: string
+  busy: boolean
+  children: ReactNode
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 text-muted-foreground md:size-8"
+            aria-label={label}
+            disabled={busy}
+          />
+        }
+      >
+        {busy ? <Loader2 className="motion-safe:animate-spin" aria-hidden /> : <MoreHorizontal aria-hidden />}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

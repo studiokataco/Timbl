@@ -69,21 +69,28 @@ export function ListSkeleton() {
 
 export function KanbanSkeleton() {
   return (
-    <div className="px-4 sm:px-6 py-4 flex-1 flex flex-col min-h-0">
-      <div className="mb-3">
-        <Skeleton className="h-5 w-20 mb-1" />
-        <Skeleton className="h-3 w-80" />
+    <div className="flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-10 lg:pt-10 lg:pb-6">
+      <div className="mb-5 md:mb-6">
+        <Skeleton className="mb-2 h-8 w-32" />
+        <Skeleton className="h-4 w-64" />
       </div>
-      <div className="flex gap-3">
+      <div className="mb-4 flex gap-2 md:mb-5">
+        <Skeleton className="h-9 w-full rounded-lg md:w-60" />
+        <Skeleton className="hidden h-8 w-24 rounded-full md:block" />
+        <Skeleton className="hidden h-8 w-24 rounded-full md:block" />
+        <Skeleton className="hidden h-8 w-32 rounded-full md:block" />
+      </div>
+      <Skeleton className="mb-5 hidden h-2 w-full rounded-full md:block" />
+      <div className="flex gap-2.5 overflow-hidden">
         {Array.from({ length: 5 }).map((_, col) => (
-          <div key={col} className="flex flex-col w-[220px] shrink-0">
-            <div className="flex items-center justify-between mb-2 px-0.5">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-4" />
+          <div key={col} className="flex w-full shrink-0 flex-col md:w-[284px]">
+            <div className="mb-2 flex h-8 items-center gap-2 pl-2">
+              <Skeleton className="size-2 rounded-full" />
+              <Skeleton className="h-3.5 w-20" />
             </div>
-            <div className="bg-secondary/40 rounded-lg p-2 flex flex-col gap-2 min-h-[200px]">
-              {Array.from({ length: (col % 3) + 2 }).map((_, c) => (
-                <Skeleton key={c} className="h-20 w-full rounded-md" />
+            <div className="flex min-h-80 flex-col gap-1.5 rounded-xl bg-secondary/40 p-1.5">
+              {Array.from({ length: (col % 3) + 1 }).map((_, c) => (
+                <Skeleton key={c} className="h-24 w-full rounded-lg" />
               ))}
             </div>
           </div>

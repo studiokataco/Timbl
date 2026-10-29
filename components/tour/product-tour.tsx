@@ -1,23 +1,21 @@
 "use client"
 
-import { useCallback, useEffect, useRef } from "react"
-import { driver, type Driver } from "driver.js"
+import { useEffect } from "react"
+import { usePathname } from "next/navigation"
+import { driver, type Driver, type DriveStep } from "driver.js"
 import "driver.js/dist/driver.css"
 
 /*
- * driver.js-powered product tour. Independent of the setup wizard at
- * /onboarding (which collects data) - this one teaches navigation.
+ * driver.js product tour that teaches navigation. It only starts from an
+ * explicit click (the welcome dialog's last step, or Settings). No autostart:
+ * any per-browser "seen" flag replays it uninvited on a new browser, device
+ * or workspace.
  *
- * Stops point at sidebar links via stable href selectors, so the tour
- * works without seeding data-tour attributes across every component.
- *
- * Auto-launch: fires once per browser on first /calendar landing, gated by
- * a localStorage flag. Re-run is available from Settings → Workspace.
+ * Steps target sidebar links by href. When a target isn't visible (the sidebar
+ * is a drawer on phones) the step renders as a centred popover instead.
  */
 
-const STORAGE_KEY = "timbl.tour.completed.v1"
-
-const STEPS = [
+const STEPS: DriveStep[] = [
   {
     element: 'a[href="/calendar"]',
     popover: {
@@ -47,7 +45,7 @@ const STEPS = [
     popover: {
       title: "AI Studio",
       description:
-        "Where your AI agents live. Ideate, draft, review, and schedule.",
+        "Your agent team. Approve what they prepare, see how each one is doing, and add or tune agents.",
     },
   },
   {
@@ -66,67 +64,41 @@ const STEPS = [
         "Connect channels, invite teammates, re-run the setup wizard, or replay this tour.",
     },
   },
-] as const
+]
+
+let active: Driver | null = null
+
+function visible(selector: string): boolean {
+  const el = document.querySelector(selector)
+  return !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden"
+}
 
 export function startProductTour(): void {
   if (typeof window === "undefined") return
-  const d: Driver = driver({
+  active?.destroy()
+  const steps = STEPS.map((s) =>
+    typeof s.element === "string" && visible(s.element) ? { ...s } : { popover: s.popover },
+  )
+  const d = driver({
     showProgress: true,
     nextBtnText: "Next",
     prevBtnText: "Back",
     doneBtnText: "Got it",
-    steps: STEPS.map((s) => ({ ...s })),
+    steps,
     onDestroyed: () => {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, new Date().toISOString())
-      } catch {
-        /* private-mode storage blocked - tour will offer again next visit */
-      }
+      if (active === d) active = null
     },
   })
+  active = d
   d.drive()
 }
 
-export function hasSeenProductTour(): boolean {
-  if (typeof window === "undefined") return true
-  try {
-    return Boolean(window.localStorage.getItem(STORAGE_KEY))
-  } catch {
-    return true
-  }
-}
-
-export function resetProductTourSeen(): void {
-  if (typeof window === "undefined") return
-  try {
-    window.localStorage.removeItem(STORAGE_KEY)
-  } catch {
-    /* ignore */
-  }
-}
-
-/* Mount in the app layout. Fires once on first paint if the user has
- * never seen the tour. Skips if the sidebar isn't mounted yet (eg. a
- * non-app route somehow lands here). */
-export function ProductTourAutostart({
-  enabled,
-}: {
-  enabled: boolean
-}) {
-  const startedRef = useRef(false)
-  const start = useCallback(() => {
-    if (startedRef.current) return
-    if (hasSeenProductTour()) return
-    if (!document.querySelector('a[href="/calendar"]')) return
-    startedRef.current = true
-    startProductTour()
-  }, [])
-
+/* Mount once in the app layout: closes an open tour on navigation so a
+ * popover never points at a page that's gone. */
+export function ProductTourRouteGuard() {
+  const pathname = usePathname()
   useEffect(() => {
-    if (!enabled) return
-    const t = window.setTimeout(start, 600)
-    return () => window.clearTimeout(t)
-  }, [enabled, start])
-
+    active?.destroy()
+  }, [pathname])
   return null
 }

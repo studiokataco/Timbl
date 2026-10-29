@@ -39,6 +39,11 @@ export const brandConfigSchema = audit.extend({
   id: z.string().default("default"),
   organizationId: z.string(),
   name: z.string().min(1).max(120).default("Default brand"),
+  avatarUrl: z.string().url().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
 
   /* Empty until the wizard fills them - a freshly created brand is a shell an
    * agency configures afterwards, so these cannot be min(1) or the shell would

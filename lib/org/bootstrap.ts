@@ -52,10 +52,10 @@ const DEFAULT_KANBAN_COLUMNS = [
   { id: "researching", label: "Researching", color: "#fb923c" },
   { id: "designing", label: "Designing", color: "#ec4899" },
   { id: "review", label: "Review", color: "#8b5cf6" },
-  { id: "scheduled", label: "Scheduled", color: "#3b82f6" },
-  { id: "posted", label: "Posted", color: "#10b981" },
-  { id: "missed", label: "Missed", color: "#ef4444" },
-  { id: "archived", label: "Archived", color: "#64748b" },
+  { id: "scheduled", label: "Scheduled", color: "#3b82f6", group: "done" },
+  { id: "posted", label: "Posted", color: "#10b981", group: "done" },
+  { id: "missed", label: "Missed", color: "#ef4444", group: "closed" },
+  { id: "archived", label: "Archived", color: "#64748b", group: "closed" },
 ]
 
 export interface BootstrapNewOrgInput {
@@ -131,6 +131,7 @@ export async function bootstrapNewOrg(
         organizationId: input.orgId,
         label: c.label,
         color: c.color,
+        group: c.group ?? "active",
         sortOrder: i,
         isSystemDefault: true,
         createdAt: now,
@@ -151,7 +152,7 @@ export async function bootstrapNewOrg(
     await brandRef.set({
       id: DEFAULT_BRAND_ID,
       organizationId: input.orgId,
-      name: "Default brand",
+      name: input.name,
       voice: "",
       audience: "",
       channels: [],

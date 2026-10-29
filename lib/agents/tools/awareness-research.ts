@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { awarenessDaysPath, orgAwarenessProposalsPath } from "@/lib/firebase/paths"
 import { detectLlmStatus } from "../runtime/llm-registry"
-import { awarenessImportance, awarenessRecurrence } from "@/lib/schemas/awarenessDay"
+import { awarenessRecurrence } from "@/lib/schemas/awarenessDay"
 import { isoDate } from "@/lib/schemas/_shared"
 
 import { getRuntimeCtx } from "../runtime/context"
@@ -42,7 +42,6 @@ const input = z.object({
   sourceUrls: z
     .array(z.string().url())
     .min(1, "Each proposal needs at least one source URL from your search results"),
-  importance: awarenessImportance.default("medium"),
   recurringPattern: awarenessRecurrence.default("annual"),
 })
 
@@ -162,7 +161,6 @@ export const proposeAwarenessDayTool = new FunctionTool({
         /* Only the citations that survived the check - a reviewer clicking
          * through must never land on a dead redirect handle. */
         sourceUrls: citations,
-        importance: item.importance,
         recurringPattern: item.recurringPattern,
         proposed: true,
         status: "proposed",

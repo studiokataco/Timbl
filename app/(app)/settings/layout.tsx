@@ -1,20 +1,37 @@
-import { SettingsNav } from "@/components/shared/settings-nav"
+import { SettingsRail, SettingsTabs, type SettingsNavData } from "@/components/shared/settings-nav"
+import { getCurrentUserProfile, getCurrentWorkspaceIdentity } from "@/lib/identity/profile.server"
+import { getBrandSwitcherData } from "@/lib/queries/brands.server"
 
-/*
- * Settings shell - horizontal sub-nav under the global TopBar (provided by
- * the root (app) layout). Each settings page renders only its own content
- * area; the layout owns chrome below TopBar. Keep page-level components
- * focused on their data, not on chrome positioning.
- */
-export default function SettingsLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const [user, workspace, brands] = await Promise.all([
+    getCurrentUserProfile(),
+    getCurrentWorkspaceIdentity(),
+    getBrandSwitcherData(),
+  ])
+  const nav: SettingsNavData = {
+    user: { name: user.name, email: user.email, avatarUrl: user.avatarUrl },
+    workspace: {
+      name: workspace.name,
+      logoUrl: workspace.logoUrl,
+      color: workspace.color,
+      planLabel: workspace.planLabel,
+    },
+    brandCount: brands.brands.length,
+  }
+
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <SettingsNav />
-      <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
+    <div className="flex flex-1">
+      <aside className="hidden w-64 shrink-0 border-r border-border lg:block">
+        <div className="sticky top-16">
+          <SettingsRail data={nav} />
+        </div>
+      </aside>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="lg:hidden">
+          <SettingsTabs data={nav} />
+        </div>
+        {children}
+      </div>
     </div>
   )
 }

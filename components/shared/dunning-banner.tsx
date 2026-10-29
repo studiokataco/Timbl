@@ -15,7 +15,7 @@ export function DunningBanner() {
   if (billingStatus !== "past_due") return null
 
   return (
-    <div className="flex items-center justify-center gap-2 bg-coral/20 px-4 py-2 text-center text-sm text-foreground">
+    <div className="flex items-center justify-center gap-2 bg-amber-500/15 dark:bg-amber-500/20 px-4 py-2 text-center text-sm text-foreground">
       <span>Your payment is past due - agent runs are paused.</span>
       <Link href="/settings/billing" className="font-medium underline underline-offset-2">
         Update billing

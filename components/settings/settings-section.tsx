@@ -9,33 +9,22 @@ type Props = {
   className?: string
 }
 
-export function SettingsSection({
-  title,
-  description,
-  action,
-  children,
-  isFirst = false,
-  className,
-}: Props) {
+export function SettingsSection({ title, description, action, children, isFirst = false, className }: Props) {
   return (
-    <section
-      className={cn(
-        "grid grid-cols-1 gap-x-8 gap-y-5 lg:grid-cols-12",
-        !isFirst && "border-t border-border mt-10 pt-10",
-        className,
-      )}
-    >
-      <div className="lg:col-span-4 lg:max-w-xs">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          {action && <div className="shrink-0 lg:hidden">{action}</div>}
+    <section className={cn("@container border-b border-border py-8 last:border-b-0", isFirst && "pt-2", className)}>
+      <div className="grid gap-4 @xl:grid-cols-[220px_minmax(0,1fr)] @xl:gap-10">
+        <div>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-[14px] font-semibold text-foreground">{title}</h2>
+            {action && <div className="shrink-0 @xl:hidden">{action}</div>}
+          </div>
+          {description && (
+            <p className="mt-1 max-w-[32ch] text-[13px] leading-snug text-muted-foreground">{description}</p>
+          )}
+          {action && <div className="mt-4 hidden @xl:block">{action}</div>}
         </div>
-        {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
-        )}
-        {action && <div className="hidden lg:block mt-4">{action}</div>}
+        <div className="min-w-0">{children}</div>
       </div>
-      <div className="lg:col-span-8 min-w-0">{children}</div>
     </section>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 
+import { CHANNEL_LABELS } from "@/lib/labels/enums"
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchBrandConfig } from "@/lib/actions/brand-config"
 import type { BrandConfig } from "@/lib/schemas/brandConfig"
@@ -12,12 +13,11 @@ import type { BrandConfig } from "@/lib/schemas/brandConfig"
  * tool - can invalidate it through queryClient.invalidateQueries.
  */
 
-const QUERY_KEY = ["brand-config"] as const
 
-export function BrandPreviewPanel() {
+export function BrandPreviewPanel({ brandId }: { brandId?: string }) {
   const { data, isLoading } = useQuery<BrandConfig | null>({
-    queryKey: QUERY_KEY,
-    queryFn: () => fetchBrandConfig(),
+    queryKey: ["brand-config", brandId ?? "default"],
+    queryFn: () => fetchBrandConfig(brandId),
     refetchInterval: 4_000, // poll while the wizard is editing
   })
 
@@ -40,16 +40,16 @@ export function BrandPreviewPanel() {
   }
 
   return (
-    <dl className="space-y-2.5">
-      <Field label="Voice">{data.voice}</Field>
-      <Field label="Audience">{data.audience}</Field>
+    <dl className="space-y-3">
+      <Field label="Voice">{data.voice || "Not set yet"}</Field>
+      <Field label="Audience">{data.audience || "Not set yet"}</Field>
       <Field label="Channels">
-        {data.channels.length ? data.channels.join(", ") : "-"}
+        {data.channels.length ? data.channels.map((c) => CHANNEL_LABELS[c]).join(", ") : "None yet"}
       </Field>
       <Field label="Cadence">
-        {data.targetCadence.perWeek}× / week
+        {data.targetCadence.perWeek === 1 ? "1 post a week" : `${data.targetCadence.perWeek} posts a week`}
         {data.targetCadence.preferredDays.length
-          ? ` · ${data.targetCadence.preferredDays.join(", ")}`
+          ? ` · ${data.targetCadence.preferredDays.map((d) => d[0].toUpperCase() + d.slice(1)).join(", ")}`
           : ""}
         {data.targetCadence.preferredTimes.length
           ? ` · ${data.targetCadence.preferredTimes.join(", ")}`
@@ -91,10 +91,10 @@ function Field({
 }) {
   return (
     <div className="space-y-0.5">
-      <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
+      <dt className="text-[12px] text-muted-foreground">
         {label}
       </dt>
-      <dd className="text-xs text-foreground leading-snug line-clamp-4">
+      <dd className="text-[13px] text-foreground leading-snug line-clamp-4">
         {children}
       </dd>
     </div>

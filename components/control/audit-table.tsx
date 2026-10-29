@@ -1,3 +1,5 @@
+import { ChevronDown } from "lucide-react"
+
 import { OrgKey } from "@/components/control/org-key"
 import { relativeTime } from "@/lib/platform/format"
 import type { PlatformAuditAction, PlatformAuditEntry, PlatformSignalKind } from "@/lib/platform/schema"
@@ -135,7 +137,8 @@ export function AuditTable({
               <div className="mt-1 text-xs text-muted-foreground">{entry.actorEmail}</div>
               {hasDetail ? (
                 <details className="group mt-2">
-                  <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground group-open:text-foreground">
+                  <summary className="flex w-fit cursor-pointer select-none list-none items-center gap-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground group-open:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                    <ChevronDown aria-hidden className="size-3.5 shrink-0 -rotate-90 transition-transform duration-200 group-open:rotate-0 motion-reduce:transition-none" />
                     <span className="group-open:hidden">Show payload</span>
                     <span className="hidden group-open:inline">Hide payload</span>
                   </summary>
@@ -211,7 +214,8 @@ function AuditRow({
       <td className="max-w-72 px-3 py-2">
         {hasDetail ? (
           <details className="group">
-            <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground group-open:text-foreground">
+            <summary className="flex w-fit cursor-pointer select-none list-none items-center gap-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground group-open:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              <ChevronDown aria-hidden className="size-3.5 shrink-0 -rotate-90 transition-transform duration-200 group-open:rotate-0 motion-reduce:transition-none" />
               <span className="group-open:hidden">Show payload</span>
               <span className="hidden group-open:inline">Hide payload</span>
             </summary>

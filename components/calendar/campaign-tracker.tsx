@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useId } from "react"
 import Link from "next/link"
 import { format, parseISO } from "date-fns"
-import { ChevronDown, Megaphone } from "lucide-react"
+import { Megaphone } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { DisclosureBody, DisclosureTrigger, useRemembered } from "@/components/ui/disclosure"
 import { CAMPAIGN_STATUS_LABELS, labelOr } from "@/lib/labels/enums"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Campaign } from "@/lib/schemas"
@@ -20,7 +21,8 @@ type Props = { campaigns: CampaignRow[] }
 const FAN_MAX = 3
 
 export function CampaignTracker({ campaigns }: Props) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useRemembered("calendar.campaigns", true)
+  const bodyId = useId()
 
   const active = campaigns
     .filter((c) => c.status === "active")
@@ -67,6 +69,14 @@ export function CampaignTracker({ campaigns }: Props) {
     )
   })
 
+  const nextEnd = active.find((c) => c.endDate)?.endDate
+  const summary = [
+    `${active.length} active`,
+    nextEnd && `next ends ${format(parseISO(nextEnd), "d MMM")}`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
   const remainder = active.length - FAN_MAX
   if (remainder > 0) {
     fanCards.push(
@@ -78,31 +88,32 @@ export function CampaignTracker({ campaigns }: Props) {
 
   return (
     <section className="flex flex-col gap-3 border-t border-border py-6">
-      <button
-        type="button"
-        className="flex w-full items-center gap-1.5 text-left"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
+      <DisclosureTrigger
+          heading={2}
+        open={open}
+        onOpenChange={setOpen}
+        controls={bodyId}
+        chevronClassName="size-3.5"
+        className="gap-1.5 rounded-sm"
       >
         <Megaphone aria-hidden className="size-3.5 text-muted-foreground" />
-        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Campaigns
-        </h2>
+        </span>
         {active.length > 0 && (
           <Badge variant="secondary" className="font-normal text-[10px] px-1.5 py-0">
             {active.length}
           </Badge>
         )}
-        <ChevronDown
-          aria-hidden
-          className={`ml-auto size-3.5 text-muted-foreground transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
+        {!open && (
+          <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+            {summary}
+          </span>
+        )}
+      </DisclosureTrigger>
 
-      {open ? (
-        active.length === 0 ? (
+      <DisclosureBody id={bodyId} open={open}>
+        {active.length === 0 ? (
           <p className="text-xs text-muted-foreground">No active campaigns.</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
@@ -158,14 +169,16 @@ export function CampaignTracker({ campaigns }: Props) {
               )
             })}
           </ul>
-        )
-      ) : active.length > 0 ? (
+        )}
+      </DisclosureBody>
+
+      {!open && active.length > 0 && (
         <StackedDeck
           cards={fanCards}
           slotHeight={82}
           onClick={() => setOpen(true)}
         />
-      ) : null}
+      )}
 
       <Link
         href="/campaigns"

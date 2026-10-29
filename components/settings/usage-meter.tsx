@@ -1,12 +1,5 @@
+import { MiniRing, StatCell } from "@/components/shared/stat-grid"
 import { cn } from "@/lib/utils"
-
-/*
- * Compact per-metric meter. Presentational only - safe to drop into any
- * server or client surface that already has { used, limit }. Tone follows
- * the DESIGN.md semantic tokens: ink fill while comfortable, warning amber
- * from 80%, destructive red at/over the limit. Unlimited metrics drop the
- * track entirely and read as plain status text.
- */
 
 export type UsageMeterTone = "ok" | "near" | "over" | "unlimited"
 
@@ -19,66 +12,45 @@ export function usageMeterTone(used: number, limit: number | null): UsageMeterTo
   return "ok"
 }
 
-const FILL_TONE: Record<UsageMeterTone, string> = {
-  ok: "bg-foreground",
-  near: "bg-warning",
-  over: "bg-destructive",
-  unlimited: "bg-badge-emerald/40",
+const RING_TONE: Record<UsageMeterTone, string> = {
+  ok: "stroke-foreground",
+  near: "stroke-warning",
+  over: "stroke-destructive",
+  unlimited: "stroke-foreground",
 }
+
+const count = (n: number) => n.toLocaleString("en-IN")
 
 export function UsageMeter({
   label,
   used,
   limit,
-  hint,
   className,
 }: {
   label: string
   used: number
   limit: number | null
-  hint?: string
   className?: string
 }) {
   const tone = usageMeterTone(used, limit)
-  const unlimited = tone === "unlimited"
-  const pct =
-    limit && limit > 0
-      ? Math.min(100, Math.max(used > 0 ? 2 : 0, (used / limit) * 100))
-      : used > 0
-        ? 100
-        : 0
+  const sub = limit === null ? "No limit" : limit === 0 ? "Not on plan" : `of ${count(limit)}`
 
   return (
-    <div className={cn("min-w-0", className)}>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-sm font-medium text-foreground">{label}</span>
-        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-          {used.toLocaleString("en-IN")}
-          {unlimited ? (
-            <span className="ml-1 font-medium text-badge-emerald">Unlimited</span>
-          ) : (
-            ` / ${limit?.toLocaleString("en-IN")}`
-          )}
-        </span>
-      </div>
-      {unlimited ? null : (
-        <div
-          role="meter"
-          aria-label={label}
-          aria-valuenow={used}
-          aria-valuemin={0}
-          aria-valuemax={limit ?? undefined}
-          className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-secondary"
-        >
-          <div
-            className={cn("h-full rounded-full transition-[width]", FILL_TONE[tone])}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      )}
-      {hint ? (
-        <p className="mt-1 text-xs leading-snug text-muted-foreground">{hint}</p>
-      ) : null}
+    <div className={cn("grid", className)}>
+      <StatCell
+        label={label}
+        value={count(used)}
+        sub={<span className={cn(tone === "over" && "text-destructive")}>{sub}</span>}
+        visual={
+          limit ? (
+            <MiniRing
+              value={used / limit}
+              tone={RING_TONE[tone]}
+              label={`${label}: ${count(used)} of ${count(limit)} used`}
+            />
+          ) : undefined
+        }
+      />
     </div>
   )
 }

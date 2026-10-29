@@ -119,9 +119,9 @@ export function CalendarToolbar({
             >
               <ChevronLeft aria-hidden className="size-4" />
             </Button>
-            <h2 className="text-sm font-semibold text-foreground px-1 whitespace-nowrap">
+            <p className="text-sm font-semibold text-foreground px-1 whitespace-nowrap">
               {title}
-            </h2>
+            </p>
             <Button
               variant="ghost"
               size="icon"
@@ -171,9 +171,9 @@ export function CalendarToolbar({
               <ChevronRight aria-hidden className="size-4" />
             </Button>
           </div>
-          <h2 className="text-display-sm text-foreground ml-1 truncate min-w-0">
+          <h1 className="text-display-sm text-foreground ml-1 truncate min-w-0">
             {title}
-          </h2>
+          </h1>
         </div>
 
         <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Loader2, Plus, Sparkles } from "lucide-react"
@@ -8,90 +8,57 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { installDefaultAgents } from "@/lib/actions/agent-configs"
-import { AGENT_TEMPLATES } from "@/lib/agents/template-catalog"
-import { AddAgentSheet } from "./add-agent-sheet"
-import type { AgentConfig } from "@/lib/schemas/agentConfig"
+import { BOUTIQUE_TEMPLATES } from "@/lib/agents/template-catalog"
+import { AgentGlyph } from "./bits"
 
-/*
- * Center-column empty state shown by `studio-workspace` when the org has no
- * agent configs yet. Lets the admin one-tap install the full default set
- * (13 templates) or open the picker to add a single agent.
- */
-
-interface Props {
-  agents: AgentConfig[] // for the picker - usually [] when this renders
-}
-
-export function EmptyRosterCta({ agents }: Props) {
+export function EmptyRosterCta({ onAdd }: { onAdd: () => void }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
-  const [addOpen, setAddOpen] = useState(false)
 
   function installAll() {
     startTransition(async () => {
       const res = await installDefaultAgents()
-      if (res.ok) {
-        const n = res.installed?.length ?? 0
-        toast.success(
-          n === 0
-            ? "All defaults are already installed"
-            : `Installed ${n} default agent${n === 1 ? "" : "s"}`,
-        )
-        queryClient.invalidateQueries({ queryKey: ["agent-configs"] })
-        router.refresh()
-      } else {
-        toast.error("Install failed", { description: res.error })
+      if (!res.ok) {
+        toast.error("Couldn't add the starter agents", { description: res.error })
+        return
       }
+      const n = res.installed?.length ?? 0
+      toast.success(n === 0 ? "The starter agents are already added" : `Added ${n} agent${n === 1 ? "" : "s"}`)
+      queryClient.invalidateQueries({ queryKey: ["agent-configs"] })
+      router.refresh()
     })
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 py-16 gap-6">
-      <div className="max-w-md text-center flex flex-col items-center gap-3">
-        <div className="size-12 rounded-full bg-secondary flex items-center justify-center">
-          <Sparkles className="size-5 text-muted-foreground" />
-        </div>
-        <h2 className="font-heading text-title-lg text-foreground">
-          No agents yet
-        </h2>
-        <p className="text-[13px] text-muted-foreground leading-relaxed max-w-[42ch]">
-          Studio orchestrates {AGENT_TEMPLATES.length} pre-built agents that
-          plan, draft, review, and schedule your posts. Install the default
-          set in one click, or add them one at a time.
+    <div className="flex flex-col items-center gap-6 rounded-xl border border-dashed border-border px-6 py-14 text-center">
+      <div className="flex -space-x-2" aria-hidden>
+        {BOUTIQUE_TEMPLATES.slice(0, 5).map((t) => (
+          <span key={t.name} className="rounded-lg bg-background">
+            <AgentGlyph name={t.name} />
+          </span>
+        ))}
+      </div>
+      <div className="max-w-md space-y-1.5">
+        <h2 className="text-title-md text-foreground">Build your agent team</h2>
+        <p className="text-[14px] leading-relaxed text-muted-foreground">
+          Agents plan, draft and schedule posts in the background, and ask you before anything is published.
+          Start with the recommended set or pick them one at a time.
         </p>
       </div>
-
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Button onClick={installAll} disabled={pending}>
-          {pending ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="size-3.5" />
-          )}
-          <span className="ml-1.5">Install default agents</span>
+          {pending ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Sparkles className="size-3.5" aria-hidden />}
+          Add the starter set
         </Button>
-        <Button
-          variant="secondary"
-          onClick={() => setAddOpen(true)}
-          disabled={pending}
-        >
-          <Plus className="size-3.5" />
-          <span className="ml-1.5">Add one at a time</span>
+        <Button variant="outline" onClick={onAdd} disabled={pending}>
+          <Plus className="size-3.5" aria-hidden />
+          Pick agents
         </Button>
       </div>
-
-      <p className="text-[11px] text-muted-foreground/80 max-w-[42ch] text-center">
-        Each install is idempotent - agents you already have stay untouched.
-        You can edit prompts, models, and budgets anytime from Settings →
-        Agents.
+      <p className="max-w-[44ch] text-[12px] text-muted-foreground">
+        Agents you already have stay as they are. You can change any agent&rsquo;s schedule and instructions later.
       </p>
-
-      <AddAgentSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        installedAgents={agents}
-      />
     </div>
   )
 }

@@ -10,11 +10,11 @@ import type { StorageProvider } from "@/lib/schemas/_shared"
 import type { StorageAccountPublic } from "@/lib/schemas"
 
 const ERRORS: Record<string, string> = {
-  unknown_provider: "Unknown storage provider.",
-  not_configured: "This provider isn't available yet.",
-  state: "Connection expired or was tampered with. Try again.",
+  unknown_provider: "That storage app isn't supported.",
+  not_configured: "This storage app isn't available yet.",
+  state: "The connection expired before it finished. Try again.",
   callback: "Couldn't finish connecting. Try again.",
-  oauth: "The provider didn't return an authorization code.",
+  oauth: "The storage app didn't send back an approval. Try again.",
 }
 
 export function StorageClient({
@@ -38,7 +38,5 @@ export function StorageClient({
     }
   }, [params])
 
-  return (
-    <StorageManager accounts={accounts} availableProviders={availableProviders} />
-  )
+  return <StorageManager accounts={accounts} availableProviders={availableProviders} />
 }
