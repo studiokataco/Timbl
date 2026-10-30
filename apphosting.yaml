@@ -198,11 +198,32 @@ env:
       - RUNTIME
 
   # Billing self-serve: trial + subscription management UI. Paid checkout
-  # additionally needs RAZORPAY_KEY_ID/SECRET + RAZORPAY_PLAN_* bindings -
-  # until those land, paidCheckoutAvailable() is false and paid tiers show
-  # "Coming soon" while the 30-day trial works end to end.
+  # needs the RAZORPAY_* bindings below; without them paidCheckoutAvailable()
+  # is false and paid tiers show "Coming soon".
   - variable: BILLING_SELF_SERVE_ENABLED
     value: "1"
+    availability:
+      - RUNTIME
+
+  - variable: RAZORPAY_KEY_ID
+    secret: RAZORPAY_KEY_ID
+    availability:
+      - RUNTIME
+
+  - variable: RAZORPAY_KEY_SECRET
+    secret: RAZORPAY_KEY_SECRET
+    availability:
+      - RUNTIME
+
+  # Live-mode plan ids, created by `pnpm seed:razorpay`. Not secret. Re-running
+  # the seed creates new plans, so only change these deliberately.
+  - variable: RAZORPAY_PLAN_STUDIO_V1
+    value: plan_Tu2ovWsYF4JQZ6
+    availability:
+      - RUNTIME
+
+  - variable: RAZORPAY_PLAN_AGENCY_V1
+    value: plan_Tu2ovhVVbB89AP
     availability:
       - RUNTIME
 
