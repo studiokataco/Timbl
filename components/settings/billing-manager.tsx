@@ -32,7 +32,7 @@ import { loadCheckout } from "@/lib/billing/razorpay-checkout"
 
 export const COMPARE_PLANS = { key: "settings.billing.plans", anchor: "compare-plans" } as const
 
-const SALES_MAILTO = "mailto:hello@timbl.app?subject=Timbl%20plan%20enquiry"
+const SALES_MAILTO = "mailto:hello@kataco.in?subject=Timbl%20plan%20enquiry"
 
 const DOWNGRADE_REASONS = [
   "Too expensive",
