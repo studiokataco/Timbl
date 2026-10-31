@@ -16,7 +16,7 @@ export default async function RevenuePage() {
       <div className="mb-6 flex items-start justify-between gap-3">
         <PageHeading
           title="Revenue & financials"
-          description="Estimated from assigned plans - Razorpay billing (Phase H) is not live, so this is contracted value, not invoiced revenue."
+          description="Estimated from assigned plans at list price. Invoiced amounts live in Razorpay."
         />
         <ReportExport />
       </div>
@@ -98,8 +98,8 @@ export default async function RevenuePage() {
           </table>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Scale tier is custom-priced and excluded from the MRR estimate. Real
-          invoices and payment history arrive with Razorpay (Phase H).
+          Scale is custom-priced and trials are free, so neither adds to the
+          MRR estimate. Invoices and payment history are in Razorpay.
         </p>
       </section>
     </div>

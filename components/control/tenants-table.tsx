@@ -43,7 +43,7 @@ type SortKey =
   | "failureRate"
   | "lastRunAt"
 
-const TIER_ORDER = ["free", "studio", "agency", "scale"]
+const TIER_ORDER = ["free", "trial", "studio", "agency", "scale"]
 
 function trialDaysLeft(row: TenantTableRow): number | null {
   if (row.billingStatus !== "trialing" || !row.trialEndsAt) return null

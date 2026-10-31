@@ -3,6 +3,7 @@ import "server-only"
 import { getAdminDb } from "@/lib/firebase/admin"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
 import { orgAgentRunsPath, orgPath, orgUsersPath } from "@/lib/firebase/paths"
+import { FREE_PLAN_ID } from "@/lib/plans/plans"
 import {
   platformDiagnosticRunSchema,
   platformDiagnosticsPath,
@@ -145,6 +146,16 @@ function lifecycleFromOrgDoc(d: FirebaseFirestore.DocumentData): Lifecycle {
   }
 }
 
+/* Mirrors the lazy trial expiry in lib/plans/gate.ts without the write-back, so
+ * an expired trial that never signed in again still reads as Free here. */
+function expireStaleTrial(row: OrgRow): OrgRow {
+  if (row.billingStatus === "trialing" && row.trialEndsAt && Date.parse(row.trialEndsAt) < Date.now()) {
+    row.plan = FREE_PLAN_ID
+    row.billingStatus = "canceled"
+  }
+  return row
+}
+
 function rowFromRollup(orgId: string, d: FirebaseFirestore.DocumentData): OrgRow {
   return {
     orgId: (d.orgId as string) ?? orgId,
@@ -175,7 +186,7 @@ function rowFromOrgDoc(
   seats: number,
 ): OrgRow {
   const onboarding = (d.onboarding ?? {}) as { completedAt?: string }
-  return {
+  return expireStaleTrial({
     orgId,
     name: (d.name as string) ?? orgId,
     plan: (d.plan as string) ?? "agency_v1",
@@ -188,7 +199,7 @@ function rowFromOrgDoc(
     onboardingCompletedAt: onboarding.completedAt ?? null,
     lastRunAt: null,
     ...lifecycleFromOrgDoc(d),
-  }
+  })
 }
 
 export async function listOrgRows(): Promise<OrgRow[]> {
@@ -206,9 +217,12 @@ export async function listOrgRows(): Promise<OrgRow[]> {
     const row = rows.get(doc.id)
     if (!row) continue
     const d = doc.data()
+    row.name = (d.name as string) ?? row.name
+    row.plan = (d.plan as string) ?? row.plan
     row.status = (d.status as "active" | "suspended") ?? row.status
     row.suspendedAt = (d.suspendedAt as string | null) ?? null
     Object.assign(row, lifecycleFromOrgDoc(d))
+    expireStaleTrial(row)
   }
   const missing = orgsSnap.docs.filter((doc) => !rows.has(doc.id))
   const seatCounts = await Promise.all(
@@ -246,6 +260,7 @@ export async function getOrgRow(orgId: string): Promise<OrgRow | null> {
     row.status = (d.status as "active" | "suspended") ?? "active"
     row.suspendedAt = (d.suspendedAt as string | null) ?? null
     Object.assign(row, lifecycleFromOrgDoc(d))
+    expireStaleTrial(row)
   }
   return row
 }

@@ -27,8 +27,16 @@ export async function setOrgPlan(raw: unknown): Promise<PlatformActionResult> {
   const snap = await ref.get()
   if (!snap.exists) return { ok: false, error: "org_not_found" }
   const from = (snap.data()?.plan as string | undefined) ?? null
+  const endsTrial = snap.data()?.billingStatus === "trialing"
 
-  await ref.set({ plan: planId, updatedAt: new Date().toISOString() }, { merge: true })
+  await ref.set(
+    {
+      plan: planId,
+      ...(endsTrial ? { billingStatus: "manual" } : {}),
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  )
   await writePlatformAudit({
     actorUid: actor.uid,
     actorEmail: actor.email,

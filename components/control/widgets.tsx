@@ -94,6 +94,7 @@ export function OrgAvatar({
 
 const TIER_DOT: Record<string, string> = {
   free: "bg-muted-foreground/50",
+  trial: "bg-emerald-500",
   studio: "bg-blue-500",
   agency: "bg-violet-500",
   scale: "bg-amber-500",

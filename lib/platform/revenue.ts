@@ -6,10 +6,10 @@ import { getPlan, PLANS } from "@/lib/plans/plans"
 import { getGlobalRollup, listOrgRows, type OrgRow } from "./queries"
 
 /*
- * Revenue view - forward-looking. Razorpay (Phase H) is not built, so MRR is
- * computed from each org's assigned plan and the INR price map in
- * lib/plans/plans.ts. It is an estimate of contracted value, not invoiced
- * revenue.
+ * Revenue view - MRR is computed from each org's assigned plan and the INR
+ * price map in lib/plans/plans.ts. It is an estimate of contracted value;
+ * invoiced amounts live in Razorpay. Trials run on the Agency plan id but are
+ * counted as their own tier at zero MRR.
  *
  * Subscription money is denominated in INR. Infra cost is the real metered LLM
  * spend, which providers (Anthropic/Gemini) bill in USD - it is converted to
@@ -37,12 +37,24 @@ export interface RevenueSummary {
   breakdown: PlanBreakdown[]
 }
 
+const TRIAL_TIER = "trial"
+const TRIAL_LABEL = "Trial"
+
+function isTrialing(billingStatus: string | null | undefined): boolean {
+  return billingStatus === "trialing"
+}
+
 export async function getRevenueSummary(): Promise<RevenueSummary> {
   await requirePlatformAdmin()
   const [orgs, rollup] = await Promise.all([listOrgRows(), getGlobalRollup()])
 
   const counts = new Map<string, number>()
+  let trialOrgs = 0
   for (const org of orgs) {
+    if (isTrialing(org.billingStatus)) {
+      trialOrgs += 1
+      continue
+    }
     const planId = getPlan(org.plan).id
     counts.set(planId, (counts.get(planId) ?? 0) + 1)
   }
@@ -58,6 +70,14 @@ export async function getRevenueSummary(): Promise<RevenueSummary> {
       monthlyPriceInr: price,
       estMrrInr: price ? price * orgsOnPlan : 0,
     }
+  })
+  breakdown.push({
+    planId: TRIAL_TIER,
+    label: TRIAL_LABEL,
+    tier: TRIAL_TIER,
+    orgs: trialOrgs,
+    monthlyPriceInr: 0,
+    estMrrInr: 0,
   })
 
   const estMrrInr = breakdown.reduce((sum, b) => sum + b.estMrrInr, 0)
@@ -89,13 +109,18 @@ export interface TenantFinancials {
   includedSeats: number
 }
 
-export function tenantFinancials(planId: string | undefined, infraMtdUsd: number): TenantFinancials {
+export function tenantFinancials(
+  planId: string | undefined,
+  infraMtdUsd: number,
+  billingStatus?: string | null,
+): TenantFinancials {
   const plan = getPlan(planId)
-  const mrr = plan.monthlyPriceInr
+  const trialing = isTrialing(billingStatus)
+  const mrr = trialing ? 0 : plan.monthlyPriceInr
   const infraMtdInr = infraMtdUsd * USD_TO_INR
   return {
-    tier: plan.tier,
-    planLabel: plan.label,
+    tier: trialing ? TRIAL_TIER : plan.tier,
+    planLabel: trialing ? TRIAL_LABEL : plan.label,
     mrrInr: mrr,
     arrInr: mrr === null ? null : mrr * 12,
     infraMtdInr,
@@ -124,10 +149,10 @@ export async function getTierFinancials(): Promise<TierFinancials[]> {
 export function tierFinancialsFromRows(rows: OrgRow[]): TierFinancials[] {
   const byTier = new Map<string, TierFinancials>()
   for (const row of rows) {
-    const plan = getPlan(row.plan)
-    const t = byTier.get(plan.tier) ?? {
-      tier: plan.tier,
-      label: plan.label,
+    const fin = tenantFinancials(row.plan, row.mtdUsdCost, row.billingStatus)
+    const t = byTier.get(fin.tier) ?? {
+      tier: fin.tier,
+      label: fin.planLabel,
       orgs: 0,
       mrrInr: 0,
       arrInr: 0,
@@ -135,11 +160,11 @@ export function tierFinancialsFromRows(rows: OrgRow[]): TierFinancials[] {
       marginInr: 0,
     }
     t.orgs += 1
-    t.mrrInr += plan.monthlyPriceInr ?? 0
-    t.infraMtdInr += row.mtdUsdCost * USD_TO_INR
-    byTier.set(plan.tier, t)
+    t.mrrInr += fin.mrrInr ?? 0
+    t.infraMtdInr += fin.infraMtdInr
+    byTier.set(fin.tier, t)
   }
-  const order = ["free", "studio", "agency", "scale"]
+  const order = ["free", TRIAL_TIER, "studio", "agency", "scale"]
   return [...byTier.values()]
     .map((t) => ({ ...t, arrInr: t.mrrInr * 12, marginInr: t.mrrInr - t.infraMtdInr }))
     .sort((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier))

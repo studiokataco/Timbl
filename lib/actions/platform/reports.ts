@@ -28,7 +28,7 @@ export async function tenantsReportCsv(): Promise<{ ok: boolean; csv?: string; e
     const lines = [header.join(",")]
 
     for (const row of rows) {
-      const fin = tenantFinancials(row.plan, row.mtdUsdCost)
+      const fin = tenantFinancials(row.plan, row.mtdUsdCost, row.billingStatus)
       const billSnap = await getAdminDb().doc(platformBillingDocPath(row.orgId)).get()
       const bill = billSnap.exists
         ? billingProfileSchema.safeParse(billSnap.data())

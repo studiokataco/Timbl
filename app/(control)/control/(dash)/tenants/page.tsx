@@ -18,7 +18,7 @@ export default async function TenantsPage() {
   const allRows = await listOrgRows()
 
   const rows: TenantTableRow[] = allRows.map((row) => {
-    const fin = tenantFinancials(row.plan, row.mtdUsdCost)
+    const fin = tenantFinancials(row.plan, row.mtdUsdCost, row.billingStatus)
     return {
       orgId: row.orgId,
       name: row.name,

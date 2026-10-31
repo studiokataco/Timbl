@@ -77,7 +77,7 @@ export default async function TenantDetailPage({
   const usage = await getOrgUsage(orgId, row.plan, profile?.quotaOverrides ?? {})
 
   const canBilling = can(actor, "billing:manage")
-  const fin = tenantFinancials(row.plan, row.mtdUsdCost)
+  const fin = tenantFinancials(row.plan, row.mtdUsdCost, row.billingStatus)
   const modelSlices = Object.entries(period.byModel).map(([k, v]) => ({ name: k, value: v }))
 
   return (
