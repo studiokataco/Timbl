@@ -9,6 +9,7 @@ import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import {
   categorySchema,
+  toPatchSchema,
   type Category,
   type ServerActionResult,
 } from "@/lib/schemas"
@@ -45,13 +46,10 @@ const createInput = categorySchema
     displayOrder: z.number().int().nonnegative().optional(),
   })
 
-const updateInput = createInput
-  .omit({ defaultPostType: true })
-  .partial()
-  .extend({
-    id: z.string().min(1),
-    isActive: z.boolean().optional(),
-  })
+const updateInput = toPatchSchema(createInput.omit({ defaultPostType: true })).extend({
+  id: z.string().min(1),
+  isActive: z.boolean().optional(),
+})
 
 const reorderInput = z.object({
   /* Ordered list of category ids. The array index becomes the new

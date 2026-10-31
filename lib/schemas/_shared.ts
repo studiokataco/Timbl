@@ -90,6 +90,27 @@ export const isoTime = z
   .regex(/^\d{2}:\d{2}(:\d{2})?$/, "Expected HH:MM or HH:MM:SS")
 
 /*
+ * zod 4 `.partial()` still applies `.default()` values to omitted keys, so a
+ * partial update merge-written to Firestore resets every defaulted field.
+ * Patch schemas must go through this instead.
+ */
+type WithoutDefault<S> = S extends z.ZodDefault<infer Inner> ? Inner : S
+export type PatchShape<T extends z.ZodRawShape> = {
+  [K in keyof T]: z.ZodOptional<WithoutDefault<T[K]>>
+}
+
+export function toPatchSchema<T extends z.ZodRawShape>(
+  schema: z.ZodObject<T>,
+): z.ZodObject<PatchShape<T>> {
+  const shape: Record<string, z.ZodType> = {}
+  for (const [key, field] of Object.entries(schema.shape)) {
+    const inner = field instanceof z.ZodDefault ? field.unwrap() : field
+    shape[key] = (inner as z.ZodType).optional()
+  }
+  return z.object(shape) as unknown as z.ZodObject<PatchShape<T>>
+}
+
+/*
  * Document audit fields written on every server action. createdAt is set
  * once; updatedAt on every write.
  */

@@ -7,7 +7,7 @@ import { getCurrentBrandId } from "@/lib/brand/brand-session"
 import { orgCampaignsPath } from "@/lib/firebase/paths"
 import { snapToData, type WithId } from "@/lib/firebase/serialize"
 import { embedIfChanged } from "@/lib/embeddings/embeddable"
-import { campaignSchema, type Campaign, type ServerActionResult } from "@/lib/schemas"
+import { campaignSchema, toPatchSchema, type Campaign, type ServerActionResult } from "@/lib/schemas"
 
 /* `slug` is optional on input - createCampaign() derives it from the name
  * (see `parsed.data.slug || slugify(...)` below). Without this the schema
@@ -27,7 +27,7 @@ const createSchema = campaignSchema
       .regex(/^[a-z0-9-]+$/)
       .optional(),
   })
-const updateSchema = createSchema.partial().extend({ id: z.string().min(1) })
+const updateSchema = toPatchSchema(createSchema).extend({ id: z.string().min(1) })
 
 function slugify(name: string): string {
   return name

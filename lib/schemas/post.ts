@@ -11,6 +11,7 @@ import {
   postPriority,
   postStatus,
   postType,
+  toPatchSchema,
 } from "./_shared"
 import { embeddingSchema } from "./embedding"
 
@@ -141,6 +142,90 @@ export const postSchema = audit.extend({
     .optional(),
 })
 export type Post = z.infer<typeof postSchema>
+
+/*
+ * Fields the app may write through updatePost. Server-owned fields
+ * (organizationId, brandId, humanId, approvedBy, requiredApprovers,
+ * agentMeta, embedding, postedAt, relatedPostIds, audit) are stripped.
+ */
+const clientWritablePostFields = {
+  scheduledDate: true,
+  scheduledTime: true,
+  status: true,
+  categoryId: true,
+  campaignId: true,
+  templateId: true,
+  awarenessDayId: true,
+  eventId: true,
+  postType: true,
+  postTypes: true,
+  brief: true,
+  detailedBrief: true,
+  blurb: true,
+  hashtags: true,
+  pagesToTag: true,
+  ctaId: true,
+  leadUserId: true,
+  assigneeId: true,
+  blurbAuthorId: true,
+  canvaUrl: true,
+  assetUrls: true,
+  designLinks: true,
+  channelStatuses: true,
+  notes: true,
+  firstComment: true,
+  isAiGenerated: true,
+  coverAssetId: true,
+  priority: true,
+  boardRank: true,
+  timeEstimateMinutes: true,
+  recurrence: true,
+} as const
+
+/* Optional fields a client can clear by sending `null` (deleted server-side). */
+export const CLEARABLE_POST_FIELDS = [
+  "scheduledTime",
+  "campaignId",
+  "templateId",
+  "awarenessDayId",
+  "eventId",
+  "ctaId",
+  "leadUserId",
+  "assigneeId",
+  "blurbAuthorId",
+  "canvaUrl",
+  "coverAssetId",
+  "priority",
+  "timeEstimateMinutes",
+  "recurrence",
+] as const
+type ClearablePostField = (typeof CLEARABLE_POST_FIELDS)[number]
+type PostShape = typeof postSchema.shape
+
+const clearablePostShape = Object.fromEntries(
+  CLEARABLE_POST_FIELDS.map((key) => [
+    key,
+    postSchema.shape[key].unwrap().nullable().optional(),
+  ]),
+) as {
+  [K in ClearablePostField]: z.ZodOptional<
+    z.ZodNullable<ReturnType<PostShape[K]["unwrap"]>>
+  >
+}
+
+export const postPatchSchema = toPatchSchema(
+  postSchema.pick(clientWritablePostFields),
+).extend(clearablePostShape)
+export type PostPatch = z.infer<typeof postPatchSchema>
+
+/* Undefined values never reach Firestore, so a cleared field is sent as null. */
+export function withClearedPostFields<T extends Partial<Post>>(draft: T): T {
+  const out: Record<string, unknown> = { ...draft }
+  for (const key of CLEARABLE_POST_FIELDS) {
+    if (key in out && out[key] === undefined) out[key] = null
+  }
+  return out as T
+}
 
 /*
  * Quick-add captures the irreducible minimum. Everything else inherits from

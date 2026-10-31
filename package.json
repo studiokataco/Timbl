@@ -19,6 +19,7 @@
     "seed:razorpay": "tsx --env-file=.env.local --require ./scripts/stub-server-only.cjs scripts/seed-razorpay-plans.ts",
     "backfill:plans": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/backfill-org-plans.ts",
     "backfill:brands": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/backfill-brands.ts",
+    "report:reset-posts": "tsx --require ./scripts/stub-server-only.cjs scripts/report-reset-posts.ts",
     "verify:billing": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/verify-billing.ts",
     "verify:agent-quota": "FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080} tsx --require ./scripts/stub-server-only.cjs scripts/verify-agent-quota.ts",
     "grandfather:existing": "tsx --require ./scripts/stub-server-only.cjs scripts/grandfather-existing-orgs.ts",

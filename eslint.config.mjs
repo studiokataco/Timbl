@@ -16,6 +16,11 @@ const eslintConfig = defineConfig([
     ".claude/**",
     // design-sync inputs - preview scaffolding for claude.ai/design, not app source
     ".design-sync/**",
+    // gitignored local tooling and design-sync bundles - not app source
+    ".agents/**",
+    "agent/**",
+    ".ds-sync/**",
+    "ds-bundle/**",
     // Cloud Functions compiled output - TS-emitted CommonJS, not source
     "functions/lib/**",
     // Node runtime stubs - CommonJS hooks, not app source

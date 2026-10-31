@@ -17,12 +17,12 @@ import { embedIfChanged } from "@/lib/embeddings/embeddable"
 import { gateErrorToResult, requireQuota } from "@/lib/plans/gate"
 import { incrementUsage } from "@/lib/telemetry/agent-events"
 import { fetchPostsInRange } from "@/lib/queries/posts.server"
-import { postSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
+import { postPatchSchema, postStatus as postStatusSchema, quickAddPostSchema, type Post, type ServerActionResult } from "@/lib/schemas"
 import { withSyncedPostTypes } from "@/lib/post-types"
 import { writePostActivity } from "@/lib/actions/post-activity"
 import { recordActivationMilestone } from "@/lib/telemetry/activation"
 
-import type { Firestore } from "firebase-admin/firestore"
+import { FieldValue, type Firestore } from "firebase-admin/firestore"
 
 export async function nextHumanId(orgId: string, db: Firestore): Promise<string> {
   const counterRef = db.doc(orgCountersDocPath(orgId, "postSeq"))
@@ -63,9 +63,7 @@ export async function fetchPostsInRangeAction(
  * then engage as a second defense layer.
  */
 
-const updateInputSchema = postSchema
-  .partial()
-  .extend({ id: z.string().min(1) })
+const updateInputSchema = postPatchSchema.extend({ id: z.string().min(1) })
 
 export async function createQuickAddPost(input: unknown): Promise<ServerActionResult> {
   const parsed = quickAddPostSchema.safeParse(input)
@@ -171,10 +169,13 @@ export async function updatePost(input: unknown): Promise<ServerActionResult> {
     }
   }
 
+  const write = Object.fromEntries(
+    Object.entries(patch).map(([key, value]) => [key, value === null ? FieldValue.delete() : value]),
+  )
   const batch = db.batch()
   batch.set(
     ref,
-    { ...patch, updatedAt: new Date().toISOString() },
+    { ...write, updatedAt: new Date().toISOString() },
     { merge: true },
   )
   if (statusChanged) {

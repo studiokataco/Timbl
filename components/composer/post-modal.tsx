@@ -77,7 +77,7 @@ import type {
   TemplateCadence,
   User,
 } from "@/lib/schemas"
-import { LEGACY_POST_STATUSES, columnGroup } from "@/lib/schemas"
+import { LEGACY_POST_STATUSES, columnGroup, withClearedPostFields } from "@/lib/schemas"
 import {
   CADENCE_LABELS,
   CHANNEL_STATUS_LABELS,
@@ -358,7 +358,7 @@ export function PostModal({
       return
     }
     setSaveState("saving")
-    const res = await updatePost({ id: post.id, ...next })
+    const res = await updatePost({ id: post.id, ...withClearedPostFields(next) })
     if (!res.ok) {
       setSaveState("error")
       toast.error(res.error ?? "Could not save")

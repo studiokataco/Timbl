@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { audit, channelKey, isoTime } from "./_shared"
+import { audit, channelKey, isoTime, toPatchSchema } from "./_shared"
 
 /*
  * A brand: voice, channels, cadence, audience, and explicit do/don'ts, read as
@@ -62,7 +62,7 @@ export type BrandConfig = z.infer<typeof brandConfigSchema>
 
 /* Patch shape - every field optional so the wizard can write incrementally
  * as it converges through the interview. */
-export const brandConfigPatchSchema = brandConfigSchema
-  .partial()
-  .omit({ id: true, organizationId: true })
+export const brandConfigPatchSchema = toPatchSchema(
+  brandConfigSchema.omit({ id: true, organizationId: true }),
+)
 export type BrandConfigPatch = z.infer<typeof brandConfigPatchSchema>

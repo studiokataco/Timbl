@@ -18,6 +18,7 @@ import { writeAuditEvent } from "@/lib/telemetry/audit-events"
 import {
   postType as postTypeEnum,
   templateCadence,
+  toPatchSchema,
   type Post,
   type ServerActionResult,
   type Template,
@@ -41,7 +42,7 @@ const createSchema = z.object({
   cadence: templateCadence.default("ad-hoc"),
 })
 
-const updateSchema = createSchema.partial().extend({ id: z.string().min(1) })
+const updateSchema = toPatchSchema(createSchema).extend({ id: z.string().min(1) })
 
 const useTemplateSchema = z.object({
   templateId: z.string().min(1),

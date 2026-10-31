@@ -36,7 +36,7 @@ import { PlanCadenceDialog } from "@/components/agents/plan-cadence-dialog"
 import { fetchPostsInRangeAction, updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { AwarenessDay, Category, Post, User } from "@/lib/schemas"
+import type { AwarenessDay, Category, Post, PostPatch, User } from "@/lib/schemas"
 import type { Suggestion } from "@/lib/queries/suggestions.server"
 import { useGridReveal } from "@/components/shared/motion-cal"
 import { useDialogs } from "@/components/shared/dialogs-provider"
@@ -47,6 +47,8 @@ import { CalendarAwarenessRail } from "./awareness-rail"
 import { CampaignTracker, type CampaignRow } from "./campaign-tracker"
 import { WeekView } from "./week-view"
 import { DayView } from "./day-view"
+
+type DropPatch = Pick<PostPatch, "scheduledDate" | "scheduledTime">
 
 type Props = {
   orgId: string
@@ -209,20 +211,26 @@ export function CalendarView({
        * date-range query keys - cheaper than re-fetching, and avoids
        * the flicker where the chip snaps back to origin while the
        * server roundtrips. */
-      const patchCache = (
-        patch: Partial<Pick<Post, "scheduledDate" | "scheduledTime">>,
-      ) => {
+      const patchCache = (patch: DropPatch) => {
         queryClient.setQueriesData<WithId<Post>[]>(
           { queryKey: ["posts", orgId] },
           (curr) =>
-            curr?.map((p) => (p.id === post.id ? { ...p, ...patch } : p)),
+            curr?.map((p) =>
+              p.id === post.id
+                ? {
+                    ...p,
+                    scheduledDate: patch.scheduledDate ?? p.scheduledDate,
+                    scheduledTime:
+                      patch.scheduledTime === undefined
+                        ? p.scheduledTime
+                        : (patch.scheduledTime ?? undefined),
+                  }
+                : p,
+            ),
         )
       }
 
-      const finish = async (
-        patch: Partial<Pick<Post, "scheduledDate" | "scheduledTime">>,
-        successMsg: string,
-      ) => {
+      const finish = async (patch: DropPatch, successMsg: string) => {
         patchCache(patch)
         const res = await updatePost({ id: post.id, ...patch })
         if (!res.ok) {
@@ -250,7 +258,7 @@ export function CalendarView({
       } else if (overData.type === "allday") {
         if (post.scheduledDate === overData.iso && !post.scheduledTime) return
         await finish(
-          { scheduledDate: overData.iso, scheduledTime: undefined },
+          { scheduledDate: overData.iso, scheduledTime: null },
           `Moved to ${format(parseISO(overData.iso), "EEE d MMM")}`,
         )
       }

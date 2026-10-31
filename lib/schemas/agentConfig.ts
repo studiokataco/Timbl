@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { audit } from "./_shared"
+import { audit, toPatchSchema } from "./_shared"
 
 export const agentProvider = z.enum([
   "gemini",
@@ -73,7 +73,7 @@ export const agentConfigSchema = audit.extend({
 })
 export type AgentConfig = z.infer<typeof agentConfigSchema>
 
-export const agentConfigPatchSchema = agentConfigSchema
-  .partial()
-  .omit({ id: true, organizationId: true, name: true, role: true })
+export const agentConfigPatchSchema = toPatchSchema(
+  agentConfigSchema.omit({ id: true, organizationId: true, name: true, role: true }),
+)
 export type AgentConfigPatch = z.infer<typeof agentConfigPatchSchema>
