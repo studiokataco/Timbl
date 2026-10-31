@@ -16,8 +16,8 @@ export const LEGAL = {
     "Flat 8, 1st Floor, Vaman Residency, Cariappa Colony, Nanawadi, Belagavi, Karnataka 590009, India",
   governingLawCountry: "India",
   jurisdictionCity: "Bengaluru, India",
-  effectiveDate: "26 June 2026",
-  lastUpdated: "26 June 2026",
+  effectiveDate: "31 October 2026",
+  lastUpdated: "31 October 2026",
   /** Bumped whenever Terms or Privacy materially change. Recorded with each acceptance. */
-  policyVersion: "2026-06-26",
+  policyVersion: "2026-10-31",
 } as const

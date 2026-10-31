@@ -10,12 +10,20 @@ import { Reveal } from "./reveal"
 
 const FAQS = [
   {
-    q: "How does the free trial work?",
-    a: "Every new workspace starts with a 30-day Agency trial, no credit card required. When the trial ends you move to the Free plan automatically and nothing is charged.",
+    q: "Can I buy a plan straight away?",
+    a: "Yes. Pick Studio or Agency, sign in with Google and pay through Razorpay. Your workspace is created the moment payment is confirmed and you land in a short setup wizard. Prefer to start free? Request free access and we will send you an invite.",
   },
   {
-    q: "What happens when I pick a paid plan?",
-    a: "You are billed monthly and your plan unlocks as soon as payment is confirmed. You can cancel anytime, no questions asked.",
+    q: "How does the free trial work?",
+    a: "Free workspaces can start a 30-day Agency trial once, from Plan and billing, with no card needed. When the trial ends the workspace returns to the Free plan automatically and nothing is charged.",
+  },
+  {
+    q: "How does billing work?",
+    a: "Paid plans are billed monthly in advance in Indian rupees through Razorpay, by card, UPI or netbanking. The subscription renews each month until you cancel, and Razorpay emails a receipt for every charge.",
+  },
+  {
+    q: "Can I cancel, and do you offer refunds?",
+    a: "Cancel anytime from Plan and billing. You keep your plan until the end of the period you have paid for, then move to Free. We do not refund partial months, but we refund duplicate or mistaken charges in full. See our refund policy for details.",
   },
   {
     q: "What counts as an AI agent run?",
@@ -23,7 +31,11 @@ const FAQS = [
   },
   {
     q: "Can I manage more brands than my plan includes?",
-    a: "Agency plan includes 3 brands and you can add more at Rs 5,999/mo per extra brand. Scale includes custom terms that go beyond the Agency plan.",
+    a: "Studio includes 1 brand, Agency includes 3 and Scale includes 10. To manage more brands, move up a plan or talk to us about Scale.",
+  },
+  {
+    q: "Is my content used to train AI models?",
+    a: "No. Your content is sent to our AI providers only to generate what you ask for, and they are contractually barred from training on it. Nothing is published without a person approving it.",
   },
   {
     q: "Can I plug Timbl into my own tools?",
@@ -31,7 +43,7 @@ const FAQS = [
   },
   {
     q: "What does Scale add on top of Agency?",
-    a: "Room to grow without limits and control larger teams needs: unlimited AI agent runs and scheduled posts, more seats included, and 24/7 priority support. Pricing and more are tailored to your organization - reach out and we would love to discuss it with you.",
+    a: "Unlimited AI agent runs and scheduled posts, 10 brands, more seats, SSO, an audit log, an SLA and 24/7 priority support. Pricing is tailored to your organisation, so reach out and we will put a plan together.",
   },
 ]
 
@@ -51,7 +63,7 @@ export function PricingFaq() {
               Anything else about plans, billing or migrations - we reply fast.
             </p>
             <Link
-              href="mailto:hello@timbl.app?subject=Timbl%20pricing%20question"
+              href="mailto:hello@kataco.in?subject=Timbl%20pricing%20question"
               className="mt-6 inline-flex h-11 items-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Ask us anything

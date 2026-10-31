@@ -37,7 +37,10 @@ export default function PrivacyPolicyPage() {
       <LegalSection id="data-we-collect" heading="2. The personal data we collect">
         <h3>You give us</h3>
         <ul>
-          <li>Account data - your name, work email, and (optionally) company or agency name.</li>
+          <li>
+            Account data - your name, email address, and (optionally) company or agency name. If you
+            sign in with Google, we receive your name, email address, and profile picture from Google.
+          </li>
           <li>
             Access-request data - the details you submit when you request beta access, including how
             you intend to use {LEGAL.brand}.
@@ -49,13 +52,21 @@ export default function PrivacyPolicyPage() {
           <li>
             Support and communications - messages you send us and your contact preferences.
           </li>
-          <li>Billing data - where a paid plan applies, the details needed to process payment.</li>
+          <li>
+            Billing data - when you buy a paid plan, Razorpay collects your payment details directly.
+            We never see or store your full card, UPI, or bank details. We keep your billing email,
+            plan, Razorpay subscription and payment references, and payment status.
+          </li>
         </ul>
         <h3>We collect automatically</h3>
         <ul>
           <li>
             Usage data - actions in the product, pages viewed, feature usage, device and browser
             type, and approximate location derived from your IP address.
+          </li>
+          <li>
+            Product analytics - pages viewed, clicks, heatmaps, and session recordings of how the
+            product is used. Recordings mask everything typed into form fields. See section 6.
           </li>
           <li>
             Cookies and similar technologies - used to keep you signed in, remember preferences, and
@@ -68,6 +79,10 @@ export default function PrivacyPolicyPage() {
             Social platform data - when you connect an account (for example Instagram, Facebook,
             LinkedIn, or X), we receive access tokens and the profile, page, and publishing data the
             platform exposes, strictly to schedule and publish on your behalf.
+          </li>
+          <li>
+            Cloud storage - if you connect Google Drive or Dropbox, we access only the files you pick,
+            to bring them into your workspace.
           </li>
         </ul>
         <p>
@@ -129,11 +144,15 @@ export default function PrivacyPolicyPage() {
           on our instructions. These include:
         </p>
         <ul>
-          <li>cloud hosting and database (Google Cloud / Firebase);</li>
-          <li>AI processing providers, to power drafting and suggestion features;</li>
-          <li>product analytics, to understand and improve usage;</li>
-          <li>email delivery, for service and account messages;</li>
-          <li>payment processing, where a paid plan applies;</li>
+          <li>Google Cloud and Firebase - hosting, database, file storage, and sign-in;</li>
+          <li>
+            Anthropic, Google (Gemini), and OpenRouter - AI processing that powers drafting,
+            research, and suggestion features;
+          </li>
+          <li>PostHog - product analytics, heatmaps, and session recordings;</li>
+          <li>Resend - delivery of account and service emails;</li>
+          <li>Razorpay - payment processing and subscription billing;</li>
+          <li>Google Drive and Dropbox - only when you connect them, to import files you choose;</li>
           <li>
             the social platforms you connect, to publish and manage content at your direction.
           </li>
@@ -146,16 +165,19 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection id="cookies" heading="6. Cookies and analytics">
         <p>
-          We use strictly necessary cookies to sign you in and keep the service working, and
-          analytics cookies to measure product usage. You can control non-essential cookies through
-          your browser settings; blocking strictly necessary cookies may break core functionality.
+          We use strictly necessary cookies to sign you in and keep the service working. We use
+          PostHog to measure product usage, including heatmaps and session recordings that replay
+          how pages are used, with everything typed into form fields masked. Analytics requests are
+          routed through our own domain. You can control non-essential cookies through your browser
+          settings; blocking strictly necessary cookies may break core functionality.
         </p>
       </LegalSection>
 
       <LegalSection id="transfers" heading="7. International data transfers">
         <p>
           {LEGAL.brand} and its providers may process data in countries other than your own,
-          including outside the EEA, the UK, and India. Where we transfer personal data across
+          including outside the EEA, the UK, and India. In particular, our analytics and AI
+          providers process data in the United States. Where we transfer personal data across
           borders, we rely on appropriate safeguards such as the European Commission&apos;s Standard
           Contractual Clauses (and the UK Addendum), and we transfer DPDP-covered data only to
           countries not restricted by the Government of India.
@@ -166,7 +188,9 @@ export default function PrivacyPolicyPage() {
         <p>
           We keep personal data only for as long as needed for the purposes above: for the life of
           your account, and for a limited period afterwards to meet legal, tax, security, and
-          dispute-resolution needs. When data is no longer needed we delete or anonymise it. You can
+          dispute-resolution needs. When a workspace is closed or suspended, it and its content are
+          permanently deleted 60 days later. Billing and tax records are kept for as long as Indian
+          tax law requires. When data is no longer needed we delete or anonymise it. You can
           ask us to erase your data at any time (section 9); we action valid erasure requests
           promptly and, under the DPDP Act, within the timelines the law sets.
         </p>

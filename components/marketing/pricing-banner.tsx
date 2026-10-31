@@ -33,7 +33,7 @@ export function PricingBanner() {
                 <ArrowRight aria-hidden className="size-4" />
               </Link>
               <Link
-                href="mailto:hello@timbl.app?subject=Timbl%20demo"
+                href="mailto:hello@kataco.in?subject=Timbl%20demo"
                 className="flex h-11 items-center rounded-xl px-6 text-sm font-semibold text-white ring-1 ring-white/30 transition-all hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 Talk to us

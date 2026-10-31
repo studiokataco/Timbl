@@ -30,12 +30,21 @@ export function MarketingFooter() {
         <p className="text-[13px] text-zinc-500">
           © {new Date().getFullYear()} Timbl
         </p>
-        <nav className="flex gap-6 text-[13px] text-zinc-500">
+        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-zinc-500">
           <Link href="/privacy" className="transition-colors hover:text-zinc-300">
             Privacy
           </Link>
           <Link href="/terms" className="transition-colors hover:text-zinc-300">
             Terms
+          </Link>
+          <Link href="/refunds" className="transition-colors hover:text-zinc-300">
+            Refunds
+          </Link>
+          <Link href="/shipping" className="transition-colors hover:text-zinc-300">
+            Delivery
+          </Link>
+          <Link href="/contact" className="transition-colors hover:text-zinc-300">
+            Contact
           </Link>
         </nav>
       </div>

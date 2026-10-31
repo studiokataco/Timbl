@@ -30,7 +30,8 @@ export default function TermsPage() {
         <p>
           {LEGAL.brand} is a tool for planning, drafting, scheduling, approving, and publishing
           social media content across connected platforms, including AI-assisted features. The
-          service is currently offered in closed beta; features may change, and access is by invite.
+          service is in early access and features may change. Free access is by invite; paid plans
+          can be bought directly from our pricing page.
         </p>
       </LegalSection>
 
@@ -39,7 +40,9 @@ export default function TermsPage() {
           You are responsible for your account, for keeping your credentials secure, and for all
           activity under your account. Tell us promptly at{" "}
           <a href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a> if you suspect
-          unauthorised use. We may decline, suspend, or revoke beta access at our discretion.
+          unauthorised use. We may decline or revoke free early access at our discretion. Each paid
+          purchase creates a new workspace, and the account that bought it becomes its first
+          administrator.
         </p>
       </LegalSection>
 
@@ -93,11 +96,43 @@ export default function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="fees" heading="9. Fees and billing">
+      <LegalSection id="fees" heading="9. Plans, billing and cancellation">
+        <h3>Subscriptions</h3>
         <p>
-          Some plans are paid. Where they apply, fees, billing cycle, and taxes are shown at sign-up
-          or in your account. Unless stated otherwise, fees are non-refundable except where required
-          by law. We may change pricing on reasonable notice.
+          Paid plans are monthly subscriptions, billed in advance in Indian rupees through our
+          payment processor, Razorpay. The price and what each plan includes are shown on our pricing
+          page and at checkout. Any applicable taxes are charged as shown at checkout or on your
+          invoice. A paid plan unlocks only once Razorpay confirms your payment.
+        </p>
+        <h3>Renewal</h3>
+        <p>
+          Your subscription renews automatically each month and is charged to the payment method you
+          authorised, until you cancel. Razorpay sends a receipt for every successful charge.
+        </p>
+        <h3>Failed payments</h3>
+        <p>
+          If a renewal fails, Razorpay retries the charge and your workspace is marked as past due.
+          You keep your plan while we retry. If payment cannot be collected, the subscription ends and
+          the workspace moves to the Free plan. Your content is kept, subject to the Free plan&apos;s
+          limits.
+        </p>
+        <h3>Changing or cancelling</h3>
+        <p>
+          You can change plans or cancel at any time from Plan and billing in your workspace.
+          Cancellation takes effect at the end of the billing period you have paid for; you keep your
+          plan until then and are not charged again. Refunds are covered by our{" "}
+          <a href="/refunds">Cancellation and refund policy</a>.
+        </p>
+        <h3>Free plan and trial</h3>
+        <p>
+          The Free plan costs nothing. A Free workspace may start one 30-day Agency trial with no
+          payment details. When the trial ends, the workspace returns to the Free plan automatically
+          and nothing is charged.
+        </p>
+        <h3>Price changes</h3>
+        <p>
+          We may change prices with at least 30 days&apos; notice by email. A new price applies from your
+          next billing period after the notice ends, and you can cancel before then.
         </p>
       </LegalSection>
 
@@ -106,7 +141,9 @@ export default function TermsPage() {
           The service is provided on an &quot;as is&quot; and &quot;as available&quot; basis, without warranties of any
           kind, express or implied, to the maximum extent permitted by law. Beta features may be
           incomplete, change, or be withdrawn. We do not warrant that the service will be
-          uninterrupted, error-free, or secure.
+          uninterrupted, error-free, or secure. Early-access features may change or be withdrawn;
+          where we withdraw a feature that is central to a paid plan, you may cancel and request a
+          refund for the unused part of the current period.
         </p>
       </LegalSection>
 
@@ -130,10 +167,13 @@ export default function TermsPage() {
 
       <LegalSection id="suspension" heading="13. Suspension and termination">
         <p>
-          You may stop using the service and delete your account at any time. We may suspend or
+          You may stop using the service at any time, and ask us to close your workspace by emailing{" "}
+          <a href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>. We may suspend or
           terminate access if you breach these terms, to protect the service or other users, or as
-          required by law. On termination, your right to use the service ends; provisions that by
-          their nature should survive will survive.
+          required by law. A closed or suspended workspace and its content are permanently deleted
+          60 days later, unless the law requires us to keep some records for longer. On termination,
+          your right to use the service ends; provisions that by their nature should survive will
+          survive.
         </p>
       </LegalSection>
 

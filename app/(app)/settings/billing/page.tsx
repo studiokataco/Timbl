@@ -40,7 +40,7 @@ function toCard(plan: PlanConfig): BillingPlanCard {
     label: plan.label,
     tier: plan.tier,
     monthlyPriceInr: plan.monthlyPriceInr,
-    perBrandPriceInr: plan.perBrandPriceInr ?? null,
+    perBrandPriceInr: null,
     highlights: highlights(plan),
     billable: Boolean(plan.monthlyPriceInr && plan.monthlyPriceInr > 0),
   }
