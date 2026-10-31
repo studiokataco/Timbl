@@ -71,7 +71,7 @@ functions/node_modules/
 next-env.d.ts
 node_modules/
 npm-debug.log*
-plans/
+/plans/
 
 .design-sync/
 .ds-sync/
