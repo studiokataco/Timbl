@@ -2,6 +2,7 @@ import "server-only"
 
 import { Resend } from "resend"
 
+import { LEGAL } from "@/lib/constants/legal"
 import { ROOT_PLATFORM_ADMIN_EMAIL } from "@/lib/platform/schema"
 
 function getResend() {
@@ -82,6 +83,7 @@ export async function sendFeedbackThanksEmail(opts: {
     await resend.emails.send({
       from: from(),
       to: resolveRecipient(opts.email),
+      replyTo: LEGAL.contactEmail,
       subject: "Thanks for the feedback",
       html: `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.6;color:#111;max-width:560px;margin:0 auto;padding:24px">
 <p>Hi ${escapeHtml(opts.name)},</p>

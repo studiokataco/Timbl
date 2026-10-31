@@ -2,6 +2,7 @@ import "server-only"
 
 import { Resend } from "resend"
 
+import { LEGAL } from "@/lib/constants/legal"
 import { appBaseUrl } from "@/lib/publishing/oauth"
 import type { MembershipRole } from "@/lib/auth/membership"
 
@@ -36,6 +37,7 @@ export async function sendMemberInviteEmail(opts: {
     await resend.emails.send({
       from,
       to,
+      replyTo: LEGAL.contactEmail,
       subject: `You're invited to ${orgLabel}`,
       html: `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.5;color:#111">
 <p>Hi ${escapeHtml(opts.name)},</p>

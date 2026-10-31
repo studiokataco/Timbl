@@ -2,6 +2,7 @@ import "server-only"
 
 import { Resend } from "resend"
 
+import { LEGAL } from "@/lib/constants/legal"
 import { ROOT_PLATFORM_ADMIN_EMAIL } from "@/lib/platform/schema"
 import { appBaseUrl } from "@/lib/publishing/oauth"
 
@@ -141,6 +142,7 @@ export async function sendInviteAcceptedEmail(opts: {
     await resend.emails.send({
       from: from(),
       to: resolveRecipient(opts.email),
+      replyTo: LEGAL.contactEmail,
       subject: "You're in - welcome to Timbl",
       html: `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.6;color:#111;max-width:560px;margin:0 auto;padding:24px">
 <p>Hi ${escapeHtml(opts.name)},</p>
@@ -178,6 +180,7 @@ export async function sendOnboardingEmail(opts: {
     await resend.emails.send({
       from: from(),
       to: resolveRecipient(opts.email),
+      replyTo: LEGAL.contactEmail,
       subject: `Welcome to Timbl - your workspace is ready`,
       html: `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.6;color:#111;max-width:560px;margin:0 auto;padding:24px">
 <p>Hi ${escapeHtml(opts.name)},</p>
