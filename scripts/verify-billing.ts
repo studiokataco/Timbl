@@ -77,6 +77,13 @@ async function main() {
   assert(after?.plan === FREE_PLAN_ID, "expiry persisted plan=free to the doc")
   assert(after?.billingStatus === "canceled", "expiry persisted billingStatus=canceled")
 
+  console.log("7. abandoned checkout cancelled -> manual plan untouched")
+  await ref.set({ plan: "agency_v1", billingStatus: "manual" }, { merge: true })
+  await applyRazorpayEvent(event("subscription.cancelled", "studio_v1"))
+  const manual = (await ref.get()).data()
+  assert(manual?.plan === "agency_v1", "manual Agency plan kept")
+  assert(manual?.billingStatus === "manual", "manual billingStatus kept")
+
   await ref.delete()
   console.log("\nAll billing checks passed.")
 }

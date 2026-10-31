@@ -69,10 +69,19 @@ export async function applyRazorpayEvent(
   /* Stamp billingStatus on the org doc (the gate + dunning banner read it from
    * here, alongside plan, in a single get) and change the plan when the event
    * implies a tier move. */
-  const orgPatch: Record<string, unknown> = { billingStatus: decision.status }
-  if (decision.planTarget === "paid" && planId) orgPatch.plan = planId
-  else if (decision.planTarget === "free") orgPatch.plan = FREE_PLAN_ID
-  await db.doc(orgPath(orgId)).set(orgPatch, { merge: true })
+  const orgRef = db.doc(orgPath(orgId))
+  /* A subscription abandoned at checkout still fires cancelled/expired. Only
+   * let non-activating events touch an org that is on the tier this
+   * subscription sold, so a manual or other-tier plan is never downgraded. */
+  const governsOrg =
+    decision.planTarget === "paid" ||
+    ((await orgRef.get()).data()?.plan as string | undefined) === planId
+  if (governsOrg) {
+    const orgPatch: Record<string, unknown> = { billingStatus: decision.status }
+    if (decision.planTarget === "paid" && planId) orgPatch.plan = planId
+    else if (decision.planTarget === "free") orgPatch.plan = FREE_PLAN_ID
+    await orgRef.set(orgPatch, { merge: true })
+  }
 
   await db.doc(platformBillingDocPath(orgId)).set(
     {
