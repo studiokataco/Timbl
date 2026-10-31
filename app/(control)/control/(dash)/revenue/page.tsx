@@ -1,14 +1,18 @@
-import { Banknote, Coins, Server, TrendingUp } from "lucide-react"
+import { Banknote, Coins, CreditCard, Server, TrendingUp } from "lucide-react"
 
 import { ReportExport } from "@/components/control/report-export"
 import { PageHeading, StatCard } from "@/components/control/widgets"
 import { compact, inr } from "@/lib/platform/format"
-import { getRevenueSummary, getTierFinancials } from "@/lib/platform/revenue"
+import { getCollectionSubscriptions, getRevenueSummary, getTierFinancials } from "@/lib/platform/revenue"
 
 export const dynamic = "force-dynamic"
 
 export default async function RevenuePage() {
-  const [rev, tiers] = await Promise.all([getRevenueSummary(), getTierFinancials()])
+  const [rev, tiers, collection] = await Promise.all([
+    getRevenueSummary(),
+    getTierFinancials(),
+    getCollectionSubscriptions(),
+  ])
   const arr = rev.estMrrInr * 12
 
   return (
@@ -21,8 +25,14 @@ export default async function RevenuePage() {
         <ReportExport />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard icon={Banknote} label="Est. MRR" value={inr(rev.estMrrInr)} sub={`${rev.payingOrgs} paying orgs`} />
+        <StatCard
+          icon={CreditCard}
+          label="Collection subscriptions"
+          value={collection ? compact(collection.active) : "-"}
+          sub={collection ? `${inr(collection.mrrInr)}/mo via Razorpay` : "Razorpay unavailable"}
+        />
         <StatCard icon={TrendingUp} label="Est. ARR" value={inr(arr)} />
         <StatCard icon={Server} label="Infra cost (MTD)" value={inr(rev.infraCostMtdInr)} sub="metered LLM spend" />
         <StatCard

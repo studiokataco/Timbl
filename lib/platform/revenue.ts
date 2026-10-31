@@ -1,6 +1,7 @@
 import "server-only"
 
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
+import { getRazorpay, paidCheckoutAvailable } from "@/lib/billing/razorpay"
 import { getPlan, PLANS } from "@/lib/plans/plans"
 
 import { getGlobalRollup, listOrgRows, type OrgRow } from "./queries"
@@ -168,4 +169,37 @@ export function tierFinancialsFromRows(rows: OrgRow[]): TierFinancials[] {
   return [...byTier.values()]
     .map((t) => ({ ...t, arrInr: t.mrrInr * 12, marginInr: t.mrrInr - t.infraMtdInr }))
     .sort((a, b) => order.indexOf(a.tier) - order.indexOf(b.tier))
+}
+
+export interface CollectionSubscriptions {
+  active: number
+  mrrInr: number
+}
+
+/* Live from Razorpay: subscriptions actually being charged, as opposed to the
+ * assigned-plan estimate above (which includes hand-set promo plans). Null when
+ * Razorpay keys are absent or the API is unreachable. */
+export async function getCollectionSubscriptions(): Promise<CollectionSubscriptions | null> {
+  await requirePlatformAdmin()
+  if (!paidCheckoutAvailable()) return null
+  try {
+    const rzp = getRazorpay()
+    const plans = await rzp.plans.all({ count: 100 })
+    const paiseByPlan = new Map(plans.items.map((p) => [p.id, Number(p.item.amount)]))
+    let active = 0
+    let paise = 0
+    for (let skip = 0; ; skip += 100) {
+      const page = await rzp.subscriptions.all({ count: 100, skip })
+      for (const sub of page.items) {
+        if (sub.status !== "active") continue
+        active += 1
+        paise += (paiseByPlan.get(sub.plan_id) ?? 0) * (Number(sub.quantity) || 1)
+      }
+      if (page.items.length < 100) break
+    }
+    return { active, mrrInr: paise / 100 }
+  } catch (err) {
+    console.error("[revenue] razorpay collection fetch failed", err)
+    return null
+  }
 }
