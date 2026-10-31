@@ -1,4 +1,5 @@
 import "server-only"
+import { randomBytes } from "node:crypto"
 import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
@@ -220,6 +221,34 @@ export async function provisionNewWorkspace(opts: {
     identifyServerGroup("organization", orgId, { name: orgName })
     await recordActivationMilestone(orgId, "signed_up", claims.userId, { via: "self_serve" })
   }
+  return claims
+}
+
+/* A confirmed public checkout always gets a fresh workspace, even when the
+ * buyer's domain already has one, and is not subject to NEW_ORG_SIGNUP: paying
+ * is the approval. The plan itself is stamped by the webhook afterwards. */
+export async function provisionPaidWorkspace(opts: {
+  email: string
+  displayName?: string
+}): Promise<MembershipClaims> {
+  const email = normalizeEmail(opts.email)
+  const db = getAdminDb()
+  const base = orgIdForNewWorkspace(email)
+  const taken = (await db.doc(orgPath(base)).get()).exists
+  const orgId = taken ? `${base}-${randomBytes(3).toString("hex")}`.slice(0, 60) : base
+  const orgName = defaultOrgNameForNewWorkspace(email, opts.displayName)
+
+  await bootstrapNewOrg({ orgId, name: orgName })
+  const claims = await provisionOrgMember({
+    orgId,
+    email,
+    displayName: opts.displayName ?? email.split("@")[0],
+    role: "admin",
+    via: "paid_checkout",
+  })
+  await sendNewWorkspaceEmail({ name: opts.displayName ?? email, email, orgName })
+  identifyServerGroup("organization", orgId, { name: orgName })
+  await recordActivationMilestone(orgId, "signed_up", claims.userId, { via: "paid_checkout" })
   return claims
 }
 

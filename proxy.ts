@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/signup",
   "/pricing",
+  "/checkout",
   "/request-invite",
   "/claim-access",
   "/welcome",

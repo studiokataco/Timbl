@@ -12,8 +12,15 @@ import {
 } from "@/components/marketing/pricing-compare"
 import { PricingFaq } from "@/components/marketing/pricing-faq"
 import { PricingSection } from "@/components/marketing/pricing-section"
-import { TIER_HEX, type PricingTier } from "@/components/marketing/pricing-card"
-import { PLANS, TRIAL_DAYS, type PlanConfig } from "@/lib/plans/plans"
+import { TIER_HEX } from "@/components/marketing/pricing-card"
+import { paidCheckoutAvailable } from "@/lib/billing/razorpay"
+import { pricingSelfServeEnabled } from "@/lib/billing/self-serve"
+import { PLANS, type PlanConfig } from "@/lib/plans/plans"
+import {
+  SCALE_CONTACT_HREF,
+  SCALE_CONTACT_LABEL,
+  toPricingTier,
+} from "@/lib/plans/pricing-tiers"
 
 export const dynamic = "force-dynamic"
 
@@ -29,81 +36,6 @@ export const metadata: Metadata = {
   twitter: { title: TITLE, description: DESCRIPTION },
 }
 
-const DESCRIPTORS: Record<string, string> = {
-  free_v1: "Plan with Timbl, Go Solo",
-  studio_v1: "Manage your brand with Timbl",
-  agency_v1: "For multi-disciplinary teams handling client brands",
-  scale_v1: "For large organizations",
-}
-
-const FOOTNOTES: Record<string, string> = {
-  free_v1: `No credit card required. Includes a ${TRIAL_DAYS}-day Agency trial.`,
-  studio_v1: "Cancel anytime. Your plan unlocks once payment is confirmed.",
-  agency_v1: "Cancel anytime. Your plan unlocks once payment is confirmed.",
-}
-
-function rupees(n: number): string {
-  return `Rs ${n.toLocaleString("en-IN")}`
-}
-
-function highlights(plan: PlanConfig): string[] {
-  const out: string[] = []
-  const runs = plan.quotas.agentRuns
-  if (runs === null) out.push("Unlimited AI agent runs")
-  else if (runs > 0) out.push(`${runs.toLocaleString("en-IN")} AI agent runs/month`)
-  out.push(
-    plan.quotas.scheduledPosts === null
-      ? "Unlimited scheduled posts"
-      : `${plan.quotas.scheduledPosts} scheduled posts/month`,
-  )
-  out.push(
-    plan.includedBrands === 1 ? "1 brand included" : `${plan.includedBrands} brands included`,
-  )
-  out.push(`${plan.includedSeats} team seats`)
-  if (plan.includedCustomCategories !== null)
-    out.push(`${plan.includedCustomCategories} custom categories`)
-  if (plan.monthlyPriceInr !== 0) out.push("MCP, CLI and API access")
-  if (plan.supportLabel) out.push(plan.supportLabel)
-  if (plan.features.sso) out.push("SSO, audit log and SLA")
-  if (plan.features.multiStepApproval) out.push("Multi-step approvals")
-  return out.slice(0, 7)
-}
-
-const SCALE_CONTACT_HREF = "/signup"
-const SCALE_CONTACT_LABEL = "Talk to us"
-
-function toTier(plan: PlanConfig): PricingTier {
-  const paidCta = { label: "Get started", href: `/signup?plan=${plan.id}` }
-  const cta =
-    plan.monthlyPriceInr === null
-      ? { label: SCALE_CONTACT_LABEL, href: SCALE_CONTACT_HREF }
-      : plan.monthlyPriceInr === 0
-        ? { label: `Start ${TRIAL_DAYS}-day free trial`, href: "/signup?plan=trial" }
-        : paidCta
-
-  return {
-    id: plan.id,
-    label: plan.label,
-    descriptor: DESCRIPTORS[plan.id] ?? "",
-    priceLabel:
-      plan.monthlyPriceInr === null
-        ? "Custom"
-        : plan.monthlyPriceInr === 0
-          ? "Free"
-          : rupees(plan.monthlyPriceInr),
-    priceSuffix: plan.monthlyPriceInr ? "/mo" : null,
-    /* No self-serve per-brand overage: createBrand hard-caps at the included
-     * count and more brands means moving up a tier, so the page must not imply
-     * brands are individually buyable. Metered per-brand billing is a separate,
-     * unshipped phase (timbl-per-brand-metered-billing.md). */
-    perBrandNote: null,
-    highlights: highlights(plan),
-    featured: plan.id === "agency_v1",
-    footnote: FOOTNOTES[plan.id] ?? "",
-    cta,
-  }
-}
-
 const TIER_ORDER = ["free_v1", "studio_v1", "agency_v1"]
 const COMPARE_ORDER = [...TIER_ORDER, "scale_v1"]
 
@@ -111,9 +43,9 @@ function quota(n: number | null): string {
   return n === null ? "Unlimited" : n.toLocaleString("en-IN")
 }
 
-function compareColumns(plans: PlanConfig[]): ComparePlanColumn[] {
+function compareColumns(plans: PlanConfig[], buyable: boolean): ComparePlanColumn[] {
   return plans.map((plan) => {
-    const tier = toTier(plan)
+    const tier = toPricingTier(plan, { buyable })
     return {
       id: plan.id,
       label: plan.label,
@@ -216,7 +148,8 @@ function ScaleContactBand() {
 export default function PricingPage() {
   const plans = TIER_ORDER.filter((id) => PLANS[id]).map((id) => PLANS[id])
   const comparePlans = COMPARE_ORDER.filter((id) => PLANS[id]).map((id) => PLANS[id])
-  const tiers = plans.map(toTier)
+  const buyable = pricingSelfServeEnabled() && paidCheckoutAvailable()
+  const tiers = plans.map((plan) => toPricingTier(plan, { buyable }))
 
   return (
     <div
@@ -228,7 +161,7 @@ export default function PricingPage() {
         <PricingSection tiers={tiers} />
         <ScaleContactBand />
         <PricingCompare
-          plans={compareColumns(comparePlans)}
+          plans={compareColumns(comparePlans, buyable)}
           groups={compareGroups(comparePlans)}
         />
         <PricingBanner />

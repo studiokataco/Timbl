@@ -2,7 +2,8 @@ import "server-only"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgPath } from "@/lib/firebase/paths"
-import { platformBillingDocPath } from "@/lib/platform/schema"
+import { provisionPaidWorkspace } from "@/lib/auth/membership"
+import { platformBillingDocPath, platformCheckoutDocPath } from "@/lib/platform/schema"
 import { FREE_PLAN_ID } from "@/lib/plans/plans"
 import type { BillingStatus } from "@/lib/schemas/billing"
 
@@ -60,11 +61,15 @@ export async function applyRazorpayEvent(
   const sub = evt.payload?.subscription?.entity
   if (!sub) return { handled: false, note: `no subscription entity on ${evt.event}` }
 
-  const orgId = sub.notes?.orgId
   const planId = sub.notes?.planId
-  if (!orgId) return { handled: false, note: `no orgId in notes on ${sub.id}` }
-
   const db = getAdminDb()
+
+  let orgId = sub.notes?.orgId
+  if (!orgId && sub.notes?.intent === "new_workspace") {
+    orgId = await resolveCheckoutOrg(sub, decision.planTarget === "paid")
+    if (!orgId) return { handled: true, note: `${evt.event} on checkout ${sub.id}, no workspace yet` }
+  }
+  if (!orgId) return { handled: false, note: `no orgId in notes on ${sub.id}` }
 
   /* Stamp billingStatus on the org doc (the gate + dunning banner read it from
    * here, alongside plan, in a single get) and change the plan when the event
@@ -99,4 +104,40 @@ export async function applyRazorpayEvent(
     handled: true,
     note: `${evt.event} -> ${decision.status}${plan ? ` (plan: ${plan})` : ""}`,
   }
+}
+
+const PROVISION_LOCK_MS = 2 * 60_000
+
+/* Public checkout subscriptions carry the buyer, not an org. The first
+ * activating event creates the workspace and records it on the checkout doc;
+ * later events reuse it. A concurrent event (activated and charged land
+ * together) throws while the lock is held, so the route 500s and Razorpay
+ * retries once the workspace exists. */
+async function resolveCheckoutOrg(sub: SubEntity, activating: boolean): Promise<string | undefined> {
+  const db = getAdminDb()
+  const ref = db.doc(platformCheckoutDocPath(sub.id))
+  const now = Date.now()
+
+  const claim = await db.runTransaction(async (tx) => {
+    const doc = (await tx.get(ref)).data() ?? {}
+    if (typeof doc.organizationId === "string") return { orgId: doc.organizationId as string }
+    tx.set(ref, { status: sub.status, updatedAt: new Date(now).toISOString() }, { merge: true })
+    if (!activating) return { orgId: undefined }
+    const lockedAt = typeof doc.provisioningAt === "number" ? doc.provisioningAt : 0
+    if (now - lockedAt < PROVISION_LOCK_MS) return { busy: true as const }
+    tx.set(ref, { provisioningAt: now }, { merge: true })
+    return { provision: true as const }
+  })
+
+  if ("orgId" in claim) return claim.orgId
+  if ("busy" in claim) throw new Error(`workspace for ${sub.id} is still being created`)
+
+  const email = sub.notes?.buyerEmail
+  if (!email) throw new Error(`checkout ${sub.id} has no buyer email`)
+  const claims = await provisionPaidWorkspace({ email })
+  await ref.set(
+    { organizationId: claims.organizationId, provisioningAt: null, updatedAt: new Date().toISOString() },
+    { merge: true },
+  )
+  return claims.organizationId
 }

@@ -18,6 +18,7 @@ export type PricingTier = {
   featured: boolean
   footnote: string
   cta: { label: string; href: string }
+  secondaryCta?: { label: string; href: string } | null
 }
 
 export const TIER_HEX: Record<string, string> = {
@@ -30,6 +31,13 @@ export function tierTint(id: string): string | null {
   const hex = TIER_HEX[id]
   if (!hex) return null
   return hexChannels(hex)
+}
+
+export function tierButtonBackground(id: string): string {
+  const hex = TIER_HEX[id]
+  return hex
+    ? `linear-gradient(180deg, ${mixHex(hex, "#ffffff", 0.08)}, ${mixHex(hex, "#000000", 0.16)})`
+    : "linear-gradient(180deg, #ffffff, #e4e4e7)"
 }
 
 function hexChannels(hex: string): string {
@@ -69,7 +77,15 @@ function glassLayer(hex: string | undefined): string {
   ].join(", ")
 }
 
-export function PricingCard({ tier, className }: { tier: PricingTier; className?: string }) {
+export function PricingCard({
+  tier,
+  className,
+  showCta = true,
+}: {
+  tier: PricingTier
+  className?: string
+  showCta?: boolean
+}) {
   const hex = TIER_HEX[tier.id]
   const tint = hex ? hexChannels(hex) : "255,255,255"
 
@@ -136,33 +152,39 @@ export function PricingCard({ tier, className }: { tier: PricingTier; className?
         <p className="px-5 pb-4 text-xs text-white/40">{tier.footnote}</p>
       </div>
 
-      <div
-        className={cn(
-          "mt-3.5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none",
-          "[@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0",
-          "group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100",
-        )}
-      >
-        <div className="rounded-2xl bg-[#101012] p-1.5 ring-1 ring-white/10">
-          <Link
-            href={tier.cta.href}
-            className={cn(
-              "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-[#0a0a0a]",
-              "transition-all hover:brightness-110 active:scale-[0.99]",
-              "ring-1 ring-[rgba(var(--tint),0.8)] shadow-[0_0_28px_-6px_rgba(var(--tint),0.7)]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-[#101012]",
-            )}
-            style={{
-              background: hex
-                ? `linear-gradient(180deg, ${mixHex(hex, "#ffffff", 0.08)}, ${mixHex(hex, "#000000", 0.16)})`
-                : "linear-gradient(180deg, #ffffff, #e4e4e7)",
-            }}
-          >
-            {tier.cta.label}
-            <ArrowRight aria-hidden className="size-4" />
-          </Link>
+      {showCta ? (
+        <div
+          className={cn(
+            "mt-3.5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none",
+            "[@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0",
+            "group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100",
+          )}
+        >
+          <div className="rounded-2xl bg-[#101012] p-1.5 ring-1 ring-white/10">
+            <Link
+              href={tier.cta.href}
+              className={cn(
+                "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-[#0a0a0a]",
+                "transition-all hover:brightness-110 active:scale-[0.99]",
+                "ring-1 ring-[rgba(var(--tint),0.8)] shadow-[0_0_28px_-6px_rgba(var(--tint),0.7)]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-[#101012]",
+              )}
+              style={{ background: tierButtonBackground(tier.id) }}
+            >
+              {tier.cta.label}
+              <ArrowRight aria-hidden className="size-4" />
+            </Link>
+          </div>
+          {tier.secondaryCta ? (
+            <Link
+              href={tier.secondaryCta.href}
+              className="mx-auto mt-3 block w-fit rounded-sm text-[13px] font-medium text-white/55 underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-[#101012]"
+            >
+              {tier.secondaryCta.label}
+            </Link>
+          ) : null}
         </div>
-      </div>
+      ) : null}
     </div>
   )
 }

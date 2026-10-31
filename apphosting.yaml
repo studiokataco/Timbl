@@ -205,6 +205,14 @@ env:
     availability:
       - RUNTIME
 
+  # Public /checkout: buy a paid plan from /pricing without an invite. A paid
+  # checkout creates a fresh workspace once the webhook confirms payment.
+  # Set to "0" to send paid CTAs back to the invite queue.
+  - variable: PRICING_SELF_SERVE_ENABLED
+    value: "1"
+    availability:
+      - RUNTIME
+
   - variable: RAZORPAY_KEY_ID
     secret: RAZORPAY_KEY_ID
     availability:

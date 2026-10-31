@@ -21,6 +21,7 @@ export function GoogleAuthButton({
   className,
   disabled = false,
   onAuthenticated,
+  onSignedIn,
 }: {
   intent: AuthIntent
   label: string
@@ -32,6 +33,8 @@ export function GoogleAuthButton({
   className?: string
   disabled?: boolean
   onAuthenticated?: (idToken: string) => Promise<void> | void
+  /* Replaces the post-auth redirect, for flows that continue on the same page. */
+  onSignedIn?: () => void
 }) {
   const router = useRouter()
   const search = useSearchParams()
@@ -55,6 +58,10 @@ export function GoogleAuthButton({
       })
       if ("accessPending" in callback) {
         router.replace("/access-pending")
+        return
+      }
+      if (onSignedIn) {
+        onSignedIn()
         return
       }
       router.replace(callback.next)

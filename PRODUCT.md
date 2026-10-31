@@ -15,7 +15,7 @@ AI social media planner for brands and agencies. Agents draft and schedule posts
 
 ## Product truths that shape design
 
-- Invite-only beta: public CTAs route to /request-invite, not open signup.
+- Invite-only for free use: Free/trial CTAs route to /request-invite. Paid tiers can be bought directly at /checkout (Google sign-in, then Razorpay); the workspace is created only when the webhook confirms payment, then the buyer walks the onboarding wizard.
 - The plan is unlocked only by the Razorpay webhook - UI never promises a tier before payment confirms.
 - Sentence case everywhere; ASCII hyphens only; sonner for toasts; lucide icons.
 - Every page ships light and dark (class-driven .dark on html).

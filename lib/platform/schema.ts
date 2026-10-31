@@ -52,6 +52,13 @@ export const platformBillingPath = `${ROOT}/billing`
 export const platformBillingDocPath = (orgId: string) =>
   `${platformBillingPath}/${orgId}`
 /* Razorpay webhook delivery ids, kept for idempotency (process once). */
+/* One doc per public /checkout subscription, keyed by Razorpay subscription
+ * id. The webhook fills in orgId once payment confirms and the workspace is
+ * created; the checkout page polls it to hand the buyer into that workspace. */
+export const platformCheckoutsPath = `${ROOT}/checkouts`
+export const platformCheckoutDocPath = (subscriptionId: string) =>
+  `${platformCheckoutsPath}/${subscriptionId}`
+
 export const platformWebhookEventsPath = `${ROOT}/webhookEvents`
 export const platformWebhookEventDocPath = (eventId: string) =>
   `${platformWebhookEventsPath}/${eventId}`

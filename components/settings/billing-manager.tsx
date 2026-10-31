@@ -28,6 +28,7 @@ import {
   startTrial,
   type SubscriptionStatus,
 } from "@/lib/actions/billing"
+import { loadCheckout } from "@/lib/billing/razorpay-checkout"
 
 export const COMPARE_PLANS = { key: "settings.billing.plans", anchor: "compare-plans" } as const
 
@@ -58,42 +59,6 @@ export type BillingPlanCard = {
   billable: boolean
 }
 
-const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js"
-
-type CheckoutOptions = {
-  key: string
-  subscription_id: string
-  name: string
-  description?: string
-  theme?: { color?: string }
-  handler?: (res: unknown) => void
-  modal?: { ondismiss?: () => void }
-}
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: CheckoutOptions) => { open: () => void }
-  }
-}
-
-function loadCheckout(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") return reject(new Error("no window"))
-    if (window.Razorpay) return resolve()
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${CHECKOUT_SRC}"]`)
-    if (existing) {
-      existing.addEventListener("load", () => resolve())
-      existing.addEventListener("error", () => reject(new Error("checkout failed to load")))
-      return
-    }
-    const s = document.createElement("script")
-    s.src = CHECKOUT_SRC
-    s.async = true
-    s.onload = () => resolve()
-    s.onerror = () => reject(new Error("checkout failed to load"))
-    document.body.appendChild(s)
-  })
-}
 
 const rupees = (n: number) => `Rs ${n.toLocaleString("en-IN")}`
 
