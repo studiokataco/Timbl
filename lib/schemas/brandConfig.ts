@@ -51,7 +51,11 @@ export const brandConfigSchema = audit.extend({
   voice: z.string().max(4_000).default(""),
   audience: z.string().max(4_000).default(""),
   channels: z.array(channelKey).default([]),
-  targetCadence: cadenceSchema,
+  targetCadence: cadenceSchema.default(() => ({
+    perWeek: 3,
+    preferredDays: [],
+    preferredTimes: [],
+  })),
   forbiddenTopics: z.array(z.string().max(120)).default([]),
   samplePosts: z.array(samplePostSchema).default([]),
 
