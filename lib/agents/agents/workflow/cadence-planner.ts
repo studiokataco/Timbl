@@ -17,6 +17,7 @@ import {
   listTemplatesTool,
   useTemplateTool,
 } from "../../tools/templates"
+import { recallIntentTool, rememberIntentTool } from "../../tools/memory"
 
 /*
  * Cadence-planner - bulk-drafts a posting plan for an upcoming window
@@ -41,6 +42,8 @@ export function buildCadencePlannerAgent(config: AgentConfig): LlmAgent {
       createDraftPostTool,
       listTemplatesTool,
       useTemplateTool,
+      recallIntentTool,
+      rememberIntentTool,
     ],
     instructionSuffix: CADENCE_INSTRUCTION,
   })

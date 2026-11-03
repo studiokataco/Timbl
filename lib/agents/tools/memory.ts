@@ -95,3 +95,64 @@ export const recallTool = new FunctionTool({
     return { memories }
   },
 })
+
+const INTENT_TOPIC = "intent"
+
+const rememberIntentInput = z.object({
+  phrase: z.string().min(1).max(300).describe("The person's own wording of the ambiguous ask, verbatim."),
+  meaning: z.string().min(1).max(1_000).describe("What the person confirmed they meant, in one or two sentences."),
+})
+
+export const rememberIntentTool = new FunctionTool({
+  name: "rememberIntent",
+  description:
+    "Save how this workspace phrases an ambiguous ask, so it is not decoded again. Call ONLY after the person confirmed or answered - never save your own guess.",
+  parameters: rememberIntentInput,
+  execute: async (input, ctx) => {
+    const { orgId, brandId } = getRuntimeCtx(ctx)
+    const db = getAdminDb()
+    const ref = db.collection(orgAgentMemoryPath(orgId)).doc()
+    const doc: AgentMemory = {
+      id: ref.id,
+      brandId: brandId ?? DEFAULT_BRAND_ID,
+      topic: INTENT_TOPIC,
+      body: `When they say "${input.phrase}", they mean: ${input.meaning}`,
+      createdAt: new Date().toISOString(),
+    }
+    await ref.set(doc)
+    await embedIfChanged("agentMemory", orgId, ref.id, doc as unknown as Record<string, unknown>)
+    return { ok: true, id: ref.id }
+  },
+})
+
+const recallIntentInput = z.object({
+  phrase: z.string().min(1).max(300).describe("The person's wording of the ambiguous ask."),
+})
+
+export const recallIntentTool = new FunctionTool({
+  name: "recallIntent",
+  description:
+    "Look up confirmed meanings of past ambiguous asks that resemble this one. Higher score means closer wording.",
+  parameters: recallIntentInput,
+  execute: async (input, ctx) => {
+    const { orgId, brandId } = getRuntimeCtx(ctx)
+    const hits = await retrieve({
+      orgId,
+      kind: "agentMemory",
+      query: input.phrase,
+      k: 10,
+      brandId: brandId ?? DEFAULT_BRAND_ID,
+      filter: (d) => (d as { topic?: string }).topic === INTENT_TOPIC,
+    })
+    if (hits.length === 0) return { meanings: [] }
+    const db = getAdminDb()
+    const snaps = await db.getAll(...hits.map((h) => db.doc(`${orgAgentMemoryPath(orgId)}/${h.id}`)))
+    const bodies = new Map(snaps.filter((x) => x.exists).map((x) => [x.id, snapToData<AgentMemory>(x).body]))
+    return {
+      meanings: hits
+        .filter((h) => bodies.has(h.id))
+        .slice(0, 3)
+        .map((h) => ({ meaning: fenceUntrusted(bodies.get(h.id)!), score: h.score })),
+    }
+  },
+})

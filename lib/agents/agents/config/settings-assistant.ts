@@ -11,6 +11,7 @@ import {
   readAgentConfigTool,
   proposeAgentConfigChangeTool,
 } from "../../tools/agent-admin"
+import { recallIntentTool, rememberIntentTool } from "../../tools/memory"
 
 /*
  * Lives behind the global agent drawer (Cmd-J). A general-purpose
@@ -27,6 +28,8 @@ export function buildSettingsAssistantAgent(config: AgentConfig): LlmAgent {
       writeBrandConfigTool,
       readAgentConfigTool,
       proposeAgentConfigChangeTool,
+      recallIntentTool,
+      rememberIntentTool,
     ],
   })
 }

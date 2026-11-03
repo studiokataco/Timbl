@@ -15,6 +15,16 @@ export const GLOBAL_OUTPUT_GUARDRAILS = [
   "  - Sentence case throughout. No emojis unless the brand voice explicitly calls for them.",
 ].join("\n")
 
+export const AMBIGUITY_RULE = [
+  "Ambiguous requests - these always apply:",
+  "  - Clear requests: act directly, skip everything below.",
+  "  - Unclear target, vague reference (\"that one\", \"the usual\") or shorthand you cannot map with confidence: call recallIntent with the person's exact wording before any other tool.",
+  "  - A returned meaning fits: act on it and say in one short line which reading you used, so the person can correct it.",
+  "  - Nothing fits: ask one focused question offering two or three concrete options. Do not guess and do not run other tools first.",
+  "  - Once the person confirms or answers, call rememberIntent with their original wording and the confirmed meaning. Never save your own guess.",
+  "  - No person to ask (scheduled or pipeline run): use a fitting remembered meaning, else the most reasonable reading, and state the assumption in one line.",
+].join("\n")
+
 /*
  * Input-side guardrail. Retrieval tools (retrieve, recall) return stored
  * post / template / memory text that originated from users or external

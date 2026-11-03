@@ -5,6 +5,7 @@ import type { AgentConfig } from "@/lib/schemas/agentConfig"
 import type { FactoryHelpers } from "../.."
 import { buildLlmAgentFromConfig } from "../../runtime/build-agent"
 import { readBrandConfigTool, writeBrandConfigTool } from "../../tools/brand"
+import { recallIntentTool, rememberIntentTool } from "../../tools/memory"
 
 export async function buildBrandWizardAgent(
   config: AgentConfig,
@@ -17,7 +18,7 @@ export async function buildBrandWizardAgent(
   return buildLlmAgentFromConfig({
     name: "brand-wizard",
     config,
-    tools: [readBrandConfigTool, writeBrandConfigTool],
+    tools: [readBrandConfigTool, writeBrandConfigTool, recallIntentTool, rememberIntentTool],
     subAgents: onboarder ? [onboarder] : undefined,
     instructionSuffix: onboarder ? BRAND_WIZARD_DELEGATION : undefined,
   })
