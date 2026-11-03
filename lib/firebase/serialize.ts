@@ -10,8 +10,18 @@ import { Timestamp } from "firebase-admin/firestore"
  * convenience wrapper used by every read.
  */
 
+/* firebase-admin doesn't export VectorValue, so match it structurally. */
+export function isVectorValue(value: unknown): value is { toArray(): number[] } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { toArray?: unknown }).toArray === "function"
+  )
+}
+
 export function toIso(value: unknown): unknown {
   if (value instanceof Timestamp) return value.toDate().toISOString()
+  if (isVectorValue(value)) return value.toArray()
   if (Array.isArray(value)) return value.map(toIso)
   if (value && typeof value === "object") {
     const out: Record<string, unknown> = {}
