@@ -7,6 +7,7 @@ import {
   readAgentConfigTool,
   proposeAgentConfigChangeTool,
 } from "../../tools/agent-admin"
+import { recallIntentTool, rememberIntentTool } from "../../tools/memory"
 
 /*
  * Meta-config agent - proposes prompt / model / temperature / budget
@@ -18,6 +19,6 @@ export function buildMetaConfigAgent(config: AgentConfig): LlmAgent {
   return buildLlmAgentFromConfig({
     name: "meta-config",
     config,
-    tools: [readAgentConfigTool, proposeAgentConfigChangeTool],
+    tools: [readAgentConfigTool, proposeAgentConfigChangeTool, recallIntentTool, rememberIntentTool],
   })
 }

@@ -1,3 +1,5 @@
+import type { AgentReasoningEffort } from "@/lib/schemas/agentConfig"
+
 /*
  * Default agent templates. Single source of truth shared by:
  *   - the emulator seeds in `firestore/seeds/0007_agent_configs.ts` and
@@ -27,6 +29,7 @@ export interface AgentDefault {
   description: string
   provider: "gemini" | "anthropic" | "openrouter" | "mock"
   model: string
+  reasoningEffort?: AgentReasoningEffort
   temperature: number
   systemPrompt: string
   enabled: boolean
@@ -112,12 +115,22 @@ const DEFAULT_BUDGETS: AgentBudgetsDefault = {
   monthlyUsdCap: 50,
 }
 
-/* OpenRouter model ladder. OpenRouter is the default gateway; small direct
- * Google/Anthropic credits stay as a manual backup (no auto-failover). List
- * pricing for these lives in lib/agents/pricing.ts. */
-const OR_CHEAP = "google/gemini-3.1-flash-lite"
-const OR_WORKHORSE = "minimax/minimax-m3"
-const OR_REVIEW = "anthropic/claude-haiku-4.5"
+/* Effort is pinned: Artificial Analysis scores are per model + effort pair. */
+type ModelLane = Pick<AgentDefault, "model" | "reasoningEffort">
+
+const LANE_OPS: ModelLane = {
+  model: "openai/gpt-6.1-terra",
+  reasoningEffort: "low",
+}
+const LANE_CONTENT: ModelLane = {
+  model: "openai/gpt-6.1-sol",
+  reasoningEffort: "medium",
+}
+const LANE_REVIEW: ModelLane = {
+  model: "openai/gpt-6.1-terra",
+  reasoningEffort: "medium",
+}
+const LANE_GROUNDED: ModelLane = { model: "google/gemini-3.1-flash-lite" }
 
 export const AGENT_DEFAULTS: AgentDefault[] = [
   {
@@ -126,7 +139,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Diagnostic echo agent used by /api/agents/hello/run smoke tests.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_OPS,
     temperature: 0.2,
     systemPrompt:
       "You are this workspace's diagnostic agent. Reply briefly and clearly to whatever the user says. If the user just says 'ping', reply 'pong'.",
@@ -140,11 +153,11 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Interviews an admin to capture brand voice, audience, channels, cadence, and forbidden topics, then writes them to brandConfig.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_OPS,
     temperature: 0.4,
     systemPrompt: BRAND_WIZARD_PROMPT,
     enabled: true,
-    allowedTools: ["readBrandConfig", "writeBrandConfig", "transfer_to_agent"],
+    allowedTools: ["readBrandConfig", "writeBrandConfig", "transfer_to_agent", "recallIntent", "rememberIntent"],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },
   {
@@ -153,7 +166,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "General-purpose configuration chat in the global drawer. Edits brand config directly and proposes (never applies) changes to other agents.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_OPS,
     temperature: 0.5,
     systemPrompt: SETTINGS_ASSISTANT_PROMPT,
     enabled: true,
@@ -162,6 +175,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
       "writeBrandConfig",
       "readAgentConfig",
       "proposeAgentConfigChange",
+      "recallIntent",
+      "rememberIntent",
     ],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },
@@ -171,11 +186,11 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Reads another agent's config and proposes tweaks (model, temperature, prompt). Proposals queue for human approval.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_CONTENT,
     temperature: 0.3,
     systemPrompt: META_CONFIG_PROMPT,
     enabled: true,
-    allowedTools: ["readAgentConfig", "proposeAgentConfigChange"],
+    allowedTools: ["readAgentConfig", "proposeAgentConfigChange", "recallIntent", "rememberIntent"],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },
   {
@@ -185,12 +200,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     role: "workflow",
     description:
       "Writes a draft post from a brief, honouring brandConfig. Iterated in the review loop until the reviewer is satisfied.",
-    /* OpenRouter minimax-m3 workhorse - strong tool-calling at a fraction
-     * of frontier cost. Override per-deployment by editing the Firestore
-     * agentConfigs/drafter doc if you need heavier reasoning (e.g. swap to
-     * anthropic/claude-haiku-4.5 or z-ai/glm-5.2). */
     provider: "openrouter",
-    model: OR_WORKHORSE,
+    ...LANE_CONTENT,
     temperature: 0.8,
     systemPrompt:
       "You are this workspace's drafter. Your job is to write engaging, on-brand social posts. Each draft must include: a clear brief, a final blurb (the social copy itself), a hashtag list, and a brief rationale. Sentence case. No emojis unless the brand voice explicitly asks for them.",
@@ -202,6 +213,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
       "createDraftPost",
       "updateDraft",
       "createTemplate",
+      "recallIntent",
+      "rememberIntent",
     ],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },
@@ -211,7 +224,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Reviews drafts against brandConfig + forbiddenTopics. Calls EXIT_LOOP when publishable; otherwise emits a critique for the drafter.",
     provider: "openrouter",
-    model: OR_REVIEW,
+    ...LANE_REVIEW,
     temperature: 0.2,
     systemPrompt:
       "You are this workspace's reviewer. Read the latest draft and judge whether it is publishable against the brand's voice and forbidden topics. Be ruthless on tone and on factual claims. Treat these as automatic defects that block publishing: any em dash or en dash, any raw system slug or enum value left in the copy (for example ad-hoc, fb_groups, n/a), and any AI-assistant tonality or filler pleasantry. If publishable, call EXIT_LOOP and say nothing more. If not, emit one focused critique under 200 words and update the draft's rationale field with that critique.",
@@ -231,7 +244,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Picks a posting slot from the available windows that honours brandConfig.targetCadence.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_OPS,
     temperature: 0.1,
     systemPrompt:
       "You are this workspace's scheduler. Read the brand's preferred cadence, list near-term events to avoid double-booking, call findOpenSlots, and pick ONE slot. Then call scheduleDraft. Never invent dates.",
@@ -250,7 +263,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "One-shot agent that pauses the pipeline awaiting human approval of the current draft.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_OPS,
     temperature: 0.0,
     systemPrompt:
       "You are this workspace's human-gate. Summarise the current draft in one short sentence, then call requestHumanApproval with that postId and summary. Say nothing else.",
@@ -266,7 +279,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Web-research-driven idea generator. Uses OpenRouter web search to discover awareness days and trending topics, persists each to ideationFeed with source URLs.",
     provider: "openrouter",
-    model: OR_WORKHORSE,
+    ...LANE_CONTENT,
     temperature: 0.6,
     schedule: "0 6 * * *",
     systemPrompt:
@@ -286,7 +299,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Sequential pipeline: review-loop → human-gate → scheduler. The brief is supplied as the run input.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_OPS,
     temperature: 0.4,
     systemPrompt:
       "(composite - pipeline agents have no LLM of their own; their sub-agents do the work)",
@@ -302,7 +315,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Bulk-drafts a posting plan for a date range, respecting brandConfig.targetCadence. Used by the calendar toolbar 'Plan cadence' button and the weekly cron.",
     provider: "openrouter",
-    model: OR_WORKHORSE,
+    ...LANE_CONTENT,
     temperature: 0.5,
     schedule: "0 7 * * 1",
     systemPrompt:
@@ -315,6 +328,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
       "findOpenSlots",
       "listPosts",
       "createDraftPost",
+      "recallIntent",
+      "rememberIntent",
     ],
     triggers: { manual: true, cron: true, systemUserId: "system" },
   },
@@ -326,7 +341,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Scans pending drafts and nudges any whose scheduledDate is approaching but still unreviewed.",
     provider: "openrouter",
-    model: OR_CHEAP,
+    ...LANE_OPS,
     temperature: 0.1,
     schedule: "0 9-18 * * 1-5",
     systemPrompt:
@@ -343,10 +358,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Web-research-driven discovery of awareness days. Uses OpenRouter web search to find real observances in a window, writes them as proposals for human review before they enter the official awarenessDays collection.",
     provider: "openrouter",
-    /* gemini-3.1-flash-lite, not the minimax workhorse: in a head-to-head on
-     * this grounded-discovery task flash-lite returned accurate sourced days
-     * while minimax-m3 completed but wrote zero proposals. */
-    model: OR_CHEAP,
+    ...LANE_GROUNDED,
     temperature: 0.3,
     systemPrompt: AWARENESS_RESEARCHER_PROMPT,
     enabled: true,
@@ -368,7 +380,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Mines approved posts for high-performing patterns and drafts fresh variants so the brand stays active without starting from zero.",
     provider: "openrouter",
-    model: OR_WORKHORSE,
+    ...LANE_CONTENT,
     temperature: 0.8,
     systemPrompt:
       "You are this workspace's repurposer. Your job is to mine approved posts for patterns that worked well, then write a genuinely new take - same topic or audience, fresh angle, updated hook. Never copy the source blurb verbatim. Set reviewState='pending' on every draft you create so a human signs off before it publishes.",
@@ -384,7 +396,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Scans the posting calendar for empty windows in the next 2 weeks and proposes draft posts to fill them, respecting brandConfig cadence.",
     provider: "openrouter",
-    model: OR_WORKHORSE,
+    ...LANE_CONTENT,
     temperature: 0.5,
     systemPrompt:
       "You are this workspace's gap filler. Find open calendar windows in the next 14 days that the brand's targetCadence expects to be filled but currently are not. For each gap, propose one draft post with a clear brief. Set reviewState='pending'. Report how many gaps you found and filled.",
@@ -400,7 +412,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Reviews recent published posts against brandConfig voice, audience, and forbidden topics. Reports drift so the team can course-correct.",
     provider: "openrouter",
-    model: OR_REVIEW,
+    ...LANE_REVIEW,
     temperature: 0.2,
     systemPrompt:
       "You are this workspace's brand auditor. Read the current brandConfig (voice, audience, forbiddenTopics). Then scan the 20 most recent approved or published posts with listPosts. For each post, judge whether it is on-brand. Report any drift - tone slipping, forbidden topics appearing, or audience mismatch. Be specific: quote the offending phrase and state the rule it breaks. If everything is on-brand, say so plainly.",
@@ -416,7 +428,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description:
       "Onboards a new client end to end: interviews the operator to capture the client's brand brief (voice, audience, channels, cadence, forbidden topics), writes it to brandConfig, then seeds 3-4 starter drafts so the first week is ready to review.",
     provider: "openrouter",
-    model: OR_WORKHORSE,
+    ...LANE_CONTENT,
     temperature: 0.5,
     systemPrompt: CLIENT_ONBOARDER_PROMPT,
     enabled: true,
@@ -426,6 +438,8 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
       "createDraftPost",
       "createTemplate",
       "remember",
+      "recallIntent",
+      "rememberIntent",
     ],
     triggers: { manual: true, cron: false, systemUserId: "system" },
   },

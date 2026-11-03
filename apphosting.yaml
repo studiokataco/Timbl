@@ -151,7 +151,7 @@ env:
   # and retrieve() filters to it, so letting this drift silently empties
   # retrieval results. Changing it requires a full re-embed backfill.
   - variable: EMBEDDING_PROVIDER
-    value: gemini
+    value: openrouter
     availability:
       - RUNTIME
 

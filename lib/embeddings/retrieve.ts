@@ -1,6 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
+import { isVectorValue } from "@/lib/firebase/serialize"
 import { DEFAULT_BRAND_ID } from "@/lib/constants/timbl"
 
 import { collectionPathFor, toEmbeddingText, type Kind } from "./embeddable"
@@ -82,6 +83,7 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
       queryVector: FieldValue.vector(vector),
       limit: k * 4,
       distanceMeasure: "COSINE",
+      distanceResultField: "vectorDistance",
     })
     const snap = await knnQuery.get()
     const hits: RetrieveHit[] = []
@@ -94,9 +96,8 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
       hits.push({
         id: d.id,
         snippet: toEmbeddingText(opts.kind, data).slice(0, SNIPPET_LEN),
-        // Firestore returns distance, not similarity. Convert COSINE
-        // distance (1 - cos) back to similarity for caller ergonomics.
-        score: 1 - ((d as unknown as { distance?: number }).distance ?? 0),
+        // COSINE distance is 1 - cos; convert back to similarity.
+        score: 1 - ((data.vectorDistance as number | undefined) ?? 1),
       })
     }
     return hits.slice(0, k)
@@ -110,14 +111,17 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrieveHit[]> {
     if (!brandMatch(data)) continue
     if (opts.filter && !opts.filter(data)) continue
     const emb = data.embedding as
-      | { vector?: number[]; model?: string }
+      | { vector?: unknown; model?: string }
       | undefined
-    if (!emb?.vector?.length) continue
-    if (emb.model !== model) continue
+    const stored = isVectorValue(emb?.vector)
+      ? emb.vector.toArray()
+      : (emb?.vector as number[] | undefined)
+    if (!stored?.length) continue
+    if (emb?.model !== model) continue
     scored.push({
       id: d.id,
       snippet: toEmbeddingText(opts.kind, data).slice(0, SNIPPET_LEN),
-      score: cosine(vector, emb.vector),
+      score: cosine(vector, stored),
     })
   }
   scored.sort((a, b) => b.score - a.score)

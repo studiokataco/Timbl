@@ -1,6 +1,9 @@
 import { BaseLlm, Gemini, LLMRegistry } from "@google/adk"
 
-import type { AgentProvider } from "@/lib/schemas/agentConfig"
+import type {
+  AgentProvider,
+  AgentReasoningEffort,
+} from "@/lib/schemas/agentConfig"
 import { AnthropicLlm } from "./anthropic-llm"
 import { MockLlm } from "./mock-llm"
 import { OpenAiCompatibleLlm } from "./openai-compatible-llm"
@@ -57,6 +60,9 @@ function ensureRegistered() {
 export interface ResolveLlmInput {
   provider: AgentProvider
   model: string
+  /** Primary model only: effort levels don't port across models. */
+  reasoningEffort?: AgentReasoningEffort
+  temperature?: number
   /** Enable OpenRouter's web-search server tool. Ignored by non-OpenAI-
    * compatible providers. */
   webSearch?: boolean
@@ -93,7 +99,7 @@ function readOllamaBaseUrl(): string {
  * fallback cannot reuse the agent's configured model - it needs a designated
  * equivalent on the target provider. Mid-tier on purpose: the fallback runs
  * during someone else's outage, so it should be dependable rather than cheap. */
-const FALLBACK_OPENROUTER_MODEL = "google/gemini-3.1-flash-lite"
+const FALLBACK_OPENROUTER_MODEL = "openai/gpt-6.1-terra"
 const FALLBACK_GEMINI_MODEL = "gemini-3.5-flash"
 const FALLBACK_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 
@@ -191,6 +197,8 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
             apiKey: openRouterKey,
             baseUrl: OPENROUTER_BASE_URL,
             webSearch: input.webSearch,
+            reasoningEffort: input.reasoningEffort,
+            temperature: input.temperature,
           }),
           input,
         )
@@ -208,6 +216,7 @@ export function resolveLlm(input: ResolveLlmInput): BaseLlm | string {
         new OpenAiCompatibleLlm({
           model: input.model,
           baseUrl: readOllamaBaseUrl(),
+          temperature: input.temperature,
         }),
         input,
       )

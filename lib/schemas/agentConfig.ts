@@ -10,6 +10,17 @@ export const agentProvider = z.enum([
 ])
 export type AgentProvider = z.infer<typeof agentProvider>
 
+export const agentReasoningEffort = z.enum([
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+])
+export type AgentReasoningEffort = z.infer<typeof agentReasoningEffort>
+
 export const agentRole = z.enum(["config", "workflow"])
 export type AgentRole = z.infer<typeof agentRole>
 
@@ -46,6 +57,7 @@ export const agentConfigSchema = audit.extend({
   provider: agentProvider.default("gemini"),
   model: z.string().min(1),
   temperature: z.number().min(0).max(2).default(0.7),
+  reasoningEffort: agentReasoningEffort.optional(),
   systemPrompt: z.string().max(20_000),
 
   enabled: z.boolean().default(true),

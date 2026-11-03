@@ -4,7 +4,11 @@ import type { AgentConfig } from "@/lib/schemas/agentConfig"
 
 import { buildLlmAgentFromConfig } from "../../runtime/build-agent"
 import { readBrandConfigTool } from "../../tools/brand"
-import { recallTool } from "../../tools/memory"
+import {
+  recallTool,
+  recallIntentTool,
+  rememberIntentTool,
+} from "../../tools/memory"
 import {
   createDraftPostTool,
   updateDraftPostTool,
@@ -41,6 +45,8 @@ export function buildDrafterAgent(config: AgentConfig): LlmAgent {
       createTemplateTool,
       listTemplatesTool,
       useTemplateTool,
+      recallIntentTool,
+      rememberIntentTool,
     ],
     instructionSuffix: DRAFTER_INSTRUCTION,
   })

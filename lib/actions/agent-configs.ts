@@ -142,6 +142,7 @@ function docFromDefault(
     description: overrides?.description ?? d.description,
     provider: d.provider,
     model: overrides?.model ?? d.model,
+    reasoningEffort: overrides?.model ? undefined : d.reasoningEffort,
     temperature: overrides?.temperature ?? d.temperature,
     systemPrompt: overrides?.systemPrompt ?? d.systemPrompt,
     enabled: overrides?.enabled ?? d.enabled,

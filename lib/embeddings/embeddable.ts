@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import {
@@ -123,7 +124,7 @@ export async function embedIfChanged(
     .set(
       {
         embedding: {
-          vector: result.vector,
+          vector: FieldValue.vector(result.vector),
           dim: result.dim,
           model: result.model,
           sourceHash: hash,

@@ -180,6 +180,7 @@ function agentConfigDocFromDefault(
     description: d.description,
     provider: d.provider,
     model: d.model,
+    reasoningEffort: d.reasoningEffort,
     temperature: d.temperature,
     systemPrompt: d.systemPrompt,
     enabled: d.enabled,

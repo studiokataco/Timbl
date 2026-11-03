@@ -19,11 +19,11 @@ import { detectLlmStatus, resolveLlm } from "./llm-registry"
  *
  * The summariser runs ONLY when the threshold is crossed, so its (cheap)
  * cost is paid once to avoid re-billing a large history on every subsequent
- * turn. We always prefer the cheapest reachable model for it - Gemini Flash
- * when a Gemini key exists - regardless of the agent's own provider, since
- * the summary never ships to a user.
+ * turn. We always prefer the cheapest reachable model for it regardless of
+ * the agent's own provider, since the summary never ships to a user.
  */
 
+const SUMMARIZER_MODEL_OPENROUTER = "google/gemini-3.1-flash-lite"
 const SUMMARIZER_MODEL_GEMINI = "gemini-2.5-flash"
 
 function resolveSummarizerLlm(config: AgentConfig): BaseLlm | undefined {
@@ -32,9 +32,11 @@ function resolveSummarizerLlm(config: AgentConfig): BaseLlm | undefined {
   if (process.env.AGENT_MOCK_LLM === "1") return undefined
 
   const status = detectLlmStatus()
-  const llm = status.gemini
-    ? resolveLlm({ provider: "gemini", model: SUMMARIZER_MODEL_GEMINI })
-    : resolveLlm({ provider: config.provider, model: config.model })
+  const llm = status.openrouter
+    ? resolveLlm({ provider: "openrouter", model: SUMMARIZER_MODEL_OPENROUTER })
+    : status.gemini
+      ? resolveLlm({ provider: "gemini", model: SUMMARIZER_MODEL_GEMINI })
+      : resolveLlm({ provider: config.provider, model: config.model })
 
   // resolveLlm returns a model-name string only for paths we don't take here;
   // a string can't summarise, so treat it as "no summariser available".

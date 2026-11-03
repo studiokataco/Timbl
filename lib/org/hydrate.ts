@@ -42,6 +42,7 @@ export async function hydrateAgentStubs(orgId: string): Promise<void> {
         description: def.description,
         provider: def.provider,
         model: def.model,
+        reasoningEffort: def.reasoningEffort,
         temperature: def.temperature,
         systemPrompt: def.systemPrompt,
         enabled: def.enabled,

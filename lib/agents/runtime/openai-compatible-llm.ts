@@ -1,4 +1,5 @@
 import OpenAI from "openai"
+import type { AgentReasoningEffort } from "@/lib/schemas/agentConfig"
 import type {
   ChatCompletionMessageParam,
   ChatCompletionTool,
@@ -49,6 +50,13 @@ import type {
  * drafts/reviews on models that support far more. Unknown models fall back to
  * DEFAULT_MAX_TOKENS. Keyed by the post-prefix model id (vendor/model). */
 const MODEL_OUTPUT_LIMITS: Record<string, number> = {
+  "openai/gpt-6.1-sol": 16_384,
+  "openai/gpt-6.1-sol-pro": 16_384,
+  "openai/gpt-6.1-terra": 16_384,
+  "openai/gpt-6.1-terra-pro": 16_384,
+  "anthropic/claude-haiku-5.5": 8_192,
+  "google/gemini-3.8-flash": 8_192,
+  "google/gemini-4-argon": 16_384,
   "minimax/minimax-m3": 16_384,
   "z-ai/glm-5.2": 16_384,
   "anthropic/claude-haiku-4.5": 8_192,
@@ -82,6 +90,53 @@ export interface OpenAiCompatibleLlmOptions {
   webSearch?: boolean
   /** Hard override of the per-model output ceiling. */
   maxTokens?: number
+  reasoningEffort?: AgentReasoningEffort
+  temperature?: number
+}
+
+const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
+const CATALOG_TTL_MS = 6 * 60 * 60 * 1000
+const CATALOG_RETRY_MS = 5 * 60 * 1000
+
+let temperatureCatalog:
+  | { models: Promise<Set<string>>; expiresAt: number }
+  | undefined
+
+/* Reasoning models reject temperature; a failed lookup omits it. */
+function openRouterTemperatureModels(): Promise<Set<string>> {
+  const now = Date.now()
+  if (temperatureCatalog && temperatureCatalog.expiresAt > now) {
+    return temperatureCatalog.models
+  }
+  const entry = {
+    expiresAt: now + CATALOG_TTL_MS,
+    models: fetch(OPENROUTER_MODELS_URL)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const json = (await res.json()) as {
+          data?: Array<{ id: string; supported_parameters?: string[] }>
+        }
+        return new Set(
+          (json.data ?? [])
+            .filter((m) => m.supported_parameters?.includes("temperature"))
+            .map((m) => m.id),
+        )
+      })
+      .catch(() => {
+        entry.expiresAt = Date.now() + CATALOG_RETRY_MS
+        return new Set<string>()
+      }),
+  }
+  temperatureCatalog = entry
+  return entry.models
+}
+
+async function acceptsTemperature(
+  modelName: string,
+  baseUrl: string | undefined,
+): Promise<boolean> {
+  if (!baseUrl?.includes("openrouter.ai")) return true
+  return (await openRouterTemperatureModels()).has(modelName)
 }
 
 export class OpenAiCompatibleLlm extends BaseLlm {
@@ -97,6 +152,9 @@ export class OpenAiCompatibleLlm extends BaseLlm {
   private readonly client: OpenAI
   private readonly webSearch: boolean
   private readonly maxTokensOverride?: number
+  private readonly reasoningEffort?: AgentReasoningEffort
+  private readonly temperature?: number
+  private readonly baseUrl?: string
 
   constructor(params: OpenAiCompatibleLlmOptions = {}) {
     super({ model: params.model ?? "" })
@@ -106,6 +164,9 @@ export class OpenAiCompatibleLlm extends BaseLlm {
     })
     this.webSearch = params.webSearch ?? false
     this.maxTokensOverride = params.maxTokens
+    this.reasoningEffort = params.reasoningEffort
+    this.temperature = params.temperature
+    this.baseUrl = params.baseUrl
   }
 
   override async *generateContentAsync(
@@ -122,6 +183,9 @@ export class OpenAiCompatibleLlm extends BaseLlm {
     )
 
     const allTools = this.webSearch ? [...tools, WEB_SEARCH_TOOL] : tools
+    const sendTemperature =
+      this.temperature !== undefined &&
+      (await acceptsTemperature(modelName, this.baseUrl))
     const params = {
       model: modelName,
       max_tokens: resolveMaxTokens(modelName, this.maxTokensOverride),
@@ -131,6 +195,10 @@ export class OpenAiCompatibleLlm extends BaseLlm {
        * / $0, starving the cost dashboards. */
       stream_options: { include_usage: true },
       ...(allTools.length ? { tools: allTools } : {}),
+      ...(this.reasoningEffort
+        ? { reasoning: { effort: this.reasoningEffort } }
+        : {}),
+      ...(sendTemperature ? { temperature: this.temperature } : {}),
     }
 
     /* Use the chat.completions.stream() helper - like anthropic-llm.ts it

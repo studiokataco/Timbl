@@ -8,7 +8,8 @@ import { createHash } from "node:crypto"
  *
  * Resolution order (first match wins):
  *   1. AGENT_MOCK_LLM=1 → mock, regardless of EMBEDDING_PROVIDER.
- *   2. EMBEDDING_PROVIDER explicit (gemini | voyage | openai | mock).
+ *   2. EMBEDDING_PROVIDER explicit (gemini | openrouter | voyage | openai | mock).
+ *      openrouter is never inferred: its key is always set for agents.
  *   3. First provider key present: GEMINI_API_KEY (or GOOGLE_API_KEY) →
  *      gemini; VOYAGE_API_KEY → voyage; OPENAI_API_KEY → openai.
  *   4. Mock (with a one-time warn).
@@ -32,7 +33,7 @@ import { createHash } from "node:crypto"
 
 export type EmbedResult = { vector: number[]; dim: number; model: string }
 
-type ProviderName = "gemini" | "voyage" | "openai" | "mock"
+type ProviderName = "gemini" | "openrouter" | "voyage" | "openai" | "mock"
 
 const warnedKeys = new Set<string>()
 function warnOnce(key: string, message: string) {
@@ -60,12 +61,18 @@ function inferProvider(): ProviderName {
 function resolveProvider(): ProviderName {
   if (process.env.AGENT_MOCK_LLM === "1") return "mock"
   const explicit = process.env.EMBEDDING_PROVIDER?.toLowerCase()
-  if (explicit === "gemini" || explicit === "voyage" || explicit === "openai" || explicit === "mock") {
+  if (
+    explicit === "gemini" ||
+    explicit === "openrouter" ||
+    explicit === "voyage" ||
+    explicit === "openai" ||
+    explicit === "mock"
+  ) {
     return explicit
   }
   if (explicit) {
     throw new Error(
-      `[embed] EMBEDDING_PROVIDER="${explicit}" is not one of gemini | voyage | openai | mock. ` +
+      `[embed] EMBEDDING_PROVIDER="${explicit}" is not one of gemini | openrouter | voyage | openai | mock. ` +
         "Refusing to infer - a wrong embedding model invalidates the stored corpus.",
     )
   }
@@ -86,6 +93,8 @@ export async function embed(text: string): Promise<EmbedResult> {
   switch (provider) {
     case "gemini":
       return embedGemini(text)
+    case "openrouter":
+      return embedOpenRouter(text)
     case "voyage":
       return embedVoyage(text)
     case "openai":
@@ -112,6 +121,8 @@ export function currentEmbeddingModel(): string {
   switch (resolveProvider()) {
     case "gemini":
       return GEMINI_MODEL
+    case "openrouter":
+      return OPENROUTER_MODEL
     case "voyage":
       return VOYAGE_MODEL
     case "openai":
@@ -152,6 +163,34 @@ async function embedGemini(text: string): Promise<EmbedResult> {
   const vector = json.embedding?.values
   if (!vector?.length) throw new Error("[embed:gemini] empty embedding")
   return { vector, dim: vector.length, model: GEMINI_MODEL }
+}
+
+/* ── OpenRouter ─────────────────────────────────────────────────────── */
+
+/* Stamp differs from GEMINI_MODEL: vector parity between routes is unverified. */
+const OPENROUTER_MODEL = "google/gemini-embedding-001"
+const OPENROUTER_OUTPUT_DIM = 768
+
+async function embedOpenRouter(text: string): Promise<EmbedResult> {
+  const key = process.env.OPENROUTER_API_KEY
+  if (!key) throw new Error("[embed:openrouter] OPENROUTER_API_KEY not set")
+  const res = await fetch("https://openrouter.ai/api/v1/embeddings", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      input: text,
+      model: OPENROUTER_MODEL,
+      dimensions: OPENROUTER_OUTPUT_DIM,
+    }),
+  })
+  if (!res.ok) throw new Error(`[embed:openrouter] ${res.status} ${await res.text()}`)
+  const json = (await res.json()) as { data?: Array<{ embedding?: number[] }> }
+  const vector = json.data?.[0]?.embedding
+  if (!vector?.length) throw new Error("[embed:openrouter] empty embedding")
+  return { vector, dim: vector.length, model: OPENROUTER_MODEL }
 }
 
 /* ── Voyage ─────────────────────────────────────────────────────────── */

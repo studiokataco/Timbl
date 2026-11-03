@@ -39,6 +39,7 @@ export async function GET(
     .get()
 
   const lines = eventsSnap.docs
+    .filter((d) => !d.data().runId || d.data().runId === runId)
     .map((d) => JSON.stringify(d.data()))
     .join("\n")
 

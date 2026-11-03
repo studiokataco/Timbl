@@ -40,8 +40,15 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   "claude-sonnet-4-6": { inputPer1M: 3, outputPer1M: 15 },
 
   // --- OpenRouter ladder (LIST price, verify per-model on openrouter.ai) ---
-  // Seed LIST rates only - promo rates (e.g. minimax-m3's temporary 50% off)
-  // would make estimates silently double when the promo ends.
+  // Seed LIST rates only - promo rates would make estimates silently wrong
+  // when the promo ends.
+  "openai/gpt-6.1-terra": { inputPer1M: 1, outputPer1M: 5 },
+  "openai/gpt-6.1-terra-pro": { inputPer1M: 1, outputPer1M: 5 },
+  "openai/gpt-6.1-sol": { inputPer1M: 2, outputPer1M: 10 },
+  "openai/gpt-6.1-sol-pro": { inputPer1M: 2, outputPer1M: 10 },
+  "anthropic/claude-haiku-5.5": { inputPer1M: 0.1, outputPer1M: 0.5 },
+  "google/gemini-3.8-flash": { inputPer1M: 0.825, outputPer1M: 4.125 },
+  "google/gemini-4-argon": { inputPer1M: 2, outputPer1M: 10 },
   "google/gemini-3.1-flash-lite": { inputPer1M: 0.25, outputPer1M: 1.5 },
   "minimax/minimax-m3": { inputPer1M: 0.6, outputPer1M: 2.4 },
   "anthropic/claude-haiku-4.5": { inputPer1M: 1, outputPer1M: 5 },

@@ -7,7 +7,12 @@ import { resolveLlm } from "./llm-registry"
 import { makePermissionsCallback } from "./permissions"
 import { makeBudgetCallbacks } from "./budget"
 import { makeContextCompactors } from "./compaction"
-import { GLOBAL_OUTPUT_GUARDRAILS, INPUT_GUARDRAIL } from "./guardrails"
+import { recallIntentTool } from "../tools/memory"
+import {
+  AMBIGUITY_RULE,
+  GLOBAL_OUTPUT_GUARDRAILS,
+  INPUT_GUARDRAIL,
+} from "./guardrails"
 
 /*
  * Single helper every agent factory uses to instantiate its LlmAgent.
@@ -52,7 +57,15 @@ export function buildLlmAgentFromConfig(
   /* Guardrails go last so they win over any looser tone wording in the
    * agent's own prompt. Output guardrail stays last so it overrides tone;
    * the input guardrail precedes it. Applied to every leaf LlmAgent. */
-  const instruction = `${base}\n\n${INPUT_GUARDRAIL}\n\n${GLOBAL_OUTPUT_GUARDRAILS}`
+  const learnsIntent = (rest.tools ?? []).some(
+    (t) => "name" in t && t.name === recallIntentTool.name,
+  )
+  const instruction = [
+    base,
+    ...(learnsIntent ? [AMBIGUITY_RULE] : []),
+    INPUT_GUARDRAIL,
+    GLOBAL_OUTPUT_GUARDRAILS,
+  ].join("\n\n")
 
   return new LlmAgent({
     ...rest,
@@ -61,6 +74,8 @@ export function buildLlmAgentFromConfig(
     model: resolveLlm({
       provider: config.provider,
       model: config.model,
+      reasoningEffort: config.reasoningEffort,
+      temperature: config.temperature,
       webSearch,
       nativeTools,
     }),
