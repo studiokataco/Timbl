@@ -3,13 +3,15 @@
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
-import { Flag, Pencil, Sparkles } from "lucide-react"
+import { useState } from "react"
+import { Clock, Eye, Flag, PencilLine, Sparkles, TriangleAlert } from "lucide-react"
+import { EventPeek } from "@/components/mockup/agentic/interface/calendar-fragment"
+import type { PrototypePost } from "@/components/mockup/agentic/types"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 import { postStatusLabel } from "@/lib/labels/enums"
 import { categoryPillColors } from "./color"
-import { statusGlyph } from "./post-chip"
 
 const PRIORITY_COLOR: Record<string, string> = {
   urgent: "#ef4444",
@@ -24,6 +26,64 @@ const PRIORITY_LABEL: Record<string, string> = {
   low: "Low",
 }
 
+function needsYou(post: Post): boolean {
+  return post.agentMeta?.reviewState === "pending" || post.status === "review" || post.status === "needs_approval"
+}
+
+function asPrototype(post: WithId<Post>): PrototypePost {
+  return {
+    ...post,
+    tile: { headline: post.brief ?? "Untitled", format: post.postType ?? "post" },
+    contentRev: 1,
+  }
+}
+
+function askAbout(post: WithId<Post>) {
+  window.dispatchEvent(
+    new CustomEvent("timbl:ask", {
+      detail: { id: post.id, title: post.brief || post.blurb || "Untitled post" },
+    }),
+  )
+}
+
+export function StatusMark({ post }: { post: Post }) {
+  const icon = "mr-1 inline size-3 shrink-0 align-text-top"
+  if (needsYou(post)) return <TriangleAlert aria-hidden className={cn(icon, "text-warning")} />
+  if (post.status === "scheduled") return <Clock aria-hidden className={cn(icon, "text-current")} />
+  if (post.status === "posted") return <Eye aria-hidden className={cn(icon, "text-current")} />
+  return <PencilLine aria-hidden className={cn(icon, "text-current")} />
+}
+
+function Peek({
+  post,
+  onOpen,
+  trigger,
+}: {
+  post: WithId<Post>
+  onOpen: () => void
+  trigger: React.ReactElement
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <EventPeek
+      open={open}
+      onOpenChange={setOpen}
+      trigger={trigger}
+      postId={post.id}
+      post={asPrototype(post)}
+      unread={{ count: 0, mentions: 0 }}
+      onAskAbout={() => {
+        setOpen(false)
+        askAbout(post)
+      }}
+      onOpenNotes={() => {
+        setOpen(false)
+        onOpen()
+      }}
+    />
+  )
+}
+
 type Props = {
   post: WithId<Post>
   category: Pick<Category, "color" | "name"> | null
@@ -31,123 +91,84 @@ type Props = {
 }
 
 export function EventPill({ post, category, onClick }: Props) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: post.id,
-      data: { type: "post", post },
-    })
-
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: post.id,
+    data: { type: "post", post },
+  })
   const time = post.scheduledTime
-    ? format(parseISO(`${post.scheduledDate}T${post.scheduledTime}`), "h:mma")
-        .toLowerCase()
-        .replace(":00", "")
+    ? format(parseISO(`${post.scheduledDate}T${post.scheduledTime}`), "h:mma").toLowerCase().replace(":00", "")
     : null
-
-  const pillStyle = categoryPillColors(category?.color)
   const priority = post.priority
   const showPriorityFlag = priority === "urgent" || priority === "high"
   const isAi = Boolean(post.isAiGenerated || post.agentMeta)
-  const ariaSuffix = [
-    priority ? `${PRIORITY_LABEL[priority]} priority` : null,
-    isAi ? "AI-assisted" : null,
-  ]
+  const ariaSuffix = [priority ? `${PRIORITY_LABEL[priority]} priority` : null, isAi ? "AI-assisted" : null]
     .filter(Boolean)
     .join(" - ")
 
   return (
-    <div className="relative group/pill">
-      <button
-        type="button"
-        ref={setNodeRef}
-        {...listeners}
-        {...attributes}
-        onClick={onClick}
-        style={{
-          ...pillStyle,
-          transform: CSS.Translate.toString(transform),
-          opacity: isDragging ? 0.4 : undefined,
-        }}
-        className={cn(
-          "block w-full text-left rounded-sm px-1.5 py-0.5 text-[11px] leading-tight truncate",
-          "cursor-pointer hover:brightness-95 transition-[filter]",
-        )}
-        aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}${ariaSuffix ? ` - ${ariaSuffix}` : ""}`}
-      >
-        {showPriorityFlag && (
-          <Flag
-            aria-hidden
-            className="mr-1 inline size-2.5 align-text-top"
-            style={{ color: PRIORITY_COLOR[priority] }}
-          />
-        )}
-        <span aria-hidden className="font-bold mr-1">
-          {statusGlyph(post.status)}
-        </span>
-        {time && <span className="font-semibold mr-1">{time}</span>}
-        <span className="truncate">{post.brief ?? "Untitled"}</span>
-        {isAi && (
-          <Sparkles aria-hidden className="ml-1 inline size-2.5 align-text-top opacity-70" />
-        )}
-      </button>
-
-      {post.status === "scheduled" && (
+    <div onClick={(event) => event.stopPropagation()}>
+    <Peek
+      post={post}
+      onOpen={() => onClick({} as React.MouseEvent)}
+      trigger={
         <button
           type="button"
-          onClick={onClick}
-          aria-label="Edit post"
-          className="absolute top-0 right-0 opacity-0 group-hover/pill:opacity-100 transition-opacity p-0.5"
-        >
-          <Pencil aria-hidden className="h-4 w-4 text-[#181d26]/70" />
-        </button>
-      )}
-
-      {/* Hover tooltip */}
-      <div
-        className={cn(
-          "hidden group-hover/pill:block",
-          "absolute left-0 top-full z-50 mt-1 w-52",
-          "rounded-lg border border-border bg-popover shadow-xl p-2.5 text-xs",
-          "pointer-events-none",
-        )}
-      >
-        {category && (
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <span
-              aria-hidden
-              className="size-2 rounded-full shrink-0"
-              style={{ backgroundColor: category.color }}
-            />
-            <span className="text-muted-foreground truncate">{category.name}</span>
-          </div>
-        )}
-        <div className="flex items-center gap-1.5 mb-0.5">
-          {time && (
-            <span className="font-semibold text-foreground">{time}</span>
+          ref={setNodeRef}
+          {...listeners}
+          {...attributes}
+          style={{
+            ...categoryPillColors(category?.color),
+            transform: CSS.Translate.toString(transform),
+            opacity: isDragging ? 0.4 : undefined,
+          }}
+          className={cn(
+            "block w-full cursor-pointer truncate rounded-sm border border-transparent px-1.5 py-0.5 text-left text-[11px] leading-tight transition-[filter] hover:brightness-95",
+            needsYou(post) && "ring-1 ring-warning/50",
           )}
-          <span className="text-[10px] text-muted-foreground">
-            {postStatusLabel(post.status)}
-          </span>
-        </div>
-        <div className="text-foreground line-clamp-3 leading-snug">
-          {post.brief ?? "Untitled"}
-        </div>
-        {(priority || isAi) && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            {priority && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Flag aria-hidden className="size-3" style={{ color: PRIORITY_COLOR[priority] }} />
-                {PRIORITY_LABEL[priority]}
-              </span>
-            )}
-            {isAi && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Sparkles aria-hidden className="size-3" />
-                AI-assisted
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+          aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}${ariaSuffix ? ` - ${ariaSuffix}` : ""}`}
+        >
+          {showPriorityFlag && (
+            <Flag aria-hidden className="mr-1 inline size-2.5 align-text-top" style={{ color: PRIORITY_COLOR[priority] }} />
+          )}
+          <StatusMark post={post} />
+          {time && <span className="mr-1 font-semibold">{time}</span>}
+          <span className="truncate">{post.brief ?? "Untitled"}</span>
+          {isAi && <Sparkles aria-hidden className="ml-1 inline size-2.5 align-text-top opacity-70" />}
+        </button>
+      }
+    />
     </div>
+  )
+}
+
+export function EventListItem({
+  post,
+  category,
+  onOpen,
+}: {
+  post: WithId<Post>
+  category: Pick<Category, "color" | "name"> | null
+  onOpen: () => void
+}) {
+  return (
+    <Peek
+      post={post}
+      onOpen={onOpen}
+      trigger={
+        <button
+          type="button"
+          style={categoryPillColors(category?.color)}
+          className={cn(
+            "flex w-full items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-left text-sm",
+            needsYou(post) && "ring-1 ring-warning/50",
+          )}
+        >
+          <StatusMark post={post} />
+          <span className="min-w-0 flex-1 truncate font-medium">{post.brief ?? "Untitled"}</span>
+          {category && <span className="shrink-0 text-xs opacity-70">{category.name}</span>}
+          <span className="shrink-0 text-xs opacity-70">{postStatusLabel(post.status)}</span>
+        </button>
+      }
+    />
   )
 }

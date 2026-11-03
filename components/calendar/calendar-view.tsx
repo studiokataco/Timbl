@@ -23,16 +23,11 @@ import {
   subWeeks,
 } from "date-fns"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { PanelRightClose, PanelRightOpen, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { PlanCadenceDialog } from "@/components/agents/plan-cadence-dialog"
+import { CalendarOrb } from "@/components/agentic/calendar-orb"
 import { fetchPostsInRangeAction, updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
@@ -40,11 +35,11 @@ import type { AwarenessDay, Category, Post, PostPatch, User } from "@/lib/schema
 import type { Suggestion } from "@/lib/queries/suggestions.server"
 import { useGridReveal } from "@/components/shared/motion-cal"
 import { useDialogs } from "@/components/shared/dialogs-provider"
+import { CursorFrame, LivePresence } from "./live-cursors"
+import { EventListItem } from "./event-pill"
 import { CalendarToolbar, type CalendarView as ViewT } from "./calendar-toolbar"
 import { CalendarGrid } from "./calendar-grid"
-import { CategoryFilter } from "./category-filter"
-import { CalendarAwarenessRail } from "./awareness-rail"
-import { CampaignTracker, type CampaignRow } from "./campaign-tracker"
+import { type CampaignRow } from "./campaign-tracker"
 import { WeekView } from "./week-view"
 import { DayView } from "./day-view"
 
@@ -70,8 +65,9 @@ export function CalendarView({
   initialPosts,
   categories,
   awarenessDays,
-  plannedAwarenessIds,
-  suggestions,
+  plannedAwarenessIds: _plannedAwarenessIds,
+  suggestions: _suggestions,
+  users,
   campaigns,
   range,
   realtimeEnabled = false,
@@ -85,7 +81,8 @@ export function CalendarView({
   const [view, setView] = useState<ViewT>("month")
   const [planOpen, setPlanOpen] = useState(false)
   const [railOpen, setRailOpen] = useState(false)
-  const [visibleCategoryIds, setVisibleCategoryIds] = useState<Set<string>>(
+  const [timblMode, setTimblMode] = useState(false)
+  const [visibleCategoryIds] = useState<Set<string>>(
     () => new Set(categories.map((c) => c.id)),
   )
   const allCategoriesVisible = visibleCategoryIds.size === categories.length
@@ -99,14 +96,12 @@ export function CalendarView({
       if (stored === "1") setSidebarCollapsed(true)
     } catch {}
   }, [])
-  const toggleSidebar = useCallback(() => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev
-      try {
-        window.localStorage.setItem("calendar:sidebar-collapsed", next ? "1" : "0")
-      } catch {}
-      return next
-    })
+  const collapseOverview = useCallback(() => {
+    setSidebarCollapsed(true)
+    try {
+      window.localStorage.setItem("calendar:sidebar-collapsed", "1")
+    } catch {}
+    setRailOpen(false)
   }, [])
 
   /* Visible-month range derived from `visibleDate` + `view`. The SSR
@@ -266,48 +261,33 @@ export function CalendarView({
     [queryClient, orgId],
   )
 
-  const toggleCategory = useCallback((id: string) => {
-    setVisibleCategoryIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
-
-  const allCategoryIds = useMemo(
-    () => new Set(categories.map((c) => c.id)),
-    [categories],
-  )
-
   const categoryFilter = allCategoriesVisible ? null : visibleCategoryIds
 
-  const railContent = (
-    <>
-      <div className="pb-6">
-        <CategoryFilter
-          categories={categories}
-          visibleIds={visibleCategoryIds}
-          onToggle={toggleCategory}
-          onAll={() => setVisibleCategoryIds(allCategoryIds)}
-          onNone={() => setVisibleCategoryIds(new Set())}
-        />
-      </div>
-      <CampaignTracker campaigns={campaigns} />
-      <CalendarAwarenessRail
-        awarenessDays={awarenessDays}
-        plannedAwarenessIds={plannedAwarenessIds}
-        suggestions={suggestions}
-      />
-    </>
-  )
+  const openOverview = useCallback(() => {
+    setSidebarCollapsed(false)
+    try {
+      window.localStorage.setItem("calendar:sidebar-collapsed", "0")
+    } catch {}
+    if (window.matchMedia("(max-width: 1279px)").matches) setRailOpen(true)
+  }, [])
 
   return (
-    <>
-      <div className="flex-1 flex min-h-0 overflow-hidden -mb-[var(--ask-ai-clearance)]">
+    <LivePresence hidden={false}>
+    <CalendarOrb
+      period={format(visibleDate, "MMMM yyyy")}
+      posts={posts}
+      campaignCount={campaigns.length}
+      onOpenPost={onPostClick}
+      overviewCollapsed={sidebarCollapsed}
+      onCollapseOverview={collapseOverview}
+      sheetOpen={railOpen}
+      onSheetOpenChange={setRailOpen}
+      onOpenOverview={openOverview}
+      onMode={setTimblMode}
+    >
         <main
           ref={mainRef}
-          className="flex-1 min-w-0 overflow-y-auto px-6 sm:px-10 pt-8 pb-[var(--ask-ai-clearance)]"
+          className="h-full min-w-0 overflow-y-auto px-6 sm:px-10 pt-8 pb-[var(--ask-ai-clearance)]"
         >
           <DndContext id="calendar-board" sensors={sensors} onDragEnd={onDragEnd}>
             <CalendarToolbar
@@ -316,8 +296,10 @@ export function CalendarView({
               onPrev={onPrev}
               onNext={onNext}
               onViewChange={onViewChange}
-              onOpenFilters={() => setRailOpen(true)}
+              onOpenOverview={timblMode ? undefined : openOverview}
+              overviewClosed={sidebarCollapsed}
             />
+            <CursorFrame name={users[0]?.name ?? "Teammate"} hidden={false}>
             <div data-cal-reveal>
               {view === "month" && (
                 <CalendarGrid
@@ -362,6 +344,7 @@ export function CalendarView({
                 />
               )}
             </div>
+            </CursorFrame>
           </DndContext>
 
           <section
@@ -391,58 +374,8 @@ export function CalendarView({
             startDate={visibleDate}
           />
         </main>
-
-        <aside
-          aria-label="Calendar sidebar"
-          className={`hidden lg:flex flex-col shrink-0 border-l border-border bg-secondary/15 overflow-hidden transition-[width] duration-200 ease-out ${
-            sidebarCollapsed ? "w-10" : "w-80"
-          }`}
-        >
-          {sidebarCollapsed ? (
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              aria-label="Expand sidebar"
-              aria-expanded={false}
-              aria-controls="calendar-sidebar-content"
-              className="size-10 grid place-items-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
-            >
-              <PanelRightOpen className="size-4" aria-hidden />
-            </button>
-          ) : (
-            <div
-              id="calendar-sidebar-content"
-              className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 pb-[var(--ask-ai-clearance)]"
-            >
-              <div className="pt-4 pb-2 flex justify-end -mr-2">
-                <button
-                  type="button"
-                  onClick={toggleSidebar}
-                  aria-label="Collapse sidebar"
-                  aria-expanded={true}
-                  aria-controls="calendar-sidebar-content"
-                  className="size-8 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-                >
-                  <PanelRightClose className="size-4" aria-hidden />
-                </button>
-              </div>
-              {railContent}
-            </div>
-          )}
-        </aside>
-      </div>
-
-      <Sheet open={railOpen} onOpenChange={setRailOpen}>
-        <SheetContent side="right" className="w-80 max-w-[85vw] lg:hidden p-0">
-          <SheetHeader className="border-b border-border">
-            <SheetTitle>Filters & insights</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
-            {railContent}
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
+    </CalendarOrb>
+    </LivePresence>
   )
 }
 
@@ -491,31 +424,14 @@ function ListView({
             {format(parseISO(date), "EEE d MMM")}
           </div>
           <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-            {group.map((p) => {
-              const cat = categoryById.get(p.categoryId ?? "")
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => onPostClick(p)}
-                  className="flex items-center gap-2 text-left text-sm hover:text-foreground/80"
-                >
-                  {cat && (
-                    <span
-                      aria-hidden
-                      className="size-2 rounded-full shrink-0"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                  )}
-                  <span className="truncate">{p.brief ?? "Untitled"}</span>
-                  {cat && (
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {cat.name}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
+            {group.map((p) => (
+              <EventListItem
+                key={p.id}
+                post={p}
+                category={categoryById.get(p.categoryId ?? "") ?? null}
+                onOpen={() => onPostClick(p)}
+              />
+            ))}
           </div>
         </div>
       ))}

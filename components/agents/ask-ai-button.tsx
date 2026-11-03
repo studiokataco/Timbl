@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { usePathname } from "next/navigation"
 import { Sparkles } from "lucide-react"
 
 import { BrandGlowButton } from "@/components/ui/brand-glow-button"
 
 export function AskAiButton() {
+  const pathname = usePathname()
   const [hidden, setHidden] = useState(false)
   const lastTops = useRef<WeakMap<EventTarget, number>>(new WeakMap())
 
@@ -30,6 +32,8 @@ export function AskAiButton() {
       cancelAnimationFrame(frame)
     }
   }, [])
+
+  if (pathname === "/calendar") return null
 
   const handleClick = () => {
     window.dispatchEvent(new Event("agent-modal:open"))

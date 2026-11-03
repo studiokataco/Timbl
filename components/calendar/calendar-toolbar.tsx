@@ -10,7 +10,7 @@ import {
   Clock,
   Grid3x3,
   List,
-  SlidersHorizontal,
+  PanelRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,7 +28,8 @@ type Props = {
   onPrev: () => void
   onNext: () => void
   onViewChange: (v: CalendarView) => void
-  onOpenFilters?: () => void
+  onOpenOverview?: () => void
+  overviewClosed?: boolean
 }
 
 function viewLabel(view: CalendarView, date: Date): string {
@@ -93,7 +94,8 @@ export function CalendarToolbar({
   onPrev,
   onNext,
   onViewChange,
-  onOpenFilters,
+  onOpenOverview,
+  overviewClosed = false,
 }: Props) {
   const prevLabel =
     view === "week" ? "Previous week" : view === "day" ? "Previous day" : "Previous month"
@@ -134,15 +136,16 @@ export function CalendarToolbar({
           </div>
         </div>
 
-        {onOpenFilters ? (
+        {onOpenOverview ? (
           <Button
             variant="outline"
             size="icon"
-            onClick={onOpenFilters}
-            aria-label="Filters and insights"
+            onClick={onOpenOverview}
+            aria-label="Overview"
+            aria-expanded={false}
             className="relative z-10 size-8 shrink-0"
           >
-            <SlidersHorizontal aria-hidden className="size-4" />
+            <PanelRight aria-hidden className="size-4" />
           </Button>
         ) : (
           <span aria-hidden className="size-8 shrink-0" />
@@ -191,15 +194,16 @@ export function CalendarToolbar({
               </Button>
             ))}
           </div>
-          {onOpenFilters ? (
+          {onOpenOverview ? (
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="hidden sm:inline-flex lg:hidden size-9 shrink-0"
-              onClick={onOpenFilters}
-              aria-label="Filters and insights"
+              className={`size-9 shrink-0 ${overviewClosed ? "inline-flex" : "inline-flex xl:hidden"}`}
+              onClick={onOpenOverview}
+              aria-label="Overview"
+              aria-expanded={!overviewClosed}
             >
-              <SlidersHorizontal aria-hidden className="size-4" />
+              <PanelRight aria-hidden className="size-4" />
             </Button>
           ) : null}
         </div>
