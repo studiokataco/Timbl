@@ -18,6 +18,8 @@ import {
   orgAgentSessionsPath,
 } from "@/lib/firebase/paths"
 
+import { RUNTIME_STATE_KEY, type RuntimeCtx } from "./context"
+
 /*
  * FirestoreSessionService - per-org persistence of adk-js sessions.
  *
@@ -73,6 +75,44 @@ export class FirestoreSessionService extends BaseSessionService {
       ttlAt: new Date(now + SESSION_TTL_MS).toISOString(),
     })
     return session
+  }
+
+  /* Continue a conversation: only the same org, user and agent may reuse a
+   * session, and its runtime context moves to the new run. */
+  async resumeSession(request: {
+    appName: string
+    userId: string
+    sessionId: string
+    agentName: string
+    runtime: RuntimeCtx
+  }): Promise<boolean> {
+    const docRef = getAdminDb()
+      .collection(orgAgentSessionsPath(this.orgId))
+      .doc(request.sessionId)
+    const data = (await docRef.get()).data()
+    if (
+      !data ||
+      data.organizationId !== this.orgId ||
+      data.appName !== request.appName ||
+      data.userId !== request.userId ||
+      data.agentName !== request.agentName
+    ) {
+      return false
+    }
+    const now = nowMs()
+    await docRef.update({
+      [`state.${RUNTIME_STATE_KEY}`]: request.runtime,
+      updatedAt: new Date(now).toISOString(),
+      ttlAt: new Date(now + SESSION_TTL_MS).toISOString(),
+    })
+    return true
+  }
+
+  async pointRuntimeAtRun(sessionId: string, runId: string): Promise<void> {
+    await getAdminDb()
+      .collection(orgAgentSessionsPath(this.orgId))
+      .doc(sessionId)
+      .update({ [`state.${RUNTIME_STATE_KEY}.runId`]: runId })
   }
 
   override async getSession(
@@ -197,6 +237,9 @@ export class FirestoreSessionService extends BaseSessionService {
       seq,
       ts: event.timestamp,
       invocationId: event.invocationId ?? null,
+      runId:
+        (session.state[RUNTIME_STATE_KEY] as RuntimeCtx | undefined)?.runId ??
+        null,
       author: event.author ?? null,
       // adk-js Events carry FunctionCall / FunctionResponse objects that
       // include Date-like instances; ignoreUndefinedProperties is on for

@@ -25,6 +25,7 @@ const bodySchema = z.object({
     .enum(["gemini", "anthropic", "openrouter", "ollama", "mock"])
     .optional(),
   model: z.string().min(1).max(200).optional(),
+  sessionId: z.string().min(1).max(100).optional(),
 })
 
 interface RouteContext {
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       input: payload.input,
       trigger: payload.trigger,
       dedupKey: payload.dedupKey,
+      sessionId: payload.trigger === "manual" ? payload.sessionId : undefined,
       override:
         payload.provider || payload.model
           ? { provider: payload.provider, model: payload.model }

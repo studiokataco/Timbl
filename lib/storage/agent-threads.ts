@@ -38,6 +38,8 @@ export type Thread = {
   createdAt: number
   lastMessageAt: number
   transcript: ThreadMessage[]
+  /** Server agent session that carries the conversation across messages. */
+  sessionId?: string
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null
@@ -156,8 +158,12 @@ export function appendMessage(
   threadId: string,
   msg: ThreadMessage,
 ): Promise<void> {
+  return enqueueWrite(threadId, () => writeMessage(threadId, msg))
+}
+
+function enqueueWrite(threadId: string, write: () => Promise<void>): Promise<void> {
   const prev = appendQueues.get(threadId) ?? Promise.resolve()
-  const next = prev.then(() => writeMessage(threadId, msg))
+  const next = prev.then(write)
   appendQueues.set(threadId, next)
   void next.then(() => {
     if (appendQueues.get(threadId) === next) appendQueues.delete(threadId)
@@ -259,6 +265,7 @@ export async function updateThreadAgent(
     const next: Thread = {
       ...existing,
       agentName,
+      sessionId: undefined,
       lastMessageAt: Date.now(),
     }
     await tx<IDBValidKey>("readwrite", (store) =>
@@ -267,6 +274,21 @@ export async function updateThreadAgent(
   } catch (err) {
     console.warn("[agent-threads] updateThreadAgent failed", err)
   }
+}
+
+export function setThreadSession(id: string, sessionId: string): Promise<void> {
+  return enqueueWrite(id, async () => {
+    if (!isBrowser()) return
+    try {
+      const existing = await getThread(id)
+      if (!existing || existing.sessionId === sessionId) return
+      await tx<IDBValidKey>("readwrite", (store) =>
+        store.put({ ...existing, sessionId }) as IDBRequest<IDBValidKey>,
+      )
+    } catch (err) {
+      console.warn("[agent-threads] setThreadSession failed", err)
+    }
+  })
 }
 
 export async function deleteThread(id: string): Promise<void> {

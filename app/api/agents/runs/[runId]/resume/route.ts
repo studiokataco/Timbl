@@ -13,6 +13,7 @@ import {
 import { resolveAgent } from "@/lib/agents"
 import { AGENT_APP_NAME, buildRunner } from "@/lib/agents/runtime/runner"
 import { markAgentRunStatus } from "@/lib/agents/triggers/manual"
+import { FirestoreSessionService } from "@/lib/agents/runtime/session-service"
 import type { Event } from "@google/adk"
 
 export const runtime = "nodejs"
@@ -83,6 +84,10 @@ export async function POST(
     runId,
     status: "in_progress",
   })
+
+  if (run.sessionId !== runId) {
+    await new FirestoreSessionService(orgId).pointRuntimeAtRun(run.sessionId, runId)
+  }
 
   const runner = buildRunner({ orgId, agent: resolved.agent, appName: AGENT_APP_NAME })
 

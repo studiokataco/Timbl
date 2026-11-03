@@ -26,7 +26,11 @@ import { cn } from "@/lib/utils"
 import { JsonPretty } from "@/components/studio/json-pretty"
 import { getTool } from "@/components/studio/tool-catalog"
 import { resolveHumanGate } from "@/lib/actions/agent-suggestions"
-import { getThread, type ThreadMessage } from "@/lib/storage/agent-threads"
+import {
+  getThread,
+  setThreadSession,
+  type ThreadMessage,
+} from "@/lib/storage/agent-threads"
 import { LlmStatusBanner } from "./llm-status-banner"
 import { Markdown } from "./markdown"
 import type { AgentProvider } from "@/lib/schemas/agentConfig"
@@ -237,11 +241,16 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   const abortRef = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const hydratedThreadRef = useRef<string | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const lastEmittedRef = useRef<Map<string, string>>(new Map())
   const onMessageRef = useRef(onMessage)
   useEffect(() => {
     onMessageRef.current = onMessage
   }, [onMessage])
+
+  useEffect(() => {
+    sessionIdRef.current = null
+  }, [agentName, threadId])
 
   // Hydrate from persisted thread when threadId changes (e.g. parent
   // remounts via key={threadId}, but we also handle in-place swaps).
@@ -256,6 +265,9 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     let cancelled = false
     void getThread(threadId, organizationId).then((thread) => {
       if (cancelled) return
+      if (thread?.sessionId && thread.agentName === agentName) {
+        sessionIdRef.current = thread.sessionId
+      }
       /* A run can start before an empty thread finishes loading (auto-
        * submitted prompts). Keep what is already streaming. */
       if (!thread || thread.transcript.length === 0) return
@@ -284,7 +296,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     return () => {
       cancelled = true
     }
-  }, [threadId, organizationId])
+  }, [threadId, organizationId, agentName])
 
   // Emit transcript mutations as ThreadMessage events so the parent
   // can persist them. Compares serialized forms to avoid duplicate
@@ -362,6 +374,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     abortRef.current = ctrl
     try {
       const body: Record<string, unknown> = { input: text }
+      if (sessionIdRef.current) body.sessionId = sessionIdRef.current
       if (overrideProvider) body.provider = overrideProvider
       if (overrideModel.trim()) body.model = overrideModel.trim()
       const res = await fetch(`/api/agents/${agentName}/run`, {
@@ -375,6 +388,11 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
       }
       const headerRunId = res.headers.get("X-Run-Id")
       if (headerRunId) setActiveRunId(headerRunId)
+      const headerSessionId = res.headers.get("X-Session-Id")
+      if (headerSessionId) {
+        sessionIdRef.current = headerSessionId
+        if (threadId) void setThreadSession(threadId, headerSessionId)
+      }
       const reader = res.body.getReader()
       const dec = new TextDecoder()
       let buffer = ""
@@ -429,6 +447,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     onFinish,
     overrideProvider,
     overrideModel,
+    threadId,
   ])
 
   const stop = useCallback(() => {

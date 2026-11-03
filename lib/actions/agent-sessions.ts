@@ -65,11 +65,13 @@ export async function getAgentSession(
   const snap = await db
     .collection(orgAgentSessionEventsPath(orgId, sessionId))
     .orderBy("seq", "asc")
-    .limit(parsed.limit)
     .get()
+  const docs = snap.docs
+    .filter((d) => !d.data().runId || d.data().runId === parsed.runId)
+    .slice(0, parsed.limit)
 
   const rows: TimelineEventRow[] = []
-  for (const d of snap.docs) {
+  for (const d of docs) {
     const data = d.data() ?? {}
     const seq = typeof data.seq === "number" ? data.seq : 0
     const ts = typeof data.ts === "number" ? data.ts : 0

@@ -46,6 +46,9 @@ export interface StartRunInput {
   /** Per-conversation override of the agent's saved provider/model. Does
    * not mutate the agentConfig doc - only affects this run. */
   override?: ResolveOverride
+  /** Previous turn's session; falls back to a fresh one if it isn't this
+   * user's session with this agent. */
+  sessionId?: string
 }
 
 export interface StartRunResult {
@@ -102,7 +105,6 @@ export async function startAgentRun(
   )
 
   const runId = randomUUID()
-  const sessionId = runId // 1:1 sessions and runs in v1 - simpler audit trail.
 
   const runtimeCtx: RuntimeCtx = {
     orgId: input.orgId,
@@ -113,15 +115,27 @@ export async function startAgentRun(
   }
 
   const sessionService = new FirestoreSessionService(input.orgId)
-  await sessionService.createSession({
-    appName: AGENT_APP_NAME,
-    userId: input.userId,
-    sessionId,
-    state: {
-      [RUNTIME_STATE_KEY]: runtimeCtx,
+  const resumed =
+    input.sessionId !== undefined &&
+    (await sessionService.resumeSession({
+      appName: AGENT_APP_NAME,
+      userId: input.userId,
+      sessionId: input.sessionId,
       agentName: input.agentName,
-    },
-  })
+      runtime: runtimeCtx,
+    }))
+  const sessionId = resumed ? input.sessionId! : runId
+  if (!resumed) {
+    await sessionService.createSession({
+      appName: AGENT_APP_NAME,
+      userId: input.userId,
+      sessionId,
+      state: {
+        [RUNTIME_STATE_KEY]: runtimeCtx,
+        agentName: input.agentName,
+      },
+    })
+  }
 
   await getAdminDb()
     .collection(orgAgentRunsPath(input.orgId))
