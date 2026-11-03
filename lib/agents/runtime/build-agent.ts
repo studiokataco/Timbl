@@ -61,6 +61,8 @@ export function buildLlmAgentFromConfig(
     model: resolveLlm({
       provider: config.provider,
       model: config.model,
+      reasoningEffort: config.reasoningEffort,
+      temperature: config.temperature,
       webSearch,
       nativeTools,
     }),
