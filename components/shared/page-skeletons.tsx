@@ -187,3 +187,47 @@ export function CampaignsSkeleton() {
     </div>
   )
 }
+
+export function StudioSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 md:pt-8 lg:px-10">
+      <div className="mb-8 flex items-end justify-between gap-6">
+        <div>
+          <Skeleton className="mb-2 h-8 w-36" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="hidden h-8 w-28 sm:block" />
+      </div>
+      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-xl" />
+        ))}
+      </div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="hidden h-72 w-full rounded-xl xl:block" />
+      </div>
+    </div>
+  )
+}
+
+export function SettingsSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-8">
+      <Skeleton className="mb-2 h-7 w-32" />
+      <Skeleton className="mb-8 h-4 w-80 max-w-full" />
+      <div className="flex flex-col gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

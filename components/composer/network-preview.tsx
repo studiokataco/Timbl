@@ -1,5 +1,6 @@
 "use client"
 
+import { ChannelGlyph } from "@/components/shared/channel-glyph"
 import { cn } from "@/lib/utils"
 import type { ChannelKey, Post } from "@/lib/schemas"
 
@@ -51,12 +52,7 @@ export function NetworkPreview({ post, channels }: Props) {
             {/* Header row */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span
-                  className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold text-white"
-                  style={{ backgroundColor: config.color }}
-                >
-                  {config.label}
-                </span>
+                <ChannelGlyph channel={ch} className="size-4" />
                 {post.isAiGenerated && (
                   <span className="inline-flex items-center rounded-md bg-purple-500/10 px-2 py-0.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400">
                     AI

@@ -30,8 +30,8 @@ export function ChannelGlyph({
   const Glyph = GLYPHS[channel]
   if (!Glyph) return null
   return (
-    <span title={CHANNEL_LABELS[channel]} className={cn("inline-flex", className)}>
-      <Glyph aria-hidden className="size-full" />
+    <span title={CHANNEL_LABELS[channel]} className={cn("timbl-mark inline-flex shrink-0", className)}>
+      <Glyph aria-hidden />
     </span>
   )
 }
