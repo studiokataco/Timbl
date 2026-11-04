@@ -102,7 +102,7 @@ export function CalendarAwarenessRail({
     .map((d) => (
       <div key={d.id} className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="text-caption text-muted-foreground">
             {format(parseISO(d.date), "EEE d MMM")}
           </span>
           <Badge
@@ -142,7 +142,7 @@ export function CalendarAwarenessRail({
     .map((s, i) => (
       <div key={i} className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="text-caption text-muted-foreground">
             {KIND_LABEL[s.kind] ?? s.kind}
           </span>
           <span className="text-[10px] text-muted-foreground tabular-nums">
@@ -174,7 +174,7 @@ export function CalendarAwarenessRail({
           className="gap-1.5 rounded-sm"
         >
           <Bell aria-hidden className="size-3.5 text-muted-foreground" />
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="text-body-sm font-medium text-foreground">
             Reminders
           </span>
           {suggestions.length > 0 && (
@@ -211,7 +211,7 @@ export function CalendarAwarenessRail({
                           aria-hidden
                           className="size-3 text-muted-foreground"
                         />
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="text-caption text-muted-foreground">
                           Silent category
                         </span>
                       </div>
@@ -225,8 +225,8 @@ export function CalendarAwarenessRail({
                   )}
                   {s.kind === "template-due" && (
                     <>
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Template due ({labelOr(CADENCE_LABELS, s.cadence)})
+                      <span className="text-caption text-muted-foreground">
+                        Template due ({labelOr(CADENCE_LABELS, s.cadence).toLowerCase()})
                       </span>
                       <div className="font-medium leading-snug">{s.name}</div>
                       <div className="text-muted-foreground">
@@ -238,7 +238,7 @@ export function CalendarAwarenessRail({
                   )}
                   {s.kind === "campaign-ending" && (
                     <>
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span className="text-caption text-muted-foreground">
                         Campaign ending
                       </span>
                       <div className="font-medium leading-snug">{s.name}</div>
@@ -273,7 +273,7 @@ export function CalendarAwarenessRail({
           className="gap-1.5 rounded-sm"
         >
           <Sparkles aria-hidden className="size-3.5 text-muted-foreground" />
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="text-body-sm font-medium text-foreground">
             Awareness this period
           </span>
           {awarenessDays.length > 0 && (
@@ -309,7 +309,7 @@ export function CalendarAwarenessRail({
                       className="rounded-lg border border-border bg-background p-3 text-xs flex flex-col gap-2"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="text-caption text-muted-foreground">
                           {format(parseISO(d.date), "EEE d MMM")}
                         </span>
                         <Badge

@@ -256,7 +256,7 @@ export function PresenceOrb({
         data-figma="PresenceOrb"
         className={tw(
           rootClass,
-          "touch-none rounded-full select-none outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          "touch-none rounded-full select-none focus-ring",
         )}
         {...hold.handlers}
       >

@@ -10,9 +10,11 @@ import { MeshBackdrop } from "../ambient/mesh-backdrop"
 import { envelopeDurationMs } from "../ambient/output-envelope"
 import { WorkingStatement } from "../ambient/working-statement"
 import { CanvasCardRenderer } from "../cards/card-renderer"
-import { deriveChip } from "../engine/reducer"
+import { deriveChip, deriveRail } from "../engine/reducer"
+import { mondayOf, todayIso } from "../clock"
 import { useEngine } from "../engine/engine-context"
-import { useLiveSession } from "../voice/use-live-session"
+import { applySpokenTool, useLiveSession } from "../voice/use-live-session"
+import { useScriptedUtterance } from "../voice/scripted"
 import { TOUCH, tw } from "../lib"
 import { CanvasBottomSheet } from "../mobile/canvas-bottom-sheet"
 import { AgenticCard } from "../primitives/agentic-card"
@@ -38,12 +40,17 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewProps): React.JSX.Element {
-  const { copy, view, update, setAmbient, prefs, assistantName, role } = usePrototype()
-  const { state, dispatch } = useEngine()
+  const { copy, view, update, setAmbient, prefs, assistantName, role, viewer } = usePrototype()
+  const { state, dispatch, env } = useEngine()
+  const stats = deriveRail(state, viewer, view.week || mondayOf(todayIso()), env).stats
   const [text, setText] = useState<string | null>(null)
-  const [mic, setMic] = useState<MicState>(() => view.mic ?? "idle")
+  const [mic, setMic] = useState<MicState>("idle")
   const [handsFree, setHandsFree] = useState(false)
-  const voice = useLiveSession()
+  const voice = useLiveSession({
+    onTool: (tool) => applySpokenTool(tool, dispatch, state.deck.order[state.deck.index] ?? null),
+    instruction: copy.prompts.liveSystem,
+  })
+  useScriptedUtterance(dispatch, state.deck.order[state.deck.index] ?? null)
   const [detent, setDetent] = useState<"peek" | "half" | "full">(() =>
     view.canvas === "expanded" ? "full" : state.canvas.card ? "half" : "peek",
   )
@@ -69,40 +76,30 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
   }, [])
   const chip = deriveChip(state, copy)
   const pendingCount = state.requests.filter((r) => r.status === "pending").length
+  const micState: MicState = voice.talkState === "denied" ? "denied" : mic
   const orbState = deriveOrbState({
-    forced: view.orb,
-    mic,
+    forced: null,
+    mic: micState,
     run: state.run,
     pendingRequests: pendingCount + attention,
     lastEventKind: state.lastEventKind,
   })
 
-  // Publish ambient state while mounted
+  const running = state.run?.status === "running"
+  const listening = micState === "listening" || handsFree
+  const lastEntry = state.transcript[state.transcript.length - 1]
+  const replyId = lastEntry?.role === "assistant" && state.lastEventKind === "user" ? lastEntry.id : null
+  const replyChars = replyId ? (lastEntry?.text ?? "").length : 0
+  const speaking = voice.playing
+  const level = listening || speaking ? voice.level : 0
+
   useEffect(() => {
-    const running = state.run?.status === "running"
-    const listening = mic === "listening" || handsFree
-    const lastEntry = state.transcript[state.transcript.length - 1]
-    const isAssistantReply = lastEntry?.role === "assistant" && state.lastEventKind === "user"
-    const source = listening ? (view.audio === "mic" ? "mic" : "scripted") : isAssistantReply ? "output" : null
-    const chars = (lastEntry?.text ?? "").length
-
-    setAmbient({
-      active: true,
-      working: Boolean(running),
-      source,
-      outputId: isAssistantReply ? lastEntry.id : null,
-      outputChars: chars,
-      level: listening ? voice.level : 0,
-    })
-
-    if (source === "output" && chars > 0) {
-      const timer = window.setTimeout(() => {
-        setAmbient({ source: null, outputId: null, outputChars: 0 })
-      }, envelopeDurationMs(chars))
-      return () => window.clearTimeout(timer)
-    }
-    return undefined
-  }, [handsFree, mic, setAmbient, state.lastEventKind, state.run?.status, state.transcript, view.audio, voice.level])
+    const source = listening ? "mic" : speaking || replyId ? "output" : null
+    setAmbient({ active: true, working: running, source, outputId: replyId, outputChars: replyChars, level })
+    if (source !== "output" || replyChars === 0) return undefined
+    const timer = window.setTimeout(() => setAmbient({ source: null, outputId: null, outputChars: 0 }), envelopeDurationMs(replyChars))
+    return () => window.clearTimeout(timer)
+  }, [level, listening, replyChars, replyId, running, setAmbient, speaking])
 
   useEffect(() => {
     return () => {
@@ -200,7 +197,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
         const req = state.requests.find((r) => r.id === attachment.requestId)
         if (!req) return null
         const reqPosts = req.postIds.map((id) => state.posts[id]).filter((p): p is NonNullable<typeof p> => Boolean(p))
-        const canUndo = req.status === "approved" && state.run?.status !== "done"
+        const canUndo = req.status === "approved" && req.action !== "delete" && state.run?.status !== "done"
         return (
           <div data-slot="agentic-approval-card">
             <ApprovalCard
@@ -250,14 +247,11 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
   const suggestions = chipList.map((c) => ({ id: c.label, label: c.label, text: c.text }))
 
   const remainingTurns = state.usage.limit - state.usage.used
-  const capReached = remainingTurns <= 0 || view.usage === "cap"
-  const nearLimitHelper =
-    !capReached && (remainingTurns === 1 || remainingTurns === 2 || view.usage === "near")
-      ? copy.timbl.nearLimit(Math.max(1, Math.min(2, remainingTurns)))
-      : undefined
+  const capReached = remainingTurns <= 0
+  const nearLimitHelper = !capReached && remainingTurns <= 2 ? copy.timbl.nearLimit(remainingTurns) : undefined
 
   const isEmptyThread = state.transcript.length <= 1
-  const visibility = state.canvas.visibility
+  const visibility = view.canvas
   const expanded = visibility === "expanded"
   const hiddenCanvas = visibility === "hidden"
   const contextLine =
@@ -306,11 +300,12 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
       helper={nearLimitHelper}
       disabled={capReached ? { reason: copy.cards.shell.capReason } : undefined}
       queued={state.queue.map((q, idx) => ({ id: `q-${idx}`, text: q }))}
+      onRemoveQueued={(id) => dispatch({ type: "queue_removed", index: Number(id.slice(2)) })}
       mic={{
         mode: chrome === "mobile-screen" ? "talk" : "inline",
-        state: mic,
+        state: micState,
         onMicEvent: handleMicEvent,
-        interim: mic === "listening" ? voice.tokens : undefined,
+        interim: micState === "listening" ? voice.tokens : undefined,
         handsFree,
       }}
       density={density}
@@ -318,7 +313,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
     />
   )
 
-  const meshAllowed = (view.mesh ?? prefs.ambient.backgroundMotion) && !expanded
+  const meshAllowed = prefs.ambient.backgroundMotion && !expanded
 
   return (
     <div
@@ -340,7 +335,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
                 ? "output"
                 : "idle"
         }
-        enabled={view.glow ?? prefs.ambient.glow}
+        enabled={prefs.ambient.glow}
         source={null}
         spread="desktop"
       />
@@ -444,7 +439,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
             {state.canvas.card ? (
               <CanvasCardRenderer onGoToApproval={scrollToApproval} />
             ) : (
-              <CanvasEmpty onStart={() => dispatch({ type: "user_sent", text: copy.timbl.chips.default[0]!.text, source: "chip" })} />
+              <CanvasEmpty stats={stats} onStart={() => dispatch({ type: "user_sent", text: copy.timbl.chips.default[0]!.text, source: "chip" })} />
             )}
           </CanvasFrame>
           <div className="mx-auto w-full max-w-180 px-4 py-3">{composerNode}</div>
@@ -453,8 +448,8 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
         <div className="flex min-h-0 flex-1">
           {/* Transcript + composer column */}
           <div
-            onFocusCapture={() => {
-              if (detent === "half") setDetent("peek")
+            onFocusCapture={(event) => {
+              if (detent === "half" && !(event.target as HTMLElement).closest("[data-slot=agentic-canvas-bottom-sheet]")) setDetent("peek")
             }}
             className={tw(
               "relative isolate flex min-h-0 flex-col",
@@ -515,6 +510,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
                     <CanvasCardRenderer onGoToApproval={scrollToApproval} />
                   ) : (
                     <CanvasEmpty
+                      stats={stats}
                       onStart={() =>
                         dispatch({ type: "user_sent", text: copy.timbl.chips.default[0]!.text, source: "chip" })
                       }
@@ -547,6 +543,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
                   <CanvasCardRenderer onGoToApproval={scrollToApproval} />
                 ) : (
                   <CanvasEmpty
+                    stats={stats}
                     onStart={() =>
                       dispatch({ type: "user_sent", text: copy.timbl.chips.default[0]!.text, source: "chip" })
                     }

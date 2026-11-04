@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { useQueryClient } from "@tanstack/react-query"
 import { addDays, format, parseISO } from "date-fns"
-import { CircleCheck, MessageSquare, Sparkles } from "lucide-react"
+import { CircleCheck, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -34,8 +34,7 @@ import {
  *   1. Form - date range + optional region.
  *   2. Run - once submitted, swaps to an embedded AgentChat and
  *      auto-sends the structured prompt so the agent starts streaming
- *      immediately. The run is saved as an agent chat thread, so it shows
- *      up in chat history and can be continued from the agent drawer.
+ *      immediately. The run is saved as an agent chat thread.
  *      When a turn finishes, a footer states the outcome and the next step.
  */
 
@@ -134,13 +133,9 @@ export function AwarenessResearchDialog({
     }, 250)
   }
 
-  function continueInChat() {
-    if (!threadId) return
-    const id = threadId
+  function openTimblMode() {
     handleOpenChange(false)
-    window.dispatchEvent(
-      new CustomEvent("agent-drawer:open-thread", { detail: { threadId: id } }),
-    )
+    router.push("/calendar?view=timbl")
   }
 
   /* Closing mid-run tears down the request the agent is streaming into, so
@@ -287,15 +282,14 @@ export function AwarenessResearchDialog({
                     </p>
                     <p className="text-caption text-muted-foreground">
                       {total.proposed > 0
-                        ? "Accept or reject each one on this page. This run is saved in your agent chats."
-                        : "Try a wider window or another region. This run is saved in your agent chats."}
+                        ? "Accept or reject each one on this page."
+                        : "Try a wider window or another region."}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Button type="button" variant="outline" size="sm" onClick={continueInChat}>
-                    <MessageSquare className="size-4" aria-hidden />
-                    Continue in chat
+                  <Button type="button" variant="outline" size="sm" onClick={openTimblMode}>
+                    Open Timbl mode
                   </Button>
                   <Button
                     type="button"

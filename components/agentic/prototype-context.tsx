@@ -1,11 +1,10 @@
 "use client"
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react"
+import { createContext, useCallback, useContext, useMemo, useState } from "react"
 import { useReducedMotionConfig } from "framer-motion"
 import { makeCopy, type Copy } from "./copy"
-import { DEFAULT_PREFS, FALLBACK_VIEWER } from "./defaults"
 import { usePrototypeView } from "./use-prototype-view"
-import type { AmbientSignal, PresencePrefs, TeamMember, ToolbarAction, UserRole, ViewState } from "./types"
+import type { AmbientSignal, PresencePrefs, TeamMember, UserRole, ViewState } from "./types"
 
 type PrototypeContextValue = {
   view: ViewState
@@ -21,15 +20,10 @@ type PrototypeContextValue = {
   copy: Copy
   disclosure: Record<string, boolean>
   setDisclosure: (key: string, open: boolean) => void
-  replayKey: number
-  bumpReplay: () => void
-  toolbarAction: (action: ToolbarAction) => void
-  registerToolbarHandler: (fn: ((action: ToolbarAction) => void) | null) => void
   ambient: AmbientSignal
   setAmbient: (patch: Partial<AmbientSignal>) => void
 }
 
-const DEFAULT_ASSISTANT_NAME = "Timbl"
 const IDLE_AMBIENT: AmbientSignal = { active: false, source: null, outputId: null, outputChars: 0, working: false, level: 0 }
 
 const PrototypeContext = createContext<PrototypeContextValue | null>(null)
@@ -37,42 +31,30 @@ const PrototypeContext = createContext<PrototypeContextValue | null>(null)
 export function PrototypeProvider({
   initialView,
   children,
-  syncUrl = true,
-  viewer: viewerProp,
-  team = [],
-  workspaceName = "Workspace",
+  viewer,
+  team,
+  workspaceName,
   assistantName: assistantNameProp,
   prefs: prefsProp,
 }: {
   initialView: ViewState
   children: React.ReactNode
-  syncUrl?: boolean
-  viewer?: TeamMember
-  team?: TeamMember[]
-  workspaceName?: string
-  assistantName?: string
-  prefs?: PresencePrefs
+  viewer: TeamMember
+  team: TeamMember[]
+  workspaceName: string
+  assistantName: string
+  prefs: PresencePrefs
 }): React.JSX.Element {
-  const { view, update, dismiss } = usePrototypeView(initialView, syncUrl)
-  const [assistantName, setAssistantName] = useState(assistantNameProp ?? DEFAULT_ASSISTANT_NAME)
-  const [prefs, setPrefs] = useState<PresencePrefs>(prefsProp ?? DEFAULT_PREFS)
+  const { view, update, dismiss } = usePrototypeView(initialView)
+  const [assistantName, setAssistantName] = useState(assistantNameProp)
+  const [prefs, setPrefs] = useState<PresencePrefs>(prefsProp)
   const [disclosure, setDisclosureState] = useState<Record<string, boolean>>({})
-  const [replayKey, setReplayKey] = useState(0)
   const [ambient, setAmbientState] = useState<AmbientSignal>(IDLE_AMBIENT)
-  const toolbarHandler = useRef<((action: ToolbarAction) => void) | null>(null)
 
   const copy = useMemo(() => makeCopy(assistantName, workspaceName), [assistantName, workspaceName])
-  const viewer = viewerProp ?? team.find((member) => member.id === FALLBACK_VIEWER.id) ?? team[0] ?? FALLBACK_VIEWER
 
   const setDisclosure = useCallback((key: string, open: boolean) => {
     setDisclosureState((prev) => (prev[key] === open ? prev : { ...prev, [key]: open }))
-  }, [])
-  const bumpReplay = useCallback(() => setReplayKey((key) => key + 1), [])
-  const toolbarAction = useCallback((action: ToolbarAction) => {
-    toolbarHandler.current?.(action)
-  }, [])
-  const registerToolbarHandler = useCallback((fn: ((action: ToolbarAction) => void) | null) => {
-    toolbarHandler.current = fn
   }, [])
   const setAmbient = useCallback((patch: Partial<AmbientSignal>) => {
     setAmbientState((prev) => {
@@ -97,14 +79,10 @@ export function PrototypeProvider({
       copy,
       disclosure,
       setDisclosure,
-      replayKey,
-      bumpReplay,
-      toolbarAction,
-      registerToolbarHandler,
       ambient,
       setAmbient,
     }),
-    [view, update, dismiss, viewer, team, assistantName, prefs, copy, disclosure, setDisclosure, replayKey, bumpReplay, toolbarAction, registerToolbarHandler, ambient, setAmbient],
+    [view, update, dismiss, viewer, team, assistantName, prefs, copy, disclosure, setDisclosure, ambient, setAmbient],
   )
 
   return <PrototypeContext.Provider value={value}>{children}</PrototypeContext.Provider>
@@ -121,10 +99,7 @@ export function useAgenticMotion(): { reduced: boolean } {
 }
 
 export function useAmbientEnabled(): { glow: boolean; backgroundMotion: boolean } {
-  const { view, prefs } = usePrototype()
+  const { prefs } = usePrototype()
   const { reduced } = useAgenticMotion()
-  return {
-    glow: view.glow ?? prefs.ambient.glow,
-    backgroundMotion: !reduced && (view.mesh ?? prefs.ambient.backgroundMotion),
-  }
+  return { glow: prefs.ambient.glow, backgroundMotion: !reduced && prefs.ambient.backgroundMotion }
 }

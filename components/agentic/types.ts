@@ -7,32 +7,17 @@ import type { ThreadMessage } from "@/lib/storage/agent-threads"
 
 export type { UserRole, ChannelKey, RejectReason }
 
-export type PrototypeView = "timbl" | "interface" | "mobile" | "gallery"
-export type ThemeChoice = "light" | "dark"
-export type MotionChoice = "full" | "reduced"
-export type SpeedChoice = "normal" | "instant"
-export type UsageChoice = "ok" | "near" | "cap"
+export type PrototypeView = "timbl" | "interface" | "mobile"
 export type CanvasVisibility = "shown" | "hidden" | "expanded"
 export type SheetId = "activity" | "persona" | "flyout" | "talk" | "rail" | "nav" | "notes" | "peek" | "approve-all"
 export type MobileScreen = "glance" | "approve" | "chat"
 export type WeekId = string
 export type CalendarFilter = "all" | "drafts" | "scheduled" | "needs-approval" | "sent"
-export type Scene =
-  | "empty" | "directions" | "recommendation" | "brief" | "plan" | "working" | "drafts"
-  | "schedule" | "schedule_approval" | "handoff" | "approvals" | "current" | "current_queue" | "error" | "cap"
-export type AudioSource = "mic" | "scripted"
 export type ViewState = {
-  view: PrototypeView; theme: ThemeChoice | null; role: UserRole; motion: MotionChoice; speed: SpeedChoice
-  toolbar: boolean; scene: Scene; canvas: CanvasVisibility; sheet: SheetId | null; post: string | null
-  orb: PresenceOrbState | null; mic: MicState | null; talk: TalkState | null; voice: VoiceScriptId | null
-  screen: MobileScreen; layout: "single" | "board"; draft: number; week: WeekId; filter: CalendarFilter
-  cursors: "live" | "idle" | "off"; usage: UsageChoice; frame: string | null; isolate: boolean
-  audio: AudioSource | null; glow: boolean | null; mesh: boolean | null
+  view: PrototypeView; canvas: CanvasVisibility; sheet: SheetId | null; post: string | null
+  screen: MobileScreen; week: WeekId; filter: CalendarFilter
 }
-export type ToolbarAction =
-  | { kind: "jump"; scene: Scene } | { kind: "reset" }
-  | { kind: "teammate"; act: "note" | "mention" | "react" | "edit_after_approval" } | { kind: "usage"; usage: UsageChoice }
-export type AmbientSignal = { active: boolean; source: "mic" | "output" | "scripted" | null; outputId: string | null; outputChars: number; working: boolean; level: number }
+export type AmbientSignal = { active: boolean; source: "mic" | "output" | null; outputId: string | null; outputChars: number; working: boolean; level: number }
 
 export type ToneToken = "brand-accent" | "success" | "warning" | "destructive" | "badge-orange" | "badge-pink" | "badge-violet" | "badge-emerald" | "muted"
 export type PresenceSlot = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
@@ -47,11 +32,14 @@ export type StateChipState = "working" | "needs_you" | "error" | "done"
 export type MicState = "idle" | "requesting" | "listening" | "transcribing" | "denied" | "error"
 export type TalkState = "idle" | "requesting" | "listening" | "sending" | "denied" | "no_speech"
 
-export type RunKind = "plan_to_drafts" | "create_drafts" | "stage_schedule"
+export type RunKind = "ideas" | "plan" | "create" | "refine" | "advice" | "chat"
 export type RunStepState = "pending" | "running" | "done" | "failed" | "cancelled"
 export type RunStep = { id: string; toolName: string; label: string; doneLabel: string; state: RunStepState; error?: string; startedAt?: number; finishedAt?: number }
 export type RunStatus = "proposed" | "running" | "needs_you" | "done" | "error" | "cancelled"
-export type Run = { id: string; kind: RunKind; title: string; status: RunStatus; steps: RunStep[]; startedAt?: number; finishedAt?: number }
+export type Run = {
+  id: string; kind: RunKind; title: string; status: RunStatus; steps: RunStep[]; startedAt?: number; finishedAt?: number
+  agent: string; input: string; postId?: string; refine?: RefineKind; postIds?: string[]; error?: string; serverRunId?: string
+}
 
 export type ReactionEmoji = "👍" | "❤️" | "🎉" | "😂" | "👀" | "🙌" | "🔥" | "✅"
 export type NoteAnnotation = { type: "mention" | "link"; indices: [number, number]; displayValue: string; userId?: string; url?: string }
@@ -84,7 +72,9 @@ export type GuardrailRequest = {
   id: string; action: GuardrailAction; postIds: string[]; when?: string
   status: "pending" | "approved" | "changes_requested" | "expired" | "submitted"
   requestedAt: string; resolvedAt?: string; feedback?: string; nextAction?: NextAction
-  runId?: string
+  runId?: string; localRunId?: string
+  to?: { date: string; time?: string }
+  prev?: Record<string, { status: string; date: string; time?: string }>
 }
 export type ApprovalQueueItem =
   | { id: string; source: "agent_draft"; postId: string }
@@ -120,13 +110,11 @@ export type TranscriptEntry = ThreadMessage & {
   attachments?: TranscriptAttachment[]
   divider?: "handoff" | "new_chat"
   queued?: boolean
+  streaming?: boolean
 }
 
 export type VoiceToken = { text: string; final: boolean; atMs: number }
 export type ResolvedEntityChip = { kind: "post" | "action"; label: string; refId?: string }
-export type VoiceScriptId = "reschedule" | "shorter" | "funnier" | "new_image" | "skip" | "approve" | "plan"
-export type VoiceCommand = "approve" | "shorter" | "funnier" | "new_image" | "skip"
-export type VoiceScript = { id: VoiceScriptId; tokens: VoiceToken[]; levels: { atMs: number; level: number }[]; chips: ResolvedEntityChip[]; endpointMs: number; command?: VoiceCommand; sendText: string }
 
 export type GlanceTarget = "approve_all" | "review" | "reconnect" | "plan"
 export type GlanceCard = { id: string; tone: ToneToken; title: string; line?: string; primary?: { label: string; target: GlanceTarget }; secondary?: { label: string; target: GlanceTarget } }
@@ -136,7 +124,6 @@ export type DeckDecision = { postId: string; outcome: "approved" | "skipped" | "
 
 export type CursorWaypoint = { atMs: number; day: string; hour: number; fx: number; fy: number; activity?: "viewing" | "editing_caption" }
 export type TeamPresence = { sessionId: string; userId: string; surface: "calendar"; path: CursorWaypoint[]; idleAfterMs: number }
-export type PeerElsewhere = { userId: string; where: string }
 
 export type Personality = "calm" | "warm" | "direct" | "playful"
 export type VoiceLocale = "en-IN" | "en-GB" | "en-US" | "hi-IN" | "hinglish"
@@ -155,7 +142,7 @@ export type ActivityEntry = {
 }
 
 export type ContextRef = { kind: "calendar"; week: WeekId } | { kind: "post"; postId: string } | { kind: "none" }
-export type EngineEnv = { assistantName: string; role: UserRole; viewerId: string; speed: SpeedChoice }
+export type EngineEnv = { assistantName: string; role: UserRole; viewerId: string; team: TeamMember[]; cadence: number; campaigns: number }
 export type CardAction =
   | { card: "directions"; kind: "select"; ideaId: string }
   | { card: "directions"; kind: "build" }
@@ -184,10 +171,16 @@ export type CardAction =
   | { card: "current_item"; kind: "open_editor" }
 export type EngineEvent =
   | { type: "user_sent"; text: string; source: "typed" | "voice" | "chip" }
+  | { type: "queue_removed"; index: number }
   | { type: "mini_sent"; text: string }
   | { type: "new_mini_chat" }
   | { type: "card_action"; action: CardAction }
-  | { type: "run_start" } | { type: "run_revise" } | { type: "run_stop" } | { type: "run_tick" } | { type: "retry" } | { type: "fail_next" }
+  | { type: "run_start" } | { type: "run_revise" } | { type: "run_stop" } | { type: "retry" }
+  | { type: "run_stage"; runId: string; agent: string }
+  | { type: "run_post"; runId: string; postId: string }
+  | { type: "run_server"; runId: string; serverRunId: string }
+  | { type: "run_done"; runId: string }
+  | { type: "run_failed"; runId: string; error: string }
   | { type: "request_resolved"; requestId: string | "latest"; outcome: "approved" | "changes_requested"; feedback?: string }
   | { type: "request_undo"; requestId: string }
   | { type: "caption_edited"; postId: string; blurb: string }
@@ -202,40 +195,62 @@ export type EngineEvent =
   | { type: "deck_refine"; postId: string; kind: RefineKind }
   | { type: "deck_refined"; postId: string; kind: RefineKind }
   | { type: "deck_undo" }
+  | { type: "deck_review_skipped" }
+  | { type: "composer_draft"; text: string }
   | { type: "bulk_requested"; postIds: string[] }
-  | { type: "voice_command"; script: VoiceScriptId }
   | { type: "handoff_in"; carry: "chat" | "chat_and_item" | "none" }
   | { type: "handoff_out" }
   | { type: "canvas_visibility"; visibility: CanvasVisibility }
   | { type: "show_card"; card: CanvasCard }
   | { type: "context_set"; context: ContextRef }
-  | { type: "teammate"; act: "note" | "mention" | "react" | "edit_after_approval" }
-  | { type: "usage_set"; usage: UsageChoice }
-  | { type: "reset"; scene: Scene; usage: UsageChoice; canvas: CanvasVisibility }
   | { type: "hydrate_thread"; transcript: TranscriptEntry[] }
+  | { type: "hydrate_run"; run: Run }
+  | { type: "hydrate_notes"; notes: PrototypeNote[]; reads: NoteReadState[] }
+  | { type: "hydrate_usage"; used: number; limit: number }
+  | { type: "note_saved"; localId: string; id: string }
   | { type: "hydrate_posts"; posts: Record<string, PrototypePost> }
   | { type: "hydrate_ideas"; ideas: Record<string, IdeationItem> }
   | { type: "hydrate_glance"; reconnectDays: number | null; events: { name: string; date: string }[] }
+  | { type: "hydrate_skipped"; ids: string[] }
+  | { type: "hydrate_activity"; entries: ActivityEntry[] }
+  | { type: "post_patched"; postId: string; blurb?: string; detailedBrief?: string }
   | { type: "assistant_delta"; text: string }
-  | { type: "request_opened"; action: GuardrailAction; postIds: string[]; when?: string; runId?: string }
+  | { type: "request_opened"; action: GuardrailAction; postIds: string[]; when?: string; runId?: string; localRunId?: string }
+export type PersistOp =
+  | { kind: "approve"; postId: string }
+  | { kind: "unapprove"; postId: string }
+  | { kind: "status"; postId: string; status: string }
+  | { kind: "move"; postId: string; date: string; time?: string }
+  | { kind: "caption"; postId: string; blurb: string }
+  | { kind: "publish"; postId: string }
+  | { kind: "delete"; postId: string }
+  | { kind: "note_add"; postId: string; localId: string; body: string; mentions: string[] }
+  | { kind: "note_edit"; postId: string; noteId: string; body: string; mentions: string[] }
+  | { kind: "note_delete"; postId: string; noteId: string }
+  | { kind: "note_react"; postId: string; noteId: string; emoji: ReactionEmoji }
+  | { kind: "read"; postId: string }
+  | { kind: "bulk_approve"; postIds: string[] }
+  | { kind: "deck_skips"; postIds: string[] }
+  | { kind: "gate"; serverRunId: string; approved: boolean; feedback?: string }
 export type EngineEffect =
-  | { type: "tick"; delayMs: number; event?: EngineEvent }
+  | { type: "persist"; op: PersistOp }
   | { type: "canvas_shown" }
   | { type: "scroll_to"; requestId: string }
   | { type: "navigate"; view: "timbl" | "interface"; week?: WeekId; post?: string; carry?: string }
   | { type: "open_sheet"; sheet: SheetId; post?: string }
-  | { type: "toast"; message: string; undo?: EngineEvent }
+  | { type: "toast"; id: string; message: string; undo?: EngineEvent; position?: "top-center" }
   | { type: "focus_composer" }
-  | { type: "announce"; message: string }
+  | { type: "announce"; message: string; assertive?: boolean }
 export type EngineState = {
   seq: number; clock: number
   transcript: TranscriptEntry[]; miniChat: TranscriptEntry[]; queue: string[]
   canvas: { card: CanvasCard | null; status: CardStatus; visibility: CanvasVisibility }
-  run: Run | null; runs: Run[]; failNext: boolean
+  run: Run | null; runs: Run[]
   requests: GuardrailRequest[]
   posts: Record<string, PrototypePost>
-  drafts: { visible: boolean; approved: string[]; submitted: string[] }
+  drafts: { visible: boolean; ids: string[]; approved: string[]; submitted: string[] }
   deck: { order: string[]; index: number; decisions: DeckDecision[]; refining: { postId: string; kind: RefineKind } | null }
+  skippedPostIds: string[]
   notes: PrototypeNote[]; reads: NoteReadState[]; submissions: ApprovalSubmission[]; activity: ActivityEntry[]
   ideaSet: "first" | "more"; chosenIdeaId: string | null
   ideas: Record<string, IdeationItem>

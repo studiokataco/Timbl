@@ -61,7 +61,7 @@ export function MentionList({ team, query, activeIndex, onPick, id }: MentionLis
             </span>
             <span className="flex min-w-0 flex-col">
               <span className="text-body-sm truncate font-medium text-foreground">{member.name}</span>
-              <span className="text-caption truncate text-muted-foreground">{copy.toolbar.roles[member.role]}</span>
+              <span className="text-caption truncate text-muted-foreground">{copy.roles[member.role]}</span>
             </span>
           </li>
         ))

@@ -69,7 +69,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           className={cn("flex flex-col gap-1", gi > 0 && "mt-6")}
         >
           {group.heading && (
-            <p className="text-caption text-muted-foreground px-3 pb-1.5 uppercase tracking-wider hidden @7xl/iface:block">
+            <p className="text-caption text-muted-foreground px-3 pb-1.5 hidden @7xl/iface:block">
               {group.heading}
             </p>
           )}
@@ -132,6 +132,7 @@ export function FeedbackTrigger({
           setOpen(true)
           onNavigate?.()
         }}
+        aria-label="Send feedback"
         className={cn(
           "timbl-feedback-trigger flex items-center justify-center @7xl/iface:justify-start gap-2.5 rounded-lg px-0 @7xl/iface:px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
           className,

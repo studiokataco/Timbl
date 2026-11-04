@@ -59,7 +59,7 @@ export function FlyoutPanel({
       data-slot="agentic-flyout-panel"
       data-state={handoffDisabled ? "no-item" : "ready"}
       data-figma="Flyout/panel"
-      className="flex w-full min-w-0 max-w-[22.5rem] flex-col gap-4 overflow-hidden p-4 text-foreground"
+      className="flex w-full min-w-0 max-w-90 flex-col gap-4 overflow-hidden p-4 text-foreground"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-title-sm text-foreground">{f.title}</span>
@@ -173,6 +173,7 @@ export function Flyout({
 }: FlyoutProps): React.JSX.Element {
   const { copy } = usePrototype()
   const { reduced } = useAgenticMotion()
+  const composerFocus = () => document.querySelector<HTMLElement>("[data-slot=agentic-flyout-panel] textarea")
 
   if (layout === "sheet") {
     return (
@@ -182,6 +183,7 @@ export function Flyout({
           <SheetContent
             side="bottom"
             showCloseButton={false}
+            initialFocus={composerFocus}
             className={tw("max-h-9/10 overflow-y-auto rounded-t-2xl p-0", reduced && REDUCED_POPUP)}
           >
             <SheetHeader className="sr-only">
@@ -197,15 +199,15 @@ export function Flyout({
   }
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange} modal={false}>
+    <Popover open={open} onOpenChange={onOpenChange} modal="trap-focus">
       <PopoverTrigger render={trigger} />
       {open ? (
         <PopoverContent
           side="top"
           align="end"
           sideOffset={12}
-          style={{ width: "22.5rem", maxWidth: "22.5rem", minWidth: 0 }}
-          className={tw("w-[22.5rem] max-w-[22.5rem] min-w-0 overflow-hidden p-0", reduced && REDUCED_POPUP)}
+          initialFocus={composerFocus}
+          className={tw("w-90 max-w-90 min-w-0 overflow-hidden p-0", reduced && REDUCED_POPUP)}
         >
           <FlyoutPanel {...panelProps} />
         </PopoverContent>

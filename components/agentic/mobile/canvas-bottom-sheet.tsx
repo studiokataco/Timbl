@@ -92,7 +92,7 @@ export function CanvasBottomSheet({
         onKeyDown={onGrabberKeyDown}
         data-figma="CanvasBottomSheet/grabber"
         className={tw(
-          "flex w-full shrink-0 flex-col items-center justify-center gap-1.5 border-b border-border px-4 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          "flex w-full shrink-0 flex-col items-center justify-center gap-1.5 border-b border-border px-4 focus-ring",
           TOUCH.grabber,
         )}
       >

@@ -39,7 +39,7 @@ export const OrbDock = forwardRef<HTMLButtonElement, OrbDockProps>(function OrbD
           type="button"
           onClick={onOpenActivity}
           data-figma="OrbDock/label"
-          className="h-8 rounded-full border border-border bg-background px-3 shadow-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="h-8 rounded-full border border-border bg-background px-3 shadow-sm focus-ring"
         >
           <span className="text-caption font-medium text-foreground">{pillLabel}</span>
         </button>
@@ -51,7 +51,7 @@ export const OrbDock = forwardRef<HTMLButtonElement, OrbDockProps>(function OrbD
         aria-expanded={expanded}
         onClick={onPress}
         data-figma="OrbDock/trigger"
-        className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-full focus-ring"
         {...rest}
       >
         <PresenceOrb state={state} size="dock" largeTarget={largeTarget} />

@@ -39,7 +39,7 @@ type NoteThreadProps = {
   initialDeleteId?: string
 }
 
-const FOCUS_OUTLINE = "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+const FOCUS_OUTLINE = "focus-ring"
 
 function isSendCombo(e: React.KeyboardEvent): boolean {
   return e.key === "Enter" && (e.metaKey || e.ctrlKey)
@@ -118,7 +118,10 @@ export function NoteThread({
   const markRead = useEffectEvent(() => onRead())
   useEffect(() => {
     markRead()
-  }, [])
+    if (density !== "panel") return
+    const id = window.setTimeout(() => inputRef.current?.focus(), 50)
+    return () => window.clearTimeout(id)
+  }, [density])
 
   const sorted = [...notes].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
   const disclosureKey = `notes:${post.id}:earlier`

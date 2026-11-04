@@ -98,14 +98,14 @@ export function ScheduleCard({
                   aria-label={c.timeFor(index + 1)}
                   value={slot.time}
                   onChange={(e) => onEditSlot(index, { time: e.target.value })}
-                  className="w-[9.5rem] min-w-[9.5rem] shrink-0 rounded-md bg-background px-2.5 tabular-nums"
+                  className="w-38 min-w-38 shrink-0 rounded-md bg-background px-2.5 tabular-nums"
                 />
                 <Select
                   items={channelItems}
                   value={slot.channel}
                   onValueChange={(v) => v && onEditSlot(index, { channel: v as ChannelKey })}
                 >
-                  <SelectTrigger aria-label={c.channelFor(index + 1)} className="w-[8.5rem] shrink-0 gap-2 rounded-md bg-background">
+                  <SelectTrigger aria-label={c.channelFor(index + 1)} className="w-34 shrink-0 gap-2 rounded-md bg-background">
                     <ChannelMark channel={slot.channel} className="size-3.5" />
                     <SelectValue />
                   </SelectTrigger>

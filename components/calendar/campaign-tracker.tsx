@@ -97,7 +97,7 @@ export function CampaignTracker({ campaigns }: Props) {
         className="gap-1.5 rounded-sm"
       >
         <Megaphone aria-hidden className="size-3.5 text-muted-foreground" />
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="text-body-sm font-medium text-foreground">
           Campaigns
         </span>
         {active.length > 0 && (

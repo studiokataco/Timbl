@@ -275,7 +275,7 @@ export function Composer({
           onClick={primaryClick}
           data-figma="Composer/primary"
           data-face={face}
-          className="rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="rounded-full focus-ring"
         >
           <PresenceOrb state="idle" size="sm" />
         </button>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useSyncExternalStore, type ComponentProps, type ReactNode } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { AnimatePresence, motion, useReducedMotionConfig } from "framer-motion"
 import { ChevronDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -79,15 +79,17 @@ export function DisclosureTrigger({ open, onOpenChange, controls, chevronClassNa
 }
 
 export function DisclosureBody({ id, open, className, children }: { id: string; open: boolean; className?: string; children: ReactNode }) {
-  const reduced = useReducedMotion()
+  const reduced = useReducedMotionConfig() ?? false
+  if (reduced) return open ? <div id={id} className={className}>{children}</div> : null
+
   return (
     <AnimatePresence initial={false}>
       {open && (
         <motion.div
           id={id}
-          initial={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
-          animate={reduced ? { opacity: 1 } : { opacity: 1, height: "auto" }}
-          exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.22, ease: EASE }}
           className="overflow-hidden"
         >

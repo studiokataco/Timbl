@@ -3,7 +3,7 @@
 import { CircleCheck, Mic } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TONE_DOT, tw } from "../lib"
-import { weekShort } from "../clock"
+import { mondayOf, todayIso, weekLabel } from "../clock"
 import { usePrototype } from "../prototype-context"
 import type { GlanceCard, GlanceTarget } from "../types"
 
@@ -24,7 +24,7 @@ export function GlanceHome({
   onAsk,
   onSpeak,
 }: GlanceHomeProps): React.JSX.Element {
-  const { copy, view } = usePrototype()
+  const { copy } = usePrototype()
   const g = copy.mobile.glance
 
   return (
@@ -35,7 +35,7 @@ export function GlanceHome({
       className={tw("flex min-h-full flex-col bg-background px-6 pb-6 text-foreground", framed ? "pt-16" : "pt-6")}
     >
       <header data-figma="GlanceHome/header" className="flex flex-col gap-1.5 px-1">
-        <h1 className="text-display-sm text-balance text-foreground">{g.greeting(weekShort(view.week))}</h1>
+        <h1 className="text-display-sm text-balance text-foreground">{g.greeting(weekLabel(mondayOf(todayIso())))}</h1>
         <p className="text-body-md text-muted-foreground">{status}</p>
       </header>
 
@@ -105,7 +105,7 @@ export function GlanceHome({
           type="button"
           aria-label={g.ask}
           onClick={onAsk}
-          className="h-12 flex-1 text-left text-body-md text-muted-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="h-12 flex-1 text-left text-body-md text-muted-foreground focus-ring"
         >
           {g.ask}
         </button>

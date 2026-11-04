@@ -243,7 +243,7 @@ export function AgenticCard({
             ref={headingRef}
             tabIndex={headingRef ? -1 : undefined}
             data-figma={`${figmaName}/title`}
-            className="text-title-md text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="text-title-md text-foreground focus-ring"
           >
             {title}
           </Heading>

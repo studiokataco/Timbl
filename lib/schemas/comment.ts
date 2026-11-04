@@ -30,5 +30,6 @@ export const commentSchema = z.object({
     .optional(),
   createdAt: isoTimestamp,
   updatedAt: isoTimestamp,
+  editedAt: isoTimestamp.optional(),
 })
 export type Comment = z.infer<typeof commentSchema>

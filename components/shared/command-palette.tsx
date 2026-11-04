@@ -15,6 +15,7 @@ import {
   Moon,
   Plus,
   Settings,
+  Sparkles,
   Sun,
   Tags,
 } from "lucide-react"
@@ -101,6 +102,13 @@ export function CommandPalette() {
         setOpen((prev) => !prev)
         return
       }
+      const cmdJ = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j"
+      if (cmdJ) {
+        e.preventDefault()
+        setOpen(false)
+        router.push("/calendar?view=timbl")
+        return
+      }
       const target = e.target as HTMLElement | null
       const isTyping =
         target instanceof HTMLInputElement ||
@@ -113,7 +121,7 @@ export function CommandPalette() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [])
+  }, [router])
 
   // Listen for the TopBar search-box click (or any UI that wants to open the
   // palette) - dispatched as a window event so we don't need React context.
@@ -169,6 +177,11 @@ export function CommandPalette() {
         <CommandEmpty>No matches.</CommandEmpty>
 
         <CommandGroup heading="Actions">
+          <CommandItem onSelect={() => go("/calendar?view=timbl")} value="ask timbl assistant">
+            <Sparkles />
+            <span>Ask Timbl</span>
+            <CommandShortcut>⌘J</CommandShortcut>
+          </CommandItem>
           <CommandItem
             onSelect={() => go("/calendar?quickAdd=1")}
             value="create new post"

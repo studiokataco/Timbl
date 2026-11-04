@@ -47,8 +47,8 @@ export function TalkPanel({
   onTypeInstead,
   onRetry,
 }: TalkPanelProps): React.JSX.Element {
-  const { copy, view, prefs } = usePrototype()
-  const voiceGlow = (view.glow ?? prefs.ambient.glow) && (holding || state === "listening" || state === "sending")
+  const { copy, prefs } = usePrototype()
+  const voiceGlow = prefs.ambient.glow && (holding || state === "listening" || state === "sending")
   const t = copy.mobile.talk
   const finalWords = tokens.filter((w) => w.final).map((w) => w.text).join(" ")
   const interimWords = tokens.filter((w) => !w.final).map((w) => w.text).join(" ")

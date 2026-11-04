@@ -6,6 +6,10 @@ import { format, parseISO } from "date-fns"
 import { useState } from "react"
 import { Clock, Eye, Flag, PencilLine, Sparkles, TriangleAlert } from "lucide-react"
 import { EventPeek } from "./event-peek"
+import { UnreadDot } from "@/components/agentic/collab/unread-dot"
+import { useEngine } from "@/components/agentic/engine/engine-context"
+import { unreadFor } from "@/components/agentic/lib"
+import { usePrototype } from "@/components/agentic/prototype-context"
 import type { PrototypePost } from "@/components/agentic/types"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
@@ -16,6 +20,13 @@ const PRIORITY_CLASS: Record<string, string> = {
   high: "text-warning",
   normal: "text-brand-accent",
   low: "text-muted-foreground",
+}
+
+function PostUnread({ postId }: { postId: string }) {
+  const { viewer } = usePrototype()
+  const { state } = useEngine()
+  const unread = unreadFor(state.notes, state.reads, postId, viewer.id)
+  return <UnreadDot count={unread.count} mentions={unread.mentions} />
 }
 
 function pastelFor(post: Post): string {
@@ -61,7 +72,6 @@ export function StatusMark({ post }: { post: Post }) {
 
 function Peek({
   post,
-  onOpen,
   trigger,
 }: {
   post: WithId<Post>
@@ -69,6 +79,9 @@ function Peek({
   trigger: React.ReactElement
 }) {
   const [open, setOpen] = useState(false)
+  const { update, viewer } = usePrototype()
+  const { state } = useEngine()
+  const unread = unreadFor(state.notes, state.reads, post.id, viewer.id)
   return (
     <EventPeek
       open={open}
@@ -76,14 +89,14 @@ function Peek({
       trigger={trigger}
       postId={post.id}
       post={asPrototype(post)}
-      unread={{ count: 0, mentions: 0 }}
+      unread={unread}
       onAskAbout={() => {
         setOpen(false)
         askAbout(post)
       }}
       onOpenNotes={() => {
         setOpen(false)
-        onOpen()
+        update({ sheet: "notes", post: post.id }, "push")
       }}
     />
   )
@@ -127,7 +140,7 @@ export function EventPill({ post, category, onClick }: Props) {
             opacity: isDragging ? 0.4 : undefined,
           }}
           className={cn(
-            "flex min-h-11 w-full cursor-pointer flex-col justify-center gap-0 overflow-hidden rounded-md border px-1.5 py-1 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            "flex min-h-11 w-full cursor-pointer flex-col justify-center gap-0 overflow-hidden rounded-md border px-1.5 py-1 text-left focus-ring",
             pastelFor(post),
             needsYou(post) && "ring-1 ring-warning/50",
           )}
@@ -139,6 +152,7 @@ export function EventPill({ post, category, onClick }: Props) {
             )}
             <StatusMark post={post} />
             <span className="min-w-0 flex-1 line-clamp-2 text-caption font-medium text-foreground">{post.brief ?? "Untitled"}</span>
+            <PostUnread postId={post.id} />
             {isAi && <Sparkles aria-hidden className="size-2.5 shrink-0 opacity-70" />}
           </span>
           {time ? <span className="text-caption text-foreground">{time}</span> : null}
@@ -167,13 +181,14 @@ export function EventListItem({
           type="button"
           data-post-id={post.id}
           className={cn(
-            "flex min-h-11 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left",
+            "focus-ring flex min-h-11 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left",
             pastelFor(post),
             needsYou(post) && "ring-1 ring-warning/50",
           )}
         >
           <StatusMark post={post} />
           <span className="min-w-0 flex-1 line-clamp-2 font-medium text-foreground">{post.brief ?? "Untitled"}</span>
+          <PostUnread postId={post.id} />
           {category && <span className="shrink-0 text-caption text-muted-foreground">{category.name}</span>}
           <span className="shrink-0 text-caption text-foreground">{postStatusLabel(post.status)}</span>
         </button>

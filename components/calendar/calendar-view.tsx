@@ -34,9 +34,10 @@ import { asTeamMember } from "@/components/agentic/defaults"
 import { AvatarStack, PeerChip } from "@/components/agentic/interface/avatar-stack"
 import { useFollowMode } from "@/components/agentic/interface/use-follow-mode"
 import { InterfaceTopBar } from "@/components/agentic/interface/interface-top-bar"
-import { showCursorsEffective } from "@/components/agentic/lib"
+import { initials, showCursorsEffective } from "@/components/agentic/lib"
+import { weekLabel } from "@/components/agentic/clock"
 import { NotificationsMenu } from "@/components/shared/notifications-menu"
-import type { CalendarFilter, PresencePrefs, TeamMember } from "@/components/agentic/types"
+import type { CalendarFilter, PresencePrefs, TeamMember, ViewState } from "@/components/agentic/types"
 import { matchesCalendarFilter } from "@/components/calendar/status-filter"
 import { fetchPostsInRangeAction, updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
@@ -45,7 +46,7 @@ import type { AwarenessDay, Category, Post, PostPatch, User } from "@/lib/schema
 import type { Suggestion } from "@/lib/queries/suggestions.server"
 import { useGridReveal } from "@/components/shared/motion-cal"
 import { useDialogs } from "@/components/shared/dialogs-provider"
-import { CursorFrame, LivePresence, useLivePresence } from "./live-cursors"
+import { CursorFrame, LivePresence, useLivePresence, type LiveCursor } from "./live-cursors"
 import { EventListItem } from "./event-pill"
 import { CalendarToolbar, type CalendarView as ViewT } from "./calendar-toolbar"
 import { CalendarGrid } from "./calendar-grid"
@@ -73,6 +74,8 @@ type Props = {
   realtimeEnabled?: boolean
   assistantName: string
   prefs: PresencePrefs
+  viewerId: string
+  initialView: ViewState
 }
 
 export function CalendarView({
@@ -91,35 +94,19 @@ export function CalendarView({
   realtimeEnabled = false,
   assistantName,
   prefs,
+  viewerId,
+  initialView,
 }: Props) {
   const queryClient = useQueryClient()
   const { openQuickAdd, openComposerWithPost } = useDialogs()
   const mainRef = useRef<HTMLElement | null>(null)
   useGridReveal(mainRef)
 
-  const [visibleDate, setVisibleDate] = useState<Date>(() => {
-    if (typeof window === "undefined") return startOfMonth(new Date())
-    const week = new URLSearchParams(window.location.search).get("week")
-    if (week && /^\d{4}-\d{2}-\d{2}$/.test(week)) return startOfMonth(parseISO(week))
-    return startOfMonth(new Date())
-  })
-  const [view, setView] = useState<ViewT>("month")
-  const [filter, setFilter] = useState<CalendarFilter>(() => {
-    if (typeof window === "undefined") return "all"
-    const next = new URLSearchParams(window.location.search).get("filter")
-    if (
-      next === "drafts" ||
-      next === "scheduled" ||
-      next === "needs-approval" ||
-      next === "sent"
-    ) {
-      return next
-    }
-    return "all"
-  })
+  const [visibleDate, setVisibleDate] = useState<Date>(() => (initialView.week ? parseISO(initialView.week) : new Date()))
+  const [view, setView] = useState<ViewT>("week")
+  const [filter, setFilter] = useState<CalendarFilter>(initialView.filter)
   const [compact, setCompact] = useState(false)
   const weekStart = format(startOfWeek(visibleDate, { weekStartsOn: 1 }), "yyyy-MM-dd")
-  const urlWeek = format(visibleDate, "yyyy-MM-dd")
   const [planOpen, setPlanOpen] = useState(false)
   const [railOpen, setRailOpen] = useState(false)
   const [timblMode, setTimblMode] = useState(false)
@@ -153,7 +140,7 @@ export function CalendarView({
       window.localStorage.setItem("calendar:sidebar-collapsed", "1")
     } catch {}
     setRailOpen(false)
-  }, [])
+  }, [setRailOpen])
 
   /* Visible-month range derived from `visibleDate` + `view`. The SSR
    * range covers today±60d; when the user navigates the calendar past
@@ -341,11 +328,8 @@ export function CalendarView({
     () => users.map((user, index) => asTeamMember(user, index)),
     [users],
   )
-  const hideCursors =
-    team.length < 2 ||
-    prefs.showCursors === false ||
-    (typeof window !== "undefined" &&
-      ["off", "idle"].includes(new URLSearchParams(window.location.search).get("cursors") ?? ""))
+  const awarenessEvents = useMemo(() => awarenessDays.map((day) => ({ name: day.name, date: day.date })), [awarenessDays])
+  const hideCursors = prefs.showCursors === false
 
   const extras = (
     <>
@@ -373,12 +357,12 @@ export function CalendarView({
       window.localStorage.setItem("calendar:sidebar-collapsed", "0")
     } catch {}
     setRailOpen(true)
-  }, [])
+  }, [setRailOpen])
 
   return (
-    <LivePresence hidden={hideCursors} weekStart={urlWeek} team={team}>
+    <LivePresence hidden={hideCursors} weekStart={weekStart} team={team}>
     <CalendarOrb
-      period={format(visibleDate, "MMMM yyyy")}
+      period={view === "week" ? weekLabel(weekStart) : format(visibleDate, "MMMM yyyy")}
       posts={filteredPosts}
       campaignCount={campaigns.filter((campaign) => campaign.status === "active").length}
       cadencePerWeek={cadencePerWeek}
@@ -392,7 +376,7 @@ export function CalendarView({
       onSheetOpenChange={setRailOpen}
       onOpenOverview={openOverview}
       onMode={setTimblMode}
-      weekStart={urlWeek}
+      weekStart={weekStart}
       filter={filter}
       assistantName={assistantName}
       prefs={prefs}
@@ -400,12 +384,12 @@ export function CalendarView({
         const next = parseISO(week)
         if (Number.isNaN(next.getTime())) return
         setVisibleDate((current) =>
-          format(startOfMonth(current), "yyyy-MM") === format(startOfMonth(next), "yyyy-MM")
-            ? current
-            : startOfMonth(next),
+          view !== "month" || format(current, "yyyy-MM") !== format(next, "yyyy-MM") ? next : current,
         )
       }}
-      awarenessDays={awarenessDays.map((day) => ({ name: day.name, date: day.date }))}
+      awarenessDays={awarenessEvents}
+      viewerId={viewerId}
+      initialView={initialView}
     >
         <CalendarChrome
           weekStart={weekStart}
@@ -435,7 +419,7 @@ export function CalendarView({
             <CursorFrame
               name={users[0]?.name ?? "Teammate"}
               hidden={hideCursors}
-              weekStart={urlWeek}
+              weekStart={weekStart}
             >
             <div data-cal-reveal>
               {boardView === "month" && (
@@ -518,6 +502,24 @@ export function CalendarView({
   )
 }
 
+function memberForCursor(cursor: LiveCursor, team: TeamMember[], index: number): TeamMember | null {
+  if (!cursor.userId) return null
+  const known = team.find((member) => member.id === cursor.userId)
+  if (known) return known
+  const name = cursor.name.split(" · ")[0] || cursor.name
+  return {
+    id: cursor.userId,
+    organizationId: team[0]?.organizationId ?? "",
+    email: "presence@timbl.dev",
+    name,
+    role: "editor",
+    active: true,
+    defaultCategories: [],
+    initials: initials(name),
+    presenceSlot: cursor.slot ?? (((index % 8) + 1) as TeamMember["presenceSlot"]),
+  }
+}
+
 function CalendarChrome({
   weekStart,
   density,
@@ -540,7 +542,7 @@ function CalendarChrome({
   const { peers, elsewhere } = useLivePresence()
   const ordered = [...peers].sort((a, b) => b.at - a.at)
   const activePeers = ordered
-    .map((cursor) => team.find((member) => member.id === cursor.userId))
+    .map((cursor, index) => memberForCursor(cursor, team, index))
     .filter((member): member is TeamMember => !!member && member.id !== viewer.id)
   const unique = activePeers.filter((member, index) => activePeers.findIndex((item) => item.id === member.id) === index)
   const { following, follow, stop } = useFollowMode(unique, regionRef, unique.length > 0)

@@ -25,7 +25,7 @@ function screenRadius(el: HTMLElement): number {
   return 0
 }
 
-export function AmbientGlow({ scope, state, enabled, reduced: reducedProp = false }: AmbientGlowProps): React.JSX.Element | null {
+export function AmbientGlow({ scope, state, enabled, reduced: reducedProp = false, level }: AmbientGlowProps): React.JSX.Element | null {
   const { reduced: motionReduced } = useAgenticMotion()
   const reduced = reducedProp || motionReduced
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -46,6 +46,7 @@ export function AmbientGlow({ scope, state, enabled, reduced: reducedProp = fals
   if (!voice) return null
 
   const curve = Math.max(0, radius - 1)
+  const glowLevel = typeof level === "number" && !Number.isNaN(level) ? Math.min(1, Math.max(0, level)) : null
 
   return (
     <div
@@ -59,13 +60,15 @@ export function AmbientGlow({ scope, state, enabled, reduced: reducedProp = fals
       <div
         data-figma="AmbientGlow/ring"
         data-state={state}
+        data-level={glowLevel === null ? undefined : glowLevel.toFixed(2)}
         data-reduced={reduced ? "" : undefined}
         className="timbl-glow-ring absolute p-0.5"
         style={{
           inset: 1,
           borderRadius: curve,
-          mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-          WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          ...(glowLevel === null ? {} : { ["--glow-level" as string]: String(glowLevel) }),
+          mask: "linear-gradient(var(--foreground) 0 0) content-box, linear-gradient(var(--foreground) 0 0)",
+          WebkitMask: "linear-gradient(var(--foreground) 0 0) content-box, linear-gradient(var(--foreground) 0 0)",
           maskComposite: "exclude",
           WebkitMaskComposite: "xor",
         }}

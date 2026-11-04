@@ -20,7 +20,7 @@ type CanvasFrameProps = {
   cardKey: string
 }
 
-type CanvasEmptyProps = { onStart: () => void }
+type CanvasEmptyProps = { onStart: () => void; stats: { scheduled: number; review: number; slots: number } }
 
 export function CanvasFrame({
   meta,
@@ -150,7 +150,7 @@ function HeaderButton({
   )
 }
 
-export function CanvasEmpty({ onStart }: CanvasEmptyProps): React.JSX.Element {
+export function CanvasEmpty({ onStart, stats }: CanvasEmptyProps): React.JSX.Element {
   const { copy } = usePrototype()
   return (
     <div
@@ -171,15 +171,15 @@ export function CanvasEmpty({ onStart }: CanvasEmptyProps): React.JSX.Element {
       <div className="grid grid-cols-3 divide-x divide-border rounded-lg border border-border bg-surface-soft/50 py-3">
         <div className="flex flex-col gap-0.5 px-3">
           <span className="text-caption text-muted-foreground">{copy.iface.rail.stats.scheduled}</span>
-          <span className="text-title-sm text-foreground tabular-nums">2</span>
+          <span className="text-title-sm text-foreground tabular-nums">{stats.scheduled}</span>
         </div>
         <div className="flex flex-col gap-0.5 px-3">
           <span className="text-caption text-muted-foreground">{copy.iface.rail.stats.review}</span>
-          <span className="text-title-sm text-foreground tabular-nums">3</span>
+          <span className="text-title-sm text-foreground tabular-nums">{stats.review}</span>
         </div>
         <div className="flex flex-col gap-0.5 px-3">
           <span className="text-caption text-muted-foreground">{copy.iface.rail.stats.slots}</span>
-          <span className="text-title-sm text-foreground tabular-nums">1</span>
+          <span className="text-title-sm text-foreground tabular-nums">{stats.slots}</span>
         </div>
       </div>
 

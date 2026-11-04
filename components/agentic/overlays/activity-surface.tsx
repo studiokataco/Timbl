@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { DisclosureTrigger } from "@/components/ui/disclosure"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FIXTURE_NOW_ISO, formatRelative } from "../clock"
+import { formatRelative, localKey, todayIso } from "../clock"
 import { PersonAvatar } from "../collab/person-avatar"
 import { StepList } from "../primitives/step-list"
 import { REDUCED_POPUP, tw } from "../lib"
@@ -37,13 +37,14 @@ function entryLine(
   runs: Run[],
   rows: ReturnType<typeof usePrototype>["copy"]["activity"]["rows"],
   viewerId: string,
+  youLabel: string,
 ): { title: string; meta: string } {
   const actor = entry.actor
   const who =
     actor.kind === "assistant"
       ? ""
       : actor.userId === viewerId
-        ? "You"
+        ? youLabel
         : (team.find((m) => m.id === actor.userId)?.name ?? "Teammate")
   const postTitle = (entry.postId && posts[entry.postId]?.brief) || "post"
   const rel = formatRelative(entry.at)
@@ -90,9 +91,9 @@ export function ActivityPanel({
 }: ActivityPanelProps): React.JSX.Element {
   const { copy, viewer, disclosure, setDisclosure } = usePrototype()
   const a = copy.activity
-  const todayPrefix = FIXTURE_NOW_ISO.slice(0, 10)
-  const today = log.filter((e) => e.at.startsWith(todayPrefix))
-  const earlier = log.filter((e) => !e.at.startsWith(todayPrefix))
+  const todayPrefix = todayIso()
+  const today = log.filter((e) => localKey(Date.parse(e.at)).startsWith(todayPrefix))
+  const earlier = log.filter((e) => !localKey(Date.parse(e.at)).startsWith(todayPrefix))
 
   const renderGroup = (heading: string, items: ActivityEntry[]) => {
     if (items.length === 0) return null
@@ -101,7 +102,7 @@ export function ActivityPanel({
         <h2 className="text-caption font-medium text-muted-foreground">{heading}</h2>
         <ul className="flex flex-col divide-y divide-border rounded-xl border border-border bg-card">
           {items.map((item) => {
-            const line = entryLine(item, team, posts, runs, a.rows, viewer.id)
+            const line = entryLine(item, team, posts, runs, a.rows, viewer.id, copy.notes.you)
             const steps = item.steps ?? runs.find((r) => r.id === item.runId)?.steps
             const key = `run:${item.runId ?? item.id}:steps`
             const open = Boolean(disclosure[key])

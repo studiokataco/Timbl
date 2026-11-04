@@ -83,14 +83,14 @@ function MiniCard({ color }: { color: string }) {
   )
 }
 
-function AskAiChip() {
+function TimblChip() {
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full bg-background px-2 py-1 text-[10px] font-medium"
       style={{ boxShadow: `0 0 0 1px ${SIG.blue}, 0 0 12px -2px ${SIG.blue}` }}
     >
       <Sparkles className="size-3" style={{ color: SIG.blue }} />
-      Ask AI
+      Ask Timbl
     </span>
   )
 }
@@ -150,7 +150,7 @@ const SETUP_POS = [
 const SETUP_CHIPS = [
   <MiniCard key="a" color={SIG.violet} />,
   <Pill key="b" color={SIG.coral} label="Promo" />,
-  <AskAiChip key="c" />,
+  <TimblChip key="c" />,
   <Pill key="d" color={SIG.forest} label="Brand" />,
   <TemplateChip key="e" />,
 ]

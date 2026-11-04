@@ -41,7 +41,7 @@ export function CategoryFilter({
           chevronClassName="size-3.5"
           className="min-w-0 flex-1 gap-1.5 rounded-sm"
         >
-          <span className="text-caption uppercase tracking-wider text-muted-foreground">
+          <span className="text-body-sm font-medium text-foreground">
             Categories
           </span>
           {!open && (

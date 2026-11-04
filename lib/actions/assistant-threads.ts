@@ -6,6 +6,7 @@ import { orgAssistantThreadDocPath } from "@/lib/firebase/paths"
 import {
   assistantThreadEntrySchema,
   assistantThreadSchema,
+  shellRunSchema,
   type AssistantThread,
   type AssistantThreadEntry,
 } from "@/lib/schemas/assistantThread"
@@ -16,7 +17,9 @@ const saveSchema = z.object({
   id: z.string().min(1).default(SHELL_THREAD_ID),
   title: z.string().max(120).optional(),
   sessionId: z.string().min(1).max(100).optional(),
-  transcript: z.array(assistantThreadEntrySchema),
+  transcript: z.array(assistantThreadEntrySchema).optional(),
+  skippedPostIds: z.array(z.string()).max(200).optional(),
+  run: shellRunSchema.nullable().optional(),
   idbMigratedAt: z.string().datetime({ offset: true }).optional(),
 })
 
@@ -51,9 +54,11 @@ export async function saveAssistantThread(
   const prev = await ref.get()
   const body = {
     organizationId: orgId,
-    transcript: parsed.data.transcript,
     updatedAt: now,
     createdAt: prev.data()?.createdAt ?? now,
+    ...(parsed.data.transcript ? { transcript: parsed.data.transcript } : {}),
+    ...(parsed.data.skippedPostIds ? { skippedPostIds: parsed.data.skippedPostIds } : {}),
+    ...(parsed.data.run !== undefined ? { run: parsed.data.run } : {}),
     ...(parsed.data.title ? { title: parsed.data.title } : {}),
     ...(parsed.data.sessionId ? { sessionId: parsed.data.sessionId } : {}),
     ...(parsed.data.idbMigratedAt ? { idbMigratedAt: parsed.data.idbMigratedAt } : {}),

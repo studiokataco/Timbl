@@ -1,170 +1,162 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { listIdeationFeed } from "@/lib/actions/ideation"
-import {
-  fetchAssistantThread,
-  saveAssistantThread,
-} from "@/lib/actions/assistant-threads"
+import { fetchAssistantThread, saveAssistantThread } from "@/lib/actions/assistant-threads"
 import { SHELL_THREAD_ID } from "@/lib/constants/timbl"
 import { resolveHumanGate } from "@/lib/actions/agent-suggestions"
-import { addComment } from "@/lib/actions/post-comments"
-import { approveItem } from "@/lib/actions/approvals"
-import { updatePost } from "@/lib/actions/posts"
-import { markPostRead } from "@/lib/actions/presence"
+import { listApprovalsLog } from "@/lib/actions/approvals"
+import { listPostComments } from "@/lib/actions/post-comments"
+import { listPostReads } from "@/lib/actions/post-reads"
 import { listSocialAccounts } from "@/lib/actions/social-accounts"
+import { getUsageOverview } from "@/lib/actions/usage"
 import { listThreads } from "@/lib/storage/agent-threads"
-import { daysUntil } from "../clock"
+import { useRosterAgents } from "@/components/agents/use-roster-agents"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Post } from "@/lib/schemas"
-import type { PrototypePost, TranscriptEntry } from "../types"
-import { parseView } from "../view-state"
-import { routeIntent } from "./router"
+import { daysUntil } from "../clock"
+import { extractMentions } from "../lib"
+import type { ActivityEntry, EngineEvent, PrototypeNote, PrototypePost, Run, TranscriptEntry } from "../types"
 import { useEngine } from "./engine-context"
 
-function voiceFromUrl() {
-  if (typeof window === "undefined") return null
-  return parseView(new URLSearchParams(window.location.search)).voice
-}
+const UNSAVED = new Set(["m-intro", "mini-initial"])
 
 export function asPrototypePost(post: WithId<Post>): PrototypePost {
   return {
     ...post,
-    tile: { headline: post.brief || post.blurb?.slice(0, 48) || "Untitled", format: post.postType },
-    contentRev: 1,
+    tile: { headline: post.brief || post.blurb?.slice(0, 48) || "", format: post.postType },
+    contentRev: Date.parse(post.updatedAt ?? "") || 0,
   }
-}
-
-function agentFor(intent: string): string | null {
-  if (intent === "ideas" || intent === "more_ideas" || intent === "compare") return "ideator"
-  if (intent === "create" || intent === "tighten" || intent === "drafts" || intent === "post_context" || intent === "fallback") {
-    return intent === "create" ? "pipeline" : "drafter"
-  }
-  if (intent === "plan") return null
-  return null
 }
 
 type SseEvent = {
   type?: string
+  author?: string
   content?: string
   call?: { id?: string; name?: string; args?: Record<string, unknown> }
+  result?: { name?: string; response?: Record<string, unknown> }
   error?: { message?: string }
 }
 
 async function readSse(
-  agent: string,
-  input: string,
-  sessionId: string | undefined,
-  onEvent: (event: SseEvent, runId: string | null) => void,
+  url: string,
+  body: Record<string, unknown>,
+  signal: AbortSignal,
+  onEvent: (event: SseEvent) => void,
+  onStart?: (runId: string | null, sessionId: string | null) => void,
 ): Promise<{ runId: string | null; sessionId: string | null }> {
-  const res = await fetch(`/api/agents/${agent}/run`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input, ...(sessionId ? { sessionId } : {}) }),
-  })
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal })
   if (!res.ok || !res.body) {
-    const message = await res.text().catch(() => res.statusText)
-    throw new Error(message || "Agent failed")
+    const text = await res.text().catch(() => res.statusText)
+    let message = text
+    try {
+      message = (JSON.parse(text) as { error?: string }).error ?? text
+    } catch {}
+    throw new Error(message || res.statusText)
   }
   const runId = res.headers.get("X-Run-Id")
-  const nextSession = res.headers.get("X-Session-Id")
+  const sessionId = res.headers.get("X-Session-Id")
+  onStart?.(runId, sessionId)
   const reader = res.body.getReader()
   const dec = new TextDecoder()
   let buffer = ""
-  while (true) {
+  for (;;) {
     const { value, done } = await reader.read()
     if (done) break
     buffer += dec.decode(value, { stream: true })
-    for (;;) {
-      const idx = buffer.indexOf("\n\n")
-      if (idx < 0) break
+    for (let idx = buffer.indexOf("\n\n"); idx >= 0; idx = buffer.indexOf("\n\n")) {
       const frame = buffer.slice(0, idx)
       buffer = buffer.slice(idx + 2)
-      const dataLine = frame.split("\n").find((line) => line.startsWith("data: "))
-      if (!dataLine) continue
-      const payload = dataLine.slice(6)
-      if (!payload || payload === "{}") continue
+      const data = frame.split("\n").find((line) => line.startsWith("data: "))?.slice(6)
+      if (!data || data === "{}") continue
+      let event: SseEvent | null = null
       try {
-        onEvent(JSON.parse(payload) as SseEvent, runId)
-      } catch {
-        /* skip malformed */
-      }
+        event = JSON.parse(data) as SseEvent
+      } catch {}
+      if (event) onEvent(event)
     }
   }
-  return { runId, sessionId: nextSession }
+  return { runId, sessionId }
 }
 
-export function EngineBridge({
-  posts,
-  events = [],
-}: {
-  posts: WithId<Post>[]
-  events?: { name: string; date: string }[]
-}) {
+function idOf(response: Record<string, unknown> | undefined, key: "postId" | "itemId"): string | null {
+  const direct = response?.[key]
+  if (typeof direct === "string") return direct
+  const nested = (response?.result as Record<string, unknown> | undefined)?.[key]
+  return typeof nested === "string" ? nested : null
+}
+
+export function EngineBridge({ posts, events = [] }: { posts: WithId<Post>[]; events?: { name: string; date: string }[] }) {
   const orgId = useWorkspaceOrgId()
-  const { state, dispatch } = useEngine()
+  const { state, dispatch, env } = useEngine()
+  const { defaultAgent } = useRosterAgents()
   const qc = useQueryClient()
   const sessionRef = useRef<string | null>(null)
   const hydrated = useRef(false)
-  const queuedVoice = useRef(voiceFromUrl())
-  const voiceOnce = useRef(false)
-  const lastUser = useRef("")
-  const lastRun = useRef<string | null>(null)
   const persistTimer = useRef<number>(0)
-  const noteIds = useRef(new Set<string>())
-  const prevRequests = useRef(state.requests)
-  const locks = useRef(new Set<string>())
+  const streams = useRef(new Map<string, AbortController>())
+  const gates = useRef(new Set<string>())
 
-  const threadQuery = useQuery({
-    queryKey: ["assistant-thread", orgId, SHELL_THREAD_ID],
-    queryFn: () => fetchAssistantThread(SHELL_THREAD_ID),
-  })
-  const ideasQuery = useQuery({
-    queryKey: ["ideation-feed", orgId],
-    queryFn: () => listIdeationFeed({ limit: 12 }),
-  })
-  const accountsQuery = useQuery({
-    queryKey: ["social-accounts", orgId],
-    queryFn: () => listSocialAccounts(),
+  const threadQuery = useQuery({ queryKey: ["assistant-thread", orgId, SHELL_THREAD_ID], queryFn: () => fetchAssistantThread(SHELL_THREAD_ID) })
+  const ideasQuery = useQuery({ queryKey: ["ideation-feed", orgId], queryFn: () => listIdeationFeed({ limit: 12 }) })
+  const accountsQuery = useQuery({ queryKey: ["social-accounts", orgId], queryFn: () => listSocialAccounts() })
+  const usageQuery = useQuery({ queryKey: ["usage-overview", orgId], queryFn: () => getUsageOverview(), staleTime: 60_000 })
+  const activityQuery = useQuery({ queryKey: ["approvals-log", orgId], queryFn: () => listApprovalsLog({ limit: 30 }), staleTime: 30_000 })
+  const postIds = useMemo(() => posts.map((post) => post.id).sort().slice(0, 60), [posts])
+  const notesQuery = useQuery({
+    queryKey: ["post-notes", orgId, postIds.join(",")],
+    queryFn: async () => {
+      const [comments, reads] = await Promise.all([listPostComments(postIds), listPostReads()])
+      return { comments, reads }
+    },
+    enabled: postIds.length > 0,
+    refetchInterval: 15_000,
   })
 
   useEffect(() => {
-    const mapped: Record<string, PrototypePost> = {}
-    for (const post of posts) mapped[post.id] = asPrototypePost(post)
-    dispatch({ type: "hydrate_posts", posts: mapped })
+    dispatch({ type: "hydrate_posts", posts: Object.fromEntries(posts.map((post) => [post.id, asPrototypePost(post)])) })
   }, [dispatch, posts])
 
   useEffect(() => {
-    if (!queuedVoice.current) queuedVoice.current = voiceFromUrl()
-    const script = queuedVoice.current
-    const currentId = state.deck.order[state.deck.index]
-    const needsDeck = script === "shorter" || script === "funnier" || script === "new_image" || script === "skip" || script === "approve"
-    if (!script || voiceOnce.current) return
-    if (needsDeck && (!currentId || !state.posts[currentId])) return
-    voiceOnce.current = true
-    queuedVoice.current = null
-    dispatch({ type: "voice_command", script })
-  }, [dispatch, state.deck.index, state.deck.order, state.posts])
+    if (ideasQuery.data) dispatch({ type: "hydrate_ideas", ideas: Object.fromEntries(ideasQuery.data.map((item) => [item.id, item])) })
+  }, [dispatch, ideasQuery.data])
 
   useEffect(() => {
-    if (!ideasQuery.data) return
-    dispatch({
-      type: "hydrate_ideas",
-      ideas: Object.fromEntries(ideasQuery.data.map((item) => [item.id, item])),
-    })
-  }, [dispatch, ideasQuery.data])
+    const metric = usageQuery.data?.metrics.find((m) => m.key === "agentRuns")
+    if (metric) dispatch({ type: "hydrate_usage", used: metric.used, limit: metric.limit ?? Number.POSITIVE_INFINITY })
+  }, [dispatch, usageQuery.data])
+
+  useEffect(() => {
+    if (!notesQuery.data) return
+    const notes: PrototypeNote[] = notesQuery.data.comments.map((comment) => ({
+      ...comment,
+      kind: "note",
+      annotations: extractMentions(comment.body, env.team).annotations,
+      mentionUserIds: comment.mentions ?? [],
+      reactions: comment.reactions ?? [],
+      ...(comment.editedAt ? { editedAt: comment.editedAt } : {}),
+    }))
+    dispatch({ type: "hydrate_notes", notes, reads: notesQuery.data.reads })
+  }, [dispatch, env.team, notesQuery.data])
+
+  useEffect(() => {
+    if (!activityQuery.data) return
+    const entries: ActivityEntry[] = activityQuery.data.map((row) => ({
+      id: row.id,
+      at: row.createdAt,
+      actor: { kind: "user", userId: row.userId },
+      kind: row.revertedAt ? "undone" : "approved",
+      ...(row.itemType === "post" ? { postId: row.itemId } : {}),
+    }))
+    if (entries.length) dispatch({ type: "hydrate_activity", entries })
+  }, [activityQuery.data, dispatch])
 
   useEffect(() => {
     const expired = accountsQuery.data?.find((account) => account.status === "needs_reauth")
     const days = expired?.expiresAt ? Math.max(0, daysUntil(expired.expiresAt.slice(0, 10))) : expired ? 1 : null
-    dispatch({
-      type: "hydrate_glance",
-      reconnectDays: days,
-      events: events.filter((event) => daysUntil(event.date) >= 0).slice(0, 2),
-    })
+    dispatch({ type: "hydrate_glance", reconnectDays: days, events: events.filter((event) => daysUntil(event.date) >= 0).slice(0, 2) })
   }, [accountsQuery.data, dispatch, events])
 
   useEffect(() => {
@@ -175,186 +167,168 @@ export function EngineBridge({
       let transcript = thread.transcript
       if (!thread.idbMigratedAt) {
         const local = await listThreads(orgId)
-        const extra = local.flatMap((item) => item.transcript)
         const seen = new Set(transcript.map((entry) => entry.id))
-        transcript = [...transcript, ...extra.filter((entry) => !seen.has(entry.id))]
-        await saveAssistantThread({
-          id: SHELL_THREAD_ID,
-          transcript,
-          idbMigratedAt: new Date().toISOString(),
-          title: local[0]?.title,
-        })
-        void qc.invalidateQueries({ queryKey: ["assistant-thread", orgId, SHELL_THREAD_ID] })
+        transcript = [...transcript, ...local.flatMap((item) => item.transcript).filter((entry) => !seen.has(entry.id) && !UNSAVED.has(entry.id))]
+        await saveAssistantThread({ id: SHELL_THREAD_ID, transcript, idbMigratedAt: new Date().toISOString(), title: local[0]?.title })
       }
-      if (cancelled || transcript.length === 0) {
-        hydrated.current = true
-        return
-      }
-      dispatch({ type: "hydrate_thread", transcript: transcript as TranscriptEntry[] })
+      if (cancelled) return
       hydrated.current = true
+      if (thread.skippedPostIds?.length) dispatch({ type: "hydrate_skipped", ids: thread.skippedPostIds })
+      if (thread.run) dispatch({ type: "hydrate_run", run: thread.run as Run })
+      const withPlan = (transcript as Array<TranscriptEntry & { planRunId?: string }>).map((entry) =>
+        entry.planRunId ? { ...entry, attachments: [{ kind: "plan" as const, runId: entry.planRunId }] } : entry,
+      )
+      if (withPlan.length) dispatch({ type: "hydrate_thread", transcript: withPlan })
     })()
     return () => {
       cancelled = true
     }
-  }, [dispatch, orgId, qc, threadQuery.data])
+  }, [dispatch, orgId, threadQuery.data])
 
   useEffect(() => {
-    if (!hydrated.current) return
-    if (!state.transcript.some((entry) => entry.role === "user")) return
+    if (!hydrated.current || !state.transcript.some((entry) => entry.role === "user")) return
     window.clearTimeout(persistTimer.current)
     persistTimer.current = window.setTimeout(() => {
       const seen = new Set<string>()
       const transcript = [...state.miniChat, ...state.transcript]
-        .filter((entry) => {
-          if (seen.has(entry.id)) return false
-          seen.add(entry.id)
-          return true
+        .filter((entry) => !UNSAVED.has(entry.id) && !entry.queued && !seen.has(entry.id) && Boolean(seen.add(entry.id)))
+        .map((entry) => {
+          const planRunId = entry.attachments?.find((item) => item.kind === "plan")?.runId
+          return {
+            id: entry.id,
+            role: entry.role,
+            text: entry.text,
+            createdAt: entry.createdAt,
+            ...(planRunId ? { planRunId } : {}),
+          }
         })
-        .map((entry) => ({
-          id: entry.id,
-          role: entry.role,
-          text: entry.text,
-          createdAt: entry.createdAt,
-        }))
         .sort((a, b) => a.createdAt - b.createdAt)
-      void saveAssistantThread({ id: SHELL_THREAD_ID, transcript })
-    }, 400)
+      void saveAssistantThread({ id: SHELL_THREAD_ID, transcript, run: state.run })
+    }, 600)
     return () => window.clearTimeout(persistTimer.current)
-  }, [state.miniChat, state.transcript])
+  }, [state.miniChat, state.run, state.transcript])
 
   useEffect(() => {
-    const last = [...state.transcript].reverse().find((entry) => entry.role === "user")
-    if (!last?.text || last.queued) return
-    if (!lastUser.current) {
-      lastUser.current = last.id
-      return
+    const live = new Set(state.runs.filter((run) => run.status === "running" || run.status === "needs_you").map((run) => run.id))
+    for (const [id, controller] of streams.current) {
+      if (!live.has(id)) {
+        controller.abort()
+        streams.current.delete(id)
+      }
     }
-    if (last.id === lastUser.current) return
-    lastUser.current = last.id
-    const intent = routeIntent(last.text, {
-      card: state.canvas.card,
-      hasBrief: state.chosenIdeaId !== null,
-      hasDrafts: state.drafts.visible,
-      contextPostId: state.context.kind === "post" ? state.context.postId : null,
-      pendingOffer: state.pendingOffer,
-    })
-    const agent = agentFor(intent)
-    if (!agent) return
-    void (async () => {
-      try {
-        await readSse(agent, last.text ?? "", sessionRef.current ?? undefined, (event, runId) => {
-          if (event.type === "content" && typeof event.content === "string" && event.content) {
-            dispatch({ type: "assistant_delta", text: event.content })
-          }
-          if (event.type === "tool_call" && event.call?.name === "requestHumanApproval") {
-            const postId = typeof event.call.args?.postId === "string" ? event.call.args.postId : ""
-            dispatch({
-              type: "request_opened",
-              action: "schedule",
-              postIds: postId ? [postId] : [],
-              runId: runId ?? undefined,
-            })
-          }
-          if (event.type === "error" && event.error?.message) {
-            toast.error(event.error.message)
-          }
-        }).then((result) => {
-          if (result.sessionId) sessionRef.current = result.sessionId
-        })
-        if (agent === "ideator") {
-          void qc.invalidateQueries({ queryKey: ["ideation-feed", orgId] })
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Agent failed")
-      }
-    })()
-  }, [dispatch, orgId, qc, state.canvas.card, state.chosenIdeaId, state.context, state.drafts.visible, state.pendingOffer, state.transcript])
-
-  useEffect(() => {
-    if (state.run?.status !== "running" || !state.run.id || state.run.id === lastRun.current) return
-    lastRun.current = state.run.id
-    void readSse("pipeline", state.run.title, sessionRef.current ?? undefined, (event, runId) => {
-      if (event.type === "content" && typeof event.content === "string" && event.content) {
-        dispatch({ type: "assistant_delta", text: event.content })
-      }
-      if (event.type === "tool_call" && event.call?.name === "requestHumanApproval") {
-        const postId = typeof event.call.args?.postId === "string" ? event.call.args.postId : ""
-        dispatch({
-          type: "request_opened",
-          action: "schedule",
-          postIds: postId ? [postId] : [],
-          runId: runId ?? undefined,
-        })
-      }
-    }).then((result) => {
-      if (result.sessionId) sessionRef.current = result.sessionId
-    }).catch((err) => {
-      toast.error(err instanceof Error ? err.message : "Pipeline failed")
-    })
-  }, [dispatch, state.run])
-
-  useEffect(() => {
-    for (const note of state.notes) {
-      if (noteIds.current.has(note.id) || note.kind === "system") continue
-      noteIds.current.add(note.id)
-      void addComment({
-        postId: note.postId,
-        body: note.body,
-        mentions: note.mentionUserIds,
+    for (const run of state.runs) {
+      if (run.status !== "running" || streams.current.has(run.id) || run.serverRunId) continue
+      const controller = new AbortController()
+      streams.current.set(run.id, controller)
+      void stream(run, controller, defaultAgent, sessionRef, dispatch).then(() => {
+        void qc.invalidateQueries({ queryKey: ["posts"] })
+        if (run.kind === "ideas" || run.kind === "plan") void qc.invalidateQueries({ queryKey: ["ideation-feed", orgId] })
+        void qc.invalidateQueries({ queryKey: ["usage-overview", orgId] })
       })
     }
-  }, [state.notes])
+  }, [defaultAgent, dispatch, orgId, qc, state.runs])
 
   useEffect(() => {
     for (const request of state.requests) {
-      const before = prevRequests.current.find((item) => item.id === request.id)
-      if (before?.status === "pending" && request.status !== "pending") {
-        const keys = request.postIds.map(
-          (postId) => `${postId}:${state.posts[postId]?.contentRev ?? 0}:${request.action}`,
-        )
-        if (keys.some((key) => locks.current.has(key))) continue
-        for (const key of keys) locks.current.add(key)
-        const decision = request.status === "approved" ? "approve" : "reject"
-        if (request.runId) {
-          void resolveHumanGate({
-            runId: request.runId,
-            decision,
-            comment: request.feedback,
-          }).then((res) => {
-            if (res.ok && res.resumeRunId && res.resumeToolCallId) {
-              void fetch(`/api/agents/runs/${res.resumeRunId}/resume`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  toolCallId: res.resumeToolCallId,
-                  approved: decision === "approve",
-                  feedback: request.feedback ?? "",
-                }),
-              })
-            }
-          })
-        } else {
-          for (const postId of request.postIds) {
-            if (request.status === "approved") {
-              if (request.action === "delete") void updatePost({ id: postId, status: "archived" })
-              else void approveItem({ itemType: "post", itemId: postId })
-            }
-          }
+      if (!request.runId || request.status === "pending" || gates.current.has(request.id)) continue
+      gates.current.add(request.id)
+      if (request.status !== "approved" && request.status !== "changes_requested") continue
+      const approved = request.status === "approved"
+      const localRunId = request.localRunId
+      const controller = new AbortController()
+      if (localRunId) streams.current.set(localRunId, controller)
+      void resolveHumanGate({ runId: request.runId, decision: approved ? "approve" : "reject", comment: request.feedback }).then(async (res) => {
+        if (!res.ok || !res.resumeRunId || !res.resumeToolCallId) {
+          if (localRunId) dispatch({ type: "run_failed", runId: localRunId, error: res.error ?? "resume_failed" })
+          return
         }
-      }
+        try {
+          await readSse(
+            `/api/agents/runs/${res.resumeRunId}/resume`,
+            { toolCallId: res.resumeToolCallId, approved, feedback: request.feedback ?? "" },
+            controller.signal,
+            (event) => localRunId && route(event, localRunId, request.runId ?? null, dispatch),
+          )
+          if (localRunId) dispatch({ type: "run_done", runId: localRunId })
+        } catch (err) {
+          if (localRunId && !controller.signal.aborted) dispatch({ type: "run_failed", runId: localRunId, error: err instanceof Error ? err.message : String(err) })
+        }
+        void qc.invalidateQueries({ queryKey: ["posts"] })
+      })
     }
-    prevRequests.current = state.requests
-  }, [state.posts, state.requests])
+  }, [dispatch, qc, state.requests])
 
-  const readIds = useRef(new Set<string>())
   useEffect(() => {
-    for (const read of state.reads) {
-      const key = `${read.userId}:${read.postId}`
-      if (readIds.current.has(key)) continue
-      readIds.current.add(key)
-      void markPostRead(read.postId)
+    const active = streams.current
+    return () => {
+      for (const controller of active.values()) controller.abort()
+      active.clear()
     }
-  }, [state.reads])
+  }, [])
 
   return null
+}
+
+function route(event: SseEvent, runId: string, serverRunId: string | null, dispatch: (event: EngineEvent) => void) {
+  if (event.author) dispatch({ type: "run_stage", runId, agent: event.author })
+  if (event.type === "content" && event.content) dispatch({ type: "assistant_delta", text: event.content })
+  if (event.type === "tool_call" && event.call?.name === "updateDraft") {
+    const args = event.call.args ?? {}
+    const postId = typeof args.postId === "string" ? args.postId : ""
+    const patch = (args.patch ?? {}) as Record<string, unknown>
+    const blurb = typeof patch.blurb === "string" ? patch.blurb : undefined
+    const detailedBrief = typeof patch.detailedBrief === "string" ? patch.detailedBrief : undefined
+    if (postId && (blurb !== undefined || detailedBrief !== undefined)) dispatch({ type: "post_patched", postId, blurb, detailedBrief })
+  }
+  if (event.type === "tool_result") {
+    const postId = event.result?.name === "createDraftPost" ? idOf(event.result.response, "postId") : null
+    if (postId) dispatch({ type: "run_post", runId, postId })
+  }
+  if (event.type === "tool_call" && event.call?.name === "requestHumanApproval") {
+    const postId = typeof event.call.args?.postId === "string" ? event.call.args.postId : ""
+    dispatch({ type: "request_opened", action: "schedule", postIds: postId ? [postId] : [], runId: serverRunId ?? undefined, localRunId: runId })
+  }
+}
+
+async function stream(
+  run: Run,
+  controller: AbortController,
+  defaultAgent: string,
+  sessionRef: React.RefObject<string | null>,
+  dispatch: (event: EngineEvent) => void,
+) {
+  const agents = run.kind === "plan" ? run.steps.map((step) => step.id) : [run.kind === "chat" ? defaultAgent || run.agent : run.agent]
+  try {
+    for (const agent of agents) {
+      if (run.kind === "plan") dispatch({ type: "run_stage", runId: run.id, agent })
+      let serverRunId: string | null = null
+      let patched = false
+      let drafted = ""
+      const result = await readSse(
+        `/api/agents/${agent}/run`,
+        { input: run.input, ...(sessionRef.current && run.kind === "chat" ? { sessionId: sessionRef.current } : {}) },
+        controller.signal,
+        (event) => {
+          if (event.type === "error") throw new Error(event.error?.message ?? "agent_error")
+          if (event.type === "tool_call" && event.call?.name === "updateDraft") patched = true
+          if (run.kind === "refine" && run.refine !== "new_image" && event.type === "content" && event.content) drafted += event.content
+          const spoken = run.kind === "chat" || run.kind === "advice"
+          const uiEvent = event.type === "content" && !spoken ? { ...event, content: undefined } : event
+          route(run.kind === "plan" ? { ...uiEvent, author: undefined } : uiEvent, run.id, serverRunId, dispatch)
+        },
+        (id) => {
+          serverRunId = id
+          if (id) dispatch({ type: "run_server", runId: run.id, serverRunId: id })
+        },
+      )
+      if (run.kind === "chat" && result.sessionId) sessionRef.current = result.sessionId
+      if (run.kind === "refine" && run.postId && run.refine !== "new_image" && !patched) {
+        const blurb = drafted.replace(/\s+/g, " ").trim().slice(0, 2000)
+        if (blurb) dispatch({ type: "caption_edited", postId: run.postId, blurb })
+      }
+    }
+    dispatch({ type: "run_done", runId: run.id })
+  } catch (err) {
+    if (!controller.signal.aborted) dispatch({ type: "run_failed", runId: run.id, error: err instanceof Error ? err.message : String(err) })
+  }
 }

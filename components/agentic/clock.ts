@@ -4,14 +4,7 @@ export function nowMs(): number {
   return Date.now()
 }
 
-export const FIXTURE_NOW_MS = nowMs()
-export const FIXTURE_NOW_ISO = new Date().toISOString()
-
-function todayIso(): string {
-  return localDateOf(nowMs())
-}
 const DAY_MS = 86_400_000
-const FIXTURE_OFFSET_MS = 330 * 60_000
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const
 
@@ -34,7 +27,16 @@ function toDate(ms: number): string {
 }
 
 function localDateOf(ms: number): string {
-  return toDate(ms + FIXTURE_OFFSET_MS)
+  return toDate(ms - new Date(ms).getTimezoneOffset() * 60_000)
+}
+
+export function todayIso(): string {
+  return localDateOf(nowMs())
+}
+
+export function localKey(ms: number): string {
+  const local = new Date(ms - new Date(ms).getTimezoneOffset() * 60_000).toISOString()
+  return `${local.slice(0, 10)} ${local.slice(11, 16)}`
 }
 
 export function addDays(date: string, n: number): string {
@@ -65,13 +67,13 @@ export function formatWhen(date: string, time: string): string {
   return `${lead}, ${formatTime(time)}`
 }
 
-export function formatRelative(iso: string, nowMs: number = FIXTURE_NOW_MS): string {
+export function formatRelative(iso: string, now: number = nowMs()): string {
   const at = Date.parse(iso)
-  const diff = nowMs - at
+  const diff = now - at
   if (diff < 60_000) return "Just now"
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`
   const atDay = localDateOf(at)
-  const nowDay = localDateOf(nowMs)
+  const nowDay = localDateOf(now)
   if (atDay === nowDay) return `${Math.floor(diff / 3_600_000)} h ago`
   if (atDay === addDays(nowDay, -1)) return "Yesterday"
   return formatDay(atDay)
@@ -83,16 +85,6 @@ export function mondayOf(date: string): string {
   return addDays(date, dow === 0 ? -6 : 1 - dow)
 }
 
-export function weekShort(week: WeekId | string): string {
-  if (!week || !/^\d{4}-\d{2}-\d{2}$/.test(week)) return ""
-  const start = new Date(noonMs(mondayOf(week)))
-  const end = new Date(noonMs(addDays(mondayOf(week), 6)))
-  const startMonth = MONTHS[start.getUTCMonth()]
-  const endMonth = MONTHS[end.getUTCMonth()]
-  if (startMonth === endMonth) return `${start.getUTCDate()}-${end.getUTCDate()} ${endMonth}`
-  return `${start.getUTCDate()} ${startMonth}-${end.getUTCDate()} ${endMonth}`
-}
-
 export function weekLabel(week: WeekId | string): string {
   const start = new Date(noonMs(week))
   const end = new Date(noonMs(addDays(week, 6)))
@@ -101,4 +93,9 @@ export function weekLabel(week: WeekId | string): string {
   const year = end.getUTCFullYear()
   if (startMonth === endMonth) return `${start.getUTCDate()} to ${end.getUTCDate()} ${endMonth} ${year}`
   return `${start.getUTCDate()} ${startMonth} to ${end.getUTCDate()} ${endMonth} ${year}`
+}
+
+export function monthStartLabel(now: number = nowMs()): string {
+  const d = new Date(now)
+  return `1 ${MONTHS[(d.getMonth() + 1) % 12]}`
 }

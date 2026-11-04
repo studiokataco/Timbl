@@ -1,14 +1,13 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { AnimatePresence, motion } from "framer-motion"
 import { ArrowLeft, CircleCheck, LoaderCircle, Mic, ShieldCheck, TriangleAlert, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatWhen } from "../clock"
-import { DUR, EASE_IN, EASE_OUT, primaryChannel, tw } from "../lib"
+import { primaryChannel, tw } from "../lib"
 import { ChannelMark } from "../primitives/channel-mark"
 import { PreviewTile } from "../primitives/preview-tile"
-import { useAgenticMotion, usePrototype } from "../prototype-context"
+import { usePrototype } from "../prototype-context"
 import type { ApproveDeckEntry, DeckDecision, PrototypePost, RefineKind, UserRole } from "../types"
 
 export type ApproveDeckProps = {
@@ -56,9 +55,9 @@ export function ApproveDeck({
   onKeyCommand,
 }: ApproveDeckProps): React.JSX.Element {
   const { copy } = usePrototype()
-  const { reduced } = useAgenticMotion()
   const d = copy.mobile.deck
   const doneTitleRef = useRef<HTMLHeadingElement | null>(null)
+  const articleRef = useRef<HTMLElement | null>(null)
 
   const total = entries.length
   const currentEntry = entries[index]
@@ -67,7 +66,8 @@ export function ApproveDeck({
 
   useEffect(() => {
     if (isDone) doneTitleRef.current?.focus()
-  }, [isDone])
+    else articleRef.current?.focus()
+  }, [isDone, currentPost?.id])
 
   const approvedCount = decisions.filter((x) => x.outcome === "approved" || x.outcome === "submitted").length
   const skippedCount = decisions.filter((x) => x.outcome === "skipped").length
@@ -82,18 +82,6 @@ export function ApproveDeck({
       onKeyCommand("skip")
     }
   }
-
-  const cardMotion = reduced
-    ? {
-        initial: { opacity: 0 },
-        animate: { opacity: 1, transition: { duration: DUR.fade } },
-        exit: { opacity: 0, transition: { duration: DUR.fade } },
-      }
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0, transition: { duration: DUR.enter, ease: EASE_OUT } },
-        exit: { opacity: 0, transition: { duration: DUR.exit, ease: EASE_IN } },
-      }
 
   const channel = currentPost ? primaryChannel(currentPost) : "instagram"
 
@@ -143,12 +131,13 @@ export function ApproveDeck({
         </div>
       ) : (
         <div className="flex flex-1 flex-col gap-4 pt-4">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.article
+          <article
               key={currentPost.id}
+              ref={articleRef}
+              tabIndex={-1}
+              data-post-id={currentPost.id}
               data-figma="ApproveDeck/article"
-              {...cardMotion}
-              className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 dark:ring-foreground/20"
+              className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 outline-none dark:ring-foreground/20"
             >
               <PreviewTile
                 size="md"
@@ -175,8 +164,7 @@ export function ApproveDeck({
                   </p>
                 </div>
               </div>
-            </motion.article>
-          </AnimatePresence>
+          </article>
 
           <div data-figma="ApproveDeck/refineRow" className="flex flex-wrap gap-2">
             {REFINE_KEYS.map((kind) => {

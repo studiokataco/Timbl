@@ -388,6 +388,89 @@
   }
 }
 
+@utility agentic-preview-tile-content {
+  padding: 0.7em;
+  font-size: clamp(11px, 7.4cqw, 16px);
+}
+
+@utility agentic-preview-tile-header {
+  gap: 0.4em;
+  padding-bottom: 0.5em;
+}
+
+@utility agentic-preview-tile-brand {
+  gap: 0.4em;
+  font-size: 0.82em;
+}
+
+@utility agentic-preview-tile-mark {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+@utility agentic-preview-tile-index {
+  padding: 0.15em 0.5em;
+  font-size: 0.7em;
+}
+
+@utility agentic-preview-tile-main {
+  gap: 0.4em;
+  padding-block: 0.4em;
+}
+
+@utility agentic-preview-tile-campaign {
+  gap: 0.35em;
+  padding: 0.18em 0.55em;
+  font-size: 0.75em;
+}
+
+@utility agentic-preview-tile-dot {
+  width: 0.45em;
+  height: 0.45em;
+}
+
+@utility agentic-preview-tile-headline { font-size: 1.22em; }
+
+@utility agentic-preview-tile-footer {
+  gap: 0.45em;
+  padding-top: 0.5em;
+}
+
+@utility agentic-preview-tile-format {
+  gap: 0.35em;
+  font-size: 0.86em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+    [data-slot="sheet-overlay"],
+    [data-slot="sheet-content"],
+    [data-slot="popover-content"],
+    [data-slot="dialog-overlay"],
+    [data-slot="dialog-content"],
+    [data-slot="dropdown-menu-content"]
+  ) {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    translate: none !important;
+  }
+}
+
+body:has([data-slot="agentic-root"][data-reduced-motion]) :is(
+  [data-slot="sheet-overlay"],
+  [data-slot="sheet-content"],
+  [data-slot="popover-content"],
+  [data-slot="dialog-overlay"],
+  [data-slot="dialog-content"],
+  [data-slot="dropdown-menu-content"]
+) {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  translate: none !important;
+}
+
 @layer utilities {
   /* Aurora-glass surfaces for the marketing landing. .glass adapts to the
    * theme via tokens; .glass-dark is for fragments sitting on the dark hero. */
@@ -747,7 +830,8 @@ body:has(#landing-scroll) {
   .timbl-mesh[data-mesh="tide"].timbl-mesh-live,
   .timbl-mesh[data-mesh="ember"].timbl-mesh-live { animation-name: timbl-mesh-pan-back; }
   .timbl-glow-ring[data-state="listening"] {
-    animation: timbl-glow-sweep 1.3s linear infinite, timbl-glow-level 0.65s ease-in-out infinite;
+    animation: timbl-glow-sweep 1.3s linear infinite;
+    opacity: calc(0.35 + var(--glow-level, 0) * 0.65);
   }
   .timbl-glow-ring[data-state="output"] { animation: timbl-glow-sweep 2.4s linear infinite; }
   .timbl-glow-ring[data-state="working"] { animation: timbl-glow-sweep 7s linear infinite; }

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { LogOut, Menu, Monitor, Moon, Plus, Search, Settings, Sparkles, Sun, UserRound } from "lucide-react"
+import { LogOut, Menu, Monitor, Moon, Plus, Search, Settings, Sun, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -58,16 +58,6 @@ export function TopBar({
           title="Search · ⌘K"
         >
           <Search aria-hidden className="size-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new Event("agent-drawer:open"))}
-          className="hidden md:inline-flex items-center justify-center size-9 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
-          aria-label="Agent sidebar · ⌘⇧J"
-          title="Agent sidebar · ⌘⇧J"
-        >
-          <Sparkles aria-hidden className="size-4" />
         </button>
 
         <NotificationsMenu />

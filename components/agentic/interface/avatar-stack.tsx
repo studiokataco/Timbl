@@ -71,7 +71,7 @@ export function AvatarStack({
       >
         <span className="flex items-center gap-1.5" aria-hidden="true">
           {shown.map(({ member }) => (
-            <PersonAvatar key={member.id} member={member} face />
+            <PersonAvatar key={member.id} member={member} />
           ))}
         </span>
         <span className="text-caption font-normal text-muted-foreground">{here}</span>

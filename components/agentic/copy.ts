@@ -6,9 +6,9 @@ import type {
   Personality,
   PresenceOrbState,
   RefineKind,
+  RunKind,
   RunStepState,
-  Scene,
-  UsageChoice,
+  UserRole,
   VoiceLocale,
 } from "./types"
 
@@ -21,24 +21,6 @@ function plural(n: number, one: string, many: string): string {
 }
 
 export function makeCopy(name: string, workspace = "Workspace") {
-  const toolbarScenes: Record<Scene, string> = {
-    empty: "Start",
-    directions: "Directions",
-    recommendation: "Recommendation",
-    brief: "Brief",
-    plan: "Plan",
-    working: "Working",
-    drafts: "Drafts",
-    schedule: "Schedule",
-    schedule_approval: "Schedule approval",
-    handoff: "Hand-off",
-    approvals: "Approvals queue",
-    current: "Current item",
-    error: "Error",
-    cap: "Monthly limit reached",
-    current_queue: "Current item from the queue",
-  }
-  const toolbarUsage: Record<UsageChoice, string> = { ok: "Normal", near: "Near the limit", cap: "Limit reached" }
   const orbStateText: Record<PresenceOrbState, string> = {
     idle: "ready",
     listening: "listening",
@@ -86,54 +68,10 @@ export function makeCopy(name: string, workspace = "Workspace") {
     "hi-IN": "Hindi (India)",
     hinglish: "Hinglish",
   }
-  const intents: Record<string, string> = {
-    ideas: "Ideas",
-    more_ideas: "More ideas",
-    compare: "Compare directions",
-    plan: "Plan",
-    create: "Create content",
-    drafts: "Drafts",
-    tighten: "Tighten",
-    schedule: "Schedule",
-    approvals: "Approvals",
-    post_context: "About this post",
-    fallback: "Fallback",
-    "guardrail:publish": "Approval: publish",
-    "guardrail:delete": "Approval: delete",
-    "guardrail:bulk_approve": "Approval: approve all",
-    "guardrail:reschedule": "Approval: reschedule",
-  }
   const refine: Record<RefineKind, string> = { shorter: "Shorter", funnier: "Funnier", new_image: "New image" }
 
   return {
-    toolbar: {
-      region: "Prototype controls",
-      label: "Prototype",
-      view: "View",
-      views: { timbl: `${name} mode`, interface: "Interface mode", mobile: "Mobile", gallery: "Gallery" },
-      theme: "Theme",
-      light: "Light",
-      dark: "Dark",
-      actingAs: "Acting as",
-      roles: { admin: "Admin", editor: "Editor", contributor: "Contributor" },
-      reduceMotion: "Reduce motion",
-      scenario: "Scenario",
-      groups: { jump: "Jump to", usage: "Usage", teammate: "Teammate activity", cursors: "Team cursors", speed: "Speed" },
-      scenes: toolbarScenes,
-      usage: toolbarUsage,
-      teammate: {
-        note: "A teammate adds a note",
-        mention: "A teammate mentions you",
-        react: "A teammate reacts",
-        edit: "A teammate edits after approval",
-      },
-      cursors: { live: "Live", idle: "Idle", off: "Off", replay: "Replay cursors" },
-      speed: { normal: "Normal speed", instant: "Instant" },
-      reset: "Reset prototype",
-      hide: "Hide toolbar",
-      hideHint: "Press Alt Shift P to show it again",
-    },
-
+    roles: { admin: "Admin", editor: "Editor", contributor: "Contributor" } satisfies Record<UserRole, string>,
     timbl: {
       modeTitle: `${name} mode`,
       contextDefault: "Your creative and planning partner",
@@ -408,6 +346,24 @@ export function makeCopy(name: string, workspace = "Workspace") {
       stepsLabel: "Steps",
       stopped: "Stopped",
       state: stepState,
+      titles: {
+        ideas: "Find directions",
+        plan: "Plan the campaign",
+        create: "Create the content",
+        refine: "Refine the caption",
+        advice: "Look at this post",
+        chat: "Work on it",
+      } satisfies Record<RunKind, string>,
+      stages: {
+        ideator: { label: "Finding directions", doneLabel: "Found directions" },
+        "awareness-researcher": { label: "Checking awareness days", doneLabel: "Checked awareness days" },
+        drafter: { label: "Writing the drafts", doneLabel: "Wrote the drafts" },
+        reviewer: { label: "Checking the brand voice", doneLabel: "Checked the brand voice" },
+        "human-gate": { label: "Waiting for your approval", doneLabel: "Got your approval" },
+        scheduler: { label: "Staging the schedule", doneLabel: "Staged the schedule" },
+      } as Record<string, { label: string; doneLabel: string }>,
+      stageFallback: { label: "Working on it", doneLabel: "Done" },
+      refineStage: { label: "Rewriting the caption", doneLabel: "Rewrote the caption" },
     },
 
     chip: {
@@ -463,10 +419,15 @@ export function makeCopy(name: string, workspace = "Workspace") {
       createUser: "Create the content.",
       planProposed: "That needs a few steps. Here's the plan. Start it when you're ready, or tell me what to change.",
       reviseAck: "Tell me what to change in the plan.",
-      created: "Three drafts are ready. Edit directly, leave notes or ask me to debate a line.",
+      created: "Your drafts are ready. Edit directly, leave notes or ask me to debate a line.",
+      createdCount: (n: number) => plural(n, "One draft is ready. Edit directly, leave notes or ask me to debate a line.", `${COUNT_WORDS[n] ?? n} drafts are ready. Edit directly, leave notes or ask me to debate a line.`),
+      moreUser: "Show me different directions from the last set.",
+      debateInput: (title: string) => `Challenge this campaign direction and propose three stronger alternatives: ${title}`,
+      whenTo: (title: string) => `When should **${title}** go out? Name a day or a time and I'll prepare the approval.`,
       tightened: "I tightened the opening and kept the rest intact. Adjust anything that no longer sounds like you.",
       approvedOne: "Approved and recorded. I've left the other drafts untouched until you review them.",
-      approvedAll: "All three are approved. Want me to prepare the publishing plan for your approval?",
+      approvedAll: "All drafts are approved. Want me to prepare the publishing plan for your approval?",
+      approvedAllCount: (n: number) => plural(n, "The draft is approved. Want me to prepare the publishing plan for your approval?", `All ${n} drafts are approved. Want me to prepare the publishing plan for your approval?`),
       submittedOne: "Sent for approval. An editor or admin reviews it next.",
       schedule: "I've spaced the posts across the week. Change any time before you confirm.",
       scheduleNeedsDrafts: "Let's make the content first. Here's the plan.",
@@ -482,12 +443,11 @@ export function makeCopy(name: string, workspace = "Workspace") {
       guardrailPublish: "I don't publish from chat. Here's an approval for it instead.",
       guardrailDelete: "Deleting needs your approval first. Here it is.",
       guardrailBulk: "Bulk approval needs a final check. Review the list, then approve.",
-      reschedule: (title: string, when: string) =>
-        `I can move **${title}** to ${when} and shorten the caption. Approve the move below.`,
+      reschedule: (title: string, when: string) => `I can move **${title}** to ${when}. Approve the move below.`,
       error: "That step didn't finish. Nothing was changed. Try again, or tell me what to change.",
       retryAck: "Trying again.",
       stopped: "Stopped. I kept the finished steps.",
-      cap: (limit: number) => `You've used this month's ${limit} ${name} turns. Your work is saved, and turns reset on 1 Dec.`,
+      cap: (limit: number, reset: string) => `You've used this month's ${limit} ${name} turns. Your work is saved, and turns reset on ${reset}.`,
       queuedAck: "Got it. I'll do that after the current step.",
       whichPost: "Which post? Open it from the calendar or name it, and I'll prepare the approval.",
       undoneSchedule: "Undone. Nothing was staged, and the drafts are back to approved.",
@@ -546,7 +506,6 @@ export function makeCopy(name: string, workspace = "Workspace") {
         },
         groupResources: "Resources",
         groupWorkspace: "Workspace",
-        notMocked: "Only the calendar is mocked in this prototype.",
         navLabel: "Main",
       },
       topbar: {
@@ -666,10 +625,12 @@ export function makeCopy(name: string, workspace = "Workspace") {
       cancel: "Cancel",
       save: "Save preferences",
       saved: "Preferences saved",
+      saveFailed: "Couldn't save. Try again.",
     },
 
     notes: {
       heading: "Notes",
+      mentionLine: "Mentions you",
       unread: (n: number) => `${n} new`,
       empty: "No notes yet. Start the thread for your team.",
       placeholder: "Add a note. Use @ to mention someone.",
@@ -747,7 +708,8 @@ export function makeCopy(name: string, workspace = "Workspace") {
         eventTitle: (eventName: string, n: number) => plural(n, `${eventName} is in 1 day`, `${eventName} is in ${n} days`),
         eventLine: "No campaign yet. Want a two week plan?",
         plan: "Plan it",
-        planPrompt: "Plan a two week campaign for World Kindness Day",
+        planPrompt: (eventName: string) => `Plan a two week campaign for ${eventName}`,
+        planGeneric: "Plan the next two weeks of posts",
         ask: `Ask ${name}`,
         speak: `Speak to ${name}`,
         allClear: "You're all caught up",
@@ -805,15 +767,15 @@ export function makeCopy(name: string, workspace = "Workspace") {
       },
     },
 
-    gallery: {
-      title: "Component gallery",
-      index: "Sections",
-      frameLabel: (title: string, width: number | string) => `${title} · ${width}`,
-      isolateBack: "Show all frames",
-      intents,
-      routerHeaders: ["Phrase", "Context", "Expected", "Actual", "Result"],
-      pass: "Pass",
-      fail: "Fail",
+    prompts: {
+      refine: (kind: RefineKind, postId: string, caption: string) =>
+        kind === "new_image"
+          ? `Propose a new visual direction for post ${postId}. Call updateDraft with postId ${postId} and patch.detailedBrief set to the new image idea. Keep the caption. Current caption: ${caption}`
+          : `Rewrite the caption of post ${postId} so it is ${kind === "shorter" ? "shorter" : "funnier"} and keeps the message. Call updateDraft with postId ${postId} and patch.blurb set to the new caption. Current caption: ${caption}`,
+      advice: (postId: string, title: string, ask: string) =>
+        `Advice only for post ${postId} (${title}). Do not create or change anything. ${ask}`,
+      liveSystem:
+        "You hear the person and call a function when they want work done. Research is ideas. A campaign plan is plan. Writing posts is create. Rewriting a caption is tighten. Showing the queue is approvals. Publish, delete, reschedule, and approve-all only ask. They do not happen until the person confirms in the app. On the approve deck, deck_approve, deck_skip, and deck_undo decide the draft on screen. Keep spoken replies to one sentence.",
     },
 
     ambient: {

@@ -1,9 +1,10 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
 import { getCurrentOrgId, getCurrentUser, getDb } from "@/lib/auth/server-helpers"
 import { orgPostCommentsPath } from "@/lib/firebase/paths"
-import { commentSchema } from "@/lib/schemas/comment"
+import { commentSchema, type Comment } from "@/lib/schemas/comment"
 import type { ServerActionResult } from "@/lib/schemas"
 import { writePostActivity } from "./post-activity"
 
@@ -55,6 +56,7 @@ export async function editComment(input: {
   postId: string
   commentId: string
   body: string
+  mentions?: string[]
 }): Promise<ServerActionResult> {
   try {
     const [orgId, user, db] = await Promise.all([
@@ -69,7 +71,11 @@ export async function editComment(input: {
     if (!snap.exists) return { ok: false, error: "Comment not found" }
     if (snap.data()?.authorId !== user.id) return { ok: false, error: "Not authorized" }
     const { body } = commentSchema.pick({ body: true }).parse({ body: input.body })
-    await ref.set({ body, updatedAt: new Date().toISOString() }, { merge: true })
+    const now = new Date().toISOString()
+    await ref.set(
+      { body, editedAt: now, ...(input.mentions ? { mentions: input.mentions } : {}), updatedAt: now },
+      { merge: true },
+    )
     revalidatePath("/posts")
     return { ok: true }
   } catch (err) {
@@ -142,4 +148,21 @@ export async function toggleCommentReaction(input: {
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" }
   }
+}
+
+const listInput = z.array(z.string().min(1)).max(60)
+
+export async function listPostComments(postIds: unknown): Promise<Comment[]> {
+  const ids = listInput.parse(postIds)
+  if (ids.length === 0) return []
+  const [orgId, db] = await Promise.all([getCurrentOrgId(), getDb()])
+  const groups = await Promise.all(
+    ids.map((postId) => db.collection(orgPostCommentsPath(orgId, postId)).orderBy("createdAt").limit(100).get()),
+  )
+  return groups.flatMap((snap, i) =>
+    snap.docs.flatMap((doc) => {
+      const parsed = commentSchema.safeParse({ ...doc.data(), id: doc.id, postId: ids[i] })
+      return parsed.success ? [parsed.data] : []
+    }),
+  )
 }

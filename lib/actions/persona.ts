@@ -33,6 +33,7 @@ export async function fetchPersona(): Promise<{
   assistantName: string
   prefs: PresencePrefs
   role: "admin" | "editor" | "contributor"
+  userId: string
 }> {
   const orgId = await getCurrentOrgId()
   const user = await getCurrentUser()
@@ -51,6 +52,7 @@ export async function fetchPersona(): Promise<{
       ambient: { ...DEFAULT_PREFS.ambient, ...stored?.ambient },
     },
     role: user.role,
+    userId: user.id,
   }
 }
 

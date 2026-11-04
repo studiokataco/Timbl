@@ -1,6 +1,7 @@
 "use client"
 
-import { format } from "date-fns"
+import { format, startOfWeek } from "date-fns"
+import { weekLabel } from "@/components/agentic/clock"
 import {
   Calendar,
   Check,
@@ -42,7 +43,7 @@ type Props = {
 }
 
 function viewTitle(view: CalendarView, date: Date): string {
-  if (view === "week") return `Week of ${format(date, "d MMM")}`
+  if (view === "week") return weekLabel(format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd"))
   if (view === "day") return format(date, "EEEE, d MMM yyyy")
   if (view === "list") return format(date, "MMMM yyyy")
   return format(date, "MMMM yyyy")
@@ -79,19 +80,19 @@ export function CalendarToolbar({
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
       <div className="flex min-w-0 items-center gap-1">
-        <Button variant="ghost" size="icon" onClick={onPrev} aria-label={prevLabel} className="size-8 shrink-0">
+        <p className="min-w-0 truncate text-title-sm font-semibold text-foreground">{title}</p>
+        <Button variant="ghost" size="icon" onClick={onPrev} aria-label={prevLabel} className="ml-1 size-8 shrink-0">
           <ChevronLeft aria-hidden className="size-4" />
         </Button>
-        <p className="min-w-0 truncate text-title-sm font-semibold text-foreground">{title}</p>
         <Button variant="ghost" size="icon" onClick={onNext} aria-label={nextLabel} className="size-8 shrink-0">
           <ChevronRight aria-hidden className="size-4" />
+        </Button>
+        <Button variant="outline" size="sm" onClick={onToday} className="ml-1 shrink-0">
+          {c.today}
         </Button>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onToday}>
-          {c.today}
-        </Button>
         <Select
           items={FILTERS.map((item) => ({ value: item, label: c.filters[item] }))}
           value={filter}
@@ -111,7 +112,7 @@ export function CalendarToolbar({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant="outline" size="sm" className="shrink-0 gap-1.5 pr-2" />
+              <Button variant="outline" size="sm" aria-label={current.label} className="shrink-0 gap-1.5 pr-2" />
             }
           >
             {current.icon}

@@ -90,7 +90,7 @@ export function OverviewRail({
                   <button
                     type="button"
                     onClick={() => onOpenPost(item.postId)}
-                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-ring"
                   >
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="line-clamp-2 text-body-sm font-medium text-foreground">{item.title}</span>
@@ -121,7 +121,7 @@ export function OverviewRail({
                 <button
                   type="button"
                   onClick={() => onOpenPost(item.postId)}
-                  className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-ring"
                 >
                   <span className="text-caption text-muted-foreground tabular-nums">{item.when}</span>
                   <span className="line-clamp-2 text-body-sm font-medium text-foreground">{item.title}</span>

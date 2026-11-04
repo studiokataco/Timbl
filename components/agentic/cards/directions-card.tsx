@@ -88,7 +88,7 @@ export function DirectionsCard({
                 onClick={() => onSelect(idea.id)}
                 data-figma={`DirectionsCard/option-${index + 1}`}
                 className={tw(
-                  "flex items-start gap-3 rounded-xl p-3.5 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "flex items-start gap-3 rounded-xl p-3.5 text-left focus-ring",
                   on ? "bg-background ring-2 ring-foreground" : "bg-card ring-1 ring-foreground/10",
                 )}
               >

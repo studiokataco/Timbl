@@ -64,7 +64,7 @@ export function ReactionGrid({ onPick, selected = [] }: ReactionGridProps): Reac
           onClick={() => onPick(emoji)}
           className={tw(
             "grid size-9 place-items-center rounded-md text-body-md hover:bg-muted aria-pressed:bg-muted",
-            "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            "focus-ring",
           )}
         >
           <span aria-hidden>{emoji}</span>

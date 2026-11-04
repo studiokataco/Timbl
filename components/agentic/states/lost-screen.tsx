@@ -14,7 +14,7 @@ export function LostScreen({ code, title, body = "", primary, secondary, layout 
     return (
       <button
         type="button"
-        className="flex min-h-[40rem] w-full cursor-pointer flex-col items-center justify-center bg-background p-8 text-center text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-[-8px] focus-visible:outline-ring"
+        className="flex min-h-[40rem] w-full cursor-pointer flex-col items-center justify-center bg-background p-8 text-center text-foreground focus-ring focus-visible:-outline-offset-8"
       >
         <div className="flex max-w-md flex-col items-center gap-4">
           <p className="font-mono text-caption text-muted-foreground">{code}</p>
