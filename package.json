@@ -31,6 +31,8 @@
     "secrets:bootstrap": "bash scripts/bootstrap-secrets.sh",
     "secrets:pull": "bash scripts/pull-secrets.sh",
     "secrets:rotate-resend": "bash scripts/rotate-secret.sh RESEND_API_KEY --env-local",
+    "secrets:sync": "bash scripts/sync-secret-consumers.sh",
+    "secrets:check": "bash scripts/sync-secret-consumers.sh --check",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "dependencies": {

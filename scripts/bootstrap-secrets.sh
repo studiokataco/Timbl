@@ -36,6 +36,8 @@ ensure_secret() {
   fi
 }
 
+ADDED=()
+
 prompt_and_add_version() {
   local name="$1"
   read -rsp "    value for ${name} (empty to skip): " value
@@ -48,6 +50,7 @@ prompt_and_add_version() {
     --project="$PROJECT" \
     --data-file=-
   echo "    [v++  ] $name"
+  ADDED+=("$name")
 }
 
 grant_access() {
@@ -99,6 +102,12 @@ if [[ "$add_now" =~ ^[Yy] ]]; then
   for secret in "${SECRETS[@]}"; do
     prompt_and_add_version "$secret"
   done
+fi
+
+if [ ${#ADDED[@]} -gt 0 ]; then
+  echo
+  echo "==> Moving Cloud Functions and App Hosting onto the new versions"
+  "$(dirname "$0")/sync-secret-consumers.sh" "${ADDED[@]}"
 fi
 
 echo
