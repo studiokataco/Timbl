@@ -1,6 +1,17 @@
 import { z } from "zod"
 import { isoTimestamp } from "./_shared"
 
+export const commentReactionEmoji = z.enum([
+  "👍",
+  "❤️",
+  "🎉",
+  "😂",
+  "👀",
+  "🙌",
+  "🔥",
+  "✅",
+])
+
 export const commentSchema = z.object({
   id: z.string(),
   postId: z.string(),
@@ -8,6 +19,15 @@ export const commentSchema = z.object({
   body: z.string().min(1).max(10_000),
   isInternal: z.boolean().default(false),
   parentId: z.string().optional(),
+  mentions: z.array(z.string()).optional(),
+  reactions: z
+    .array(
+      z.object({
+        emoji: commentReactionEmoji,
+        userIds: z.array(z.string()),
+      }),
+    )
+    .optional(),
   createdAt: isoTimestamp,
   updatedAt: isoTimestamp,
 })

@@ -3,14 +3,16 @@
 export const dynamic = "force-dynamic"
 
 import { addDays, format, startOfMonth, subDays } from "date-fns"
-import { getCurrentOrgId } from "@/lib/auth/server-helpers"
+import { getCurrentOrgId, getCurrentOrganisation } from "@/lib/auth/server-helpers"
 import { getCurrentBrandId } from "@/lib/brand/brand-session"
+import { getBrandSwitcherData } from "@/lib/queries/brands.server"
 import { realtimeEnabledForOrg } from "@/lib/realtime/realtime-enabled"
 import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
 import { CalendarView } from "@/components/calendar/calendar-view"
 import { fetchAwarenessWithPlannedStatus } from "@/lib/queries/awareness.server"
 import { fetchCategories, fetchPostsInRange, fetchUsers } from "@/lib/queries/posts.server"
 import { fetchSuggestions } from "@/lib/queries/suggestions.server"
+import { fetchPersona } from "@/lib/actions/persona"
 
 /*
  * Default app surface. Server-renders a 6-week window so prev/next view
@@ -35,6 +37,9 @@ export default async function CalendarPage() {
     { days: awarenessDays, plannedIds },
     suggestions,
     campaigns,
+    org,
+    brands,
+    persona,
   ] = await Promise.all([
     fetchPostsInRange(start, end),
     fetchCategories(),
@@ -42,6 +47,9 @@ export default async function CalendarPage() {
     fetchAwarenessWithPlannedStatus(start, end),
     fetchSuggestions(),
     fetchCampaignWithPostCount(orgId),
+    getCurrentOrganisation(),
+    getBrandSwitcherData(),
+    fetchPersona(),
   ])
   const realtimeEnabled = await realtimeEnabledForOrg(orgId)
 
@@ -56,8 +64,12 @@ export default async function CalendarPage() {
       plannedAwarenessIds={Array.from(plannedIds)}
       suggestions={suggestions}
       campaigns={campaigns}
+      cadencePerWeek={brands.current.perWeek}
+      workspaceName={org.name}
       range={{ start, end }}
       realtimeEnabled={realtimeEnabled}
+      assistantName={persona.assistantName}
+      prefs={persona.prefs}
     />
   )
 }

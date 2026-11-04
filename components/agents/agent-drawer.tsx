@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { usePathname } from "next/navigation"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 import {
   appendMessage,
@@ -45,6 +46,7 @@ function threadQueryKey(orgId: string, threadId: string) {
 }
 
 export function AgentDrawer() {
+  const pathname = usePathname()
   const orgId = useWorkspaceOrgId()
   const [open, setOpen] = useState(false)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(
@@ -66,13 +68,14 @@ export function AgentDrawer() {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey
       if (meta && e.shiftKey && e.key.toLowerCase() === FLOATING_HOTKEY) {
+        if (pathname === "/calendar") return
         e.preventDefault()
         setOpen((v) => !v)
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     const onOpen = () => setOpen(true)
@@ -203,6 +206,7 @@ export function AgentDrawer() {
   )
 
   const isEmpty = transcriptLength === 0
+  if (pathname === "/calendar") return null
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

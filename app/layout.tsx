@@ -97,7 +97,7 @@ export default function RootLayout({
           <ThemeProvider defaultTheme="system">
             <DevBanner />
             {children}
-            <Toaster richColors position="bottom-right" />
+            <Toaster richColors position="top-right" />
           </ThemeProvider>
         </PostHogProvider>
       </body>

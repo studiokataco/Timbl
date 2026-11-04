@@ -3,13 +3,9 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-type SwitchProps = {
+type SwitchProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange" | "role"> & {
   checked?: boolean
   onCheckedChange?: (checked: boolean) => void
-  disabled?: boolean
-  id?: string
-  className?: string
-  "aria-label"?: string
 }
 
 export function Switch({
@@ -18,7 +14,8 @@ export function Switch({
   disabled,
   id,
   className,
-  "aria-label": ariaLabel,
+  onClick,
+  ...props
 }: SwitchProps) {
   return (
     <button
@@ -26,9 +23,12 @@ export function Switch({
       role="switch"
       id={id}
       aria-checked={checked}
-      aria-label={ariaLabel}
       disabled={disabled}
-      onClick={() => onCheckedChange?.(!checked)}
+      onClick={(event) => {
+        onClick?.(event)
+        if (!event.defaultPrevented) onCheckedChange?.(!checked)
+      }}
+      {...props}
       className={cn(
         "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent",
         "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

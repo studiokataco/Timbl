@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation"
 import { after } from "next/server"
 
-import { AgentCommandModal } from "@/components/agents/agent-command-modal"
 import { AgentDrawer } from "@/components/agents/agent-drawer"
-import { AskAiButton } from "@/components/agents/ask-ai-button"
 import { AppHotkeys } from "@/components/shared/app-hotkeys"
+import { AppTopBar } from "@/components/shared/app-top-bar"
 import { CommandPalette } from "@/components/shared/command-palette"
 import { DialogsProvider } from "@/components/shared/dialogs-provider"
 import { DunningBanner } from "@/components/shared/dunning-banner"
+import { MobileNav } from "@/components/shared/mobile-nav"
 import { Onboarding } from "@/components/shared/onboarding"
 import { PostHogIdentify } from "@/components/shared/posthog-identify"
 import { ProductTourRouteGuard } from "@/components/tour/product-tour"
@@ -15,7 +15,6 @@ import { PlanFeaturesProvider } from "@/components/shared/plan-features-provider
 import { QueryProvider } from "@/components/shared/query-provider"
 import { ShortcutsDialog } from "@/components/shared/shortcuts-dialog"
 import { Sidebar } from "@/components/shared/sidebar"
-import { TopBar } from "@/components/shared/top-bar"
 import { WorkspaceProvider } from "@/components/shared/workspace-provider"
 import { WorkspaceReminders } from "@/components/shared/workspace-reminders"
 import { ImpersonationBanner } from "@/components/control/impersonation-banner"
@@ -74,10 +73,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <DialogsProvider data={referenceData}>
             {impersonation ? <ImpersonationBanner orgName={org.name} /> : null}
             <DunningBanner />
-            <div className="flex flex-1 min-h-0">
-              <Sidebar workspaces={workspaces} brands={brands} />
-              <div className="flex flex-col flex-1 min-w-0 overflow-y-auto pb-[var(--ask-ai-clearance)]">
-                <TopBar user={user} workspaceName={org.name} workspaces={workspaces} brands={brands} />
+            <MobileNav workspaces={workspaces} brands={brands} />
+            <div className="@container/iface flex flex-1 min-h-0">
+              <Sidebar
+                workspaces={workspaces}
+                brands={brands}
+                user={{ name: user.name, email: user.email, role: user.role, avatarUrl: user.avatarUrl }}
+              />
+              <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
+                <AppTopBar user={user} workspaceName={org.name} workspaces={workspaces} brands={brands} />
                 {children}
               </div>
             </div>
@@ -86,8 +90,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <ShortcutsDialog />
             <Onboarding />
             <AgentDrawer key={orgId} />
-            <AgentCommandModal key={orgId} />
-            <AskAiButton />
             <ProductTourRouteGuard />
             <WorkspaceReminders />
             <PostHogIdentify

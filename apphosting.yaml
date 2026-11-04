@@ -172,7 +172,9 @@ env:
 
   # ---------------------------------------------------------------------------
   # Publishing layer - token vault key, worker HMAC, and per-platform OAuth
-  # apps. Create each secret + grant the App Hosting SA secretAccessor once:
+  # apps. To change a value later use scripts/rotate-secret.sh, never a bare
+  # `versions add`: Cloud Functions stay pinned to the old version otherwise.
+  # Create each secret + grant the App Hosting SA secretAccessor once:
   #   gcloud secrets create SOCIAL_TOKEN_KEY --replication-policy=automatic
   #   printf '%s' "$(openssl rand -hex 32)" | gcloud secrets versions add SOCIAL_TOKEN_KEY --data-file=-
   #   gcloud secrets create PUBLISH_SWEEP_SECRET --replication-policy=automatic

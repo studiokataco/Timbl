@@ -208,8 +208,8 @@ function UnifiedCell({
     >
       <span
         className={cn(
-          "inline-flex items-center justify-center size-6 text-xs tabular-nums self-start mb-0.5",
-          cell.isToday && "rounded-full bg-foreground text-background font-semibold",
+          "inline-flex items-center justify-center size-7 text-xs tabular-nums self-start mb-0.5",
+          cell.isToday && "rounded-full bg-primary text-primary-foreground font-semibold",
           !cell.isCurrentMonth && "text-muted-foreground/60",
           cell.isCurrentMonth && !cell.isToday && "text-foreground",
         )}

@@ -102,6 +102,27 @@ service cloud.firestore {
         allow read: if inOrg(orgId) && isAdminOrEditor();
         allow write: if false;
       }
+
+      match /assistantThreads/{threadId} {
+        allow read, write: if inOrg(orgId);
+      }
+
+      match /teamPresence/{sessionId} {
+        allow read: if inOrg(orgId);
+        allow create, update: if inOrg(orgId) && request.resource.data.userId == token().userId;
+        allow delete: if inOrg(orgId) && resource.data.userId == token().userId;
+      }
+
+      match /users/{userId} {
+        allow read: if inOrg(orgId);
+        allow write: if inOrg(orgId) && (
+          isAdminOrEditor() || token().userId == userId
+        );
+        match /postReads/{postId} {
+          allow read: if inOrg(orgId);
+          allow write: if inOrg(orgId) && token().userId == userId;
+        }
+      }
     }
 
     // --- Global: awarenessDays -----------------------------------------

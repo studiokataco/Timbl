@@ -18,16 +18,17 @@ import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { WorkspaceSwitcher } from "@/components/shared/workspace-switcher"
 import { BrandSwitcher } from "@/components/shared/brand-switcher"
 import { FeedbackDialog } from "@/components/shared/feedback-dialog"
+import { IdentityAvatar } from "@/components/shared/identity-avatar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 import { cn } from "@/lib/utils"
 
-/*
- * Persistent left-rail navigation for the (app) tree. Cal-voiced - generous
- * breathing room, soft pill rounding, an inset section heading separating
- * the working surfaces (Calendar/Posts/Kanban/Campaigns) from the
- * reference resources (Templates/Awareness).
- */
 type NavGroup = {
   heading?: string
   items: { href: string; label: string; icon: typeof Calendar }[]
@@ -68,7 +69,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           className={cn("flex flex-col gap-1", gi > 0 && "mt-6")}
         >
           {group.heading && (
-            <p className="text-caption text-muted-foreground px-3 pb-1.5 uppercase tracking-wider">
+            <p className="text-caption text-muted-foreground px-3 pb-1.5 uppercase tracking-wider hidden @7xl/iface:block">
               {group.heading}
             </p>
           )}
@@ -76,13 +77,13 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             const Icon = item.icon
             const active =
               pathname === item.href || pathname.startsWith(`${item.href}/`)
-            return (
+            const link = (
               <Link
-                key={item.href}
                 href={item.href}
                 onClick={onNavigate}
+                aria-label={item.label}
                 className={cn(
-                  "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "relative flex items-center justify-center @7xl/iface:justify-start gap-2.5 rounded-lg px-0 @7xl/iface:px-3 py-2.5 text-sm font-medium transition-colors",
                   active
                     ? "bg-secondary text-foreground"
                     : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
@@ -91,12 +92,22 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 {active && (
                   <span
                     aria-hidden
-                    className="absolute left-0 top-2.5 bottom-2.5 w-0.5 rounded-full bg-foreground"
+                    className="absolute left-0 top-2.5 bottom-2.5 w-0.5 rounded-full bg-foreground hidden @7xl/iface:block"
                   />
                 )}
                 <Icon aria-hidden className="size-4" />
-                <span>{item.label}</span>
+                <span className="hidden @7xl/iface:inline">{item.label}</span>
               </Link>
+            )
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger render={<div className="@7xl/iface:contents" />}>
+                  {link}
+                </TooltipTrigger>
+                <TooltipContent side="right" className="@7xl/iface:hidden">
+                  {item.label}
+                </TooltipContent>
+              </Tooltip>
             )
           })}
         </div>
@@ -122,21 +133,18 @@ export function FeedbackTrigger({
           onNavigate?.()
         }}
         className={cn(
-          "timbl-feedback-trigger flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
+          "timbl-feedback-trigger flex items-center justify-center @7xl/iface:justify-start gap-2.5 rounded-lg px-0 @7xl/iface:px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
           className,
         )}
       >
         <MessageSquareText aria-hidden className="size-4" />
-        <span>Send feedback</span>
+        <span className="hidden @7xl/iface:inline">Send feedback</span>
       </button>
       <FeedbackDialog open={open} onOpenChange={setOpen} />
     </>
   )
 }
 
-/* Org is the tenant; brand is scoped beneath it. One bordered card carries
- * both so the hierarchy reads at a glance instead of as two peer pickers -
- * org anchors the top, brand nests below a hairline divider. */
 export function WorkspaceBrandCard({
   workspaces,
   brands,
@@ -163,19 +171,43 @@ export function WorkspaceBrandCard({
 export function Sidebar({
   workspaces,
   brands,
+  user,
 }: {
   workspaces: WorkspaceSwitcherData
   brands: BrandSwitcherData
+  user: { name: string; email: string; role: string; avatarUrl?: string }
 }) {
   return (
-    <nav
-      aria-label="Primary"
-      className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background px-3 py-6 gap-1 overflow-y-auto"
-    >
-      <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-4" />
-      <WorkspaceBrandCard workspaces={workspaces} brands={brands} className="mb-4" />
-      <SidebarNav />
-      <FeedbackTrigger className="mt-auto" />
-    </nav>
+    <TooltipProvider>
+      <nav
+        aria-label="Primary"
+        className="hidden @3xl/iface:flex flex-col w-16 @7xl/iface:w-60 shrink-0 border-r border-border bg-background px-2 @7xl/iface:px-3 py-6 gap-1 overflow-y-auto"
+      >
+        <TimblWordmark
+          href="/calendar"
+          logoSize={24}
+          className="mb-4 justify-center @7xl/iface:justify-start px-0 @7xl/iface:px-3 [&_span]:hidden @7xl/iface:[&_span]:inline"
+        />
+        <WorkspaceBrandCard
+          workspaces={workspaces}
+          brands={brands}
+          className="mb-4 hidden @7xl/iface:block"
+        />
+        <SidebarNav />
+        <FeedbackTrigger className="mt-auto" />
+        <div className="mt-2 flex items-center justify-center @7xl/iface:justify-start gap-2.5 rounded-lg px-0 @7xl/iface:px-2 py-2">
+          <IdentityAvatar
+            name={user.name}
+            src={user.avatarUrl}
+            shape="circle"
+            className="size-8 shrink-0"
+          />
+          <div className="min-w-0 hidden @7xl/iface:block">
+            <p className="truncate text-body-sm font-medium text-foreground">{user.name}</p>
+            <p className="truncate text-caption capitalize text-muted-foreground">{user.role}</p>
+          </div>
+        </div>
+      </nav>
+    </TooltipProvider>
   )
 }

@@ -12,6 +12,7 @@ export async function addComment(input: {
   body: string
   isInternal?: boolean
   parentId?: string
+  mentions?: string[]
 }): Promise<ServerActionResult> {
   try {
     const [orgId, user, db] = await Promise.all([
@@ -29,6 +30,8 @@ export async function addComment(input: {
       authorId: user.id,
       body: parsed.body,
       isInternal: parsed.isInternal ?? false,
+      mentions: input.mentions ?? [],
+      reactions: [],
       ...(parsed.parentId ? { parentId: parsed.parentId } : {}),
       createdAt: now,
       updatedAt: now,
@@ -92,6 +95,49 @@ export async function deleteComment(input: {
     if (snap.data()?.authorId !== user.id) return { ok: false, error: "Not authorized" }
     await ref.delete()
     revalidatePath("/posts")
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" }
+  }
+}
+
+export async function toggleCommentReaction(input: {
+  postId: string
+  commentId: string
+  emoji: "👍" | "❤️" | "🎉" | "😂" | "👀" | "🙌" | "🔥" | "✅"
+}): Promise<ServerActionResult> {
+  try {
+    const [orgId, user, db] = await Promise.all([
+      getCurrentOrgId(),
+      getCurrentUser(),
+      getDb(),
+    ])
+    const ref = db
+      .collection(orgPostCommentsPath(orgId, input.postId))
+      .doc(input.commentId)
+    const snap = await ref.get()
+    if (!snap.exists) return { ok: false, error: "Comment not found" }
+    const reactions = (Array.isArray(snap.data()?.reactions) ? snap.data()?.reactions : []) as {
+      emoji?: string
+      userIds?: string[]
+    }[]
+    const next = reactions.map((row) => ({
+      emoji: row.emoji,
+      userIds: Array.isArray(row.userIds) ? [...row.userIds] : [],
+    }))
+    const index = next.findIndex((row) => row.emoji === input.emoji)
+    if (index < 0) {
+      next.push({ emoji: input.emoji, userIds: [user.id] })
+    } else {
+      const ids = next[index].userIds
+      next[index].userIds = ids.includes(user.id)
+        ? ids.filter((id: string) => id !== user.id)
+        : [...ids, user.id]
+    }
+    await ref.set(
+      { reactions: next.filter((row) => row.userIds.length > 0), updatedAt: new Date().toISOString() },
+      { merge: true },
+    )
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" }

@@ -2,6 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core"
 import { addDays, format, isToday, startOfWeek } from "date-fns"
+import { CalendarHeart } from "lucide-react"
 import { useMemo } from "react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post } from "@/lib/schemas"
@@ -103,23 +104,31 @@ export function WeekView({
           <div className="border-r border-border" />
           {weekDays.map((day) => {
             const today = isToday(day)
+            const iso = format(day, "yyyy-MM-dd")
+            const dayAwareness = awarenessDays.find((item) => item.date === iso)
             return (
               <div
                 key={day.toISOString()}
                 className="border-r border-border last:border-r-0 py-2 px-1 text-center"
               >
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <div className="text-caption uppercase tracking-wider text-muted-foreground">
                   {format(day, "EEE")}
                 </div>
                 <div
                   className={cn(
                     "mx-auto mt-0.5 flex size-7 items-center justify-center rounded-full text-sm tabular-nums",
-                    today && "bg-foreground text-background font-semibold",
+                    today && "bg-primary text-primary-foreground font-semibold",
                     !today && "text-foreground",
                   )}
                 >
                   {format(day, "d")}
                 </div>
+                {dayAwareness ? (
+                  <p className="mt-1 flex items-center justify-center gap-0.5 text-caption text-muted-foreground">
+                    <CalendarHeart className="size-3 shrink-0" aria-hidden />
+                    <span className="truncate">{dayAwareness.name}</span>
+                  </p>
+                ) : null}
               </div>
             )
           })}

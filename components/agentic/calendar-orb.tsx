@@ -5,29 +5,38 @@ import { format, parseISO } from "date-fns"
 import { MotionConfig } from "framer-motion"
 import { toast } from "sonner"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { OverviewRail } from "@/components/mockup/agentic/interface/overview-rail"
+import { OverviewRail } from "@/components/agentic/interface/overview-rail"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Post } from "@/lib/schemas"
-import { deriveChip } from "@/components/mockup/agentic/engine/reducer"
-import { EngineProvider, useEngine } from "@/components/mockup/agentic/engine/engine-context"
-import { HandoffProvider, useHandoff } from "@/components/mockup/agentic/handoff/handoff-context"
-import { Flyout } from "@/components/mockup/agentic/interface/flyout"
-import { OrbDock } from "@/components/mockup/agentic/interface/orb-dock"
-import { useOrbDrag } from "@/components/mockup/agentic/interface/use-orb-drag"
-import { TOAST_UNDO_MS, tw } from "@/components/mockup/agentic/lib"
-import { LiveAnnouncerProvider, useAnnounce } from "@/components/mockup/agentic/live-announcer"
-import { Composer } from "@/components/mockup/agentic/primitives/composer"
-import { micReducer } from "@/components/mockup/agentic/primitives/mic-machine"
-import { deriveOrbState } from "@/components/mockup/agentic/primitives/orb-machine"
-import { AssistantAvatar } from "@/components/mockup/agentic/primitives/presence-orb"
-import { PrototypeProvider, usePrototype } from "@/components/mockup/agentic/prototype-context"
-import type { EngineEffect, MicState } from "@/components/mockup/agentic/types"
-import { DEFAULT_VIEW } from "@/components/mockup/agentic/view-state"
-import { ActivitySurface } from "@/components/mockup/agentic/overlays/activity-surface"
-import { PersonaPresenceSheet } from "@/components/mockup/agentic/overlays/persona-presence-sheet"
-import { ApprovalCard } from "@/components/mockup/agentic/primitives/approval-card"
-import { TEAM } from "@/components/mockup/agentic/fixtures"
-import { TimblModeView } from "@/components/mockup/agentic/views/timbl-mode-view"
+import { deriveChip } from "@/components/agentic/engine/reducer"
+import { EngineProvider, useEngine } from "@/components/agentic/engine/engine-context"
+import { EngineBridge } from "@/components/agentic/engine/use-engine-bridge"
+import { HandoffProvider, useHandoff } from "@/components/agentic/handoff/handoff-context"
+import { usePrototypeShortcuts } from "@/components/agentic/use-shortcuts"
+import { Flyout } from "@/components/agentic/interface/flyout"
+import { OrbDock } from "@/components/agentic/interface/orb-dock"
+import { useOrbDrag } from "@/components/agentic/interface/use-orb-drag"
+import { REDUCED_POPUP, TOAST_UNDO_MS, tw } from "@/components/agentic/lib"
+import { LiveAnnouncerProvider, useAnnounce } from "@/components/agentic/live-announcer"
+import { Composer } from "@/components/agentic/primitives/composer"
+import { micReducer } from "@/components/agentic/primitives/mic-machine"
+import { deriveOrbState } from "@/components/agentic/primitives/orb-machine"
+import { AssistantAvatar } from "@/components/agentic/primitives/presence-orb"
+import { PrototypeProvider, usePrototype } from "@/components/agentic/prototype-context"
+import type { EngineEffect, MicState, TeamMember } from "@/components/agentic/types"
+import { DEFAULT_VIEW } from "@/components/agentic/view-state"
+import { ActivitySurface } from "@/components/agentic/overlays/activity-surface"
+import { PersonaPresenceSheet } from "@/components/agentic/overlays/persona-presence-sheet"
+import { ContributorApproval } from "@/components/agentic/collab/contributor-approval"
+import { NoteThread } from "@/components/agentic/collab/note-thread"
+import { ApprovalCard } from "@/components/agentic/primitives/approval-card"
+import { TimblModeView } from "@/components/agentic/views/timbl-mode-view"
+import { MobileView } from "@/components/agentic/views/mobile-view"
+import { TalkSheet } from "@/components/agentic/mobile/talk-sheet"
+import { HandoffTransition } from "@/components/agentic/handoff/handoff-transition"
+import { savePersona } from "@/lib/actions/persona"
+import { useLiveSession } from "@/components/agentic/voice/use-live-session"
+import type { CalendarFilter, PresencePrefs } from "@/components/agentic/types"
 
 function OrbLayer({
   onOpenOverview,
@@ -59,25 +68,32 @@ function OrbLayer({
   }, [miniMic])
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)")
-    const apply = () => setNarrow(mq.matches)
-    apply()
-    mq.addEventListener("change", apply)
-    const open = () => update({ view: "timbl", sheet: null }, "push")
+    const el = boundsRef.current
+    const apply = (width: number) => setNarrow(width < 768)
+    if (el) apply(el.clientWidth)
+    const ro = el && typeof ResizeObserver !== "undefined" ? new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width
+      if (width) apply(width)
+    }) : null
+    if (el && ro) ro.observe(el)
+    const open = () => {
+      update({ view: "timbl", sheet: null }, "push")
+    }
     const ask = (event: Event) => {
       const detail = (event as CustomEvent<{ id: string; title: string }>).detail
-      if (!detail?.title) return
+      if (!detail?.id || !detail.title) return
       setAsked(detail)
-      update({ sheet: "flyout" }, "push")
+      dispatch({ type: "context_set", context: { kind: "post", postId: detail.id } })
+      update({ sheet: "flyout", post: detail.id }, "push")
     }
     window.addEventListener("timbl:open", open)
     window.addEventListener("timbl:ask", ask)
     return () => {
-      mq.removeEventListener("change", apply)
+      ro?.disconnect()
       window.removeEventListener("timbl:open", open)
       window.removeEventListener("timbl:ask", ask)
     }
-  }, [update])
+  }, [dispatch, update])
 
   const chip = deriveChip(state, copy)
   const pendingCount = state.requests.filter((request) => request.status === "pending").length
@@ -131,6 +147,10 @@ function OrbLayer({
       {view.view === "timbl" ? (
         <div className="pointer-events-auto absolute inset-0 z-40 flex min-h-0 bg-background">
           <TimblModeView chrome="desktop" attention={attention} />
+        </div>
+      ) : view.view === "mobile" ? (
+        <div className="pointer-events-auto absolute inset-0 z-40 flex min-h-0 bg-background">
+          <MobileView />
         </div>
       ) : (
         <div
@@ -212,14 +232,18 @@ function ProductRail({
   period,
   posts,
   campaignCount,
+  cadencePerWeek,
   onOpenPost,
   onCollapse,
+  extras,
 }: {
   period: string
   posts: WithId<Post>[]
   campaignCount: number
+  cadencePerWeek: number
   onOpenPost: (post: WithId<Post>) => void
   onCollapse?: () => void
+  extras?: React.ReactNode
 }) {
   const { copy, update } = usePrototype()
   const { dispatch } = useEngine()
@@ -246,7 +270,7 @@ function ProductRail({
       stats={{
         scheduled,
         review: attention.length,
-        slots: Math.max(0, 7 - new Set(posts.map((post) => post.scheduledDate)).size),
+        slots: Math.max(0, cadencePerWeek - posts.filter((post) => post.status !== "archived").length),
         campaigns: campaignCount,
       }}
       attention={attention.map((post) => ({
@@ -267,8 +291,15 @@ function ProductRail({
       }}
       onSettings={() => update({ sheet: "persona" }, "push")}
       onCollapse={onCollapse}
-    />
+    >
+      {extras}
+    </OverviewRail>
   )
+}
+
+function ShortcutOwner() {
+  usePrototypeShortcuts()
+  return null
 }
 
 function OrbRuntime({
@@ -278,11 +309,17 @@ function OrbRuntime({
   period,
   posts,
   campaignCount,
+  cadencePerWeek,
+  extras,
   onOpenPost,
   overviewCollapsed,
   onCollapseOverview,
   sheetOpen,
   onSheetOpenChange,
+  weekStart,
+  filter,
+  events,
+  onWeek,
 }: {
   children: React.ReactNode
   onOpenOverview?: () => void
@@ -290,22 +327,35 @@ function OrbRuntime({
   period: string
   posts: WithId<Post>[]
   campaignCount: number
+  cadencePerWeek: number
+  extras?: React.ReactNode
   onOpenPost: (post: WithId<Post>) => void
   overviewCollapsed: boolean
   onCollapseOverview: () => void
   sheetOpen: boolean
   onSheetOpenChange: (open: boolean) => void
+  weekStart: string
+  filter: CalendarFilter
+  events: { name: string; date: string }[]
+  onWeek?: (week: string) => void
 }) {
   const { view, update } = usePrototype()
-  const timbl = view.view === "timbl"
   useEffect(() => {
-    onMode?.(timbl)
-    if (timbl) onSheetOpenChange(false)
-  }, [onMode, onSheetOpenChange, timbl])
+    if (view.filter !== filter) update({ filter })
+    if (view.week === weekStart) return
+    if (view.week && weekStart && view.week.slice(0, 7) === weekStart.slice(0, 7)) return
+    update({ week: weekStart, filter })
+  }, [filter, update, view.filter, view.week, weekStart])
+  const overlay = view.view === "timbl" || view.view === "mobile"
+  useEffect(() => {
+    onMode?.(view.view === "timbl")
+    if (overlay) onSheetOpenChange(false)
+  }, [onMode, onSheetOpenChange, overlay, view.view])
   const announce = useAnnounce()
   const undoDispatchRef = useRef<((event: NonNullable<Extract<EngineEffect, { type: "toast" }>["undo"]>) => void) | null>(null)
   const onEffect = useCallback(
     (effect: EngineEffect) => {
+      if (!effect?.type) return
       if (effect.type === "toast") {
         const undoEvent = effect.undo
         toast(effect.message, {
@@ -324,13 +374,19 @@ function OrbRuntime({
           },
           "push",
         )
+        if (effect.week) onWeek?.(effect.week)
+        if (effect.view === "interface" && effect.post) {
+          window.setTimeout(() => {
+            document.querySelector<HTMLElement>(`[data-post-id="${effect.post}"]`)?.focus()
+          }, 50)
+        }
       } else if (effect.type === "open_sheet") {
         update({ sheet: effect.sheet, ...(effect.post ? { post: effect.post } : {}) }, "push")
       } else if (effect.type === "canvas_shown") {
         update({ canvas: "shown" })
       }
     },
-    [announce, update],
+    [announce, onWeek, update],
   )
   const reduced = view.motion === "reduced"
   const rail = (
@@ -338,6 +394,8 @@ function OrbRuntime({
       period={period}
       posts={posts}
       campaignCount={campaignCount}
+      cadencePerWeek={cadencePerWeek}
+      extras={extras}
       onOpenPost={onOpenPost}
       onCollapse={onCollapseOverview}
     />
@@ -345,21 +403,37 @@ function OrbRuntime({
   return (
     <MotionConfig reducedMotion={reduced ? "always" : "user"}>
       <EngineProvider onEffect={onEffect}>
+        <EngineBridge posts={posts} events={events} />
         <HandoffProvider>
-          <div className="relative flex min-h-0 flex-1 overflow-hidden -mb-[var(--ask-ai-clearance)]">
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
-            {!timbl && !overviewCollapsed ? <div className="hidden min-h-0 xl:flex">{rail}</div> : null}
+          <ShortcutOwner />
+          <HandoffTransition />
+          <div className="relative flex min-h-0 flex-1 overflow-hidden">
+            <div
+              className="flex min-h-0 min-w-0 flex-1 flex-col"
+              aria-hidden={overlay || undefined}
+              inert={overlay || undefined}
+            >
+              {children}
+            </div>
+            {!overlay && !overviewCollapsed ? <div className="hidden min-h-0 @7xl/iface:flex">{rail}</div> : null}
             <OrbLayer
               onOpenOverview={onOpenOverview}
               attention={posts.filter((post) => post.agentMeta?.reviewState === "pending" || post.status === "review").length}
             />
           </div>
-          <Sheet open={sheetOpen && !timbl} onOpenChange={onSheetOpenChange}>
-            <SheetContent side="right" className="w-80 max-w-[85vw] p-0 xl:hidden">
+          <Sheet open={sheetOpen && !overlay} onOpenChange={onSheetOpenChange}>
+            <SheetContent side="right" className="w-80 max-w-[85vw] p-0 @7xl/iface:hidden">
               <SheetHeader className="sr-only">
                 <SheetTitle>Overview</SheetTitle>
               </SheetHeader>
-              <ProductRail period={period} posts={posts} campaignCount={campaignCount} onOpenPost={onOpenPost} />
+              <ProductRail
+                period={period}
+                posts={posts}
+                campaignCount={campaignCount}
+                cadencePerWeek={cadencePerWeek}
+                extras={extras}
+                onOpenPost={onOpenPost}
+              />
             </SheetContent>
           </Sheet>
           <OrbSheets />
@@ -370,9 +444,16 @@ function OrbRuntime({
 }
 
 function OrbSheets() {
-  const { view, dismiss, prefs, setPrefs, assistantName, setAssistantName, role, copy } = usePrototype()
+  const { view, dismiss, prefs, setPrefs, assistantName, setAssistantName, role, copy, team, viewer } = usePrototype()
   const { state, dispatch } = useEngine()
   const [tab, setTab] = useState<"needs" | "log">("needs")
+  const voice = useLiveSession()
+  const notesPost = (view.post ? state.posts[view.post] : undefined) ?? Object.values(state.posts)[0]
+  const notesSubmission = notesPost ? state.submissions.find((item) => item.postId === notesPost.id) ?? null : null
+  const notesList = notesPost ? state.notes.filter((note) => note.postId === notesPost.id) : []
+  const notesLastRead = notesPost
+    ? state.reads.find((read) => read.postId === notesPost.id && read.userId === viewer.id)?.lastReadAt
+    : undefined
   const needs = state.requests
     .filter((request) => request.status === "pending")
     .map((request) => (
@@ -402,7 +483,7 @@ function OrbSheets() {
         needs={needs}
         log={state.activity}
         runs={state.runs}
-        team={TEAM}
+        team={team}
         posts={state.posts}
         assistantAvatar={<AssistantAvatar />}
       />
@@ -416,7 +497,23 @@ function OrbSheets() {
         assistantName={assistantName}
         prefs={prefs}
         inFrame={false}
-        onSave={(name, nextPrefs) => {
+        onSave={async (name, nextPrefs) => {
+          const result = await savePersona({
+            assistantName: name,
+            reduceMotion: nextPrefs.reduceMotion,
+            largerTarget: nextPrefs.largerTarget,
+            tips: nextPrefs.tips,
+            voiceLocale: nextPrefs.voiceLocale,
+            personality: nextPrefs.personality,
+            workingStyle: nextPrefs.workingStyle,
+            showCursors: Boolean(nextPrefs.showCursors),
+            shortcuts: nextPrefs.shortcuts,
+            ambient: nextPrefs.ambient,
+          })
+          if (!result.ok) {
+            toast.error(result.error ?? copy.persona.saved)
+            return
+          }
           setAssistantName(name)
           setPrefs(nextPrefs)
           toast(copy.persona.saved)
@@ -424,6 +521,92 @@ function OrbSheets() {
         }}
         onCancel={() => dismiss({ sheet: null })}
       />
+      <TalkSheet
+        open={view.sheet === "talk" && view.view !== "mobile"}
+        state={voice.talkState}
+        tokens={voice.tokens}
+        chips={voice.chips}
+        level={voice.level}
+        workspace={copy.iface.sidebar.workspace}
+        framed={false}
+        onOrb={() => {
+          if (voice.talkState === "listening") {
+            const text = voice.consume()
+            void voice.close()
+            if (text) dispatch({ type: "user_sent", text, source: "voice" })
+          } else {
+            void voice.startTalk()
+          }
+        }}
+        onHoldStart={() => {
+          void voice.startTalk()
+        }}
+        onHoldEnd={() => {
+          const text = voice.consume()
+          void voice.close()
+          if (text) dispatch({ type: "user_sent", text, source: "voice" })
+        }}
+        onPermission={(granted) => {
+          if (granted) void voice.startTalk()
+          else void voice.close()
+        }}
+        onClose={() => {
+          void voice.close()
+          dismiss({ sheet: null })
+        }}
+        onTypeInstead={() => {
+          void voice.close()
+          dismiss({ sheet: null })
+        }}
+        onRetry={() => void voice.startTalk()}
+      />
+      <Sheet open={view.sheet === "notes"} onOpenChange={(open) => !open && dismiss({ sheet: null })}>
+        <SheetContent
+          side="right"
+          finalFocus={() =>
+            document.querySelector<HTMLElement>(`[data-post-id="${view.post ?? ""}"]`) ??
+            document.querySelector<HTMLElement>("h1")
+          }
+          className={tw("flex flex-col gap-4 overflow-y-auto p-5", view.motion === "reduced" && REDUCED_POPUP)}
+        >
+          <SheetHeader className="p-0">
+            <SheetTitle>
+              <span className="text-title-md text-foreground">
+                {copy.iface.calendar.notesTitle(notesPost?.brief ?? "post")}
+              </span>
+            </SheetTitle>
+          </SheetHeader>
+          {notesPost && notesSubmission ? (
+            <ContributorApproval
+              post={notesPost}
+              submission={notesSubmission}
+              viewer={viewer}
+              team={team}
+              onApprove={() => dispatch({ type: "submission_decided", postId: notesPost.id, outcome: "approved" })}
+              onSendBack={(reason, note) =>
+                dispatch({ type: "submission_decided", postId: notesPost.id, outcome: "sent_back", reason, note })
+              }
+              onWithdraw={() => dispatch({ type: "submission_withdrawn", postId: notesPost.id })}
+            />
+          ) : null}
+          {notesPost ? (
+            <NoteThread
+              post={notesPost}
+              notes={notesList}
+              team={team}
+              viewerId={viewer.id}
+              lastReadAt={notesLastRead}
+              density="panel"
+              assistantAvatar={<AssistantAvatar />}
+              onAdd={(body) => dispatch({ type: "note_added", postId: notesPost.id, body })}
+              onEdit={(noteId, body) => dispatch({ type: "note_edited", noteId, body })}
+              onDelete={(noteId) => dispatch({ type: "note_deleted", noteId })}
+              onReact={(noteId, emoji) => dispatch({ type: "note_reacted", noteId, emoji })}
+              onRead={() => dispatch({ type: "thread_read", postId: notesPost.id })}
+            />
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </>
   )
 }
@@ -435,11 +618,21 @@ export function CalendarOrb({
   period,
   posts,
   campaignCount,
+  cadencePerWeek,
+  extras,
+  team,
+  workspaceName,
   onOpenPost,
   overviewCollapsed,
   onCollapseOverview,
   sheetOpen,
   onSheetOpenChange,
+  weekStart,
+  filter,
+  assistantName,
+  prefs,
+  awarenessDays = [],
+  onWeek,
 }: {
   children: React.ReactNode
   onOpenOverview?: () => void
@@ -447,14 +640,33 @@ export function CalendarOrb({
   period: string
   posts: WithId<Post>[]
   campaignCount: number
+  cadencePerWeek: number
+  extras?: React.ReactNode
+  team: TeamMember[]
+  workspaceName: string
   onOpenPost: (post: WithId<Post>) => void
   overviewCollapsed: boolean
   onCollapseOverview: () => void
   sheetOpen: boolean
   onSheetOpenChange: (open: boolean) => void
+  weekStart: string
+  filter: CalendarFilter
+  assistantName: string
+  prefs: PresencePrefs
+  awarenessDays?: { name: string; date: string }[]
+  onWeek?: (week: string) => void
 }) {
+  const viewer = team[0]
   return (
-    <PrototypeProvider syncUrl={false} initialView={{ ...DEFAULT_VIEW, view: "interface", toolbar: false }}>
+    <PrototypeProvider
+      syncUrl
+      initialView={{ ...DEFAULT_VIEW, toolbar: false, week: weekStart, filter }}
+      viewer={viewer}
+      team={team}
+      workspaceName={workspaceName}
+      assistantName={assistantName}
+      prefs={prefs}
+    >
       <LiveAnnouncerProvider>
         <OrbRuntime
           onOpenOverview={onOpenOverview}
@@ -462,11 +674,17 @@ export function CalendarOrb({
           period={period}
           posts={posts}
           campaignCount={campaignCount}
+          cadencePerWeek={cadencePerWeek}
+          extras={extras}
           onOpenPost={onOpenPost}
           overviewCollapsed={overviewCollapsed}
           onCollapseOverview={onCollapseOverview}
           sheetOpen={sheetOpen}
           onSheetOpenChange={onSheetOpenChange}
+          weekStart={weekStart}
+          filter={filter}
+          events={awarenessDays}
+          onWeek={onWeek}
         >
           {children}
         </OrbRuntime>

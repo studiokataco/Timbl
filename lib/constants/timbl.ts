@@ -18,6 +18,8 @@ export const TIMBL_FIREBASE_RULES_TEST = "timbl-rules-test"
 export const EMULATOR_ADMIN_SUB = "emulator-timbl-admin"
 
 export const AGENT_THREADS_DB_NAME = "timbl-agent-threads"
+export const SHELL_THREAD_ID = "shell"
+export const LIVE_MODEL = "gemini-3.8-live"
 
 export const HUMAN_ID_PREFIX = "TIM"
 

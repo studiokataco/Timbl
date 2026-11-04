@@ -102,6 +102,15 @@ export const orgConsentGrantsPath = (orgId: string) => `${orgPath(orgId)}/oauthC
 /* Per-org flat notifications collection, queryable by recipientId. */
 export const orgNotificationsPath = (orgId: string) => `${orgPath(orgId)}/notifications`
 
+export const orgAssistantThreadsPath = (orgId: string) =>
+  `${orgPath(orgId)}/assistantThreads`
+export const orgAssistantThreadDocPath = (orgId: string, threadId: string) =>
+  `${orgAssistantThreadsPath(orgId)}/${threadId}`
+export const orgTeamPresencePath = (orgId: string) =>
+  `${orgPath(orgId)}/teamPresence`
+export const orgPostReadsPath = (orgId: string, userId: string) =>
+  `${orgUsersPath(orgId)}/${userId}/postReads`
+
 /* User-submitted product feedback. Mirrored to platform/state/signals
  * (kind: feedback.submitted) so platform admins see it in the control
  * centre notification bell without a dedicated read path. */

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { Menu, Search } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Search } from "lucide-react"
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { SidebarNav, FeedbackTrigger, WorkspaceBrandCard } from "@/components/shared/sidebar"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
@@ -17,19 +17,13 @@ export function MobileNav({
   brands: BrandSwitcherData
 }) {
   const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const onOpen = () => setOpen(true)
+    window.addEventListener("nav:open", onOpen)
+    return () => window.removeEventListener("nav:open", onOpen)
+  }, [])
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger
-        render={
-          <button
-            type="button"
-            aria-label="Open navigation"
-            className="md:hidden inline-flex items-center justify-center size-9 -ml-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
-          />
-        }
-      >
-        <Menu aria-hidden className="size-5" />
-      </SheetTrigger>
       <SheetContent
         side="left"
         className="w-72 max-w-[80vw] p-3 gap-1"

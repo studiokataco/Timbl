@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { importThread } from "@/lib/storage/agent-threads"
+import { usePathname } from "next/navigation"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 
 import { AgentAskShell } from "./agent-ask-shell"
@@ -27,6 +28,7 @@ const DEFAULT_AGENT = "drafter"
 let modalActiveAgent: string | null = null
 
 export function AgentCommandModal() {
+  const pathname = usePathname()
   const orgId = useWorkspaceOrgId()
   const { agentNames, defaultAgent } = useRosterAgents()
   const [open, setOpen] = useState(false)
@@ -42,13 +44,14 @@ export function AgentCommandModal() {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey
       if (meta && !e.shiftKey && e.key.toLowerCase() === "j") {
+        if (pathname === "/calendar") return
         e.preventDefault()
         setOpen((v) => !v)
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     const onOpen = () => setOpen(true)

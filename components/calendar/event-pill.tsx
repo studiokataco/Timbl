@@ -5,19 +5,24 @@ import { CSS } from "@dnd-kit/utilities"
 import { format, parseISO } from "date-fns"
 import { useState } from "react"
 import { Clock, Eye, Flag, PencilLine, Sparkles, TriangleAlert } from "lucide-react"
-import { EventPeek } from "@/components/mockup/agentic/interface/calendar-fragment"
-import type { PrototypePost } from "@/components/mockup/agentic/types"
+import { EventPeek } from "./event-peek"
+import type { PrototypePost } from "@/components/agentic/types"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Category, Post } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 import { postStatusLabel } from "@/lib/labels/enums"
-import { categoryPillColors } from "./color"
+const PRIORITY_CLASS: Record<string, string> = {
+  urgent: "text-destructive",
+  high: "text-warning",
+  normal: "text-brand-accent",
+  low: "text-muted-foreground",
+}
 
-const PRIORITY_COLOR: Record<string, string> = {
-  urgent: "#ef4444",
-  high: "#f59e0b",
-  normal: "#3b82f6",
-  low: "#94a3b8",
+function pastelFor(post: Post): string {
+  if (post.postType === "reel") return "border-badge-pink/40 bg-badge-pink/15"
+  if (post.postType === "carousel") return "border-badge-violet/40 bg-badge-violet/15"
+  if (post.postType === "story") return "border-badge-orange/40 bg-badge-orange/15"
+  return "border-badge-emerald/40 bg-badge-emerald/15"
 }
 const PRIORITY_LABEL: Record<string, string> = {
   urgent: "Urgent",
@@ -114,26 +119,29 @@ export function EventPill({ post, category, onClick }: Props) {
         <button
           type="button"
           ref={setNodeRef}
+          data-post-id={post.id}
           {...listeners}
           {...attributes}
           style={{
-            ...categoryPillColors(category?.color),
             transform: CSS.Translate.toString(transform),
             opacity: isDragging ? 0.4 : undefined,
           }}
           className={cn(
-            "block w-full cursor-pointer truncate rounded-sm border border-transparent px-1.5 py-0.5 text-left text-[11px] leading-tight transition-[filter] hover:brightness-95",
+            "flex min-h-11 w-full cursor-pointer flex-col justify-center gap-0 overflow-hidden rounded-md border px-1.5 py-1 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            pastelFor(post),
             needsYou(post) && "ring-1 ring-warning/50",
           )}
           aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}${ariaSuffix ? ` - ${ariaSuffix}` : ""}`}
         >
-          {showPriorityFlag && (
-            <Flag aria-hidden className="mr-1 inline size-2.5 align-text-top" style={{ color: PRIORITY_COLOR[priority] }} />
-          )}
-          <StatusMark post={post} />
-          {time && <span className="mr-1 font-semibold">{time}</span>}
-          <span className="truncate">{post.brief ?? "Untitled"}</span>
-          {isAi && <Sparkles aria-hidden className="ml-1 inline size-2.5 align-text-top opacity-70" />}
+          <span className="flex min-w-0 items-center gap-1">
+            {showPriorityFlag && (
+              <Flag aria-hidden className={cn("size-2.5 shrink-0", PRIORITY_CLASS[priority])} />
+            )}
+            <StatusMark post={post} />
+            <span className="min-w-0 flex-1 line-clamp-2 text-caption font-medium text-foreground">{post.brief ?? "Untitled"}</span>
+            {isAi && <Sparkles aria-hidden className="size-2.5 shrink-0 opacity-70" />}
+          </span>
+          {time ? <span className="text-caption text-foreground">{time}</span> : null}
         </button>
       }
     />
@@ -157,16 +165,17 @@ export function EventListItem({
       trigger={
         <button
           type="button"
-          style={categoryPillColors(category?.color)}
+          data-post-id={post.id}
           className={cn(
-            "flex w-full items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-left text-sm",
+            "flex min-h-11 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left",
+            pastelFor(post),
             needsYou(post) && "ring-1 ring-warning/50",
           )}
         >
           <StatusMark post={post} />
-          <span className="min-w-0 flex-1 truncate font-medium">{post.brief ?? "Untitled"}</span>
-          {category && <span className="shrink-0 text-xs opacity-70">{category.name}</span>}
-          <span className="shrink-0 text-xs opacity-70">{postStatusLabel(post.status)}</span>
+          <span className="min-w-0 flex-1 line-clamp-2 font-medium text-foreground">{post.brief ?? "Untitled"}</span>
+          {category && <span className="shrink-0 text-caption text-muted-foreground">{category.name}</span>}
+          <span className="shrink-0 text-caption text-foreground">{postStatusLabel(post.status)}</span>
         </button>
       }
     />
