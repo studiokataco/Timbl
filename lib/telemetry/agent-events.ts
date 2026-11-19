@@ -4,7 +4,11 @@ import { FieldValue } from "firebase-admin/firestore"
 
 import { getAdminDb } from "@/lib/firebase/admin"
 import { orgUsageDocPath } from "@/lib/firebase/paths"
-import { recordPlatformEmbedding, recordPlatformRun } from "@/lib/platform/ingest"
+import {
+  recordPlatformEmbedding,
+  recordPlatformRun,
+  recordPlatformSpendDelta,
+} from "@/lib/platform/ingest"
 import { safeFieldKey } from "@/lib/platform/schema"
 
 /*
@@ -127,6 +131,47 @@ export async function emitAgentRun(event: AgentRunEvent): Promise<void> {
   } catch (err) {
     console.warn(
       `[platform-rollup] dual-write failed org=${event.orgId} run=${event.runId}: ${err instanceof Error ? err.message : err}`,
+    )
+  }
+}
+
+/* Applies a reconciled run's cost correction to the counters the spend gates
+ * and the control centre read, in the period the run happened in. */
+export async function emitRunSpendCorrection(input: {
+  orgId: string
+  agentName: string
+  deltaUsd: number
+  provider: string | null
+  model: string | null
+  at: Date
+}): Promise<void> {
+  const period = currentPeriod(input.at)
+  const providerKey = input.provider ? safeFieldKey(input.provider) : "unknown"
+  const modelKey = input.model ? safeFieldKey(input.model) : "unknown"
+  await getAdminDb()
+    .doc(orgUsageDocPath(input.orgId, period))
+    .set(
+      {
+        usdCost: FieldValue.increment(input.deltaUsd),
+        usdByAgent: { [input.agentName]: FieldValue.increment(input.deltaUsd) },
+        usdByProvider: { [providerKey]: FieldValue.increment(input.deltaUsd) },
+        usdByModel: { [modelKey]: FieldValue.increment(input.deltaUsd) },
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    )
+  try {
+    await recordPlatformSpendDelta({
+      orgId: input.orgId,
+      period,
+      date: currentDate(input.at),
+      deltaUsd: input.deltaUsd,
+      provider: input.provider,
+      model: input.model,
+    })
+  } catch (err) {
+    console.warn(
+      `[platform-rollup] spend correction failed org=${input.orgId}: ${err instanceof Error ? err.message : err}`,
     )
   }
 }

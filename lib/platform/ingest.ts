@@ -93,6 +93,34 @@ export async function recordPlatformRun(rec: PlatformRunRecord): Promise<void> {
   ])
 }
 
+/* A reconciled run's cost correction: the exact billed cost minus what the
+ * run first recorded. Spend fields only - the run itself was already
+ * counted. */
+export async function recordPlatformSpendDelta(rec: {
+  orgId: string
+  period: string
+  date: string
+  deltaUsd: number
+  provider: string | null
+  model: string | null
+}): Promise<void> {
+  const db = getAdminDb()
+  const now = new Date().toISOString()
+  const providerKey = rec.provider ? safeFieldKey(rec.provider) : "unknown"
+  const modelKey = rec.model ? safeFieldKey(rec.model) : "unknown"
+  const spend = {
+    usdCost: FieldValue.increment(rec.deltaUsd),
+    byProvider: { [providerKey]: FieldValue.increment(rec.deltaUsd) },
+    byModel: { [modelKey]: FieldValue.increment(rec.deltaUsd) },
+    updatedAt: now,
+  }
+  await Promise.all([
+    db.doc(platformRollupDocPath(rec.period)).set(spend, { merge: true }),
+    db.doc(platformOrgRollupPeriodDocPath(rec.orgId, rec.period)).set(spend, { merge: true }),
+    db.doc(platformOrgRollupDailyDocPath(rec.orgId, rec.date)).set(spend, { merge: true }),
+  ])
+}
+
 /* Embedding metering. Embeddings are mostly free (Gemini) so we count calls
  * rather than cost - it's the volume signal the control centre surfaces. */
 export async function recordPlatformEmbedding(

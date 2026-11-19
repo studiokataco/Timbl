@@ -43,7 +43,7 @@ export default async function AiUsagePage() {
         <StatCard icon={Database} label="Embedding calls" value={compact(rollup.embeddingCalls)} sub="indexing + recall" />
       </div>
 
-      <OpenRouterBilling account={openRouter} />
+      <OpenRouterBilling account={openRouter} meteredMonthUsd={rollup.usdCost} />
 
       <section className="mt-6 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
         <h2 className="mb-2 font-heading text-sm font-semibold tracking-tight">
