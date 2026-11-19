@@ -140,22 +140,22 @@ export function EventPill({ post, category, onClick }: Props) {
             opacity: isDragging ? 0.4 : undefined,
           }}
           className={cn(
-            "flex min-h-11 w-full cursor-pointer flex-col justify-center gap-0 overflow-hidden rounded-md border px-1.5 py-1 text-left focus-ring",
+            "flex min-h-8 w-full cursor-pointer items-center gap-2 overflow-hidden rounded-md border px-2 py-1 text-left focus-ring",
             pastelFor(post),
             needsYou(post) && "ring-1 ring-warning/50",
           )}
           aria-label={`${category?.name ?? "Uncategorised"} - ${post.brief ?? "Untitled"} - ${postStatusLabel(post.status)}${ariaSuffix ? ` - ${ariaSuffix}` : ""}`}
         >
-          <span className="flex min-w-0 items-center gap-1">
+          <span className="flex w-full min-w-0 items-center gap-1">
             {showPriorityFlag && (
               <Flag aria-hidden className={cn("size-2.5 shrink-0", PRIORITY_CLASS[priority])} />
             )}
             <StatusMark post={post} />
-            <span className="min-w-0 flex-1 line-clamp-2 text-caption font-medium text-foreground">{post.brief ?? "Untitled"}</span>
+            <span className="min-w-0 flex-1 truncate text-caption font-medium text-foreground">{post.brief ?? "Untitled"}</span>
+            {time ? <span className="shrink-0 text-caption text-muted-foreground tabular-nums">{time}</span> : null}
             <PostUnread postId={post.id} />
             {isAi && <Sparkles aria-hidden className="size-2.5 shrink-0 opacity-70" />}
           </span>
-          {time ? <span className="text-caption text-foreground">{time}</span> : null}
         </button>
       }
     />
@@ -181,13 +181,13 @@ export function EventListItem({
           type="button"
           data-post-id={post.id}
           className={cn(
-            "focus-ring flex min-h-11 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left",
+            "focus-ring flex min-h-12 w-full items-center gap-3 rounded-lg border px-4 py-3 text-left",
             pastelFor(post),
             needsYou(post) && "ring-1 ring-warning/50",
           )}
         >
           <StatusMark post={post} />
-          <span className="min-w-0 flex-1 line-clamp-2 font-medium text-foreground">{post.brief ?? "Untitled"}</span>
+          <span className="min-w-0 flex-1 line-clamp-2 text-body-sm font-medium text-foreground">{post.brief ?? "Untitled"}</span>
           <PostUnread postId={post.id} />
           {category && <span className="shrink-0 text-caption text-muted-foreground">{category.name}</span>}
           <span className="shrink-0 text-caption text-foreground">{postStatusLabel(post.status)}</span>

@@ -1,8 +1,9 @@
 "use client"
 
-import { PanelRightClose, Settings2 } from "lucide-react"
+import { useId } from "react"
+import { ListFilter, PanelRightClose, Settings2, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DisclosureTrigger } from "@/components/ui/disclosure"
+import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 import { UnreadDot } from "../collab/unread-dot"
 import { usePrototype } from "../prototype-context"
 
@@ -11,11 +12,15 @@ export type OverviewRailProps = {
   stats: { scheduled: number; review: number; slots: number; campaigns: number }
   attention: { postId: string; title: string; line: string; unread: { count: number; mentions: number } }[]
   comingUp: { postId: string; title: string; when: string }[]
+  categoryFilter?: React.ReactNode
+  categorySummary: string | null
+  density?: "touch" | "pointer"
   onOpenTimbl: () => void
+  onOpenActivity: () => void
   onOpenPost: (id: string) => void
   onSettings: () => void
+  onClose?: () => void
   onCollapse?: () => void
-  children?: React.ReactNode
 }
 
 export function OverviewRail({
@@ -23,23 +28,31 @@ export function OverviewRail({
   stats,
   attention,
   comingUp,
+  categoryFilter,
+  categorySummary,
+  density = "pointer",
   onOpenTimbl,
+  onOpenActivity,
   onOpenPost,
   onSettings,
+  onClose,
   onCollapse,
-  children,
 }: OverviewRailProps): React.JSX.Element {
-  const { copy, disclosure, setDisclosure } = usePrototype()
+  const { copy } = usePrototype()
   const r = copy.iface.rail
-  const attOpen = disclosure["rail:attention"] ?? true
-  const upOpen = disclosure["rail:coming"] ?? true
-  const weekOpen = disclosure["rail:week"] ?? true
+  const id = useId()
+  const attentionTitleId = `${id}-attention-title`
+  const comingTitleId = `${id}-coming-title`
+  const weekTitleId = `${id}-week-title`
   const weekStats = [
     { value: stats.scheduled, label: r.stats.scheduled },
     { value: stats.review, label: r.stats.review },
     { value: stats.slots, label: r.stats.slots },
     { value: stats.campaigns, label: r.stats.campaigns },
   ]
+  const visibleAttention = attention.slice(0, 3)
+  const iconSize = density === "touch" ? "icon-lg" : "icon-sm"
+  const touchTarget = density === "touch" ? "size-11" : undefined
 
   return (
     <aside
@@ -47,116 +60,115 @@ export function OverviewRail({
       data-slot="agentic-overview-rail"
       data-state={attention.length > 0 ? "attention" : "clear"}
       data-figma="OverviewRail/root"
-      className="flex min-h-0 w-80 shrink-0 flex-col gap-6 overflow-y-auto overscroll-contain border-l border-border bg-background p-4"
+      className="flex h-full min-h-0 w-full min-w-0 flex-col gap-5 overflow-y-auto overscroll-contain border-l border-border bg-background p-4"
     >
       <header className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <h2 className="text-title-sm text-foreground">{r.title}</h2>
-          <p className="text-caption text-muted-foreground tabular-nums">{period}</p>
+          <p className="text-caption tabular-nums text-muted-foreground">{period}</p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
+          <Popover>
+            <PopoverTrigger render={<Button type="button" variant="ghost" size={iconSize} className={touchTarget} aria-label={r.categories} /> }>
+              <ListFilter className="size-4" aria-hidden />
+            </PopoverTrigger>
+            <PopoverContent align="end" side={density === "touch" ? "bottom" : "left"} className="max-h-[min(28rem,80vh)] w-[min(16rem,calc(100vw-1rem))] overflow-y-auto">
+              <PopoverHeader>
+                <PopoverTitle>{r.categories}</PopoverTitle>
+                {categorySummary ? <p className="text-xs text-muted-foreground">{categorySummary}</p> : null}
+              </PopoverHeader>
+              {categoryFilter}
+            </PopoverContent>
+          </Popover>
           {onCollapse ? (
-            <Button type="button" variant="ghost" size="icon-sm" aria-label={r.collapse} onClick={onCollapse}>
+            <Button type="button" variant="ghost" size={iconSize} className={touchTarget} aria-label={r.collapse} onClick={onCollapse}>
               <PanelRightClose className="size-4" aria-hidden />
             </Button>
           ) : null}
-          <Button type="button" variant="ghost" size="icon-sm" aria-label={r.settings} onClick={onSettings}>
+          <Button type="button" variant="ghost" size={iconSize} className={touchTarget} aria-label={r.settings} onClick={onSettings}>
             <Settings2 className="size-4" aria-hidden />
           </Button>
+          {onClose ? (
+            <Button type="button" variant="ghost" size={iconSize} className={touchTarget} aria-label={r.close} onClick={onClose}>
+              <X className="size-4" aria-hidden />
+            </Button>
+          ) : null}
         </div>
       </header>
 
-      <section className="flex flex-col gap-2">
+      <section aria-labelledby={attentionTitleId} className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <DisclosureTrigger
-            open={attOpen}
-            onOpenChange={(next) => setDisclosure("rail:attention", next)}
-            controls="rail-sec-attention"
-            className="text-body-sm font-medium text-foreground"
-          >
-            {r.attention}
-          </DisclosureTrigger>
+          <h3 id={attentionTitleId} className="text-body-sm font-medium text-foreground">{r.attention}</h3>
           {attention.length > 0 ? (
-            <span className="text-caption text-muted-foreground tabular-nums">{attention.length}</span>
+            <span className="text-caption tabular-nums text-muted-foreground">{attention.length}</span>
           ) : null}
         </div>
-        {attOpen ? (
-          attention.length === 0 ? (
-            <p id="rail-sec-attention" className="text-caption text-muted-foreground">{r.attentionEmpty}</p>
-          ) : (
-            <ul id="rail-sec-attention" className="flex flex-col divide-y divide-border rounded-xl border border-border">
-              {attention.map((item) => (
-                <li key={item.postId}>
-                  <button
-                    type="button"
-                    onClick={() => onOpenPost(item.postId)}
-                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-ring"
-                  >
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="line-clamp-2 text-body-sm font-medium text-foreground">{item.title}</span>
-                      <span className="text-caption text-muted-foreground">{item.line}</span>
-                    </span>
-                    <UnreadDot count={item.unread.count} mentions={item.unread.mentions} className="mt-1" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )
+        {attention.length === 0 ? (
+          <p className="text-caption text-muted-foreground">{r.attentionEmpty}</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-border">
+            {visibleAttention.map((item) => (
+              <li key={item.postId}>
+                <button
+                  type="button"
+                  onClick={() => onOpenPost(item.postId)}
+                  className="flex w-full items-start gap-3 py-2.5 text-left transition-colors hover:bg-muted/50 focus-ring"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="line-clamp-2 text-body-sm font-medium text-foreground">{item.title}</span>
+                    <span className="text-caption text-muted-foreground">{item.line}</span>
+                  </span>
+                  <UnreadDot count={item.unread.count} mentions={item.unread.mentions} className="mt-1" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {attention.length > visibleAttention.length ? (
+          <Button type="button" variant="link" size="sm" onClick={onOpenActivity} className="h-auto self-start px-0 py-1">
+            {r.attentionMore(attention.length - visibleAttention.length)}
+          </Button>
         ) : null}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <DisclosureTrigger
-          open={upOpen}
-          onOpenChange={(next) => setDisclosure("rail:coming", next)}
-          controls="rail-sec-coming"
-          className="text-body-sm font-medium text-foreground"
-        >
-          {r.comingUp}
-        </DisclosureTrigger>
-        {upOpen ? (
-          <ul id="rail-sec-coming" className="flex flex-col divide-y divide-border rounded-xl border border-border">
+      <section aria-labelledby={comingTitleId} className="flex flex-col gap-2 border-t border-border pt-4">
+        <h3 id={comingTitleId} className="text-body-sm font-medium text-foreground">{r.comingUp}</h3>
+        {comingUp.length === 0 ? (
+          <p className="text-caption text-muted-foreground">{r.comingEmpty}</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-border">
             {comingUp.map((item) => (
               <li key={item.postId}>
                 <button
                   type="button"
                   onClick={() => onOpenPost(item.postId)}
-                  className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-ring"
+                  className="flex w-full flex-col gap-0.5 py-2.5 text-left transition-colors hover:bg-muted/50 focus-ring"
                 >
-                  <span className="text-caption text-muted-foreground tabular-nums">{item.when}</span>
+                  <span className="text-caption tabular-nums text-muted-foreground">{item.when}</span>
                   <span className="line-clamp-2 text-body-sm font-medium text-foreground">{item.title}</span>
                 </button>
               </li>
             ))}
           </ul>
-        ) : null}
+        )}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <DisclosureTrigger
-          open={weekOpen}
-          onOpenChange={(next) => setDisclosure("rail:week", next)}
-          controls="rail-sec-week"
-          className="text-body-sm font-medium text-foreground"
-        >
-          {r.week}
-        </DisclosureTrigger>
-        {weekOpen ? (
-          <div id="rail-sec-week" className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {weekStats.map((stat) => (
-              <div key={stat.label} className="flex items-baseline gap-2 whitespace-nowrap">
-                <span className="text-title-sm text-foreground tabular-nums">{stat.value}</span>
-                <span className="text-caption text-muted-foreground">{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
+      <section aria-labelledby={weekTitleId} className="flex flex-col gap-2 border-t border-border pt-4">
+        <h3 id={weekTitleId} className="text-body-sm font-medium text-foreground">{r.week}</h3>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+          {weekStats.map((stat) => (
+            <div key={stat.label} className="flex items-baseline gap-2">
+              <dt className="order-2 text-caption text-muted-foreground">{stat.label}</dt>
+              <dd className="order-1 text-title-sm tabular-nums text-foreground">{stat.value}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
-      <Button type="button" variant="outline" size="sm" onClick={onOpenTimbl} className="w-fit">
+      <Button type="button" variant="outline" size={density === "touch" ? "lg" : "sm"} onClick={onOpenTimbl} className={density === "touch" ? "min-h-11 w-fit" : "w-fit"}>
+        <Sparkles aria-hidden />
         {r.promoCta}
       </Button>
-      {children}
     </aside>
   )
 }

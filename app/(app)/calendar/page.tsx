@@ -9,9 +9,8 @@ import { getBrandSwitcherData } from "@/lib/queries/brands.server"
 import { realtimeEnabledForOrg } from "@/lib/realtime/realtime-enabled"
 import { fetchCampaignWithPostCount } from "@/lib/actions/campaigns"
 import { CalendarView } from "@/components/calendar/calendar-view"
-import { fetchAwarenessWithPlannedStatus } from "@/lib/queries/awareness.server"
+import { fetchAwarenessDaysInRange } from "@/lib/queries/awareness.server"
 import { fetchCategories, fetchPostsInRange, fetchUsers } from "@/lib/queries/posts.server"
-import { fetchSuggestions } from "@/lib/queries/suggestions.server"
 import { fetchPersona } from "@/lib/actions/persona"
 import { parseView } from "@/components/agentic/view-state"
 import { DEFAULT_PREFS } from "@/components/agentic/defaults"
@@ -52,8 +51,7 @@ export default async function CalendarPage({
     posts,
     categories,
     users,
-    awareness,
-    suggestions,
+    awarenessDays,
     campaigns,
     org,
     brands,
@@ -62,8 +60,7 @@ export default async function CalendarPage({
     orDown(fetchPostsInRange(start, end), []),
     orDown(fetchCategories(), []),
     orDown(fetchUsers(), []),
-    orDown(fetchAwarenessWithPlannedStatus(start, end), { days: [], plannedIds: new Set<string>() }),
-    orDown(fetchSuggestions(), []),
+    orDown(fetchAwarenessDaysInRange(start, end), []),
     orDown(fetchCampaignWithPostCount(orgId), []),
     orDown(getCurrentOrganisation(), sessionOrg),
     orDown(getBrandSwitcherData(), { current: emptyBrand, brands: [emptyBrand], atCap: false }),
@@ -74,8 +71,6 @@ export default async function CalendarPage({
       userId: sessionUser.id,
     }),
   ])
-  const awarenessDays = awareness.days
-  const plannedIds = awareness.plannedIds
   const realtimeEnabled = await orDown(realtimeEnabledForOrg(orgId), false)
 
   return (
@@ -86,8 +81,6 @@ export default async function CalendarPage({
       categories={categories}
       users={users}
       awarenessDays={awarenessDays}
-      plannedAwarenessIds={Array.from(plannedIds)}
-      suggestions={suggestions}
       campaigns={campaigns}
       cadencePerWeek={brands.current.perWeek}
       workspaceName={org.name}

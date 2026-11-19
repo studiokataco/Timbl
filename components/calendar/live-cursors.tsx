@@ -155,7 +155,7 @@ export function CursorFrame({
   }
 
   return (
-    <div ref={frame} className="relative" onPointerMove={onPointerMove}>
+    <div ref={frame} className="relative flex min-h-0 flex-1 flex-col" onPointerMove={onPointerMove}>
       {children}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 hidden @5xl/iface:block">
         {peers.map((cursor) => (

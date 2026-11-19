@@ -24,16 +24,14 @@ import {
 } from "date-fns"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useAgenticMotion, usePrototype } from "@/components/agentic/prototype-context"
-import { Eye, Sparkles, X } from "lucide-react"
+import { Eye, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { PlanCadenceDialog } from "@/components/agents/plan-cadence-dialog"
 import { CalendarOrb } from "@/components/agentic/calendar-orb"
 import { asTeamMember } from "@/components/agentic/defaults"
 import { AvatarStack, PeerChip } from "@/components/agentic/interface/avatar-stack"
 import { useFollowMode } from "@/components/agentic/interface/use-follow-mode"
-import { InterfaceTopBar } from "@/components/agentic/interface/interface-top-bar"
 import { initials, showCursorsEffective } from "@/components/agentic/lib"
 import { weekLabel } from "@/components/agentic/clock"
 import { NotificationsMenu } from "@/components/shared/notifications-menu"
@@ -42,17 +40,14 @@ import { matchesCalendarFilter } from "@/components/calendar/status-filter"
 import { fetchPostsInRangeAction, updatePost } from "@/lib/actions/posts"
 import { usePostsRealtime } from "@/lib/realtime/subscribe-posts"
 import type { WithId } from "@/lib/firebase/serialize"
-import type { AwarenessDay, Category, Post, PostPatch, User } from "@/lib/schemas"
-import type { Suggestion } from "@/lib/queries/suggestions.server"
+import type { AwarenessDay, Campaign, Category, Post, PostPatch, User } from "@/lib/schemas"
 import { useGridReveal } from "@/components/shared/motion-cal"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { CursorFrame, LivePresence, useLivePresence, type LiveCursor } from "./live-cursors"
 import { EventListItem } from "./event-pill"
 import { CalendarToolbar, type CalendarView as ViewT } from "./calendar-toolbar"
 import { CalendarGrid } from "./calendar-grid"
-import { CampaignTracker, type CampaignRow } from "./campaign-tracker"
 import { CategoryFilter } from "./category-filter"
-import { CalendarAwarenessRail } from "./awareness-rail"
 import { WeekView } from "./week-view"
 import { DayView } from "./day-view"
 
@@ -65,9 +60,7 @@ type Props = {
   categories: WithId<Category>[]
   users: WithId<User>[]
   awarenessDays: WithId<AwarenessDay>[]
-  plannedAwarenessIds: string[]
-  suggestions: Suggestion[]
-  campaigns: CampaignRow[]
+  campaigns: WithId<Campaign>[]
   cadencePerWeek: number
   workspaceName: string
   range: { start: string; end: string }
@@ -84,8 +77,6 @@ export function CalendarView({
   initialPosts,
   categories,
   awarenessDays,
-  plannedAwarenessIds,
-  suggestions,
   users,
   campaigns,
   cadencePerWeek,
@@ -107,14 +98,13 @@ export function CalendarView({
   const [filter, setFilter] = useState<CalendarFilter>(initialView.filter)
   const [compact, setCompact] = useState(false)
   const weekStart = format(startOfWeek(visibleDate, { weekStartsOn: 1 }), "yyyy-MM-dd")
-  const [planOpen, setPlanOpen] = useState(false)
   const [railOpen, setRailOpen] = useState(false)
   const [timblMode, setTimblMode] = useState(false)
   const [visibleCategoryIds, setVisibleCategoryIds] = useState<Set<string>>(
     () => new Set(categories.map((c) => c.id)),
   )
   useEffect(() => {
-    const el = mainRef.current
+    const el = mainRef.current?.closest("[data-slot=agentic-root]") ?? mainRef.current
     if (!el || typeof ResizeObserver === "undefined") return
     const ro = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width
@@ -317,7 +307,7 @@ export function CalendarView({
     [categories],
   )
 
-  const categoryFilter = allCategoriesVisible ? null : visibleCategoryIds
+  const categorySelection = allCategoriesVisible ? null : visibleCategoryIds
   const filteredPosts = useMemo(
     () => posts.filter((post) => matchesCalendarFilter(post, filter)),
     [filter, posts],
@@ -331,24 +321,14 @@ export function CalendarView({
   const awarenessEvents = useMemo(() => awarenessDays.map((day) => ({ name: day.name, date: day.date })), [awarenessDays])
   const hideCursors = prefs.showCursors === false
 
-  const extras = (
-    <>
-      <div className="pb-6">
-        <CategoryFilter
-          categories={categories}
-          visibleIds={visibleCategoryIds}
-          onToggle={toggleCategory}
-          onAll={() => setVisibleCategoryIds(allCategoryIds)}
-          onNone={() => setVisibleCategoryIds(new Set())}
-        />
-      </div>
-      <CampaignTracker campaigns={campaigns} />
-      <CalendarAwarenessRail
-        awarenessDays={awarenessDays}
-        plannedAwarenessIds={plannedAwarenessIds}
-        suggestions={suggestions}
-      />
-    </>
+  const categoryFilterContent = (
+    <CategoryFilter
+      categories={categories}
+      visibleIds={visibleCategoryIds}
+      onToggle={toggleCategory}
+      onAll={() => setVisibleCategoryIds(allCategoryIds)}
+      onNone={() => setVisibleCategoryIds(new Set())}
+    />
   )
 
   const openOverview = useCallback(() => {
@@ -356,7 +336,16 @@ export function CalendarView({
     try {
       window.localStorage.setItem("calendar:sidebar-collapsed", "0")
     } catch {}
-    setRailOpen(true)
+    if (!window.matchMedia("(min-width: 80rem)").matches) setRailOpen(true)
+  }, [setRailOpen])
+  useEffect(() => {
+    const wide = window.matchMedia("(min-width: 80rem)")
+    const closeSheet = () => {
+      if (wide.matches) setRailOpen(false)
+    }
+    closeSheet()
+    wide.addEventListener("change", closeSheet)
+    return () => wide.removeEventListener("change", closeSheet)
   }, [setRailOpen])
 
   return (
@@ -366,7 +355,8 @@ export function CalendarView({
       posts={filteredPosts}
       campaignCount={campaigns.filter((campaign) => campaign.status === "active").length}
       cadencePerWeek={cadencePerWeek}
-      extras={extras}
+      categoryFilter={categoryFilterContent}
+      categorySummary={categories.length ? `${visibleCategoryIds.size} of ${categories.length} shown` : null}
       team={team}
       workspaceName={workspaceName}
       onOpenPost={onPostClick}
@@ -391,37 +381,34 @@ export function CalendarView({
       viewerId={viewerId}
       initialView={initialView}
     >
-        <CalendarChrome
-          weekStart={weekStart}
-          density={compact ? "touch" : "pointer"}
-          overviewOpen={!sidebarCollapsed}
-          onOverview={timblMode ? undefined : openOverview}
-          onCreate={() => openQuickAdd({ source: "calendar-cell" })}
-          team={team}
-          regionRef={mainRef}
-        />
         <main
           ref={mainRef}
           tabIndex={-1}
-          className="h-full min-w-0 overflow-y-auto px-4 @3xl/iface:px-8 pt-4 pb-8"
+          className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 pt-4 pb-4 @3xl/iface:px-8"
         >
+          <CalendarChrome
+            density={compact ? "touch" : "pointer"}
+            overviewOpen={!sidebarCollapsed}
+            onOverview={timblMode ? undefined : openOverview}
+            onCreate={() => openQuickAdd({ source: "calendar-cell" })}
+            team={team}
+            regionRef={mainRef}
+            visibleDate={visibleDate}
+            view={view}
+            filter={filter}
+            onPrev={onPrev}
+            onNext={onNext}
+            onToday={onToday}
+            onViewChange={onViewChange}
+            onFilterChange={setFilter}
+          />
           <DndContext id="calendar-board" sensors={sensors} onDragEnd={onDragEnd}>
-            <CalendarToolbar
-              visibleDate={visibleDate}
-              view={view}
-              filter={filter}
-              onPrev={onPrev}
-              onNext={onNext}
-              onToday={onToday}
-              onViewChange={onViewChange}
-              onFilterChange={setFilter}
-            />
             <CursorFrame
               name={users[0]?.name ?? "Teammate"}
               hidden={hideCursors}
               weekStart={weekStart}
             >
-            <div data-cal-reveal>
+            <div data-cal-reveal className="flex min-h-0 flex-1 flex-col">
               {boardView === "month" && (
                 <CalendarGrid
                   visibleMonth={visibleDate}
@@ -429,7 +416,7 @@ export function CalendarView({
                   categories={categories}
                   users={[]}
                   awarenessDays={awarenessDays}
-                  visibleCategoryIds={categoryFilter}
+                  visibleCategoryIds={categorySelection}
                   onCellClick={onCellClick}
                   onPostClick={onPostClick}
                 />
@@ -440,7 +427,7 @@ export function CalendarView({
                   posts={filteredPosts}
                   categories={categories}
                   awarenessDays={awarenessDays}
-                  visibleCategoryIds={categoryFilter}
+                  visibleCategoryIds={categorySelection}
                   onCellClick={onCellClick}
                   onPostClick={onPostClick}
                 />
@@ -451,7 +438,7 @@ export function CalendarView({
                   posts={filteredPosts}
                   categories={categories}
                   awarenessDays={awarenessDays}
-                  visibleCategoryIds={categoryFilter}
+                  visibleCategoryIds={categorySelection}
                   onCellClick={onCellClick}
                   onPostClick={onPostClick}
                 />
@@ -460,7 +447,7 @@ export function CalendarView({
                 <ListView
                   posts={filteredPosts}
                   categories={categories}
-                  visibleCategoryIds={categoryFilter}
+                  visibleCategoryIds={categorySelection}
                   onPostClick={onPostClick}
                   rangeStart={visibleRange.start}
                   rangeEnd={visibleRange.end}
@@ -469,33 +456,6 @@ export function CalendarView({
             </div>
             </CursorFrame>
           </DndContext>
-
-          <section
-            aria-label="Plan cadence with an AI agent"
-            className="mt-6 rounded-lg bg-secondary px-4 py-3 sm:px-5 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-          >
-            <div className="min-w-0">
-              <h2 className="text-body-sm font-medium text-foreground">
-                Let an agent plan your next two weeks
-              </h2>
-              <p className="text-caption text-muted-foreground">
-                Read your preferred days and times, avoids conflicts, writes pending drafts.
-              </p>
-            </div>
-            <Button
-              onClick={() => setPlanOpen(true)}
-              className="gap-1.5 self-stretch sm:self-auto whitespace-nowrap"
-              size="sm"
-            >
-              <Sparkles className="size-4" aria-hidden />
-              Plan cadence
-            </Button>
-          </section>
-          <PlanCadenceDialog
-            open={planOpen}
-            onOpenChange={setPlanOpen}
-            startDate={visibleDate}
-          />
         </main>
     </CalendarOrb>
     </LivePresence>
@@ -521,21 +481,35 @@ function memberForCursor(cursor: LiveCursor, team: TeamMember[], index: number):
 }
 
 function CalendarChrome({
-  weekStart,
   density,
   overviewOpen,
   onOverview,
   onCreate,
   team,
   regionRef,
+  visibleDate,
+  view,
+  filter,
+  onPrev,
+  onNext,
+  onToday,
+  onViewChange,
+  onFilterChange,
 }: {
-  weekStart: string
   density: "touch" | "pointer"
   overviewOpen: boolean
   onOverview?: () => void
   onCreate: () => void
   team: TeamMember[]
   regionRef: React.RefObject<HTMLElement | null>
+  visibleDate: Date
+  view: ViewT
+  filter: CalendarFilter
+  onPrev: () => void
+  onNext: () => void
+  onToday: () => void
+  onViewChange: (next: ViewT) => void
+  onFilterChange: (next: CalendarFilter) => void
 }) {
   const { copy, prefs, setPrefs, viewer } = usePrototype()
   const { reduced } = useAgenticMotion()
@@ -551,16 +525,23 @@ function CalendarChrome({
 
   return (
     <>
-      <InterfaceTopBar
-        weekStart={weekStart}
-        density={density}
-        overviewOpen={overviewOpen}
-        onOverview={onOverview}
+      <CalendarToolbar
+        visibleDate={visibleDate}
+        view={view}
+        filter={filter}
+        onPrev={onPrev}
+        onNext={onNext}
+        onToday={onToday}
+        onViewChange={onViewChange}
+        onFilterChange={onFilterChange}
         onOpenTimbl={() => window.dispatchEvent(new Event("timbl:open"))}
-        onMenu={() => window.dispatchEvent(new Event("nav:open"))}
-        onSearch={() => window.dispatchEvent(new Event("palette:open"))}
         onCreate={onCreate}
-        notifications={<NotificationsMenu />}
+        onSearch={() => window.dispatchEvent(new Event("palette:open"))}
+        onMenu={() => window.dispatchEvent(new Event("nav:open"))}
+        onOverview={onOverview}
+        overviewOpen={overviewOpen}
+        density={density}
+        notifications={<NotificationsMenu density={density} />}
         presence={
           unique.length === 0 && elsewhere.length === 0 ? null : (
             <div className="flex items-center gap-2">
@@ -632,33 +613,34 @@ function ListView({
     arr.push(p)
     byDate.set(p.scheduledDate, arr)
   }
-  const days: string[] = []
-  for (let cursor = parseISO(rangeStart); cursor <= parseISO(rangeEnd); cursor = addDays(cursor, 1)) {
-    days.push(format(cursor, "yyyy-MM-dd"))
+  const days = [...byDate.keys()].filter((date) => date >= rangeStart && date <= rangeEnd).sort()
+
+  if (days.length === 0) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-border bg-background px-4 py-8 text-center text-body-sm text-muted-foreground">
+        {copy.iface.calendar.nothingPlanned}
+      </div>
+    )
   }
 
   return (
-    <div className="rounded-lg border border-border bg-background divide-y divide-border">
+    <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-background">
       {days.map((date) => {
         const group = byDate.get(date) ?? []
         return (
-          <section key={date} className="flex gap-6 px-4 py-3">
-            <h3 className="w-20 shrink-0 text-xs text-muted-foreground tabular-nums">
+          <section key={date} className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-4 border-b border-border px-4 py-4 last:border-b-0 @3xl/iface:px-6">
+            <h3 className="pt-1 text-caption text-muted-foreground tabular-nums">
               {format(parseISO(date), "EEE d MMM")}
             </h3>
-            <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-              {group.length === 0 ? (
-                <p className="flex min-h-11 items-center text-caption text-muted-foreground">{copy.iface.calendar.nothingPlanned}</p>
-              ) : (
-                group.map((p) => (
-                  <EventListItem
-                    key={p.id}
-                    post={p}
-                    category={categoryById.get(p.categoryId ?? "") ?? null}
-                    onOpen={() => onPostClick(p)}
-                  />
-                ))
-              )}
+            <div className="flex min-w-0 flex-col gap-2">
+              {group.map((p) => (
+                <EventListItem
+                  key={p.id}
+                  post={p}
+                  category={categoryById.get(p.categoryId ?? "") ?? null}
+                  onOpen={() => onPostClick(p)}
+                />
+              ))}
             </div>
           </section>
         )

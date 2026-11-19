@@ -2,7 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core"
 import { format, isToday } from "date-fns"
-import { useMemo } from "react"
+import { Fragment, useMemo } from "react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post } from "@/lib/schemas"
 import { groupAwarenessRanges } from "@/lib/calendar/awareness-grouping"
@@ -78,75 +78,57 @@ export function DayView({
 
   const hasAllDay = allDayPosts.length > 0 || dayAwarenessRanges.length > 0
 
+  const gutter = "border-r border-border"
+
   return (
-    <div className="rounded-lg border border-border bg-background" data-cal-reveal>
-      <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 14rem)" }}>
-        {/* Day header - sticky inside the scroll container */}
-        <div
-          className="grid border-b border-border bg-background sticky top-0 z-10"
-          style={{ gridTemplateColumns: "4rem 1fr" }}
-        >
-          <div className="border-r border-border" />
-          <div className="py-3 px-4 text-center">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              {format(currentDate, "EEEE")}
-            </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background" data-cal-reveal>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="grid" style={{ gridTemplateColumns: "4rem minmax(0, 1fr)" }}>
+          <div className={cn(gutter, "sticky top-0 z-10 border-b border-border bg-background")} />
+          <div className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2 text-center">
+            <div className="text-caption text-muted-foreground">{format(currentDate, "EEEE")}</div>
             <div
               className={cn(
-                "mx-auto mt-0.5 flex size-8 items-center justify-center rounded-full text-base tabular-nums",
-                today && "bg-foreground text-background font-semibold",
+                "mx-auto mt-1 flex size-8 items-center justify-center rounded-full text-body-sm tabular-nums",
+                today && "bg-primary font-medium text-primary-foreground",
                 !today && "text-foreground",
               )}
             >
               {format(currentDate, "d")}
             </div>
           </div>
-        </div>
-
-        {/* All-day strip */}
-        {hasAllDay && (
-          <div
-            className="grid border-b border-border bg-secondary/10"
-            style={{ gridTemplateColumns: "4rem 1fr" }}
-          >
-            <div className="border-r border-border px-1 py-1 flex items-start justify-end">
-              <span className="text-[10px] text-muted-foreground mt-0.5">all-day</span>
-            </div>
-            <AllDayCell
-              iso={iso}
-              date={currentDate}
-              posts={allDayPosts}
-              awarenessRanges={dayAwarenessRanges}
-              categoryById={categoryById}
-              onCellClick={onCellClick}
-              onPostClick={onPostClick}
-            />
-          </div>
-        )}
-
-        {/* Hourly rows - same container as header, no drift */}
-        {HOURS.map((hour) => {
-          const slotPosts = timedMap.get(hour) ?? []
-          return (
-            <div
-              key={hour}
-              className="grid border-b border-border last:border-b-0"
-              style={{ gridTemplateColumns: "4rem 1fr" }}
-            >
-              <div className="border-r border-border px-2 py-1 text-[10px] text-muted-foreground text-right tabular-nums">
-                {hour === 0 ? "" : `${String(hour).padStart(2, "0")}:00`}
+          {hasAllDay ? (
+            <>
+              <div className={cn(gutter, "flex items-center justify-end bg-secondary/10 px-2 py-2")}>
+                <span className="text-caption text-muted-foreground">All day</span>
+              </div>
+              <AllDayCell
+                iso={iso}
+                date={currentDate}
+                posts={allDayPosts}
+                awarenessRanges={dayAwarenessRanges}
+                categoryById={categoryById}
+                onCellClick={onCellClick}
+                onPostClick={onPostClick}
+              />
+            </>
+          ) : null}
+          {HOURS.map((hour) => (
+            <Fragment key={hour}>
+              <div className={cn(gutter, "min-h-16 border-b border-border px-2 py-2 text-right text-caption text-muted-foreground tabular-nums @3xl/iface:min-h-20")}>
+                {`${String(hour).padStart(2, "0")}:00`}
               </div>
               <TimeslotCell
                 iso={iso}
                 hour={hour}
-                posts={slotPosts}
+                posts={timedMap.get(hour) ?? []}
                 categoryById={categoryById}
                 onCellClick={() => onCellClick(currentDate)}
                 onPostClick={onPostClick}
               />
-            </div>
-          )
-        })}
+            </Fragment>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -179,7 +161,7 @@ function AllDayCell({
       ref={setNodeRef}
       onClick={() => onCellClick(date)}
       className={cn(
-        "min-h-[36px] px-2 py-1 flex flex-col gap-0.5 cursor-pointer",
+        "flex min-h-12 cursor-pointer flex-col gap-1 border-b border-border bg-secondary/10 px-2 py-2",
         "transition-colors hover:bg-secondary/30",
         isOver && "bg-secondary/60",
       )}
@@ -190,7 +172,7 @@ function AllDayCell({
         return (
           <div
             key={r.id}
-            className="rounded-sm px-1.5 py-0.5 text-[10px] leading-tight truncate font-medium"
+            className="h-6 truncate rounded-md px-2 text-caption leading-6"
             style={{ ...pillStyle, borderLeft: `2px solid ${color}` }}
             title={r.name}
           >
@@ -238,7 +220,7 @@ function TimeslotCell({
       ref={setNodeRef}
       onClick={onCellClick}
       className={cn(
-        "min-h-[52px] px-2 py-0.5 flex flex-col gap-0.5 cursor-pointer",
+        "flex min-h-16 cursor-pointer flex-col gap-1 border-b border-border px-3 py-2 @3xl/iface:min-h-20",
         "transition-colors hover:bg-secondary/20",
         isOver && "bg-secondary/50",
       )}
