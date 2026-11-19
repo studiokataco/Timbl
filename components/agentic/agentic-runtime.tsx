@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useCallback, useContext, useRef, useState } from "react"
-import { MotionConfig, useReducedMotion } from "framer-motion"
+import { MotionConfig } from "framer-motion"
 import { toast } from "sonner"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import type { WithId } from "@/lib/firebase/serialize"
@@ -24,6 +24,7 @@ import { NoteThread } from "@/components/agentic/collab/note-thread"
 import { TalkSheet } from "@/components/agentic/mobile/talk-sheet"
 import { applySpokenTool, useLiveSession } from "@/components/agentic/voice/use-live-session"
 import { useScriptedUtterance } from "@/components/agentic/voice/scripted"
+import { REDUCED_MOTION_QUERY, useMediaMatch } from "@/lib/hooks/use-media-query"
 
 export type NavigateEffect = Extract<EngineEffect, { type: "navigate" }>
 
@@ -139,7 +140,7 @@ export function AgenticRuntime({
 
 export function useReducedMotionAttr(): string | undefined {
   const { prefs } = usePrototype()
-  const osReduced = useReducedMotion()
+  const osReduced = useMediaMatch(REDUCED_MOTION_QUERY)
   return prefs.reduceMotion || osReduced ? "" : undefined
 }
 

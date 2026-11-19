@@ -1,7 +1,8 @@
 "use client"
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
-import { useReducedMotionConfig } from "framer-motion"
+import { MotionConfigContext } from "framer-motion"
+import { REDUCED_MOTION_QUERY, useMediaMatch } from "@/lib/hooks/use-media-query"
 import { makeCopy, type Copy } from "./copy"
 import { usePrototypeView } from "./use-prototype-view"
 import type { AmbientSignal, PresencePrefs, TeamMember, UserRole, ViewState } from "./types"
@@ -95,7 +96,9 @@ export function usePrototype(): PrototypeContextValue {
 }
 
 export function useAgenticMotion(): { reduced: boolean } {
-  return { reduced: useReducedMotionConfig() ?? false }
+  const setting = useContext(MotionConfigContext).reducedMotion
+  const os = useMediaMatch(REDUCED_MOTION_QUERY)
+  return { reduced: setting === "always" || (setting !== "never" && os === true) }
 }
 
 export function useAmbientEnabled(): { glow: boolean; backgroundMotion: boolean } {

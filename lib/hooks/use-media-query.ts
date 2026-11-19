@@ -24,6 +24,7 @@ export function useMediaQuery(query: string): boolean {
 }
 
 export const PHONE_QUERY = "(width < 48rem)"
+export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)"
 
 export function useMediaMatch(query: string): boolean | null {
   const subscribe = useCallback(
