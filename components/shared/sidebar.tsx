@@ -59,17 +59,23 @@ const GROUPS: NavGroup[] = [
   },
 ]
 
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarNav({ onNavigate, mobile = false }: { onNavigate?: () => void; mobile?: boolean }) {
   const pathname = usePathname()
   return (
     <>
       {GROUPS.map((group, gi) => (
         <div
           key={gi}
-          className={cn("flex flex-col gap-1", gi > 0 && "mt-6")}
+          className={cn(
+            "flex flex-col gap-1",
+            gi > 0 && (mobile ? "mt-3 border-t border-border pt-3" : "mt-6"),
+          )}
         >
           {group.heading && (
-            <p className="text-caption text-muted-foreground px-3 pb-1.5 hidden @7xl/iface:block">
+            <p className={cn(
+              "px-3 pb-1.5 text-caption text-muted-foreground",
+              mobile ? "block" : "hidden @7xl/iface:block",
+            )}>
               {group.heading}
             </p>
           )}
@@ -82,8 +88,12 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 href={item.href}
                 onClick={onNavigate}
                 aria-label={item.label}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex items-center justify-center @7xl/iface:justify-start gap-2.5 rounded-lg px-0 @7xl/iface:px-3 py-2.5 text-sm font-medium transition-colors",
+                  "relative flex min-h-11 items-center rounded-lg py-2.5 font-medium transition-colors",
+                  mobile
+                    ? "justify-start gap-3 px-3 text-base"
+                    : "justify-center gap-2.5 px-0 text-sm @7xl/iface:justify-start @7xl/iface:px-3",
                   active
                     ? "bg-secondary text-foreground"
                     : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
@@ -92,13 +102,17 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 {active && (
                   <span
                     aria-hidden
-                    className="absolute left-0 top-2.5 bottom-2.5 w-0.5 rounded-full bg-foreground hidden @7xl/iface:block"
+                    className={cn(
+                      "absolute left-0 top-2.5 bottom-2.5 w-0.5 rounded-full bg-foreground",
+                      mobile ? "hidden" : "hidden @7xl/iface:block",
+                    )}
                   />
                 )}
-                <Icon aria-hidden className="size-4" />
-                <span className="hidden @7xl/iface:inline">{item.label}</span>
+                <Icon aria-hidden className={mobile ? "size-5" : "size-4"} />
+                <span className={mobile ? "inline" : "hidden @7xl/iface:inline"}>{item.label}</span>
               </Link>
             )
+            if (mobile) return <div key={item.href}>{link}</div>
             return (
               <Tooltip key={item.href}>
                 <TooltipTrigger render={<div className="@7xl/iface:contents" />}>
@@ -119,9 +133,11 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 export function FeedbackTrigger({
   onNavigate,
   className,
+  mobile = false,
 }: {
   onNavigate?: () => void
   className?: string
+  mobile?: boolean
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -134,12 +150,13 @@ export function FeedbackTrigger({
         }}
         aria-label="Send feedback"
         className={cn(
-          "timbl-feedback-trigger flex items-center justify-center @7xl/iface:justify-start gap-2.5 rounded-lg px-0 @7xl/iface:px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
+          "timbl-feedback-trigger flex min-h-11 items-center gap-2.5 rounded-lg py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
+          mobile ? "w-full justify-start px-3" : "justify-center px-0 @7xl/iface:justify-start @7xl/iface:px-3",
           className,
         )}
       >
         <MessageSquareText aria-hidden className="size-4" />
-        <span className="hidden @7xl/iface:inline">Send feedback</span>
+        <span className={mobile ? "inline" : "hidden @7xl/iface:inline"}>Send feedback</span>
       </button>
       <FeedbackDialog open={open} onOpenChange={setOpen} />
     </>
@@ -150,10 +167,12 @@ export function WorkspaceBrandCard({
   workspaces,
   brands,
   className,
+  onNavigate,
 }: {
   workspaces: WorkspaceSwitcherData
   brands: BrandSwitcherData
   className?: string
+  onNavigate?: () => void
 }) {
   return (
     <div
@@ -162,9 +181,9 @@ export function WorkspaceBrandCard({
         className,
       )}
     >
-      <WorkspaceSwitcher data={workspaces} nested />
+      <WorkspaceSwitcher data={workspaces} nested onNavigate={onNavigate} />
       <div className="mx-2.5 border-t border-border" />
-      <BrandSwitcher data={brands} nested />
+      <BrandSwitcher data={brands} nested onNavigate={onNavigate} />
     </div>
   )
 }

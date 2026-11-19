@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Search } from "lucide-react"
-
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Search, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { SidebarNav, FeedbackTrigger, WorkspaceBrandCard } from "@/components/shared/sidebar"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
@@ -22,30 +22,46 @@ export function MobileNav({
     window.addEventListener("nav:open", onOpen)
     return () => window.removeEventListener("nav:open", onOpen)
   }, [])
+
+  const close = () => setOpen(false)
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent
         side="left"
-        className="w-72 max-w-[80vw] p-3 gap-1"
+        className="max-w-full gap-0 overflow-hidden border-r border-border p-4"
+        style={{ width: "min(20rem, calc(100vw - 3rem))" }}
+        showCloseButton={false}
         aria-label="Primary navigation"
       >
-        <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-4 mt-1" />
-        <WorkspaceBrandCard workspaces={workspaces} brands={brands} className="mb-3" />
-        <button
+        <SheetHeader className="sr-only">
+          <SheetTitle>Primary navigation</SheetTitle>
+        </SheetHeader>
+        <header className="mb-4 flex h-11 shrink-0 items-center justify-between">
+          <TimblWordmark href="/calendar" logoSize={24} onClick={close} />
+          <Button type="button" variant="ghost" size="icon-lg" className="size-11" aria-label="Close navigation" onClick={close}>
+            <X aria-hidden className="size-5" />
+          </Button>
+        </header>
+        <WorkspaceBrandCard workspaces={workspaces} brands={brands} className="mb-4 shrink-0" onNavigate={close} />
+        <Button
           type="button"
+          variant="outline"
           onClick={() => {
-            setOpen(false)
+            close()
             window.dispatchEvent(new Event("palette:open"))
           }}
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground mb-1"
+          className="mb-4 h-11 w-full justify-start gap-3 px-3 text-muted-foreground"
         >
-          <Search aria-hidden className="size-4" />
+          <Search aria-hidden className="size-5" />
           <span>Search</span>
-        </button>
-        <nav className="flex flex-col gap-1">
-          <SidebarNav onNavigate={() => setOpen(false)} />
-          <FeedbackTrigger onNavigate={() => setOpen(false)} className="mt-1" />
+        </Button>
+        <nav aria-label="Workspace" className="min-h-0 flex-1 overflow-y-auto">
+          <SidebarNav mobile onNavigate={close} />
         </nav>
+        <div className="mt-3 shrink-0 border-t border-border pt-3">
+          <FeedbackTrigger mobile onNavigate={close} />
+        </div>
       </SheetContent>
     </Sheet>
   )

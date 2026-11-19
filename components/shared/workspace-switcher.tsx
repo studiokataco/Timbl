@@ -44,10 +44,12 @@ export function WorkspaceSwitcher({
   data,
   className,
   nested = false,
+  onNavigate,
 }: {
   data: WorkspaceSwitcherData
   className?: string
   nested?: boolean
+  onNavigate?: () => void
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -57,6 +59,7 @@ export function WorkspaceSwitcher({
 
   function switchTo(ws: WorkspaceSummary) {
     if (ws.current) return
+    onNavigate?.()
     setBusyId(ws.id)
     startTransition(async () => {
       try {
@@ -79,6 +82,7 @@ export function WorkspaceSwitcher({
   }
 
   function createWorkspace() {
+    onNavigate?.()
     router.push("/workspaces?new=1")
   }
 
@@ -158,7 +162,7 @@ export function WorkspaceSwitcher({
         )}
 
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/settings/workspace")} className="gap-2.5 py-2">
+        <DropdownMenuItem onClick={() => { onNavigate?.(); router.push("/settings/workspace") }} className="gap-2.5 py-2">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground">
             <Settings2 aria-hidden className="size-4" />
           </span>

@@ -31,10 +31,12 @@ export function TimblWordmark({
   className,
   logoSize = 28,
   href,
+  onClick,
 }: {
   className?: string
   logoSize?: number
   href?: string
+  onClick?: () => void
 }) {
   const inner = (
     <>
@@ -49,7 +51,7 @@ export function TimblWordmark({
 
   if (href) {
     return (
-      <a href={href} className={classes} aria-label="Timbl home">
+      <a href={href} className={classes} aria-label="Timbl home" onClick={onClick}>
         {inner}
       </a>
     )
