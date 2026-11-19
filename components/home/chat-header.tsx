@@ -1,7 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Archive, Check, ChevronDown, ChevronLeft, Ellipsis, Menu, Pin, Search, SquarePen } from "lucide-react"
+import { Archive, Check, ChevronDown, ChevronLeft, Ellipsis, Menu, PanelLeftOpen, Pin, Search, SquarePen } from "lucide-react"
+import { useEngine } from "@/components/agentic/engine/engine-context"
+import { ModeSwitch } from "@/components/shared/mode-switch"
+import { SIDEBAR_COLLAPSED_KEY, useStoredFlag } from "@/components/shared/use-stored-flag"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -20,18 +23,41 @@ function IconTip({ label, children }: { label: string; children: React.ReactElem
 
 export function HomeLead() {
   const { copy } = useHomeChats()
+  const [collapsed, setCollapsed] = useStoredFlag(SIDEBAR_COLLAPSED_KEY)
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-sm"
-      aria-label={copy.menu}
-      onClick={() => window.dispatchEvent(new Event("nav:open"))}
-      className="@3xl/iface:hidden"
-    >
-      <Menu className="size-4" aria-hidden />
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label={copy.menu}
+        onClick={() => window.dispatchEvent(new Event("nav:open"))}
+        className="@3xl/iface:hidden"
+      >
+        <Menu className="size-4" aria-hidden />
+      </Button>
+      {collapsed ? (
+        <IconTip label={`${copy.openSidebar} ⌘\\`}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={copy.openSidebar}
+            aria-keyshortcuts="Meta+Backslash"
+            onClick={() => setCollapsed(false)}
+            className="hidden @3xl/iface:inline-flex"
+          >
+            <PanelLeftOpen className="size-4" aria-hidden />
+          </Button>
+        </IconTip>
+      ) : null}
+    </>
   )
+}
+
+export function TimblModeSwitch() {
+  const { dispatch } = useEngine()
+  return <ModeSwitch value="timbl" onSwitch={(mode) => mode === "interface" && dispatch({ type: "handoff_out" })} />
 }
 
 export function ChatTitle() {
@@ -149,7 +175,7 @@ export function ChatActions() {
   return (
     <span className="hidden items-center gap-1.5 @2xl/timbl:flex">
       <IconTip label={copy.newChat}>
-        <Button type="button" variant="ghost" size="icon-sm" aria-label={copy.newChat} onClick={newChat}>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={copy.newChat} onClick={() => newChat()}>
           <SquarePen className="size-4" aria-hidden />
         </Button>
       </IconTip>

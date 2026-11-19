@@ -534,7 +534,6 @@ function CalendarChrome({
         onToday={onToday}
         onViewChange={onViewChange}
         onFilterChange={onFilterChange}
-        onOpenTimbl={() => window.dispatchEvent(new Event("timbl:open"))}
         onCreate={onCreate}
         onSearch={() => window.dispatchEvent(new Event("palette:open"))}
         onMenu={() => window.dispatchEvent(new Event("nav:open"))}

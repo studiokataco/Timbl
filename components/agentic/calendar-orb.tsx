@@ -1,6 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import { chatPath, useHomeChats } from "@/components/home/home-chats"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { OverviewRail } from "@/components/agentic/interface/overview-rail"
 import type { WithId } from "@/lib/firebase/serialize"
@@ -22,10 +24,9 @@ import { deriveOrbState } from "@/components/agentic/primitives/orb-machine"
 import { AssistantAvatar } from "@/components/agentic/primitives/presence-orb"
 import { usePrototype } from "@/components/agentic/prototype-context"
 import type { CalendarFilter, MicState, PresencePrefs, TeamMember, ViewState } from "@/components/agentic/types"
-import { TimblModeView } from "@/components/agentic/views/timbl-mode-view"
 import { MobileView } from "@/components/agentic/views/mobile-view"
 import { useLiveSession } from "@/components/agentic/voice/use-live-session"
-import { AgenticProviders, AgenticRuntime, useReducedMotionAttr, type NavigateEffect } from "@/components/agentic/agentic-runtime"
+import { AgenticProviders, AgenticRuntime, useReducedMotionAttr, useThreadFlush, type NavigateEffect } from "@/components/agentic/agentic-runtime"
 
 function useRail(weekStart: string) {
   const { viewer } = usePrototype()
@@ -37,13 +38,15 @@ function OrbLayer({ onOpenOverview, weekStart, surfaceContext }: { onOpenOvervie
   const { copy, view, update, dismiss, prefs } = usePrototype()
   const { state, dispatch } = useEngine()
   const voice = useLiveSession({ instruction: copy.prompts.liveSystem })
-  const { orbRef, triggerIn } = useHandoff()
+  const { orbRef } = useHandoff()
+  const router = useRouter()
+  const flush = useThreadFlush()
+  const { orbChatId, freshOrbChat } = useHomeChats()
   const rail = useRail(weekStart)
   const boundsRef = useRef<HTMLDivElement | null>(null)
   const dockRef = useRef<HTMLDivElement | null>(null)
   const drag = useOrbDrag("calendar", boundsRef, dockRef)
   const [miniText, setMiniText] = useState("")
-  const [miniSource, setMiniSource] = useState<"typed" | "voice">("typed")
   const [narrow, setNarrow] = useState(false)
   const lastSurface = useRef(surfaceContext)
   const miniMic: MicState =
@@ -56,7 +59,6 @@ function OrbLayer({ onOpenOverview, weekStart, surfaceContext }: { onOpenOvervie
     const text = voice.consume()
     if (text) {
       setMiniText((current) => `${current}${current ? " " : ""}${text}`)
-      setMiniSource("voice")
     }
   }
   const onMiniMic = (event: MicEvent) => {
@@ -169,29 +171,35 @@ function OrbLayer({ onOpenOverview, weekStart, surfaceContext }: { onOpenOvervie
   const contextTitle = contextPost ? contextPost.brief || contextPost.blurb || "" : ""
   const flyoutContext = contextPost ? { label: copy.flyout.contextLabel, value: contextTitle } : null
 
-  const openTimbl = (carry: "chat" | "chat_and_item" | "none") => {
-    const chipText =
-      carry === "chat_and_item" && contextPost
-        ? copy.flyout.carryItem(contextTitle, state.miniChat.length)
-        : carry === "chat"
-          ? copy.flyout.carryChat(state.miniChat.length)
-          : null
-    triggerIn({
-      carryText: chipText,
-      onSwap: () => {
-        dispatch({ type: "handoff_in", carry })
-        update({ view: "timbl", sheet: null }, "push")
-      },
+  const openTimbl = (carry: "chat" | "chat_and_item") => {
+    const itemId = carry === "chat_and_item" ? contextPost?.id : undefined
+    void flush().then(() => {
+      router.push(itemId ? `${chatPath(orbChatId)}?item=${encodeURIComponent(itemId)}` : chatPath(orbChatId))
     })
   }
 
+  const askInTimbl = (text: string) => {
+    void flush().then(() => {
+      router.push(`${chatPath(orbChatId)}?q=${encodeURIComponent(text)}`)
+    })
+  }
+
+  useEffect(() => {
+    if (view.view !== "timbl") return
+    void flush().then(() => window.location.replace(chatPath(orbChatId)))
+  }, [flush, orbChatId, view.view])
+
+  useEffect(() => {
+    const open = () => {
+      void flush().then(() => router.push(chatPath(orbChatId)))
+    }
+    window.addEventListener("timbl:mode", open)
+    return () => window.removeEventListener("timbl:mode", open)
+  }, [flush, orbChatId, router])
+
   return (
     <div ref={boundsRef} className="pointer-events-none absolute inset-0 z-30">
-      {view.view === "timbl" ? (
-        <div className="pointer-events-auto absolute inset-0 z-40 flex min-h-0 bg-background">
-          <TimblModeView chrome="desktop" attention={rail.attention.length} />
-        </div>
-      ) : view.view === "mobile" ? (
+      {view.view === "timbl" ? null : view.view === "mobile" ? (
         <div className="pointer-events-auto absolute inset-0 z-40 flex min-h-0 bg-background">
           <MobileView />
         </div>
@@ -229,7 +237,7 @@ function OrbLayer({ onOpenOverview, weekStart, surfaceContext }: { onOpenOvervie
             density={narrow ? "touch" : "pointer"}
             onFull={() => openTimbl("chat")}
             onHandoff={() => openTimbl("chat_and_item")}
-            onNewChat={() => dispatch({ type: "new_mini_chat" })}
+            onNewChat={freshOrbChat}
             onOpenOverview={onOpenOverview}
             onClose={() => dismiss({ sheet: null })}
             onOpenActivity={() => update({ sheet: "activity" }, "push")}
@@ -240,13 +248,10 @@ function OrbLayer({ onOpenOverview, weekStart, surfaceContext }: { onOpenOvervie
                 value={miniText}
                 onChange={(value) => {
                   setMiniText(value)
-                  setMiniSource("typed")
                 }}
                 onSend={(value) => {
-                  dispatch({ type: "user_sent", text: value, source: miniSource })
                   setMiniText("")
-                  setMiniSource("typed")
-                  update({ view: "timbl", sheet: null }, "push")
+                  askInTimbl(value)
                 }}
                 suggestions={[]}
                 placeholder={copy.flyout.placeholder}
@@ -292,8 +297,6 @@ function ProductRail({
   categorySummary?: string | null
 }) {
   const { copy, update } = usePrototype()
-  const { dispatch } = useEngine()
-  const { triggerIn } = useHandoff()
   const rail = useRail(weekStart)
   const line = { guardrail: copy.approval.meta, contributor: copy.approve.status, agent_draft: copy.cards.queue.agentRow, mention: copy.notes.mentionLine }
   return (
@@ -305,15 +308,6 @@ function ProductRail({
       categoryFilter={categoryFilter}
       categorySummary={categorySummary === undefined ? copy.iface.rail.categorySummary : categorySummary}
       density={density}
-      onOpenTimbl={() =>
-        triggerIn({
-          carryText: null,
-          onSwap: () => {
-            dispatch({ type: "handoff_in", carry: "none" })
-            update({ view: "timbl", sheet: null }, "push")
-          },
-        })
-      }
       onOpenPost={onOpenPost}
       onOpenActivity={() => update({ sheet: "activity" }, "push")}
       onSettings={() => update({ sheet: "persona" }, "push")}
@@ -372,6 +366,7 @@ function OrbRuntime({
   surfaceContext = "Calendar",
 }: RuntimeProps) {
   const { view, update, copy } = usePrototype()
+  const { orbChatId, refresh } = useHomeChats()
   const reducedAttr = useReducedMotionAttr()
   useEffect(() => {
     if (surfaceContext === "Calendar" && (view.filter !== filter || view.week !== weekStart)) update({ week: weekStart, filter })
@@ -405,6 +400,8 @@ function OrbRuntime({
       posts={posts}
       events={events}
       surfaceContext={surfaceContext}
+      threadId={orbChatId}
+      onSaved={refresh}
       onNavigate={onNavigate}
     >
       <ShortcutOwner />

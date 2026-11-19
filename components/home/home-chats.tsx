@@ -34,8 +34,13 @@ type HomeChats = {
   chatId: string
   current: AssistantThreadListItem | null
   lastChatId: string | null
+  orbChatId: string
+  needsYouCount: number
   openChat: (id: string) => void
-  newChat: () => void
+  newChat: (firstMessage?: string) => void
+  freshOrbChat: () => void
+  toTimbl: (query?: string) => void
+  interfaceRoute: () => string
   togglePin: (thread: AssistantThreadListItem) => void
   toggleArchive: (thread: AssistantThreadListItem) => void
   toggleShare: (thread: AssistantThreadListItem) => void
@@ -72,6 +77,16 @@ export function readLastChat(orgId: string): string | null {
   return typeof window === "undefined" ? null : window.localStorage.getItem(lastChatKey(orgId))
 }
 
+const FALLBACK_INTERFACE_ROUTE = "/calendar"
+
+function interfaceRouteKey(orgId: string): string {
+  return `timbl:last-interface:${orgId}`
+}
+
+export function rememberInterfaceRoute(orgId: string, path: string): void {
+  window.localStorage.setItem(interfaceRouteKey(orgId), path)
+}
+
 export function HomeChatsProvider({
   assistantName,
   initialNewChatId,
@@ -88,7 +103,7 @@ export function HomeChatsProvider({
   const qc = useQueryClient()
   const onHome = pathname === DEFAULT_APP_ROUTE || pathname.startsWith(`${DEFAULT_APP_ROUTE}/`)
   const [newChatId, setNewChatId] = useState(initialNewChatId)
-  const [lastChatId, setLastChatId] = useState<string | null>(null)
+  const [lastChatId, setLastChatId] = useState<string | null>(() => readLastChat(orgId))
   const [renaming, setRenaming] = useState<AssistantThreadListItem | null>(null)
   const [deleting, setDeleting] = useState<AssistantThreadListItem | null>(null)
   const marked = useRef(new Set<string>())
@@ -102,10 +117,6 @@ export function HomeChatsProvider({
   const current = threads.find((thread) => thread.id === chatId) ?? null
 
   const refresh = useCallback(() => void qc.invalidateQueries({ queryKey }), [qc, queryKey])
-
-  useEffect(() => {
-    setLastChatId(readLastChat(orgId))
-  }, [orgId])
 
   useEffect(() => {
     if (!current) return
@@ -131,11 +142,38 @@ export function HomeChatsProvider({
     [onHome, router],
   )
 
-  const newChat = useCallback(() => {
+  const newChat = useCallback(
+    (firstMessage?: string) => {
+      setNewChatId(crypto.randomUUID())
+      const target = firstMessage ? `${DEFAULT_APP_ROUTE}?q=${encodeURIComponent(firstMessage)}` : DEFAULT_APP_ROUTE
+      if (onHome) window.history.pushState(null, "", target)
+      else router.push(target)
+    },
+    [onHome, router],
+  )
+
+  const orbChatId = lastChatId ?? newChatId
+
+  const freshOrbChat = useCallback(() => {
+    window.localStorage.removeItem(lastChatKey(orgId))
+    setLastChatId(null)
     setNewChatId(crypto.randomUUID())
-    if (onHome) window.history.pushState(null, "", DEFAULT_APP_ROUTE)
-    else router.push(DEFAULT_APP_ROUTE)
-  }, [onHome, router])
+  }, [orgId])
+
+  const toTimbl = useCallback(
+    (query?: string) => {
+      const target = chatPath(lastChatId ?? orbChatId)
+      router.push(query ? `${target}?q=${encodeURIComponent(query)}` : target)
+    },
+    [lastChatId, orbChatId, router],
+  )
+
+  const interfaceRoute = useCallback(
+    () => window.localStorage.getItem(interfaceRouteKey(orgId)) ?? FALLBACK_INTERFACE_ROUTE,
+    [orgId],
+  )
+
+  const needsYouCount = threads.filter((thread) => thread.needsYou && !thread.archived).length
 
   const patchLocal = useCallback(
     (id: string, change: Partial<AssistantThreadListItem>) =>
@@ -201,8 +239,13 @@ export function HomeChatsProvider({
       chatId,
       current,
       lastChatId,
+      orbChatId,
+      needsYouCount,
       openChat,
       newChat,
+      freshOrbChat,
+      toTimbl,
+      interfaceRoute,
       togglePin,
       toggleArchive,
       toggleShare,
@@ -211,7 +254,7 @@ export function HomeChatsProvider({
       askDelete: setDeleting,
       refresh,
     }),
-    [chatId, copy, copyLink, current, lastChatId, listReady, newChat, onHome, openChat, refresh, threads, toggleArchive, togglePin, toggleShare],
+    [chatId, copy, copyLink, current, freshOrbChat, interfaceRoute, lastChatId, listReady, needsYouCount, newChat, onHome, openChat, orbChatId, refresh, threads, toTimbl, toggleArchive, togglePin, toggleShare],
   )
 
   return (

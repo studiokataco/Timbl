@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { LogOut, Menu, Monitor, Moon, Plus, Search, Settings, Sun, UserRound } from "lucide-react"
+import { LogOut, Menu, Monitor, Moon, PanelLeftOpen, Plus, Search, Settings, Sun, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -20,6 +20,9 @@ import { NotificationsMenu } from "@/components/shared/notifications-menu"
 import { RealtimeDegradedBadge } from "@/components/shared/realtime-degraded-badge"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { IdentityAvatar } from "@/components/shared/identity-avatar"
+import { ModeSwitch } from "@/components/shared/mode-switch"
+import { SIDEBAR_COLLAPSED_KEY, useStoredFlag } from "@/components/shared/use-stored-flag"
+import { useHomeChats } from "@/components/home/home-chats"
 
 export function TopBar({
   user,
@@ -32,6 +35,8 @@ export function TopBar({
 }) {
   const { openQuickAdd } = useDialogs()
   const { theme, setTheme } = useTheme()
+  const { copy, toTimbl } = useHomeChats()
+  const [collapsed, setCollapsed] = useStoredFlag(SIDEBAR_COLLAPSED_KEY)
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-30">
@@ -44,6 +49,18 @@ export function TopBar({
         >
           <Menu aria-hidden className="size-5" />
         </button>
+        {collapsed ? (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label={copy.openSidebar}
+            aria-keyshortcuts="Meta+Backslash"
+            title={`${copy.openSidebar} ⌘\\`}
+            className="hidden @3xl/iface:inline-flex items-center justify-center size-9 -ml-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+          >
+            <PanelLeftOpen aria-hidden className="size-4" />
+          </button>
+        ) : null}
         <p className="text-base font-semibold tracking-tight leading-none text-foreground truncate min-w-0">
           {workspaceName}
         </p>
@@ -148,6 +165,7 @@ export function TopBar({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <ModeSwitch value="interface" onSwitch={(mode) => mode === "timbl" && toTimbl()} compactClass="sr-only @5xl/iface:not-sr-only" />
       </div>
     </header>
   )

@@ -150,7 +150,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <HomeChatsProvider assistantName={persona.assistantName} initialNewChatId={crypto.randomUUID()}>
             {impersonation ? <ImpersonationBanner orgName={org.name} /> : null}
             <DunningBanner />
-            <MobileNav workspaces={workspaces} brands={brands} />
+            <MobileNav workspaces={workspaces} brands={brands} user={{ name: user.name, email: user.email, role: user.role, avatarUrl: user.avatarUrl }} />
             <div className="@container/iface flex flex-1 min-h-0">
               <div id="app-shell-navigation" className="contents">
                 <Sidebar

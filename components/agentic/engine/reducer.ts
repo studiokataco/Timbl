@@ -1114,7 +1114,8 @@ function deckRefine(s: EngineState, ctx: Ctx, postId: string, kind: RefineKind):
 function handoffIn(s: EngineState, ctx: Ctx, carry: "chat" | "chat_and_item" | "none"): EngineState {
   let next = s
   if (carry !== "none") {
-    const moved = s.miniChat.filter((e) => e.id !== MINI_INITIAL_ID)
+    const existing = new Set(s.transcript.map((e) => e.id))
+    const moved = s.miniChat.filter((e) => e.id !== MINI_INITIAL_ID && !existing.has(e.id))
     const hadUser = moved.some((e) => e.role === "user")
     if (moved.length > 0) {
       const divider: TranscriptEntry = { id: nextId(ctx, "m"), role: "system", divider: "handoff", createdAt: ctx.now }
@@ -1221,6 +1222,25 @@ export function reduce(state: EngineState, event: EngineInput): EngineState {
     }
     case "new_mini_chat":
       return { ...s, miniChat: [initialMini(ctx.copy, now), { id: nextId(ctx, "m"), role: "assistant", text: ctx.copy.flyout.newChat, createdAt: now }] }
+    case "thread_reset": {
+      const fresh = initialEngineState(env, now)
+      return {
+        ...fresh,
+        seq: s.seq,
+        clock: s.clock,
+        posts: s.posts,
+        deck: s.deck,
+        skippedPostIds: s.skippedPostIds,
+        notes: s.notes,
+        reads: s.reads,
+        submissions: s.submissions,
+        activity: s.activity,
+        ideas: s.ideas,
+        glance: s.glance,
+        usage: s.usage,
+        context: s.context,
+      }
+    }
     case "card_action":
       return cardAction(user, ctx, event.action)
     case "run_start": {

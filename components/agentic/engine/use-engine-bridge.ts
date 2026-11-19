@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { listIdeationFeed } from "@/lib/actions/ideation"
 import { fetchAssistantThread, saveAssistantThread } from "@/lib/actions/assistant-threads"
@@ -96,12 +96,14 @@ export function EngineBridge({
   surfaceContext = "Calendar",
   threadId = SHELL_THREAD_ID,
   onSaved,
+  flushRef,
 }: {
   posts: WithId<Post>[]
   events?: { name: string; date: string }[]
   surfaceContext?: string
   threadId?: string
   onSaved?: () => void
+  flushRef?: { current: (() => Promise<void>) | null }
 }) {
   const orgId = useWorkspaceOrgId()
   const { state, dispatch, env } = useEngine()
@@ -113,6 +115,8 @@ export function EngineBridge({
   const streams = useRef(new Map<string, AbortController>())
   const gates = useRef(new Set<string>())
   const onSavedRef = useRef(onSaved)
+  const pendingSave = useRef<(() => Promise<void>) | null>(null)
+  const [hydratedVersion, setHydratedVersion] = useState(0)
   useEffect(() => {
     onSavedRef.current = onSaved
   }, [onSaved])
@@ -177,6 +181,17 @@ export function EngineBridge({
     dispatch({ type: "hydrate_glance", reconnectDays: days, events: events.filter((event) => daysUntil(event.date) >= 0).slice(0, 2) })
   }, [accountsQuery.data, dispatch, events])
 
+  const boundThread = useRef(threadId)
+  useEffect(() => {
+    if (boundThread.current === threadId) return
+    boundThread.current = threadId
+    void pendingSave.current?.()
+    pendingSave.current = null
+    hydrated.current = false
+    sessionRef.current = null
+    dispatch({ type: "thread_reset" })
+  }, [dispatch, threadId])
+
   useEffect(() => {
     const thread = threadQuery.data
     if (!thread || hydrated.current) return
@@ -197,6 +212,8 @@ export function EngineBridge({
         entry.planRunId ? { ...entry, attachments: [{ kind: "plan" as const, runId: entry.planRunId }] } : entry,
       )
       if (withPlan.length) dispatch({ type: "hydrate_thread", transcript: withPlan })
+      await Promise.resolve()
+      if (!cancelled) setHydratedVersion((version) => version + 1)
     })()
     return () => {
       cancelled = true
@@ -206,7 +223,8 @@ export function EngineBridge({
   useEffect(() => {
     if (!hydrated.current || !state.transcript.some((entry) => entry.role === "user")) return
     window.clearTimeout(persistTimer.current)
-    persistTimer.current = window.setTimeout(() => {
+    const save = async () => {
+      pendingSave.current = null
       const seen = new Set<string>()
       const transcript = [...state.miniChat, ...state.transcript]
         .filter((entry) => !UNSAVED.has(entry.id) && !entry.queued && !seen.has(entry.id) && Boolean(seen.add(entry.id)))
@@ -221,12 +239,33 @@ export function EngineBridge({
           }
         })
         .sort((a, b) => a.createdAt - b.createdAt)
-      void saveAssistantThread({ id: threadId, transcript, run: state.run }).then((result) => {
-        if (result.ok) onSavedRef.current?.()
-      })
-    }, 600)
+      const result = await saveAssistantThread({ id: threadId, transcript, run: state.run })
+      if (result.ok) onSavedRef.current?.()
+    }
+    pendingSave.current = save
+    persistTimer.current = window.setTimeout(() => void save(), 600)
     return () => window.clearTimeout(persistTimer.current)
-  }, [state.miniChat, state.run, state.transcript, threadId])
+  }, [state.miniChat, state.run, state.transcript, threadId, hydratedVersion])
+
+  useEffect(() => {
+    if (!flushRef) return
+    flushRef.current = async () => {
+      const save = pendingSave.current
+      if (!save) return
+      window.clearTimeout(persistTimer.current)
+      await save()
+    }
+    return () => {
+      flushRef.current = null
+    }
+  }, [flushRef])
+
+  useEffect(
+    () => () => {
+      void pendingSave.current?.()
+    },
+    [],
+  )
 
   useEffect(() => {
     const live = new Set(state.runs.filter((run) => run.status === "running" || run.status === "needs_you").map((run) => run.id))

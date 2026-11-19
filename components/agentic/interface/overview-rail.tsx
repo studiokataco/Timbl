@@ -1,7 +1,7 @@
 "use client"
 
 import { useId } from "react"
-import { ListFilter, PanelRightClose, Settings2, Sparkles, X } from "lucide-react"
+import { ListFilter, PanelRightClose, Settings2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 import { UnreadDot } from "../collab/unread-dot"
@@ -15,7 +15,6 @@ export type OverviewRailProps = {
   categoryFilter?: React.ReactNode
   categorySummary: string | null
   density?: "touch" | "pointer"
-  onOpenTimbl: () => void
   onOpenActivity: () => void
   onOpenPost: (id: string) => void
   onSettings: () => void
@@ -31,7 +30,6 @@ export function OverviewRail({
   categoryFilter,
   categorySummary,
   density = "pointer",
-  onOpenTimbl,
   onOpenActivity,
   onOpenPost,
   onSettings,
@@ -165,10 +163,6 @@ export function OverviewRail({
         </dl>
       </section>
 
-      <Button type="button" variant="outline" size={density === "touch" ? "lg" : "sm"} onClick={onOpenTimbl} className={density === "touch" ? "min-h-11 w-fit" : "w-fit"}>
-        <Sparkles aria-hidden />
-        {r.promoCta}
-      </Button>
     </aside>
   )
 }

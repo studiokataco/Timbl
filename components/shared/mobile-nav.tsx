@@ -1,21 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Search, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { TimblWordmark } from "@/components/brand/timbl-logo"
-import { SidebarNav, FeedbackTrigger, WorkspaceBrandCard } from "@/components/shared/sidebar"
+import { SidebarContent } from "@/components/shared/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import type { BrandSwitcherData } from "@/lib/queries/brands.server"
-import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export function MobileNav({
   workspaces,
   brands,
+  user,
 }: {
   workspaces: WorkspaceSwitcherData
   brands: BrandSwitcherData
+  user: { name: string; email: string; role: string; avatarUrl?: string }
 }) {
   const [open, setOpen] = useState(false)
   useEffect(() => {
@@ -30,7 +29,7 @@ export function MobileNav({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent
         side="left"
-        className="max-w-full gap-0 overflow-hidden border-r border-border p-4"
+        className="max-w-full gap-0 overflow-hidden border-r border-border px-3 pb-3"
         style={{ width: "min(20rem, calc(100vw - 3rem))" }}
         showCloseButton={false}
         aria-label="Primary navigation"
@@ -38,31 +37,11 @@ export function MobileNav({
         <SheetHeader className="sr-only">
           <SheetTitle>Primary navigation</SheetTitle>
         </SheetHeader>
-        <header className="mb-4 flex h-11 shrink-0 items-center justify-between">
-          <TimblWordmark href={DEFAULT_APP_ROUTE} logoSize={24} onClick={close} />
-          <Button type="button" variant="ghost" size="icon-lg" className="size-11" aria-label="Close navigation" onClick={close}>
-            <X aria-hidden className="size-5" />
-          </Button>
-        </header>
-        <WorkspaceBrandCard workspaces={workspaces} brands={brands} className="mb-4 shrink-0" onNavigate={close} />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            close()
-            window.dispatchEvent(new Event("palette:open"))
-          }}
-          className="mb-4 h-11 w-full justify-start gap-3 px-3 text-muted-foreground"
-        >
-          <Search aria-hidden className="size-5" />
-          <span>Search</span>
-        </Button>
-        <nav aria-label="Workspace" className="min-h-0 flex-1 overflow-y-auto">
-          <SidebarNav mobile onNavigate={close} />
-        </nav>
-        <div className="mt-3 shrink-0 border-t border-border pt-3">
-          <FeedbackTrigger mobile onNavigate={close} />
-        </div>
+        <TooltipProvider>
+          <nav aria-label="Primary" className="flex min-h-0 flex-1 flex-col">
+            <SidebarContent workspaces={workspaces} brands={brands} user={user} full onNavigate={close} />
+          </nav>
+        </TooltipProvider>
       </SheetContent>
     </Sheet>
   )

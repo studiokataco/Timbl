@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { createContext, useCallback, useContext, useRef, useState } from "react"
 import { MotionConfig, useReducedMotion } from "framer-motion"
 import { toast } from "sonner"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -26,6 +26,16 @@ import { applySpokenTool, useLiveSession } from "@/components/agentic/voice/use-
 import { useScriptedUtterance } from "@/components/agentic/voice/scripted"
 
 export type NavigateEffect = Extract<EngineEffect, { type: "navigate" }>
+
+type Flush = () => Promise<void>
+const ThreadFlushContext = createContext<{ current: Flush | null } | null>(null)
+
+export function useThreadFlush(): Flush {
+  const ref = useContext(ThreadFlushContext)
+  return useCallback(async () => {
+    await ref?.current?.()
+  }, [ref])
+}
 
 export function AgenticProviders({
   team,
@@ -85,6 +95,7 @@ export function AgenticRuntime({
   const { update, prefs, copy } = usePrototype()
   const announce = useAnnounce()
   const persist = usePersist(useCallback((message: string) => toast.error(message), []))
+  const flushRef = useRef<Flush | null>(null)
   const onEffect = useCallback(
     (effect: EngineEffect, dispatch: (event: EngineEvent) => void) => {
       if (effect.type === "persist") void persist(effect.op, dispatch)
@@ -111,12 +122,14 @@ export function AgenticRuntime({
   return (
     <MotionConfig reducedMotion={prefs.reduceMotion ? "always" : "user"}>
       <EngineProvider cadence={cadencePerWeek} campaigns={campaignCount} onEffect={onEffect}>
-        <EngineBridge posts={posts} events={events} surfaceContext={surfaceContext} threadId={threadId} onSaved={onSaved} />
-        <HandoffProvider>
-          <HandoffTransition />
-          {children}
-          <OrbSheets />
-        </HandoffProvider>
+        <EngineBridge posts={posts} events={events} surfaceContext={surfaceContext} threadId={threadId} onSaved={onSaved} flushRef={flushRef} />
+        <ThreadFlushContext.Provider value={flushRef}>
+          <HandoffProvider>
+            <HandoffTransition />
+            {children}
+            <OrbSheets />
+          </HandoffProvider>
+        </ThreadFlushContext.Provider>
       </EngineProvider>
     </MotionConfig>
   )

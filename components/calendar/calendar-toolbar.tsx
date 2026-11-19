@@ -16,7 +16,7 @@ import {
   PanelRight,
   Plus,
   Search,
-  Sparkles,
+  PanelLeftOpen,
 } from "lucide-react"
 import { useTheme } from "@/components/shared/theme-provider"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
@@ -37,6 +37,9 @@ import {
 } from "@/components/ui/select"
 import { usePrototype } from "@/components/agentic/prototype-context"
 import type { CalendarFilter } from "@/components/agentic/types"
+import { useHomeChats } from "@/components/home/home-chats"
+import { ModeSwitch } from "@/components/shared/mode-switch"
+import { SIDEBAR_COLLAPSED_KEY, useStoredFlag } from "@/components/shared/use-stored-flag"
 
 export type CalendarView = "month" | "week" | "day" | "list"
 
@@ -49,7 +52,6 @@ type Props = {
   onToday: () => void
   onViewChange: (v: CalendarView) => void
   onFilterChange: (v: CalendarFilter) => void
-  onOpenTimbl: () => void
   onCreate: () => void
   onSearch: () => void
   onMenu?: () => void
@@ -85,7 +87,6 @@ export function CalendarToolbar({
   onToday,
   onViewChange,
   onFilterChange,
-  onOpenTimbl,
   onCreate,
   onSearch,
   onMenu,
@@ -96,6 +97,8 @@ export function CalendarToolbar({
   presence,
 }: Props) {
   const { copy } = usePrototype()
+  const { copy: home, toTimbl } = useHomeChats()
+  const [collapsed, setCollapsed] = useStoredFlag(SIDEBAR_COLLAPSED_KEY)
   const { resolvedTheme, setTheme } = useTheme()
   const c = copy.iface.calendar
   const prevLabel =
@@ -107,17 +110,39 @@ export function CalendarToolbar({
   const touchClass = density === "touch" ? "size-11 h-11" : "size-9 h-9"
   const iconButtonClass = `inline-flex shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground ${touchClass}`
   const barControlClass = `${density === "touch" ? "h-11" : "h-9"} rounded-md`
+  const modeSwitch = (
+    <ModeSwitch
+      value="interface"
+      onSwitch={(mode) => mode === "timbl" && toTimbl()}
+      compactClass="sr-only @min-[30rem]/calbar:not-sr-only @min-[52rem]/calbar:sr-only @min-[60rem]/calbar:not-sr-only"
+    />
+  )
 
   return (
     <div className="@container/calbar mb-4 flex shrink-0 flex-col gap-2">
-      <p className="truncate text-body-sm font-medium text-foreground @min-[30rem]/calbar:hidden">{title}</p>
+      <div className="flex min-w-0 items-center justify-between gap-2 @min-[52rem]/calbar:hidden">
+        <p className="truncate text-body-sm font-medium text-foreground">{title}</p>
+        {modeSwitch}
+      </div>
       <div className="flex min-w-0 flex-nowrap items-center gap-2">
         {onMenu ? (
           <button type="button" onClick={onMenu} aria-label="Open navigation" className={`${iconButtonClass} @3xl/iface:hidden`}>
             <Menu aria-hidden className="size-4" />
           </button>
         ) : null}
-        <p className="hidden min-w-0 shrink truncate text-body-sm font-medium text-foreground @min-[30rem]/calbar:block @min-[52rem]/calbar:max-w-none max-w-36">{title}</p>
+        {collapsed ? (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label={home.openSidebar}
+            aria-keyshortcuts="Meta+Backslash"
+            title={`${home.openSidebar} ⌘\\`}
+            className={`${iconButtonClass} hidden @3xl/iface:inline-flex`}
+          >
+            <PanelLeftOpen aria-hidden className="size-4" />
+          </button>
+        ) : null}
+        <p className="hidden min-w-0 shrink truncate text-body-sm font-medium text-foreground @min-[52rem]/calbar:block">{title}</p>
         <div className="flex shrink-0 items-center gap-1">
           <Button variant="outline" size="icon-lg" onClick={onPrev} aria-label={prevLabel} className={`${barControlClass} ${touchClass}`}>
             <ChevronLeft aria-hidden className="size-4" />
@@ -174,9 +199,6 @@ export function CalendarToolbar({
               <Search aria-hidden className="size-4" />
             </button>
             <ThemeToggle className={`${touchClass} rounded-md border border-border bg-background text-muted-foreground hover:bg-secondary/40 hover:text-foreground`} />
-            <button type="button" onClick={onOpenTimbl} aria-label="Open Timbl mode" className={iconButtonClass}>
-              <Sparkles aria-hidden className="size-4" />
-            </button>
           </div>
           {notifications}
           <DropdownMenu>
@@ -204,7 +226,6 @@ export function CalendarToolbar({
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onSearch}>Search</DropdownMenuItem>
-              <DropdownMenuItem onClick={onOpenTimbl}>Open Timbl mode</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
                 {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
               </DropdownMenuItem>
@@ -224,6 +245,7 @@ export function CalendarToolbar({
               <PanelRight aria-hidden className="size-4" />
             </button>
           ) : null}
+          <div className="ml-1 hidden shrink-0 items-center @min-[52rem]/calbar:flex">{modeSwitch}</div>
         </div>
       </div>
     </div>

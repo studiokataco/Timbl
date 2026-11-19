@@ -2,13 +2,11 @@
 
 import { useEffect } from "react"
 import { useEngine } from "./engine/engine-context"
-import { useHandoff } from "./handoff/handoff-context"
 import { usePrototype } from "./prototype-context"
 
 export function usePrototypeShortcuts(): void {
-  const { view, update, dismiss, copy, prefs } = usePrototype()
+  const { view, update, dismiss, prefs } = usePrototype()
   const { state, dispatch } = useEngine()
-  const { triggerIn } = useHandoff()
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -18,18 +16,7 @@ export function usePrototypeShortcuts(): void {
       if (mod && (e.key === "j" || e.key === "J")) {
         e.preventDefault()
         if (e.shiftKey) {
-          if (view.view === "interface") {
-            const count = Math.max(1, state.miniChat.length)
-            triggerIn({
-              carryText: copy.flyout.carryChat(count),
-              onSwap: () => {
-                dispatch({ type: "handoff_in", carry: "chat" })
-                update({ view: "timbl", sheet: null }, "push")
-              },
-            })
-          } else {
-            update({ view: "timbl", sheet: null }, "push")
-          }
+          window.dispatchEvent(new Event("timbl:mode"))
         } else if (view.view === "interface") {
           update({ sheet: view.sheet === "flyout" ? null : "flyout" }, "push")
         }
@@ -55,5 +42,5 @@ export function usePrototypeShortcuts(): void {
 
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [copy.flyout, dismiss, dispatch, prefs.shortcuts, state.canvas.visibility, state.miniChat.length, triggerIn, update, view.canvas, view.sheet, view.view])
+  }, [dismiss, dispatch, prefs.shortcuts, state.canvas.visibility, update, view.canvas, view.sheet, view.view])
 }

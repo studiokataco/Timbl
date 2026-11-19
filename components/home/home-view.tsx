@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { addDays, format, subDays } from "date-fns"
 import { useQuery } from "@tanstack/react-query"
@@ -16,7 +16,7 @@ import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 import { fetchPostsInRangeAction } from "@/lib/actions/posts"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Post } from "@/lib/schemas"
-import { ChatActions, ChatTitle, HomeLead } from "./chat-header"
+import { ChatActions, ChatTitle, HomeLead, TimblModeSwitch } from "./chat-header"
 import { ConnectorsStrip, type ConnectorItem } from "./connectors-strip"
 import { useHomeChats } from "./home-chats"
 
@@ -33,7 +33,7 @@ export function HomeView({
   privateChatId: string | null
 }) {
   const setup = useAssistantSetup()
-  const { chatId, refresh, copy, newChat } = useHomeChats()
+  const { chatId, refresh, copy, newChat, interfaceRoute } = useHomeChats()
   const router = useRouter()
   const orgId = useWorkspaceOrgId()
   const range = useMemo(() => {
@@ -49,13 +49,16 @@ export function HomeView({
   const onNavigate = useCallback(
     (effect: NavigateEffect) => {
       if (effect.view !== "interface") return
+      if (!effect.week && !effect.post) {
+        router.push(interfaceRoute())
+        return
+      }
       const params = new URLSearchParams()
       if (effect.week) params.set("week", effect.week)
       if (effect.post) params.set("post", effect.post)
-      const qs = params.toString()
-      router.push(qs ? `/calendar?${qs}` : "/calendar")
+      router.push(`/calendar?${params.toString()}`)
     },
-    [router],
+    [interfaceRoute, router],
   )
 
   if (privateChatId && privateChatId === chatId) {
@@ -64,7 +67,7 @@ export function HomeView({
         <Lock className="size-5 text-muted-foreground" aria-hidden />
         <h1 className="text-title-md text-foreground">{copy.privateTitle}</h1>
         <p className="max-w-sm text-body-sm text-muted-foreground">{copy.privateBody}</p>
-        <Button type="button" variant="outline" onClick={newChat}>
+        <Button type="button" variant="outline" onClick={() => newChat()}>
           <SquarePen className="size-4" aria-hidden />
           {copy.newChat}
         </Button>
@@ -99,17 +102,29 @@ export function HomeView({
 
 function HomeSurface({ connectors, connectorsHidden }: { connectors: ConnectorItem[]; connectorsHidden: boolean }) {
   const reducedAttr = useReducedMotionAttr()
-  const { dispatch } = useEngine()
+  const { state, dispatch } = useEngine()
+  const handoffItem = useRef<string | null>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const asked = params.get("q")?.trim()
-    if (!asked) return
+    const item = params.get("item")
+    if (!asked && !item) return
     params.delete("q")
+    params.delete("item")
     const rest = params.toString()
     window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}`)
-    dispatch({ type: "user_sent", text: asked, source: "typed" })
+    if (item) handoffItem.current = item
+    if (asked) dispatch({ type: "user_sent", text: asked, source: "typed" })
   }, [dispatch])
+
+  useEffect(() => {
+    const item = handoffItem.current
+    if (!item || !state.posts[item]) return
+    handoffItem.current = null
+    dispatch({ type: "context_set", context: { kind: "post", postId: item } })
+    dispatch({ type: "handoff_in", carry: "chat_and_item" })
+  }, [dispatch, state.posts])
 
   return (
     <div data-slot="agentic-root" data-reduced-motion={reducedAttr} className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -119,6 +134,7 @@ function HomeSurface({ connectors, connectorsHidden }: { connectors: ConnectorIt
         lead={<HomeLead />}
         titleSlot={<ChatTitle />}
         actions={<ChatActions />}
+        modeSwitch={<TimblModeSwitch />}
         belowComposer={<ConnectorsStrip items={connectors} hidden={connectorsHidden} />}
       />
     </div>

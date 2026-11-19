@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import { useTheme } from "@/components/shared/theme-provider"
+import { useHomeChats } from "@/components/home/home-chats"
 import {
   BookOpen,
   Calendar as CalendarIcon,
@@ -15,6 +16,7 @@ import {
   Moon,
   Plus,
   Settings,
+  MessagesSquare,
   Sparkles,
   Sun,
   Tags,
@@ -145,7 +147,14 @@ export function CommandPalette() {
     }
   }, [open])
 
-  const close = useCallback(() => setOpen(false), [])
+  const { copy: home, toTimbl, newChat } = useHomeChats()
+  const [search, setSearch] = useState("")
+  const asked = search.trim()
+
+  const close = useCallback(() => {
+    setOpen(false)
+    setSearch("")
+  }, [])
 
   const go = useCallback(
     (href: string) => {
@@ -156,9 +165,12 @@ export function CommandPalette() {
   )
   const askTimbl = useCallback(() => {
     close()
-    window.dispatchEvent(new Event("timbl:open"))
-    window.setTimeout(() => setOpen(false), 0)
-  }, [close])
+    newChat(asked || undefined)
+  }, [asked, close, newChat])
+  const openTimbl = useCallback(() => {
+    close()
+    toTimbl()
+  }, [close, toTimbl])
 
   const recentPosts = useMemo(() => {
     if (!data) return []
@@ -169,16 +181,26 @@ export function CommandPalette() {
   const isDark = (theme ?? "light") === "dark"
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search posts, campaigns, or jump to a view…" />
+    <CommandDialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) setSearch("")
+      }}
+    >
+      <CommandInput value={search} onValueChange={setSearch} placeholder="Search posts, campaigns, or jump to a view…" />
       <CommandList>
         <CommandEmpty>No matches.</CommandEmpty>
 
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={askTimbl} value="ask timbl assistant">
+          <CommandItem onSelect={askTimbl} value={`ask assistant ${asked}`} forceMount>
             <Sparkles />
-            <span>Ask Timbl</span>
-            <CommandShortcut>⌘J</CommandShortcut>
+            <span className="truncate">{asked ? `${home.ask}: ${asked}` : home.ask}</span>
+          </CommandItem>
+          <CommandItem onSelect={openTimbl} value="open timbl mode chat assistant">
+            <MessagesSquare />
+            <span>{home.openMode}</span>
+            <CommandShortcut>⌘⇧J</CommandShortcut>
           </CommandItem>
           <CommandItem
             onSelect={() => go("/calendar?quickAdd=1")}
