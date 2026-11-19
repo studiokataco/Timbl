@@ -44,6 +44,10 @@ import type {
  *   - citations: web search returns url_citation annotations on the message;
  *     parsed into customMetadata.citations so source URLs survive even if the
  *     model doesn't echo them in prose.
+ *   - exact cost: OpenRouter puts `usage.cost` (USD credits, web search and
+ *     reasoning included) on every completion. Surfaced as
+ *     customMetadata.providerCostUsd so metering never relies on the static
+ *     price table for OpenRouter calls.
  */
 
 /* Per-model output ceilings. The previous flat 4096 silently truncated long
@@ -65,7 +69,7 @@ const MODEL_OUTPUT_LIMITS: Record<string, number> = {
 
 const DEFAULT_MAX_TOKENS = 8_192
 
-function resolveMaxTokens(model: string, override?: number): number {
+export function resolveMaxTokens(model: string, override?: number): number {
   return override ?? MODEL_OUTPUT_LIMITS[model] ?? DEFAULT_MAX_TOKENS
 }
 
@@ -212,13 +216,22 @@ export class OpenAiCompatibleLlm extends BaseLlm {
     const calls = new Map<number, { id: string; name: string; arguments: string; skip: boolean }>()
     let inTok = 0
     let outTok = 0
+    let cachedTok = 0
+    let reasoningTok = 0
+    let providerCostUsd: number | undefined
     let finishReasonRaw: string | undefined
     let generationId: string | undefined
     const annotations: unknown[] = []
 
     for await (const chunk of completion as AsyncIterable<{
       id?: string
-      usage?: { prompt_tokens?: number; completion_tokens?: number }
+      usage?: {
+        prompt_tokens?: number
+        completion_tokens?: number
+        cost?: number
+        prompt_tokens_details?: { cached_tokens?: number }
+        completion_tokens_details?: { reasoning_tokens?: number }
+      }
       choices?: Array<{
         finish_reason?: string | null
         delta?: {
@@ -238,6 +251,10 @@ export class OpenAiCompatibleLlm extends BaseLlm {
       if (chunk.usage) {
         inTok = chunk.usage.prompt_tokens ?? inTok
         outTok = chunk.usage.completion_tokens ?? outTok
+        cachedTok = chunk.usage.prompt_tokens_details?.cached_tokens ?? cachedTok
+        reasoningTok =
+          chunk.usage.completion_tokens_details?.reasoning_tokens ?? reasoningTok
+        if (typeof chunk.usage.cost === "number") providerCostUsd = chunk.usage.cost
       }
       const choice = chunk.choices?.[0]
       if (choice?.finish_reason) finishReasonRaw = choice.finish_reason
@@ -277,6 +294,15 @@ export class OpenAiCompatibleLlm extends BaseLlm {
       })
     }
     const citations = parseCitations({ annotations })
+    const usageMetadata = {
+      promptTokenCount: inTok,
+      candidatesTokenCount: outTok,
+      cachedContentTokenCount: cachedTok,
+      thoughtsTokenCount: reasoningTok,
+      totalTokenCount: inTok + outTok,
+    } as never
+    const costMetadata =
+      providerCostUsd !== undefined ? { providerCostUsd } : {}
 
     /* Truncation guard. A reasoning model (e.g. minimax-m3) can spend the
      * whole output budget on hidden reasoning and return zero content with
@@ -289,23 +315,21 @@ export class OpenAiCompatibleLlm extends BaseLlm {
         errorMessage: `Model ${modelName} reached the output token cap before producing any content (likely reasoning-token exhaustion). Raise the per-model cap in MODEL_OUTPUT_LIMITS.`,
         partial: false,
         turnComplete: true,
-        ...(generationId
-          ? { customMetadata: { openrouterGenerationId: generationId } }
-          : {}),
-        usageMetadata: {
-          promptTokenCount: inTok,
-          candidatesTokenCount: outTok,
-          totalTokenCount: inTok + outTok,
-        } as never,
+        customMetadata: {
+          ...(generationId ? { openrouterGenerationId: generationId } : {}),
+          ...costMetadata,
+        },
+        usageMetadata,
       } satisfies LlmResponse
       return
     }
 
     const customMetadata =
-      generationId || citations.length
+      generationId || citations.length || providerCostUsd !== undefined
         ? {
             ...(generationId ? { openrouterGenerationId: generationId } : {}),
             ...(citations.length ? { citations } : {}),
+            ...costMetadata,
           }
         : undefined
     yield {
@@ -314,11 +338,7 @@ export class OpenAiCompatibleLlm extends BaseLlm {
       turnComplete: true,
       finishReason: mapFinishReason(finishReasonRaw) as never,
       ...(customMetadata ? { customMetadata } : {}),
-      usageMetadata: {
-        promptTokenCount: inTok,
-        candidatesTokenCount: outTok,
-        totalTokenCount: inTok + outTok,
-      } as never,
+      usageMetadata,
     } satisfies LlmResponse
   }
 

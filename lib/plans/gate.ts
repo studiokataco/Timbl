@@ -275,17 +275,19 @@ async function readAgentUsage(
  *      this specific agent this period, regardless of run count.
  *
  * Called from startAgentRun after resolveAgent (needs the agent's budgets),
- * before the run doc is created - a blocked run never gets queued.
+ * before the run doc is created - a blocked run never gets queued. Returns
+ * the agent's remaining monthly USD headroom (Infinity when uncapped) so the
+ * run's meter can stop mid-run instead of overshooting the cap.
  */
 export async function requireAgentBudget(
   orgId: string,
   agentName: string,
   monthlyUsdCap: number,
-): Promise<void> {
+): Promise<number> {
   const plan = await getOrgPlan(orgId)
   const cap = plan.agentInvocationCaps[agentName]
   const needsUsage = (cap !== undefined && cap !== null) || monthlyUsdCap > 0
-  if (!needsUsage) return
+  if (!needsUsage) return Infinity
 
   const { runs, usdSpent } = await readAgentUsage(orgId, agentName)
 
@@ -312,6 +314,7 @@ export async function requireAgentBudget(
     emitAgentGateBreachSignal(orgId, reason)
     throw new PlanGateError(reason)
   }
+  return monthlyUsdCap > 0 ? monthlyUsdCap - usdSpent : Infinity
 }
 
 async function readOrgUsdSpend(orgId: string, period = currentPeriod()): Promise<number> {
@@ -323,12 +326,13 @@ async function readOrgUsdSpend(orgId: string, period = currentPeriod()): Promise
 /* Workspace-wide spend ceiling, on top of the per-agent monthlyUsdCap. Without
  * it an org's exposure is (number of agents it can run) x monthlyUsdCap, and
  * `quotas.agents` is not enforced anywhere - so that product is unbounded on
- * every tier, not just the ones with no agent limit. */
-export async function requireOrgBudget(orgId: string): Promise<void> {
+ * every tier, not just the ones with no agent limit. Returns the org's
+ * remaining headroom (Infinity when uncapped) for the run meter. */
+export async function requireOrgBudget(orgId: string): Promise<number> {
   const plan = await getOrgPlan(orgId)
   const cap = plan.orgMonthlyUsdCap
   /* null is uncapped; 0 blocks agent runs outright (Free). */
-  if (cap === null) return
+  if (cap === null) return Infinity
 
   const usdSpent = await readOrgUsdSpend(orgId)
   if (usdSpent >= cap) {
@@ -341,6 +345,7 @@ export async function requireOrgBudget(orgId: string): Promise<void> {
     emitAgentGateBreachSignal(orgId, reason)
     throw new PlanGateError(reason)
   }
+  return cap - usdSpent
 }
 
 /* Helper for server actions: catch a PlanGateError and return it as the
