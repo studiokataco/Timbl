@@ -23,10 +23,16 @@ export const agentRunMetricsSchema = z.object({
   /** Slice of promptTokens served from the prompt cache (read hits). Lets the
    * UI show cache effectiveness and feeds the cache discount in usdCost. */
   cachedTokens: z.number().int().nonnegative().default(0),
-  /** Estimated cost from the static price table, written at run end. */
+  /** Hidden reasoning tokens, already included in completionTokens. */
+  reasoningTokens: z.number().int().nonnegative().optional(),
+  /** Run cost written at run end. Exact when costSource is "provider". */
   usdCost: z.number().nonnegative().default(0),
-  /** Exact cost reconciled from OpenRouter's GET /generation per generation
-   * id. Authoritative for spend reporting; absent until reconciled. */
+  /** Where usdCost came from: the provider's billed cost on every call, the
+   * static price table, or a mix (a run that fell back to a non-OpenRouter
+   * provider part way). */
+  costSource: z.enum(["provider", "estimate", "mixed"]).optional(),
+  /** Exact billed cost. Written at run end when every call reported one,
+   * otherwise backfilled from OpenRouter's GET /generation. */
   actualUsdCost: z.number().nonnegative().optional(),
 })
 export type AgentRunMetrics = z.infer<typeof agentRunMetricsSchema>

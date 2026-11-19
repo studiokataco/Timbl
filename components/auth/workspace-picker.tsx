@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { activateWorkspaceClient } from "@/lib/auth/activate-workspace-client"
 import { setDevOrg } from "@/lib/actions/dev-org"
 import { cn } from "@/lib/utils"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export function WorkspacePicker({
   workspaces,
@@ -37,7 +38,7 @@ export function WorkspacePicker({
     startTransition(async () => {
       try {
         await fn()
-        router.replace("/calendar")
+        router.replace(DEFAULT_APP_ROUTE)
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not open workspace")
@@ -156,7 +157,7 @@ function DevWorkspacePicker({ highlightNew }: { highlightNew: boolean }) {
         setBusy(null)
         return
       }
-      router.replace("/calendar")
+      router.replace(DEFAULT_APP_ROUTE)
       router.refresh()
     })
   }

@@ -16,6 +16,7 @@ import {
   setDoc,
   serverTimestamp,
   query,
+  updateDoc,
   where,
 } from "firebase/firestore"
 
@@ -258,5 +259,94 @@ describe("awarenessDays", () => {
     await assertFails(
       setDoc(doc(ctx.firestore(), "awarenessDays", "evil-day"), { name: "Evil Day" }),
     )
+  })
+})
+
+describe("assistantThreads", () => {
+  const base = `organizations/${ORG_A}/assistantThreads`
+
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore()
+      await setDoc(doc(db, `${base}/private-chat`), { organizationId: ORG_A, ownerId: "alice", visibility: "private", pinnedBy: [], title: "Alice only" })
+      await setDoc(doc(db, `${base}/shared-chat`), { organizationId: ORG_A, ownerId: "alice", visibility: "workspace", pinnedBy: [], title: "For the team" })
+      await setDoc(doc(db, `${base}/shell`), { organizationId: ORG_A, title: "Earlier chat" })
+    })
+  })
+
+  it("the owner reads a private chat", async () => {
+    const ctx = authed("alice-uid", ORG_A, "contributor", "alice")
+    await assertSucceeds(getDoc(doc(ctx.firestore(), `${base}/private-chat`)))
+  })
+
+  it("another member cannot read a private chat", async () => {
+    const ctx = authed("bob-uid", ORG_A, "admin", "bob")
+    await assertFails(getDoc(doc(ctx.firestore(), `${base}/private-chat`)))
+  })
+
+  it("another member reads a shared chat and a legacy chat", async () => {
+    const ctx = authed("bob-uid", ORG_A, "contributor", "bob")
+    await assertSucceeds(getDoc(doc(ctx.firestore(), `${base}/shared-chat`)))
+    await assertSucceeds(getDoc(doc(ctx.firestore(), `${base}/shell`)))
+  })
+
+  it("another org cannot read a shared chat", async () => {
+    const ctx = authed("carol-uid", ORG_B, "admin", "carol")
+    await assertFails(getDoc(doc(ctx.firestore(), `${base}/shared-chat`)))
+  })
+
+  it("another member may pin a shared chat but not rename it", async () => {
+    const ctx = authed("bob-uid", ORG_A, "contributor", "bob")
+    await assertSucceeds(updateDoc(doc(ctx.firestore(), `${base}/shared-chat`), { pinnedBy: ["bob"] }))
+    await assertFails(updateDoc(doc(ctx.firestore(), `${base}/shared-chat`), { title: "Mine now" }))
+  })
+
+  it("nobody can hand a chat to someone else", async () => {
+    const ctx = authed("alice-uid", ORG_A, "contributor", "alice")
+    await assertFails(updateDoc(doc(ctx.firestore(), `${base}/private-chat`), { ownerId: "bob" }))
+  })
+
+  it("a new chat must belong to its creator", async () => {
+    const ctx = authed("bob-uid", ORG_A, "contributor", "bob")
+    await assertSucceeds(setDoc(doc(ctx.firestore(), `${base}/bob-chat`), { organizationId: ORG_A, ownerId: "bob", visibility: "private" }))
+    await assertFails(setDoc(doc(ctx.firestore(), `${base}/forged-chat`), { organizationId: ORG_A, ownerId: "alice", visibility: "private" }))
+  })
+
+  it("only the owner deletes a chat; a legacy chat needs an admin or editor", async () => {
+    const bob = authed("bob-uid", ORG_A, "contributor", "bob")
+    await assertFails(deleteDoc(doc(bob.firestore(), `${base}/shared-chat`)))
+    await assertFails(deleteDoc(doc(bob.firestore(), `${base}/shell`)))
+    const alice = authed("alice-uid", ORG_A, "contributor", "alice")
+    await assertSucceeds(deleteDoc(doc(alice.firestore(), `${base}/shared-chat`)))
+    const editor = authed("eve-uid", ORG_A, "editor", "eve")
+    await assertSucceeds(deleteDoc(doc(editor.firestore(), `${base}/shell`)))
+  })
+})
+
+describe("collections with their own rules are not opened by the default", () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore()
+      await setDoc(doc(db, `organizations/${ORG_A}/socialAccounts/linkedin:1`), { organizationId: ORG_A, channel: "linkedin" })
+      await setDoc(doc(db, `organizations/${ORG_A}/publishRuns/run-1`), { organizationId: ORG_A, status: "ok" })
+      await setDoc(doc(db, `organizations/${ORG_A}/oauthApps/linkedin`), { organizationId: ORG_A, channel: "linkedin" })
+    })
+  })
+
+  it("social accounts and oauth apps are readable by admins and editors only", async () => {
+    const contributor = authed("alice-uid", ORG_A, "contributor", "alice")
+    await assertFails(getDoc(doc(contributor.firestore(), `organizations/${ORG_A}/socialAccounts/linkedin:1`)))
+    await assertFails(getDoc(doc(contributor.firestore(), `organizations/${ORG_A}/oauthApps/linkedin`)))
+    const editor = authed("eve-uid", ORG_A, "editor", "eve")
+    await assertSucceeds(getDoc(doc(editor.firestore(), `organizations/${ORG_A}/socialAccounts/linkedin:1`)))
+    await assertSucceeds(getDoc(doc(editor.firestore(), `organizations/${ORG_A}/oauthApps/linkedin`)))
+  })
+
+  it("nobody writes publish runs or social accounts from the client", async () => {
+    const admin = authed("admin-uid", ORG_A, "admin", "admin")
+    await assertFails(setDoc(doc(admin.firestore(), `organizations/${ORG_A}/publishRuns/run-2`), { organizationId: ORG_A }))
+    await assertFails(setDoc(doc(admin.firestore(), `organizations/${ORG_A}/socialAccounts/x:1`), { organizationId: ORG_A }))
+    const contributor = authed("alice-uid", ORG_A, "contributor", "alice")
+    await assertSucceeds(getDoc(doc(contributor.firestore(), `organizations/${ORG_A}/publishRuns/run-1`)))
   })
 })

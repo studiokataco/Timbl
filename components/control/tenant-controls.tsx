@@ -21,6 +21,7 @@ import {
   FEATURE_FLAG_LABEL,
   KNOWN_FEATURE_FLAGS,
 } from "@/lib/plans/feature-flags"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 type Result = { ok: boolean; error?: string }
 
@@ -321,7 +322,7 @@ export function TenantControls({
             onClick={() =>
               run("Impersonation", async () => {
                 const res = await startImpersonation({ orgId })
-                if (res.ok) window.location.href = "/calendar"
+                if (res.ok) window.location.href = DEFAULT_APP_ROUTE
                 return res
               })
             }

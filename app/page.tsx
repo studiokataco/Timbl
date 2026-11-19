@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { LandingPage } from "@/components/marketing/landing-page"
 import { DEV_ORG_COOKIE, IS_DEV_SHIM } from "@/lib/auth/dev-session"
 import { readSessionAuth } from "@/lib/auth/session"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export const dynamic = "force-dynamic"
 
@@ -30,12 +31,12 @@ export const metadata: Metadata = {
 export default async function Home() {
   if (!IS_DEV_SHIM) {
     const auth = await readSessionAuth()
-    if (auth?.workspace) redirect("/calendar")
+    if (auth?.workspace) redirect(DEFAULT_APP_ROUTE)
     if (auth) redirect("/workspaces")
     return <LandingPage />
   }
 
   const store = await cookies()
-  if (store.has(DEV_ORG_COOKIE)) redirect("/calendar")
+  if (store.has(DEV_ORG_COOKIE)) redirect(DEFAULT_APP_ROUTE)
   return <LandingPage />
 }

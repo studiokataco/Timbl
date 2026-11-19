@@ -20,8 +20,11 @@ import type { OpenRouterAccount } from "@/lib/platform/openrouter"
  */
 export function OpenRouterBilling({
   account,
+  meteredMonthUsd,
 }: {
   account: OpenRouterAccount | null
+  /** Agent spend Timbl recorded this month, to compare with the key's bill. */
+  meteredMonthUsd: number
 }) {
   const [pending, startTransition] = useTransition()
   const [last, setLast] = useState<ReconcileResult | null>(null)
@@ -65,14 +68,22 @@ export function OpenRouterBilling({
             sub={account.isFreeTier ? "free tier" : `${usd(account.totalCredits)} purchased`}
           />
           <StatCard
-            label="Lifetime usage"
-            value={usd(account.totalUsage)}
-            sub="account to date"
+            label="Key spend this month"
+            value={account.usageMonthly != null ? usd(account.usageMonthly) : usd(account.usage)}
+            sub={
+              account.usageMonthly != null
+                ? `${usd(account.usage)} lifetime`
+                : "lifetime, monthly figure unavailable"
+            }
           />
           <StatCard
-            label="Key spend"
-            value={usd(account.usage)}
-            sub={account.limit != null ? `of ${usd(account.limit)} limit` : "no limit"}
+            label="Metered by Timbl"
+            value={usd(meteredMonthUsd)}
+            sub={
+              account.usageMonthly != null
+                ? `${usd(Math.max(0, account.usageMonthly - meteredMonthUsd))} not traced to an agent run`
+                : "agent runs this month"
+            }
           />
           <StatCard
             label="Key headroom"
@@ -81,7 +92,11 @@ export function OpenRouterBilling({
                 ? usd(account.limitRemaining)
                 : "unlimited"
             }
-            sub="before key cap"
+            sub={
+              account.limit != null
+                ? `of ${usd(account.limit)}${account.limitReset ? ` ${account.limitReset}` : ""} limit`
+                : "no key limit"
+            }
           />
         </div>
       ) : (

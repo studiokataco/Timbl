@@ -16,8 +16,10 @@ import {
 } from "@/lib/calendar/awareness-grouping"
 import type { AwarenessDay } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
-import { EventBar } from "./event-bar"
+import { categoryPillColors } from "./color"
 import { EventPill } from "./event-pill"
+
+const IMPORTANCE_COLOR = { high: "#fb923c", medium: "#a855f7", low: "#94a3b8" } as const
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const MAX_VISIBLE_PILLS = 3
@@ -74,20 +76,19 @@ export function CalendarGrid({
   const ranges = useMemo(() => groupAwarenessRanges(awarenessDays), [awarenessDays])
 
   return (
-    <div className="rounded-lg border border-border bg-background">
-      {/* Day name header */}
-      <div className="grid grid-cols-7 border-b border-border bg-secondary/30">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background">
+      <div className="grid shrink-0 grid-cols-7 border-b border-border bg-secondary/30">
         {DAY_NAMES.map((n) => (
           <div
             key={n}
-            className="px-2 py-2 text-caption uppercase tracking-wider text-muted-foreground text-center"
+            className="px-2 py-3 text-center text-caption text-muted-foreground"
           >
             {n}
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         {weeks.map((week) => (
           <WeekRow
             key={week.start.toISOString()}
@@ -139,36 +140,28 @@ function WeekRow({
     })
   }, [ranges, weekStart, weekEnd])
 
+  const covered = (index: number) => barsInWeek.filter((item) => index >= item.startCol && index <= item.endCol)
+  const slots = Math.max(0, ...week.cells.map((_, index) => covered(index).length))
+
   return (
-    <div className="border-b border-border last:border-b-0">
-      {/* Awareness bars above the cells */}
-      {barsInWeek.length > 0 && (
-        <div className="grid grid-cols-7 gap-y-0.5 pt-0.5 pb-0">
-          {barsInWeek.map((b) => (
-            <EventBar
-              key={`${b.range.id}-${week.index}`}
-              range={b.range}
-              startCol={b.startCol}
-              endCol={b.endCol}
-              continuesLeft={b.continuesLeft}
-              continuesRight={b.continuesRight}
-            />
-          ))}
-        </div>
-      )}
-      {/* Unified cells: day number + event pills in one droppable div */}
-      <div className="grid grid-cols-7">
-        {week.cells.map((cell) => (
-          <UnifiedCell
-            key={cell.iso}
-            cell={cell}
-            posts={postsByDate.get(cell.iso) ?? []}
-            categoryById={categoryById}
-            onCellClick={onCellClick}
-            onPostClick={onPostClick}
-          />
-        ))}
-      </div>
+    <div className="grid min-h-36 flex-1 grid-cols-7 border-b border-border last:border-b-0 @3xl/iface:min-h-0">
+      {week.cells.map((cell, index) => (
+        <UnifiedCell
+          key={cell.iso}
+          cell={cell}
+          posts={postsByDate.get(cell.iso) ?? []}
+          categoryById={categoryById}
+          slots={slots}
+          bars={covered(index).map((item) => ({
+            id: item.range.id,
+            name: item.range.name,
+            importance: item.range.importance,
+            start: index === item.startCol,
+          }))}
+          onCellClick={onCellClick}
+          onPostClick={onPostClick}
+        />
+      ))}
     </div>
   )
 }
@@ -177,12 +170,16 @@ function UnifiedCell({
   cell,
   posts,
   categoryById,
+  slots,
+  bars,
   onCellClick,
   onPostClick,
 }: {
   cell: CalendarCellT
   posts: WithId<Post>[]
   categoryById: Map<string, WithId<Category>>
+  slots: number
+  bars: { id: string; name: string; importance: "high" | "medium" | "low"; start: boolean }[]
   onCellClick: (date: Date) => void
   onPostClick: (post: WithId<Post>) => void
 }) {
@@ -199,8 +196,7 @@ function UnifiedCell({
       ref={setNodeRef}
       onClick={() => onCellClick(cell.date)}
       className={cn(
-        "relative min-h-[110px] border-r border-border last:border-r-0",
-        "px-1.5 pt-1.5 pb-1 flex flex-col gap-0.5 cursor-pointer transition-colors",
+        "relative flex h-full min-h-36 cursor-pointer flex-col gap-2 border-r border-border px-2 py-2 transition-colors last:border-r-0 @3xl/iface:min-h-0 @3xl/iface:px-3 @3xl/iface:py-3",
         cell.isCurrentMonth ? "bg-background" : "bg-secondary/20",
         !cell.isCurrentMonth && "opacity-70",
         isOver && "bg-secondary/60 ring-1 ring-inset ring-foreground/20",
@@ -208,14 +204,34 @@ function UnifiedCell({
     >
       <span
         className={cn(
-          "inline-flex items-center justify-center size-6 text-xs tabular-nums self-start mb-0.5",
-          cell.isToday && "rounded-full bg-foreground text-background font-semibold",
+          "inline-flex size-8 items-center justify-center self-start text-body-sm tabular-nums",
+          cell.isToday && "rounded-full bg-primary text-primary-foreground font-semibold",
           !cell.isCurrentMonth && "text-muted-foreground/60",
           cell.isCurrentMonth && !cell.isToday && "text-foreground",
         )}
       >
         {format(cell.date, "d")}
       </span>
+      {slots > 0 ? (
+        <div className="flex flex-col gap-1">
+          {bars.map((bar) => {
+            const color = IMPORTANCE_COLOR[bar.importance]
+            return (
+              <div
+                key={bar.id}
+                title={bar.name}
+                className="h-6 truncate rounded-md px-2 text-caption leading-6"
+                style={categoryPillColors(color)}
+              >
+                {bar.start ? bar.name : ""}
+              </div>
+            )
+          })}
+          {Array.from({ length: slots - bars.length }, (_, index) => (
+            <div key={index} className="h-6" />
+          ))}
+        </div>
+      ) : null}
       {visible.map((p) => (
         <EventPill
           key={p.id}
@@ -228,7 +244,7 @@ function UnifiedCell({
         />
       ))}
       {overflow > 0 && (
-        <span className="text-[11px] text-muted-foreground pl-0.5 leading-tight">
+        <span className="pl-0.5 text-caption leading-tight text-muted-foreground">
           +{overflow} more
         </span>
       )}

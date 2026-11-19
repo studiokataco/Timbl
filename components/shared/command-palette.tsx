@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import { useTheme } from "@/components/shared/theme-provider"
+import { useHomeChats } from "@/components/home/home-chats"
 import {
   BookOpen,
   Calendar as CalendarIcon,
@@ -15,6 +16,8 @@ import {
   Moon,
   Plus,
   Settings,
+  MessagesSquare,
+  Sparkles,
   Sun,
   Tags,
 } from "lucide-react"
@@ -113,7 +116,7 @@ export function CommandPalette() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [])
+  }, [router])
 
   // Listen for the TopBar search-box click (or any UI that wants to open the
   // palette) - dispatched as a window event so we don't need React context.
@@ -144,7 +147,14 @@ export function CommandPalette() {
     }
   }, [open])
 
-  const close = useCallback(() => setOpen(false), [])
+  const { copy: home, toTimbl, newChat } = useHomeChats()
+  const [search, setSearch] = useState("")
+  const asked = search.trim()
+
+  const close = useCallback(() => {
+    setOpen(false)
+    setSearch("")
+  }, [])
 
   const go = useCallback(
     (href: string) => {
@@ -153,6 +163,14 @@ export function CommandPalette() {
     },
     [close, router],
   )
+  const askTimbl = useCallback(() => {
+    close()
+    newChat(asked || undefined)
+  }, [asked, close, newChat])
+  const openTimbl = useCallback(() => {
+    close()
+    toTimbl()
+  }, [close, toTimbl])
 
   const recentPosts = useMemo(() => {
     if (!data) return []
@@ -163,12 +181,27 @@ export function CommandPalette() {
   const isDark = (theme ?? "light") === "dark"
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search posts, campaigns, or jump to a view…" />
+    <CommandDialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) setSearch("")
+      }}
+    >
+      <CommandInput value={search} onValueChange={setSearch} placeholder="Search posts, campaigns, or jump to a view…" />
       <CommandList>
         <CommandEmpty>No matches.</CommandEmpty>
 
         <CommandGroup heading="Actions">
+          <CommandItem onSelect={askTimbl} value={`ask assistant ${asked}`} forceMount>
+            <Sparkles />
+            <span className="truncate">{asked ? `${home.ask}: ${asked}` : home.ask}</span>
+          </CommandItem>
+          <CommandItem onSelect={openTimbl} value="open timbl mode chat assistant">
+            <MessagesSquare />
+            <span>{home.openMode}</span>
+            <CommandShortcut>⌘⇧J</CommandShortcut>
+          </CommandItem>
           <CommandItem
             onSelect={() => go("/calendar?quickAdd=1")}
             value="create new post"

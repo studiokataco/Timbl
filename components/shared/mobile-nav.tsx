@@ -1,57 +1,47 @@
 "use client"
 
-import { useState } from "react"
-import { Menu, Search } from "lucide-react"
-
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { TimblWordmark } from "@/components/brand/timbl-logo"
-import { SidebarNav, FeedbackTrigger, WorkspaceBrandCard } from "@/components/shared/sidebar"
+import { useEffect, useState } from "react"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { SidebarContent } from "@/components/shared/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 
 export function MobileNav({
   workspaces,
   brands,
+  user,
 }: {
   workspaces: WorkspaceSwitcherData
   brands: BrandSwitcherData
+  user: { name: string; email: string; role: string; avatarUrl?: string }
 }) {
   const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const onOpen = () => setOpen(true)
+    window.addEventListener("nav:open", onOpen)
+    return () => window.removeEventListener("nav:open", onOpen)
+  }, [])
+
+  const close = () => setOpen(false)
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger
-        render={
-          <button
-            type="button"
-            aria-label="Open navigation"
-            className="md:hidden inline-flex items-center justify-center size-9 -ml-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
-          />
-        }
-      >
-        <Menu aria-hidden className="size-5" />
-      </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-72 max-w-[80vw] p-3 gap-1"
+        className="max-w-full gap-0 overflow-hidden border-r border-border px-3 pb-3"
+        style={{ width: "min(20rem, calc(100vw - 3rem))" }}
+        showCloseButton={false}
         aria-label="Primary navigation"
       >
-        <TimblWordmark href="/calendar" logoSize={24} className="px-3 mb-4 mt-1" />
-        <WorkspaceBrandCard workspaces={workspaces} brands={brands} className="mb-3" />
-        <button
-          type="button"
-          onClick={() => {
-            setOpen(false)
-            window.dispatchEvent(new Event("palette:open"))
-          }}
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground mb-1"
-        >
-          <Search aria-hidden className="size-4" />
-          <span>Search</span>
-        </button>
-        <nav className="flex flex-col gap-1">
-          <SidebarNav onNavigate={() => setOpen(false)} />
-          <FeedbackTrigger onNavigate={() => setOpen(false)} className="mt-1" />
-        </nav>
+        <SheetHeader className="sr-only">
+          <SheetTitle>Primary navigation</SheetTitle>
+        </SheetHeader>
+        <TooltipProvider>
+          <nav aria-label="Primary" className="flex min-h-0 flex-1 flex-col">
+            <SidebarContent workspaces={workspaces} brands={brands} user={user} full onNavigate={close} />
+          </nav>
+        </TooltipProvider>
       </SheetContent>
     </Sheet>
   )

@@ -97,7 +97,7 @@ export default function RootLayout({
           <ThemeProvider defaultTheme="system">
             <DevBanner />
             {children}
-            <Toaster richColors position="bottom-right" />
+            <Toaster richColors position="top-right" offset={{ top: 88, right: 24 }} mobileOffset={{ top: 72, right: 12, left: 12 }} />
           </ThemeProvider>
         </PostHogProvider>
       </body>

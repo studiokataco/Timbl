@@ -4,6 +4,7 @@ import { WorkspacePicker } from "@/components/auth/workspace-picker"
 import { IS_DEV_SHIM } from "@/lib/auth/dev-session"
 import { listMembershipsForEmail } from "@/lib/auth/membership"
 import { readSessionAuth } from "@/lib/auth/session"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export const dynamic = "force-dynamic"
 
@@ -28,7 +29,7 @@ export default async function WorkspacesPage({
 
   const auth = await readSessionAuth()
   if (!auth) redirect("/")
-  if (auth.workspace) redirect("/calendar")
+  if (auth.workspace) redirect(DEFAULT_APP_ROUTE)
 
   const workspaces = await listMembershipsForEmail(auth.email)
 

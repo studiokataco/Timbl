@@ -31,7 +31,7 @@ export interface PlatformRunRecord {
   orgId: string
   period: string
   date: string
-  outcome: "succeeded" | "failed"
+  outcome: "succeeded" | "failed" | "cancelled"
   usdCost: number
   promptTokens: number
   completionTokens: number
@@ -45,17 +45,22 @@ export async function recordPlatformRun(rec: PlatformRunRecord): Promise<void> {
   const now = new Date().toISOString()
   const providerKey = rec.provider ? safeFieldKey(rec.provider) : "unknown"
   const modelKey = rec.model ? safeFieldKey(rec.model) : "unknown"
+  const countsAsRun = rec.outcome !== "cancelled"
 
   /* Nested objects, not "map.key" strings: set(merge) writes a dotted string
    * as a literal field name, so the by-model/by-provider maps only build
    * correctly when merged as real nested objects. */
   const scalar = {
     usdCost: FieldValue.increment(rec.usdCost),
-    agentRuns: FieldValue.increment(1),
+    ...(countsAsRun
+      ? {
+          agentRuns: FieldValue.increment(1),
+          runsByOutcome: { [rec.outcome]: FieldValue.increment(1) },
+        }
+      : {}),
     promptTokens: FieldValue.increment(rec.promptTokens),
     completionTokens: FieldValue.increment(rec.completionTokens),
     cachedTokens: FieldValue.increment(rec.cachedTokens),
-    runsByOutcome: { [rec.outcome]: FieldValue.increment(1) },
     byProvider: { [providerKey]: FieldValue.increment(rec.usdCost) },
     byModel: { [modelKey]: FieldValue.increment(rec.usdCost) },
     modelNames: { [modelKey]: rec.model ?? "unknown" },
@@ -74,7 +79,7 @@ export async function recordPlatformRun(rec: PlatformRunRecord): Promise<void> {
         date: rec.date,
         orgId: rec.orgId,
         usdCost: FieldValue.increment(rec.usdCost),
-        agentRuns: FieldValue.increment(1),
+        ...(countsAsRun ? { agentRuns: FieldValue.increment(1) } : {}),
         byProvider: { [providerKey]: FieldValue.increment(rec.usdCost) },
         byModel: { [modelKey]: FieldValue.increment(rec.usdCost) },
         modelNames: { [modelKey]: rec.model ?? "unknown" },
@@ -85,6 +90,34 @@ export async function recordPlatformRun(rec: PlatformRunRecord): Promise<void> {
     db
       .doc(platformOrgRollupDocPath(rec.orgId))
       .set({ orgId: rec.orgId, lastRunAt: now, updatedAt: now }, { merge: true }),
+  ])
+}
+
+/* A reconciled run's cost correction: the exact billed cost minus what the
+ * run first recorded. Spend fields only - the run itself was already
+ * counted. */
+export async function recordPlatformSpendDelta(rec: {
+  orgId: string
+  period: string
+  date: string
+  deltaUsd: number
+  provider: string | null
+  model: string | null
+}): Promise<void> {
+  const db = getAdminDb()
+  const now = new Date().toISOString()
+  const providerKey = rec.provider ? safeFieldKey(rec.provider) : "unknown"
+  const modelKey = rec.model ? safeFieldKey(rec.model) : "unknown"
+  const spend = {
+    usdCost: FieldValue.increment(rec.deltaUsd),
+    byProvider: { [providerKey]: FieldValue.increment(rec.deltaUsd) },
+    byModel: { [modelKey]: FieldValue.increment(rec.deltaUsd) },
+    updatedAt: now,
+  }
+  await Promise.all([
+    db.doc(platformRollupDocPath(rec.period)).set(spend, { merge: true }),
+    db.doc(platformOrgRollupPeriodDocPath(rec.orgId, rec.period)).set(spend, { merge: true }),
+    db.doc(platformOrgRollupDailyDocPath(rec.orgId, rec.date)).set(spend, { merge: true }),
   ])
 }
 

@@ -21,6 +21,7 @@ import type {
 } from "@/lib/queries/workspaces.server"
 import { IdentityAvatar } from "@/components/shared/identity-avatar"
 import { cn } from "@/lib/utils"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 const ROLE_ARTICLE: Record<WorkspaceSummary["role"], string> = {
   admin: "an admin",
@@ -44,10 +45,12 @@ export function WorkspaceSwitcher({
   data,
   className,
   nested = false,
+  onNavigate,
 }: {
   data: WorkspaceSwitcherData
   className?: string
   nested?: boolean
+  onNavigate?: () => void
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -57,6 +60,7 @@ export function WorkspaceSwitcher({
 
   function switchTo(ws: WorkspaceSummary) {
     if (ws.current) return
+    onNavigate?.()
     setBusyId(ws.id)
     startTransition(async () => {
       try {
@@ -64,7 +68,7 @@ export function WorkspaceSwitcher({
           if (!ws.devMode) throw new Error("Unknown workspace")
           const res = await setDevOrg({ mode: ws.devMode })
           if (!res.ok) throw new Error(res.error ?? "Could not open workspace")
-          router.replace("/calendar")
+          router.replace(DEFAULT_APP_ROUTE)
         } else {
           const { next } = await activateWorkspaceClient({ organizationId: ws.id })
           router.replace(next)
@@ -79,6 +83,7 @@ export function WorkspaceSwitcher({
   }
 
   function createWorkspace() {
+    onNavigate?.()
     router.push("/workspaces?new=1")
   }
 
@@ -158,7 +163,7 @@ export function WorkspaceSwitcher({
         )}
 
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/settings/workspace")} className="gap-2.5 py-2">
+        <DropdownMenuItem onClick={() => { onNavigate?.(); router.push("/settings/workspace") }} className="gap-2.5 py-2">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground">
             <Settings2 aria-hidden className="size-4" />
           </span>

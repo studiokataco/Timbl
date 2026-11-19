@@ -476,8 +476,11 @@ export async function revertApproval(
   /* Reverse the side-effect - best-effort, idempotent. */
   if (log.itemType === "post") {
     const ref = db.collection(orgPostsPath(orgId)).doc(log.itemId)
+    const current = await ref.get()
+    const meta = { ...((current.data()?.agentMeta as Record<string, unknown> | undefined) ?? {}) }
+    meta.reviewState = log.before?.reviewState ?? "pending"
     const patch: Record<string, unknown> = {
-      "agentMeta.reviewState": log.before?.reviewState ?? "pending",
+      agentMeta: meta,
       updatedAt: new Date().toISOString(),
     }
     if (log.before?.status !== undefined) patch.status = log.before.status

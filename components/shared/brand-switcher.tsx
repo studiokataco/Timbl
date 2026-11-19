@@ -32,10 +32,12 @@ export function BrandSwitcher({
   data,
   className,
   nested = false,
+  onNavigate,
 }: {
   data: BrandSwitcherData
   className?: string
   nested?: boolean
+  onNavigate?: () => void
 }) {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -63,6 +65,7 @@ export function BrandSwitcher({
 
   function switchTo(brand: BrandSummary) {
     if (brand.id === current.id) return
+    onNavigate?.()
     setBusyId(brand.id)
     activate(brand.id)
   }
@@ -127,14 +130,14 @@ export function BrandSwitcher({
         </div>
 
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/settings/brands")} className="gap-2.5 py-2">
+        <DropdownMenuItem onClick={() => { onNavigate?.(); router.push("/settings/brands") }} className="gap-2.5 py-2">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground">
             <Settings2 aria-hidden className="size-4" />
           </span>
           <span className="text-sm font-medium">Manage brands</span>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => setAddOpen(true)}
+          onClick={() => { onNavigate?.(); setAddOpen(true) }}
           disabled={pending || atCap}
           className="gap-2.5 py-2"
         >

@@ -7,6 +7,7 @@ import { resolveLlm } from "./llm-registry"
 import { makePermissionsCallback } from "./permissions"
 import { makeBudgetCallbacks } from "./budget"
 import { makeContextCompactors } from "./compaction"
+import { makeFinisherCallback } from "./finisher"
 import { recallIntentTool } from "../tools/memory"
 import {
   AMBIGUITY_RULE,
@@ -83,6 +84,10 @@ export function buildLlmAgentFromConfig(
     contextCompactors: makeContextCompactors(config),
     beforeModelCallback: [budget.beforeModel],
     afterModelCallback: [budget.afterModel],
-    beforeToolCallback: [budget.beforeTool, perm],
+    beforeToolCallback: [
+      budget.beforeTool,
+      perm,
+      ...(config.finisher ? [makeFinisherCallback(config.finisher, config.budgets)] : []),
+    ],
   })
 }

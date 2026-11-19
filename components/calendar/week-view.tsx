@@ -2,7 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core"
 import { addDays, format, isToday, startOfWeek } from "date-fns"
-import { useMemo } from "react"
+import { Fragment, useMemo } from "react"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { AwarenessDay, Category, Post } from "@/lib/schemas"
 import { groupAwarenessRanges } from "@/lib/calendar/awareness-grouping"
@@ -88,33 +88,26 @@ export function WeekView({
     weekAwarenessRanges.length > 0 ||
     weekDays.some((d) => allDayMap.has(format(d, "yyyy-MM-dd")))
 
+  const sticky = "sticky top-0 z-10 border-b border-border bg-background"
+  const gutter = "border-r border-border"
+
   return (
-    // Single scroll container - header and rows share the same width so scrollbar
-    // doesn't cause column misalignment. No overflow-hidden on the outer so
-    // position:sticky on the header row works correctly.
-    <div className="rounded-lg border border-border bg-background" data-cal-reveal>
-      <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 14rem)" }}>
-        <div className="min-w-[44rem]">
-        {/* Day headers - sticky inside the scroll container */}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background" data-cal-reveal>
+      <div className="min-h-0 flex-1 overflow-auto">
         <div
-          className="grid border-b border-border bg-background sticky top-0 z-10"
-          style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}
+          className="grid min-w-0"
+          style={{ gridTemplateColumns: "4rem repeat(7, minmax(0, 1fr))" }}
         >
-          <div className="border-r border-border" />
+          <div className={cn(sticky, gutter)} />
           {weekDays.map((day) => {
             const today = isToday(day)
             return (
-              <div
-                key={day.toISOString()}
-                className="border-r border-border last:border-r-0 py-2 px-1 text-center"
-              >
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {format(day, "EEE")}
-                </div>
+              <div key={day.toISOString()} className={cn(sticky, "border-r border-border px-2 py-2 text-center last:border-r-0")}>
+                <div className="text-caption text-muted-foreground">{format(day, "EEE")}</div>
                 <div
                   className={cn(
-                    "mx-auto mt-0.5 flex size-7 items-center justify-center rounded-full text-sm tabular-nums",
-                    today && "bg-foreground text-background font-semibold",
+                    "mx-auto mt-1 flex size-8 items-center justify-center rounded-full text-body-sm tabular-nums",
+                    today && "bg-primary font-medium text-primary-foreground",
                     !today && "text-foreground",
                   )}
                 >
@@ -123,67 +116,52 @@ export function WeekView({
               </div>
             )
           })}
-        </div>
 
-        {/* Awareness + all-day strip */}
-        {hasAllDay && (
-          <div
-            className="grid border-b border-border bg-secondary/10"
-            style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}
-          >
-            <div className="border-r border-border px-1 py-1 flex items-start justify-end">
-              <span className="text-[10px] text-muted-foreground mt-0.5">all-day</span>
-            </div>
-            {weekDays.map((day) => {
-              const iso = format(day, "yyyy-MM-dd")
-              const dayAllDay = allDayMap.get(iso) ?? []
-              const dayRanges = weekAwarenessRanges.filter(
-                (r) => r.start <= day && r.end >= day,
-              )
-              return (
-                <AllDayCell
-                  key={iso}
-                  iso={iso}
-                  date={day}
-                  posts={dayAllDay}
-                  awarenessRanges={dayRanges}
-                  categoryById={categoryById}
-                  onCellClick={onCellClick}
-                  onPostClick={onPostClick}
-                />
-              )
-            })}
-          </div>
-        )}
+          {hasAllDay ? (
+            <>
+              <div className={cn(gutter, "flex items-center justify-end bg-secondary/10 px-2 py-2")}>
+                <span className="text-caption text-muted-foreground">All day</span>
+              </div>
+              {weekDays.map((day) => {
+                const iso = format(day, "yyyy-MM-dd")
+                return (
+                  <AllDayCell
+                    key={iso}
+                    iso={iso}
+                    date={day}
+                    posts={allDayMap.get(iso) ?? []}
+                    awarenessRanges={weekAwarenessRanges.filter((range) => range.start <= day && range.end >= day)}
+                    categoryById={categoryById}
+                    onCellClick={onCellClick}
+                    onPostClick={onPostClick}
+                  />
+                )
+              })}
+            </>
+          ) : null}
 
-        {/* Hourly rows - same container, same width, no alignment drift */}
-        {HOURS.map((hour) => (
-          <div
-            key={hour}
-            className="grid border-b border-border last:border-b-0"
-            style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}
-          >
-            <div className="border-r border-border px-2 py-1 text-[10px] text-muted-foreground text-right tabular-nums">
-              {hour === 0 ? "" : `${String(hour).padStart(2, "0")}:00`}
-            </div>
-            {weekDays.map((day) => {
-              const iso = format(day, "yyyy-MM-dd")
-              const key = `${iso}:${String(hour).padStart(2, "0")}`
-              const slotPosts = timedMap.get(key) ?? []
-              return (
-                <TimeslotCell
-                  key={`${iso}-${hour}`}
-                  iso={iso}
-                  hour={hour}
-                  posts={slotPosts}
-                  categoryById={categoryById}
-                  onCellClick={() => onCellClick(day)}
-                  onPostClick={onPostClick}
-                />
-              )
-            })}
-          </div>
-        ))}
+          {HOURS.map((hour) => (
+            <Fragment key={hour}>
+              <div className={cn(gutter, "min-h-16 border-b border-border px-2 py-2 text-right text-caption text-muted-foreground tabular-nums @3xl/iface:min-h-20")}>
+                {`${String(hour).padStart(2, "0")}:00`}
+              </div>
+              {weekDays.map((day) => {
+                const iso = format(day, "yyyy-MM-dd")
+                const key = `${iso}:${String(hour).padStart(2, "0")}`
+                return (
+                  <TimeslotCell
+                    key={`${iso}-${hour}`}
+                    iso={iso}
+                    hour={hour}
+                    posts={timedMap.get(key) ?? []}
+                    categoryById={categoryById}
+                    onCellClick={() => onCellClick(day)}
+                    onPostClick={onPostClick}
+                  />
+                )
+              })}
+            </Fragment>
+          ))}
         </div>
       </div>
     </div>
@@ -217,7 +195,7 @@ function AllDayCell({
       ref={setNodeRef}
       onClick={() => onCellClick(date)}
       className={cn(
-        "border-r border-border last:border-r-0 min-h-[32px] px-0.5 py-0.5 flex flex-col gap-0.5 cursor-pointer",
+        "flex min-h-12 cursor-pointer flex-col gap-1 border-r border-b border-border bg-secondary/10 px-2 py-2 last:border-r-0",
         "transition-colors hover:bg-secondary/30",
         isOver && "bg-secondary/60",
       )}
@@ -228,7 +206,7 @@ function AllDayCell({
         return (
           <div
             key={r.id}
-            className="rounded-sm px-1.5 py-0.5 text-[10px] leading-tight truncate font-medium"
+            className="h-6 truncate rounded-md px-2 text-caption leading-6"
             style={{ ...pillStyle, borderLeft: `2px solid ${color}` }}
             title={r.name}
           >
@@ -276,7 +254,7 @@ function TimeslotCell({
       ref={setNodeRef}
       onClick={onCellClick}
       className={cn(
-        "border-r border-border last:border-r-0 min-h-[48px] px-0.5 py-0.5 flex flex-col gap-0.5 cursor-pointer",
+        "flex min-h-16 cursor-pointer flex-col gap-1 border-r border-b border-border px-2 py-2 last:border-r-0 @3xl/iface:min-h-20",
         "transition-colors hover:bg-secondary/20",
         isOver && "bg-secondary/50",
       )}

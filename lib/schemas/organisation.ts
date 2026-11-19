@@ -109,6 +109,7 @@ export const organisationSchema = audit.extend({
   /* Per-org boolean feature flags toggled from the control centre or seed.
    * A missing key is treated as `false`. Current known key: `public_api_v1`. */
   featureFlags: z.record(z.string(), z.boolean()).optional(),
+  assistantName: z.string().min(2).max(24).optional(),
 })
 export type Organisation = z.infer<typeof organisationSchema>
 

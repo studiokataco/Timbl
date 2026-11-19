@@ -17,6 +17,7 @@ const MODEL_LABELS: Record<string, string> = {
   "gemini-2.5-flash": "Gemini 2.5 Flash",
   "gemini-2.5-pro": "Gemini 2.5 Pro",
   "gemini-3.5-flash": "Gemini 3.5 Flash",
+  "gemini-3.8-live": "Gemini 3.8 Live",
   "claude-haiku-4-5-20251001": "Claude Haiku 4.5",
   "claude-sonnet-4-6": "Claude Sonnet 4.6",
   "openai/gpt-6.1-terra": "GPT-6.1 Terra",

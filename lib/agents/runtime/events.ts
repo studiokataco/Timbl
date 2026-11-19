@@ -62,7 +62,7 @@ export function eventsToSseStream(
           onRawEvent?.(raw)
           for (const structured of toStructuredEvents(raw)) {
             lastStructured = structured
-            send(`data: ${serializeEvent(structured)}\n\n`)
+            send(`data: ${serializeEvent(structured, raw.author)}\n\n`)
           }
           if (abortSignal?.aborted) break
         }
@@ -102,20 +102,20 @@ export function eventsToSseStream(
   })
 }
 
-function serializeEvent(event: StructuredEvent): string {
+function serializeEvent(event: StructuredEvent, author?: string): string {
   /* `Error` instances inside ErrorEvent don't round-trip through
    * JSON.stringify by default. Flatten to a plain object so the wire
    * payload is useful. */
   if (event.type === "error") {
     return JSON.stringify({
       type: "error",
-      error: {
+        error: {
         name: event.error.name,
         message: event.error.message,
       },
     })
   }
-  return JSON.stringify(event)
+  return JSON.stringify(author ? { ...event, author } : event)
 }
 
 /*

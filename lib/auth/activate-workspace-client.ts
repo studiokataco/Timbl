@@ -1,4 +1,5 @@
 import { getClientAuth } from "@/lib/firebase/client"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export async function activateWorkspaceClient(opts: {
   organizationId?: string
@@ -45,5 +46,5 @@ export async function activateWorkspaceClient(opts: {
   }
 
   const session = await mintSession(true)
-  return { next: session.next ?? "/calendar" }
+  return { next: session.next ?? DEFAULT_APP_ROUTE }
 }

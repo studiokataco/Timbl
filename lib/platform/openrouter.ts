@@ -37,6 +37,12 @@ async function orFetch<T>(path: string): Promise<T | null> {
 export interface OpenRouterAccount {
   /** USD spent against this key's tracked usage. */
   usage: number
+  /** USD spent on this key in the current UTC calendar month. */
+  usageMonthly: number | null
+  /** USD spent on this key today (UTC). */
+  usageDaily: number | null
+  /** How often the key's spend limit resets: daily, weekly, monthly, or null. */
+  limitReset: string | null
   /** Spend limit on the key, or null for unlimited. */
   limit: number | null
   /** Remaining spend headroom, or null for unlimited. */
@@ -52,6 +58,9 @@ export interface OpenRouterAccount {
 
 interface KeyData {
   usage?: number
+  usage_monthly?: number
+  usage_daily?: number
+  limit_reset?: string | null
   limit?: number | null
   limit_remaining?: number | null
   is_free_tier?: boolean
@@ -74,6 +83,9 @@ export async function getOpenRouterAccount(): Promise<OpenRouterAccount | null> 
   const totalUsage = credits?.total_usage ?? 0
   return {
     usage: key?.usage ?? 0,
+    usageMonthly: key?.usage_monthly ?? null,
+    usageDaily: key?.usage_daily ?? null,
+    limitReset: key?.limit_reset ?? null,
     limit: key?.limit ?? null,
     limitRemaining: key?.limit_remaining ?? null,
     totalCredits,

@@ -74,6 +74,20 @@ export async function getCurrentOrgId(): Promise<string> {
   return auth.workspace.organizationId
 }
 
+export function datastoreDown(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  return msg.includes("ECONNREFUSED") || msg.includes("UNAVAILABLE")
+}
+
+export async function orDown<T>(task: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await task
+  } catch (err) {
+    if (!datastoreDown(err)) throw err
+    return fallback
+  }
+}
+
 export async function getCurrentOrganisation(): Promise<DevOrganisation> {
   let orgId: string
   let fallback: DevOrganisation
@@ -95,13 +109,18 @@ export async function getCurrentOrganisation(): Promise<DevOrganisation> {
     }
   }
 
-  const snap = await getAdminDb().doc(orgPath(orgId)).get()
-  const data = snap.data() ?? {}
-  const name = (data.name as string | undefined)?.trim()
-  return {
-    id: orgId,
-    slug: (data.slug as string) ?? fallback.slug,
-    name: name || fallback.name,
+  try {
+    const snap = await getAdminDb().doc(orgPath(orgId)).get()
+    const data = snap.data() ?? {}
+    const name = (data.name as string | undefined)?.trim()
+    return {
+      id: orgId,
+      slug: (data.slug as string) ?? fallback.slug,
+      name: name || fallback.name,
+    }
+  } catch (err) {
+    if (!datastoreDown(err)) throw err
+    return fallback
   }
 }
 
@@ -114,8 +133,12 @@ export function getDb() {
  * consistent with the rest of the multi-tenant model (Rules can't cheaply
  * read the org doc per request). Called from the (app) layout. */
 export async function requireActiveOrg(orgId: string): Promise<void> {
-  const snap = await getAdminDb().doc(orgPath(orgId)).get()
-  if (snap.data()?.status === "suspended") redirect("/suspended")
+  try {
+    const snap = await getAdminDb().doc(orgPath(orgId)).get()
+    if (snap.data()?.status === "suspended") redirect("/suspended")
+  } catch (err) {
+    if (!datastoreDown(err)) throw err
+  }
 }
 
 export async function requireRole(allowed: ReadonlyArray<DevUser["role"]>): Promise<DevUser> {

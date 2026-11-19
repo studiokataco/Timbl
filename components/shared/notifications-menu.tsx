@@ -30,7 +30,7 @@ function writeSeen(value: string) {
   window.dispatchEvent(new Event(SEEN_EVENT))
 }
 
-export function NotificationsMenu() {
+export function NotificationsMenu({ density = "pointer" }: { density?: "touch" | "pointer" }) {
   const router = useRouter()
   const lastSeen = useSyncExternalStore(subscribeSeen, readSeen, () => "")
 
@@ -56,7 +56,7 @@ export function NotificationsMenu() {
       <DropdownMenuTrigger
         type="button"
         aria-label="Notifications"
-        className="relative inline-flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground"
+        className={`relative inline-flex ${density === "touch" ? "size-11" : "size-9"} items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground`}
       >
         <Bell aria-hidden className="size-4" />
         {unread > 0 ? (

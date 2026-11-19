@@ -15,6 +15,24 @@ export const userSchema = audit.extend({
   preferences: z
     .object({
       onboarded: z.boolean().optional(),
+      connectorsStripHidden: z.boolean().optional(),
+      presence: z
+        .object({
+          reduceMotion: z.boolean(),
+          largerTarget: z.boolean(),
+          tips: z.boolean(),
+          voiceLocale: z.enum(["en-IN", "en-GB", "en-US", "hi-IN", "hinglish"]),
+          personality: z.enum(["calm", "warm", "direct", "playful"]),
+          workingStyle: z.string(),
+          showCursors: z.boolean().nullable(),
+          shortcuts: z.boolean(),
+          ambient: z.object({
+            glow: z.boolean(),
+            backgroundMotion: z.boolean(),
+          }),
+        })
+        .partial()
+        .optional(),
     })
     .partial()
     .optional(),

@@ -6,6 +6,7 @@ import { ClaimAccessForm } from "@/components/auth/claim-access-form"
 import { Button } from "@/components/ui/button"
 import { getApprovedBetaInvite } from "@/lib/auth/beta-access"
 import { readSessionAuth } from "@/lib/auth/session"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export const dynamic = "force-dynamic"
 
@@ -24,7 +25,7 @@ export default async function ClaimAccessPage({
   const email = rawEmail?.trim().toLowerCase()
 
   const auth = await readSessionAuth()
-  if (auth?.workspace) redirect("/calendar")
+  if (auth?.workspace) redirect(DEFAULT_APP_ROUTE)
 
   if (!email) {
     return (

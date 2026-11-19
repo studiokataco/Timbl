@@ -165,7 +165,7 @@ export interface AgentChatProps {
   className?: string
   /**
    * When true, the built-in composer + slash autocomplete are hidden.
-   * The parent (e.g. AgentDrawer) owns its own input and drives
+   * The parent owns its own input and drives
    * sends via the imperative handle exposed through `ref`.
    */
   compact?: boolean

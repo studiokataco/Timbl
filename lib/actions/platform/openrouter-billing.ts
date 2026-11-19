@@ -1,6 +1,7 @@
 "use server"
 
 import { getAdminDb } from "@/lib/firebase/admin"
+import { emitRunSpendCorrection } from "@/lib/telemetry/agent-events"
 import { requirePlatformAdmin } from "@/lib/auth/platform-guard"
 import {
   getOpenRouterAccount,
@@ -28,11 +29,12 @@ export interface ReconcileResult {
 }
 
 /*
- * Backfills metrics.actualUsdCost on recent OpenRouter runs by summing the
- * exact per-generation cost from GET /generation. The estimate written at
- * run end stays in metrics.usdCost; actualUsdCost is the authoritative spend
- * number. Bounded scan, best-effort: ids whose cost hasn't settled yet are
- * left for the next pass.
+ * Backfills exact cost on recent OpenRouter runs whose run-end cost was an
+ * estimate, by summing GET /generation per generation id. Runs metered on
+ * OpenRouter's inline cost already carry actualUsdCost and are skipped. The
+ * difference from the recorded cost is applied to the usage counters too, so
+ * the spend gates and every control-centre total move with it. Bounded scan,
+ * best-effort: ids whose cost hasn't settled yet are left for the next pass.
  */
 export async function reconcileRunCosts(sample = 100): Promise<ReconcileResult> {
   await requirePlatformAdmin()
@@ -48,7 +50,12 @@ export async function reconcileRunCosts(sample = 100): Promise<ReconcileResult> 
     for (const doc of snap.docs) {
       const data = doc.data() as {
         generationIds?: string[]
-        metrics?: { actualUsdCost?: number }
+        metrics?: { actualUsdCost?: number; usdCost?: number }
+        organizationId?: string
+        agentName?: string
+        provider?: string | null
+        model?: string | null
+        startedAt?: string
       }
       const ids = data.generationIds ?? []
       if (ids.length === 0) continue
@@ -61,10 +68,27 @@ export async function reconcileRunCosts(sample = 100): Promise<ReconcileResult> 
       if (costs.some((c) => c === null)) continue
       const total = costs.reduce((sum, c) => sum + (c?.totalCost ?? 0), 0)
 
+      /* Nested object, not a "metrics.x" key: set(merge) writes a dotted
+       * string as a literal top-level field. */
       await doc.ref.set(
-        { "metrics.actualUsdCost": total, updatedAt: new Date().toISOString() },
+        {
+          metrics: { actualUsdCost: total, usdCost: total, costSource: "provider" },
+          updatedAt: new Date().toISOString(),
+        },
         { merge: true },
       )
+      const deltaUsd = total - (data.metrics?.usdCost ?? 0)
+      const orgId = data.organizationId ?? doc.ref.parent.parent?.id
+      if (orgId && Math.abs(deltaUsd) > 1e-9) {
+        await emitRunSpendCorrection({
+          orgId,
+          agentName: data.agentName ?? "unknown",
+          deltaUsd,
+          provider: data.provider ?? null,
+          model: data.model ?? null,
+          at: data.startedAt ? new Date(data.startedAt) : new Date(),
+        })
+      }
       reconciled += 1
     }
     return { ok: true, scanned, reconciled }

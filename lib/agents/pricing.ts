@@ -91,3 +91,7 @@ export function estimateUsdCost(
 export function hasPrice(model: string | null | undefined): boolean {
   return !!model && model in MODEL_PRICES
 }
+
+export const LIVE_AUDIO_PRICES: Record<string, { inputPerMin: number; outputPerMin: number }> = {
+  "gemini-3.8-live": { inputPerMin: 0.005, outputPerMin: 0.018 },
+}

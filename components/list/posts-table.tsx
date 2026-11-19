@@ -521,6 +521,7 @@ export function PostsTable({
             return (
               <div
                 key={p.id}
+                data-post-id={p.id}
                 style={{ borderLeftColor: cat?.color ?? undefined }}
                 className={cn(
                   "relative rounded-lg border border-border border-l-4 bg-background p-3 transition-colors",
@@ -613,18 +614,18 @@ export function PostsTable({
       </div>
 
       <div className="hidden min-w-0 overflow-x-auto rounded-lg border border-border bg-background md:block">
-        <table className="w-full min-w-[60rem] table-fixed text-sm">
+        <table className="w-full min-w-274 table-fixed text-sm">
           <colgroup>
             <col className="w-10" />
-            <col className="w-[9.5rem]" />
+            <col className="w-34" />
             <col className="w-24" />
             <col />
-            <col className="w-44" />
+            <col className="w-36" />
             <col className="w-24" />
             <col className="w-28" />
-            <col className="w-24" />
+            <col className="w-20" />
             <col className="w-16" />
-            <col className="w-[6.5rem]" />
+            <col className="w-26" />
           </colgroup>
           <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
@@ -668,6 +669,7 @@ export function PostsTable({
                 return (
                   <tr
                     key={p.id}
+                    data-post-id={p.id}
                     className="border-t border-border hover:bg-secondary/30 cursor-pointer"
                     onClick={() => openComposer(p.id)}
                   >

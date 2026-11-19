@@ -20,6 +20,12 @@ import { resolveAgent, type ResolveOverride } from ".."
 import { AGENT_APP_NAME, buildRunner } from "../runtime/runner"
 import { FirestoreSessionService } from "../runtime/session-service"
 import { RUNTIME_STATE_KEY, type RuntimeCtx } from "../runtime/context"
+import {
+  closeRunMeter,
+  costSourceOf,
+  openRunMeter,
+  type RunMeter,
+} from "../runtime/cost-meter"
 
 /*
  * The single entrypoint that every code path (UI button, cron tick,
@@ -82,7 +88,7 @@ export async function startAgentRun(
 
   /* Needs only the orgId, so it runs before resolveAgent - a blocked run
    * never pays for agent resolution. */
-  await requireOrgBudget(input.orgId)
+  const orgHeadroomUsd = await requireOrgBudget(input.orgId)
 
   const resolved = await resolveAgent(
     input.orgId,
@@ -98,13 +104,17 @@ export async function startAgentRun(
   /* Per-agent gate: tier-scaled invocation cap + monthlyUsdCap, on top of
    * the blanket agentRuns quota above. See requireAgentBudget for why this
    * needs the resolved config's budgets and so can't run earlier. */
-  await requireAgentBudget(
+  const agentHeadroomUsd = await requireAgentBudget(
     input.orgId,
     input.agentName,
     resolved.config.budgets.monthlyUsdCap,
   )
 
   const runId = randomUUID()
+  openRunMeter(
+    runId,
+    Math.min(orgHeadroomUsd, agentHeadroomUsd, resolved.config.budgets.maxUsdCost || Infinity),
+  )
 
   const runtimeCtx: RuntimeCtx = {
     orgId: input.orgId,
@@ -242,24 +252,58 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
   /* Telemetry: emit on terminal state. Succeeded + failed both count
    * against quota (LLM tokens were burned either way). Cancelled doesn't.
    * Best-effort - a counter-write failure must not break the UI flow. */
+  const terminal =
+    input.status === "succeeded" ||
+    input.status === "failed" ||
+    input.status === "cancelled"
+  const meter = terminal ? closeRunMeter(input.runId) : undefined
+  const metered = meter && meter.llmCalls > 0 ? meter : undefined
+
+  if (input.status === "cancelled" && metered) {
+    try {
+      const snap = await ref.get()
+      const data = snap.data() ?? {}
+      await ref.set({ metrics: meterMetrics(metered) }, { merge: true })
+      await emitAgentRun({
+        orgId: input.orgId,
+        runId: input.runId,
+        agentName: (data.agentName as string) ?? "unknown",
+        outcome: "cancelled",
+        promptTokens: metered.promptTokens,
+        completionTokens: metered.completionTokens,
+        cachedTokens: metered.cachedTokens,
+        usdCost: metered.usdCost,
+        provider: (data.provider as string | null | undefined) ?? null,
+        model: (data.model as string | null | undefined) ?? null,
+        chargeable: false,
+      })
+    } catch (err) {
+      console.warn(
+        `[agent-events] cancelled-run spend emit failed for run=${input.runId}: ${err instanceof Error ? err.message : err}`,
+      )
+    }
+  }
+
   if (input.status === "succeeded" || input.status === "failed") {
     try {
       const snap = await ref.get()
       const data = snap.data() ?? {}
       const m = (data.metrics ?? {}) as Record<string, number | undefined>
-      const promptTokens = m.promptTokens ?? 0
-      const completionTokens = m.completionTokens ?? 0
-      const cachedTokens = m.cachedTokens ?? 0
-      /* usdCost is derived here (not during streaming) - it's the only place
-       * the model id and the final token counts are both known. Cache reads
-       * are discounted inside estimateUsdCost. Written back so the run doc
-       * carries a real cost, not the 0 placeholder seeded at start. */
-      const usdCost = estimateUsdCost(
-        (data.model as string | undefined) ?? null,
-        promptTokens,
-        completionTokens,
-        cachedTokens,
-      )
+      /* The run meter saw every call the run made on every path (route,
+       * cron, admin force-run, resume), with OpenRouter's exact cost. The
+       * token-count estimate is only the fallback for a run that never
+       * reached the meter. */
+      const promptTokens = metered?.promptTokens ?? m.promptTokens ?? 0
+      const completionTokens = metered?.completionTokens ?? m.completionTokens ?? 0
+      const cachedTokens = metered?.cachedTokens ?? m.cachedTokens ?? 0
+      const usdCost =
+        metered?.usdCost ??
+        estimateUsdCost(
+          (data.model as string | undefined) ?? null,
+          promptTokens,
+          completionTokens,
+          cachedTokens,
+        )
       /* Wall-clock duration - finishedAt minus startedAt. The field existed
        * on the schema but was never written; live-ops latency (p50/p95)
        * reads it. */
@@ -267,10 +311,9 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
       const durationMs = startedAt
         ? Math.max(0, Date.parse(now) - Date.parse(startedAt))
         : undefined
+      const metrics = metered ? meterMetrics(metered) : { usdCost, costSource: "estimate" }
       await ref.set(
-        durationMs === undefined
-          ? { metrics: { usdCost } }
-          : { metrics: { usdCost }, durationMs },
+        durationMs === undefined ? { metrics } : { metrics, durationMs },
         { merge: true },
       )
       await emitAgentRun({
@@ -315,5 +358,19 @@ export async function markAgentRunStatus(input: MarkRunStatusInput) {
         `[agent-events] emit failed for run=${input.runId}: ${err instanceof Error ? err.message : err}`,
       )
     }
+  }
+}
+
+function meterMetrics(meter: RunMeter) {
+  const costSource = costSourceOf(meter)
+  return {
+    llmCalls: meter.llmCalls,
+    promptTokens: meter.promptTokens,
+    completionTokens: meter.completionTokens,
+    cachedTokens: meter.cachedTokens,
+    reasoningTokens: meter.reasoningTokens,
+    usdCost: meter.usdCost,
+    costSource,
+    ...(costSource === "provider" ? { actualUsdCost: meter.usdCost } : {}),
   }
 }
