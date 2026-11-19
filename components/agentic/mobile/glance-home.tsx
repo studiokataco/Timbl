@@ -14,6 +14,8 @@ export type GlanceHomeProps = {
   onAction: (target: GlanceTarget) => void
   onAsk: () => void
   onSpeak: () => void
+  lead?: React.ReactNode
+  trailing?: React.ReactNode
 }
 
 export function GlanceHome({
@@ -23,6 +25,8 @@ export function GlanceHome({
   onAction,
   onAsk,
   onSpeak,
+  lead,
+  trailing,
 }: GlanceHomeProps): React.JSX.Element {
   const { copy } = usePrototype()
   const g = copy.mobile.glance
@@ -32,8 +36,14 @@ export function GlanceHome({
       data-slot="agentic-glance-home"
       data-state={cards.length === 0 ? "all-clear" : "active"}
       data-figma="GlanceHome/root"
-      className={tw("flex min-h-full flex-col bg-background px-6 pb-6 text-foreground", framed ? "pt-16" : "pt-6")}
+      className={tw("flex min-h-full flex-col bg-background px-6 pb-6 text-foreground", framed ? "pt-16" : "flex-1 pt-6")}
     >
+      {lead || trailing ? (
+        <div data-figma="GlanceHome/bar" className="-mx-2 -mt-3 flex items-center justify-between gap-2 pb-4">
+          <div className="flex items-center">{lead}</div>
+          {trailing}
+        </div>
+      ) : null}
       <header data-figma="GlanceHome/header" className="flex flex-col gap-1.5 px-1">
         <h1 className="text-display-sm text-balance text-foreground">{g.greeting(weekLabel(mondayOf(todayIso())))}</h1>
         <p className="text-body-md text-muted-foreground">{status}</p>

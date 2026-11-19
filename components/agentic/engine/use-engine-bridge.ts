@@ -208,8 +208,12 @@ export function EngineBridge({
       hydrated.current = true
       if (thread.skippedPostIds?.length) dispatch({ type: "hydrate_skipped", ids: thread.skippedPostIds })
       if (thread.run) dispatch({ type: "hydrate_run", run: thread.run as Run })
-      const withPlan = (transcript as Array<TranscriptEntry & { planRunId?: string }>).map((entry) =>
-        entry.planRunId ? { ...entry, attachments: [{ kind: "plan" as const, runId: entry.planRunId }] } : entry,
+      const withPlan = (transcript as Array<TranscriptEntry & { planRunId?: string; errorRunId?: string }>).map((entry) =>
+        entry.planRunId
+          ? { ...entry, attachments: [{ kind: "plan" as const, runId: entry.planRunId }] }
+          : entry.errorRunId
+            ? { ...entry, attachments: [{ kind: "error" as const, runId: entry.errorRunId }] }
+            : entry,
       )
       if (withPlan.length) dispatch({ type: "hydrate_thread", transcript: withPlan })
       await Promise.resolve()
@@ -230,12 +234,14 @@ export function EngineBridge({
         .filter((entry) => !UNSAVED.has(entry.id) && !entry.queued && !seen.has(entry.id) && Boolean(seen.add(entry.id)))
         .map((entry) => {
           const planRunId = entry.attachments?.find((item) => item.kind === "plan")?.runId
+          const errorRunId = entry.attachments?.find((item) => item.kind === "error")?.runId
           return {
             id: entry.id,
             role: entry.role,
             text: entry.text,
             createdAt: entry.createdAt,
             ...(planRunId ? { planRunId } : {}),
+            ...(errorRunId ? { errorRunId } : {}),
           }
         })
         .sort((a, b) => a.createdAt - b.createdAt)

@@ -514,6 +514,7 @@ export function makeCopy(name: string, workspace = "Workspace") {
       guardrailBulk: "Bulk approval needs a final check. Review the list, then approve.",
       reschedule: (title: string, when: string) => `I can move **${title}** to ${when}. Approve the move below.`,
       error: "That step didn't finish. Nothing was changed. Try again, or tell me what to change.",
+      interrupted: "The page closed before this step finished.",
       retryAck: "Trying again.",
       stopped: "Stopped. I kept the finished steps.",
       cap: (limit: number, reset: string) => `You've used this month's ${limit} ${name} turns. Your work is saved, and turns reset on ${reset}.`,
@@ -778,7 +779,8 @@ export function makeCopy(name: string, workspace = "Workspace") {
         linkedinLine: (n: number) => plural(n, "Access expires in 1 day", `Access expires in ${n} days`),
         reconnect: "Reconnect",
         reconnectToast: "Reconnect opens your integrations settings in the app.",
-        eventTitle: (eventName: string, n: number) => plural(n, `${eventName} is in 1 day`, `${eventName} is in ${n} days`),
+        eventTitle: (eventName: string, n: number) =>
+          n === 0 ? `${eventName} is today` : n === 1 ? `${eventName} is tomorrow` : `${eventName} is in ${n} days`,
         eventLine: "No campaign yet. Want a two week plan?",
         plan: "Plan it",
         planPrompt: (eventName: string) => `Plan a two week campaign for ${eventName}`,

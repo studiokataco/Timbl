@@ -27,7 +27,15 @@ const SPOKEN: { match: RegExp; act: "approve" | "skip" | RefineKind }[] = [
   { match: /\bnew image\b/i, act: "new_image" },
 ]
 
-export function MobileView(): React.JSX.Element {
+export function MobileView({
+  lead,
+  modeSwitch,
+  titleSlot,
+}: {
+  lead?: React.ReactNode
+  modeSwitch?: React.ReactNode
+  titleSlot?: React.ReactNode
+} = {}): React.JSX.Element {
   const { copy, view, update, dismiss, team, role, prefs, assistantName } = usePrototype()
   const { state, dispatch } = useEngine()
   const [holding, setHolding] = useState(false)
@@ -125,6 +133,8 @@ export function MobileView(): React.JSX.Element {
             framed={framed}
             onAction={handleGlanceAction}
             onAsk={() => update({ screen: "chat" }, "push")}
+            lead={lead}
+            trailing={modeSwitch}
             onSpeak={() => {
               void voice.startTalk()
               update({ sheet: "talk" }, "push")
@@ -151,7 +161,7 @@ export function MobileView(): React.JSX.Element {
             onKeyCommand={(cmd) => decide(cmd === "approve" ? "approve" : "skip")}
           />
         ) : (
-          <TimblModeView chrome="mobile-screen" onBack={() => update({ screen: "glance" })} />
+          <TimblModeView chrome="mobile-screen" titleSlot={titleSlot} onBack={() => update({ screen: "glance" })} />
         )}
 
         <TalkSheet

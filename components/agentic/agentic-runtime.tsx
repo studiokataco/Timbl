@@ -79,6 +79,7 @@ type AgenticRuntimeProps = {
   threadId?: string
   onSaved?: () => void
   onNavigate: (effect: NavigateEffect) => void
+  phone?: boolean
 }
 
 export function AgenticRuntime({
@@ -91,6 +92,7 @@ export function AgenticRuntime({
   threadId,
   onSaved,
   onNavigate,
+  phone = false,
 }: AgenticRuntimeProps) {
   const { update, prefs, copy } = usePrototype()
   const announce = useAnnounce()
@@ -127,7 +129,7 @@ export function AgenticRuntime({
           <HandoffProvider>
             <HandoffTransition />
             {children}
-            <OrbSheets />
+            <OrbSheets phone={phone} />
           </HandoffProvider>
         </ThreadFlushContext.Provider>
       </EngineProvider>
@@ -141,11 +143,12 @@ export function useReducedMotionAttr(): string | undefined {
   return prefs.reduceMotion || osReduced ? "" : undefined
 }
 
-export function OrbSheets() {
+export function OrbSheets({ phone = false }: { phone?: boolean }) {
   const { view, dismiss, prefs, assistantName, role, copy, team, viewer } = usePrototype()
   const { state, dispatch } = useEngine()
   const { reduced } = useAgenticMotion()
   const [tab, setTab] = useState<"needs" | "log">("needs")
+  const desktopSheets = !phone && view.view !== "mobile"
   const voice = useLiveSession({
     onTool: (tool) => applySpokenTool(tool, dispatch, state.deck.order[state.deck.index] ?? null),
     instruction: copy.prompts.liveSystem,
@@ -165,7 +168,7 @@ export function OrbSheets() {
   return (
     <>
       <ActivitySurface
-        open={view.sheet === "activity"}
+        open={desktopSheets && view.sheet === "activity"}
         onOpenChange={(open) => !open && dismiss({ sheet: null })}
         layout="side"
         finalFocus={() => document.querySelector<HTMLElement>("[data-slot=agentic-state-chip], [data-figma='OrbDock/label'], [data-slot=agentic-orb-dock] button")}
@@ -180,7 +183,7 @@ export function OrbSheets() {
         assistantAvatar={<AssistantAvatar />}
       />
       <PersonaPresenceSheet
-        open={view.sheet === "persona"}
+        open={desktopSheets && view.sheet === "persona"}
         onOpenChange={(open) => !open && dismiss({ sheet: null })}
         layout="side"
         finalFocus={() => document.querySelector<HTMLElement>("[aria-label='" + copy.iface.rail.settings + "'], h1")}
@@ -193,7 +196,7 @@ export function OrbSheets() {
         onCancel={() => dismiss({ sheet: null })}
       />
       <TalkSheet
-        open={view.sheet === "talk" && view.view !== "mobile"}
+        open={desktopSheets && view.sheet === "talk"}
         state={voice.talkState}
         tokens={voice.tokens}
         chips={voice.chips}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
 
 /**
  * SSR-safe media-query hook. Returns `false` on the server and on the first
@@ -21,4 +21,18 @@ export function useMediaQuery(query: string): boolean {
   }, [query])
 
   return matches
+}
+
+export const PHONE_QUERY = "(width < 48rem)"
+
+export function useMediaMatch(query: string): boolean | null {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const mql = window.matchMedia(query)
+      mql.addEventListener("change", onChange)
+      return () => mql.removeEventListener("change", onChange)
+    },
+    [query],
+  )
+  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => null)
 }

@@ -91,7 +91,7 @@ export function ApproveDeck({
       data-state={isDone ? "done" : refining ? "refining" : "reviewing"}
       data-figma="ApproveDeck/root"
       onKeyDown={onKeyDown}
-      className={tw("flex min-h-full flex-col bg-muted px-6 pb-6 text-foreground", framed ? "pt-16" : "pt-6")}
+      className={tw("flex min-h-full flex-col bg-muted px-6 pb-6 text-foreground", framed ? "pt-16" : "flex-1 pt-6")}
     >
       <header className="flex items-center justify-between px-1">
         <Button type="button" variant="ghost" aria-label={d.back} onClick={onBack} className="size-11">

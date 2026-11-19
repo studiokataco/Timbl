@@ -1250,7 +1250,7 @@ export function reduce(state: EngineState, event: EngineInput): EngineState {
     }
     case "run_revise": {
       const run = s.run
-      if (!run || run.status !== "proposed") return s
+      if (!run || (run.status !== "proposed" && run.status !== "error")) return s
       return effect(say({ ...user, composerDraft: `${run.input}: ` }, ctx, ctx.copy.reply.reviseAck), { type: "focus_composer" })
     }
     case "run_stop":
@@ -1326,7 +1326,8 @@ export function reduce(state: EngineState, event: EngineInput): EngineState {
       const runs = s.runs.some((run) => run.id === event.run.id)
         ? s.runs.map((run) => (run.id === event.run.id ? event.run : run))
         : [...s.runs, event.run]
-      return { ...s, run: event.run, runs }
+      const hydrated = { ...s, run: event.run, runs }
+      return event.run.status === "running" ? runFailed(hydrated, ctx, event.run.id, ctx.copy.reply.interrupted) : hydrated
     }
     case "hydrate_thread": {
       const unique = event.transcript.filter((entry, i, all) => all.findIndex((other) => other.id === entry.id) === i)

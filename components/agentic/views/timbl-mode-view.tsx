@@ -190,7 +190,7 @@ export function TimblModeView({ chrome, onBack, attention = 0, lead, titleSlot, 
   const renderAttachment = useCallback(
     (attachment: TranscriptAttachment): React.ReactNode => {
       if (attachment.kind === "plan") {
-        const run = state.runs.find((r) => r.id === attachment.runId) ?? state.run
+        const run = state.runs.find((r) => r.id === attachment.runId)
         if (!run) return null
         return (
           <PlanCard
@@ -223,6 +223,22 @@ export function TimblModeView({ chrome, onBack, attention = 0, lead, titleSlot, 
           </div>
         )
       }
+      if (attachment.kind === "error") {
+        const run = state.run
+        const shownElsewhere =
+          Boolean(state.canvas.card) ||
+          state.transcript.some((entry) => entry.attachments?.some((item) => item.kind === "plan" && item.runId === attachment.runId))
+        if (!run || run.id !== attachment.runId || run.status !== "error" || shownElsewhere) return null
+        return (
+          <PlanCard
+            run={run}
+            onStart={() => dispatch({ type: "run_start" })}
+            onRevise={() => dispatch({ type: "run_revise" })}
+            onStop={() => dispatch({ type: "run_stop" })}
+            onRetry={() => dispatch({ type: "retry" })}
+          />
+        )
+      }
       if (attachment.kind === "cap" && !dismissedCap) {
         return (
           <AgenticCard
@@ -241,7 +257,7 @@ export function TimblModeView({ chrome, onBack, attention = 0, lead, titleSlot, 
       }
       return null
     },
-    [copy.cards.shell, copy.timbl.modeTitle, dismissedCap, dispatch, role, state.posts, state.requests, state.run, state.runs, state.usage.limit],
+    [copy.cards.shell, copy.timbl.modeTitle, dismissedCap, dispatch, role, state.canvas.card, state.posts, state.requests, state.run, state.runs, state.transcript, state.usage.limit],
   )
 
   const activeCardKind = state.canvas.card?.kind

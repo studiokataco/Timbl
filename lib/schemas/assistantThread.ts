@@ -7,6 +7,7 @@ export const assistantThreadEntrySchema = z.object({
   text: z.string().optional(),
   createdAt: z.number().int(),
   planRunId: z.string().optional(),
+  errorRunId: z.string().optional(),
 })
 
 const shellRunStepSchema = z.object({

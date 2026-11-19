@@ -21,6 +21,7 @@ import { makeCopy, type Copy } from "@/components/agentic/copy"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 import { deleteAssistantThread, listAssistantThreads, updateAssistantThread } from "@/lib/actions/assistant-threads"
 import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
+import { PHONE_QUERY } from "@/lib/hooks/use-media-query"
 import type { AssistantThreadListItem, AssistantThreadPatch } from "@/lib/schemas/assistantThread"
 import { cn } from "@/lib/utils"
 
@@ -63,7 +64,7 @@ export function chatPath(id?: string | null): string {
   return id ? `${DEFAULT_APP_ROUTE}/${encodeURIComponent(id)}` : DEFAULT_APP_ROUTE
 }
 
-function chatFromPath(pathname: string): string | null {
+export function chatFromPath(pathname: string): string | null {
   if (!pathname.startsWith(`${DEFAULT_APP_ROUTE}/`)) return null
   const id = pathname.slice(DEFAULT_APP_ROUTE.length + 1).split("/")[0]
   return id ? decodeURIComponent(id) : null
@@ -145,7 +146,12 @@ export function HomeChatsProvider({
   const newChat = useCallback(
     (firstMessage?: string) => {
       setNewChatId(crypto.randomUUID())
-      const target = firstMessage ? `${DEFAULT_APP_ROUTE}?q=${encodeURIComponent(firstMessage)}` : DEFAULT_APP_ROUTE
+      const phone = window.matchMedia(PHONE_QUERY).matches
+      const target = firstMessage
+        ? `${DEFAULT_APP_ROUTE}?q=${encodeURIComponent(firstMessage)}`
+        : phone
+          ? `${DEFAULT_APP_ROUTE}?screen=chat`
+          : DEFAULT_APP_ROUTE
       if (onHome) window.history.pushState(null, "", target)
       else router.push(target)
     },

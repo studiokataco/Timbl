@@ -32,7 +32,7 @@ export function HomeLead() {
         size="icon-sm"
         aria-label={copy.menu}
         onClick={() => window.dispatchEvent(new Event("nav:open"))}
-        className="@3xl/iface:hidden"
+        className="size-11 @3xl/iface:hidden"
       >
         <Menu className="size-4" aria-hidden />
       </Button>
@@ -87,7 +87,7 @@ export function ChatTitle() {
         }}
       >
         <PopoverTrigger
-          render={<Button type="button" variant="ghost" size="sm" className="-ml-1.5 h-8 min-w-0 max-w-80 gap-1.5 px-2 text-sm font-medium text-foreground" />}
+          render={<Button type="button" variant="ghost" size="sm" className="-ml-1.5 h-8 min-w-0 max-w-80 shrink gap-1.5 px-2 text-sm font-medium text-foreground" />}
         >
           <span className="min-w-0 truncate">{title}</span>
           <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
