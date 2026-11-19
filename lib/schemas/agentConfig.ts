@@ -38,6 +38,16 @@ export const agentCompactionSchema = z
   .default({ enabled: true, tokenThreshold: 16_000, eventRetentionSize: 6 })
 export type AgentCompaction = z.infer<typeof agentCompactionSchema>
 
+/* Quality finisher. When set, every draft-writing tool call (create, update,
+ * template) is handed to this model once - copy fields only, no transcript -
+ * to edit before it is saved. Lets a cheaper model run the tool loop while
+ * the stronger model owns the words. */
+export const agentFinisherSchema = z.object({
+  model: z.string().min(1),
+  reasoningEffort: agentReasoningEffort.optional(),
+})
+export type AgentFinisher = z.infer<typeof agentFinisherSchema>
+
 export const agentBudgetsSchema = z.object({
   maxLlmCalls: z.number().int().min(1).max(500).default(40),
   maxToolCalls: z.number().int().min(0).max(500).default(60),
@@ -58,6 +68,7 @@ export const agentConfigSchema = audit.extend({
   model: z.string().min(1),
   temperature: z.number().min(0).max(2).default(0.7),
   reasoningEffort: agentReasoningEffort.optional(),
+  finisher: agentFinisherSchema.nullable().optional(),
   systemPrompt: z.string().max(20_000),
 
   enabled: z.boolean().default(true),
