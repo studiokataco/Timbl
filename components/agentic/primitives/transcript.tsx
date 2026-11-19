@@ -39,7 +39,57 @@ function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
   else (ref as React.RefObject<T | null>).current = value
 }
 
+const LIST_ITEM = /^\s*(?:([-*•])|\d+[.)])\s+(.*)$/
+
+type TextBlock = { kind: "line"; text: string } | { kind: "list"; ordered: boolean; items: string[] }
+
+function toBlocks(text: string): TextBlock[] {
+  const blocks: TextBlock[] = []
+  for (const raw of text.split("\n")) {
+    const line = raw.trimEnd()
+    const item = LIST_ITEM.exec(line)
+    const prev = blocks.at(-1)
+    if (item) {
+      const ordered = !item[1]
+      if (prev?.kind === "list" && prev.ordered === ordered) prev.items.push(item[2])
+      else blocks.push({ kind: "list", ordered, items: [item[2]] })
+    } else if (line.trim()) {
+      blocks.push({ kind: "line", text: line.trim() })
+    }
+  }
+  return blocks
+}
+
 export function RichText({ text, className }: { text: string; className?: string }): React.JSX.Element {
+  if (!text.includes("\n")) {
+    return (
+      <span data-slot="agentic-rich-text" className={className}>
+        <InlineText text={text} />
+      </span>
+    )
+  }
+  return (
+    <span data-slot="agentic-rich-text" className={tw("flex flex-col gap-2", className)}>
+      {toBlocks(text).map((block, index) =>
+        block.kind === "line" ? (
+          <span key={index}>
+            <InlineText text={block.text} />
+          </span>
+        ) : (
+          <span key={index} role="list" className={tw("flex flex-col gap-1 pl-5", block.ordered ? "list-decimal" : "list-disc")}>
+            {block.items.map((item, i) => (
+              <span key={i} role="listitem" className="list-item">
+                <InlineText text={item} />
+              </span>
+            ))}
+          </span>
+        ),
+      )}
+    </span>
+  )
+}
+
+function InlineText({ text }: { text: string }): React.JSX.Element {
   const parts: React.ReactNode[] = []
   let last = 0
   for (const match of text.matchAll(BOLD)) {
@@ -53,11 +103,7 @@ export function RichText({ text, className }: { text: string; className?: string
     last = at + match[0].length
   }
   if (last < text.length) parts.push(text.slice(last))
-  return (
-    <span data-slot="agentic-rich-text" className={className}>
-      {parts}
-    </span>
-  )
+  return <>{parts}</>
 }
 
 function RichSpans({ spans, className }: { spans: RichSpan[]; className?: string }) {
