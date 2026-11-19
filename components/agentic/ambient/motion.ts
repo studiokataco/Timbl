@@ -11,3 +11,5 @@ export function meshAmplitude(containerPx: number): { x: number; y: number } {
     y: Math.round(safe * MESH.amplitudeYRatio),
   }
 }
+
+export const VOICE_NUDGE = { duration: 1.6, repeatDelay: 2.8, opacity: [0, 0.7, 0], scale: [1, 1.35, 1.55] } as const

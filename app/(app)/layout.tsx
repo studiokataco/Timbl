@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { after } from "next/server"
 
 import { AppWideAssistant } from "@/components/agentic/app-wide-assistant"
+import { AssistantSetupProvider } from "@/components/agentic/assistant-setup"
+import { HomeChatsProvider } from "@/components/home/home-chats"
 import { asTeamMember, DEFAULT_PREFS } from "@/components/agentic/defaults"
 import { AppHotkeys } from "@/components/shared/app-hotkeys"
 import { AppTopBar } from "@/components/shared/app-top-bar"
@@ -128,12 +130,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ? persona.userId
     : assistantTeam[0]?.id ?? persona.userId
   if (!impersonation) after(() => touchWorkspaceActivity(orgId, user.id))
+  const assistantSetup = {
+    team: assistantTeam,
+    viewerId: assistantViewerId,
+    workspaceName: org.name,
+    assistantName: persona.assistantName,
+    prefs: persona.prefs,
+    brandId: brands.current.id,
+    campaignCount: referenceData.campaigns.filter((campaign) => campaign.status === "active").length,
+    cadencePerWeek: brands.current.perWeek,
+  }
   return (
     <QueryProvider>
       <RealtimeDegradedProvider>
       <WorkspaceProvider orgId={orgId}>
         <PlanFeaturesProvider value={planFeatures}>
           <DialogsProvider data={referenceData}>
+            <AssistantSetupProvider value={assistantSetup}>
+            <HomeChatsProvider assistantName={persona.assistantName} initialNewChatId={crypto.randomUUID()}>
             {impersonation ? <ImpersonationBanner orgName={org.name} /> : null}
             <DunningBanner />
             <MobileNav workspaces={workspaces} brands={brands} />
@@ -164,16 +178,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               orgName={org.name}
               impersonating={Boolean(impersonation)}
             />
-            <AppWideAssistant
-              team={assistantTeam}
-              viewerId={assistantViewerId}
-              workspaceName={org.name}
-              assistantName={persona.assistantName}
-              prefs={persona.prefs}
-              brandId={brands.current.id}
-              campaignCount={referenceData.campaigns.filter((campaign) => campaign.status === "active").length}
-              cadencePerWeek={brands.current.perWeek}
-            />
+            <AppWideAssistant {...assistantSetup} />
+            </HomeChatsProvider>
+            </AssistantSetupProvider>
           </DialogsProvider>
         </PlanFeaturesProvider>
       </WorkspaceProvider>

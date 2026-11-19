@@ -65,7 +65,7 @@ export function CanvasFrame({
         <span id={titleId} data-figma="CanvasFrame/title" className="shrink-0 text-title-sm text-foreground">
           {copy.canvas.title}
         </span>
-        <span data-figma="CanvasFrame/meta" className="min-w-0 truncate text-caption text-muted-foreground">
+        <span data-figma="CanvasFrame/meta" className={tw("min-w-0 truncate text-caption text-muted-foreground", !meta && "hidden")}>
           {meta}
         </span>
         {working ? <div className="flex min-w-0 items-center">{working}</div> : null}

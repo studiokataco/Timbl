@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { setDevOrg } from "@/lib/actions/dev-org"
 import type { DevOrgMode } from "@/lib/auth/dev-session"
 import { cn } from "@/lib/utils"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 /*
  * Dev workspace chooser. Each card calls setDevOrg to pin the timbl_dev_org
@@ -34,7 +35,7 @@ export function WorkspaceChooser({
         setChosen(null)
         return
       }
-      router.replace("/calendar")
+      router.replace(DEFAULT_APP_ROUTE)
       router.refresh()
     })
   }

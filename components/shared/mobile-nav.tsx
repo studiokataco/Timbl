@@ -8,6 +8,7 @@ import { TimblWordmark } from "@/components/brand/timbl-logo"
 import { SidebarNav, FeedbackTrigger, WorkspaceBrandCard } from "@/components/shared/sidebar"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import type { BrandSwitcherData } from "@/lib/queries/brands.server"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export function MobileNav({
   workspaces,
@@ -38,7 +39,7 @@ export function MobileNav({
           <SheetTitle>Primary navigation</SheetTitle>
         </SheetHeader>
         <header className="mb-4 flex h-11 shrink-0 items-center justify-between">
-          <TimblWordmark href="/calendar" logoSize={24} onClick={close} />
+          <TimblWordmark href={DEFAULT_APP_ROUTE} logoSize={24} onClick={close} />
           <Button type="button" variant="ghost" size="icon-lg" className="size-11" aria-label="Close navigation" onClick={close}>
             <X aria-hidden className="size-5" />
           </Button>

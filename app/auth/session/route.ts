@@ -3,6 +3,7 @@ import { z } from "zod"
 
 import { getAdminAuth } from "@/lib/firebase/admin"
 import { createSessionFromIdToken, setSessionCookie } from "@/lib/auth/session"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
     const cookie = await createSessionFromIdToken(payload.idToken)
     await setSessionCookie(cookie)
-    return Response.json({ ok: true, next: "/calendar" })
+    return Response.json({ ok: true, next: DEFAULT_APP_ROUTE })
   } catch (err) {
     return Response.json(
       { ok: false, error: err instanceof Error ? err.message : "Session failed" },

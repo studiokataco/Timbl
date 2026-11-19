@@ -28,6 +28,7 @@ import {
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 import { cn } from "@/lib/utils"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 type NavGroup = {
   heading?: string
@@ -204,7 +205,7 @@ export function Sidebar({
         className="hidden @3xl/iface:flex flex-col w-16 @7xl/iface:w-60 shrink-0 border-r border-border bg-background px-2 @7xl/iface:px-3 py-6 gap-1 overflow-y-auto"
       >
         <TimblWordmark
-          href="/calendar"
+          href={DEFAULT_APP_ROUTE}
           logoSize={24}
           className="mb-4 justify-center @7xl/iface:justify-start px-0 @7xl/iface:px-3 [&_span]:hidden @7xl/iface:[&_span]:inline"
         />

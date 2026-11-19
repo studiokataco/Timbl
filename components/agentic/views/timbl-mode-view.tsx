@@ -30,7 +30,16 @@ import { Transcript } from "../primitives/transcript"
 import { usePrototype } from "../prototype-context"
 import type { MicState, TranscriptAttachment } from "../types"
 
-export type TimblModeViewProps = { chrome: "desktop" | "mobile-screen"; onBack?: () => void; attention?: number }
+export type TimblModeViewProps = {
+  chrome: "desktop" | "mobile-screen"
+  onBack?: () => void
+  attention?: number
+  lead?: React.ReactNode
+  titleSlot?: React.ReactNode
+  actions?: React.ReactNode
+  modeSwitch?: React.ReactNode
+  belowComposer?: React.ReactNode
+}
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -39,7 +48,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT"
 }
 
-export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewProps): React.JSX.Element {
+export function TimblModeView({ chrome, onBack, attention = 0, lead, titleSlot, actions, modeSwitch, belowComposer }: TimblModeViewProps): React.JSX.Element {
   const { copy, view, update, setAmbient, prefs, assistantName, role, viewer } = usePrototype()
   const { state, dispatch, env } = useEngine()
   const stats = deriveRail(state, viewer, view.week || mondayOf(todayIso()), env).stats
@@ -253,7 +262,8 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
   const isEmptyThread = state.transcript.length <= 1
   const visibility = view.canvas
   const expanded = visibility === "expanded"
-  const hiddenCanvas = visibility === "hidden"
+  const userHiddenCanvas = visibility === "hidden"
+  const hiddenCanvas = userHiddenCanvas || (!state.canvas.card && !expanded)
   const contextLine =
     state.context.kind === "post" && state.posts[state.context.postId]
       ? copy.timbl.contextPost(state.posts[state.context.postId]?.brief ?? "post")
@@ -276,7 +286,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
                   ? copy.canvas.meta.approvals
                   : activeCardKind === "current_item" && state.canvas.card?.kind === "current_item"
                     ? copy.canvas.meta.current(state.posts[state.canvas.card.postId]?.brief ?? "")
-                    : copy.canvas.meta.empty
+                    : ""
 
   const composerNode = (
     <Composer
@@ -344,6 +354,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
         className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4"
       >
         <div className="flex min-w-0 items-center gap-2.5">
+          {lead}
           {chrome === "mobile-screen" && onBack ? (
             <Button
               type="button"
@@ -356,6 +367,8 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
               <ArrowLeft className="size-4" aria-hidden />
             </Button>
           ) : null}
+          {titleSlot ?? (
+            <>
           <span aria-hidden="true" className="grid size-6 shrink-0 grid-cols-3 gap-0.5 rounded-md bg-surface-dark p-1">
             <span className="rounded-xs bg-badge-emerald" />
             <span className="rounded-xs bg-surface-dark" />
@@ -370,10 +383,12 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
           </h1>
           <Separator orientation="vertical" className="hidden h-4 @3xl/timbl:block" />
           <span className="hidden truncate text-caption text-muted-foreground @3xl/timbl:inline">{contextLine}</span>
+            </>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          {chip ? (
+          {chip && chip.state !== "working" ? (
             <StateChip
               state={chip.state}
               label={chip.label}
@@ -393,7 +408,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
             <Settings2 className="size-4" aria-hidden />
           </Button>
 
-          {hiddenCanvas ? (
+          {userHiddenCanvas ? (
             <Button
               type="button"
               variant="ghost"
@@ -409,7 +424,10 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
             </Button>
           ) : null}
 
-          {chrome === "desktop" ? (
+          {actions}
+
+          {chrome === "desktop" && modeSwitch ? modeSwitch : null}
+          {chrome === "desktop" && !modeSwitch ? (
             <Button
               type="button"
               variant="outline"
@@ -433,7 +451,6 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
               update({ canvas: next }, "push")
             }}
             layout="column"
-            working={workingNode}
             cardKey={activeCardKind ?? "empty"}
           >
             {state.canvas.card ? (
@@ -504,7 +521,6 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
                   title={copy.canvas.title}
                   meta={canvasMeta}
                   hasCard={Boolean(state.canvas.card)}
-                  working={workingNode}
                 >
                   {state.canvas.card ? (
                     <CanvasCardRenderer onGoToApproval={scrollToApproval} />
@@ -522,6 +538,7 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
 
             <div className="relative z-30 shrink-0 border-t border-border bg-background px-4 py-3">
               {composerNode}
+              {isEmptyThread ? belowComposer : null}
             </div>
           </div>
 
@@ -536,7 +553,6 @@ export function TimblModeView({ chrome, onBack, attention = 0 }: TimblModeViewPr
                   update({ canvas: next }, next === "expanded" ? "push" : "replace")
                 }}
                 layout="column"
-                working={workingNode}
                 cardKey={activeCardKind ?? "empty"}
               >
                 {state.canvas.card ? (

@@ -2,9 +2,10 @@ import type { User } from "firebase/auth"
 
 import type { AuthIntent } from "@/lib/auth/intent"
 import { getClientAuth } from "@/lib/firebase/client"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 export function defaultNext(intent: AuthIntent) {
-  return intent === "signup" ? "/workspaces?new=1" : "/calendar"
+  return intent === "signup" ? "/workspaces?new=1" : DEFAULT_APP_ROUTE
 }
 
 type CallbackResult = {

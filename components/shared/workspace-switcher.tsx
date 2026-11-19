@@ -21,6 +21,7 @@ import type {
 } from "@/lib/queries/workspaces.server"
 import { IdentityAvatar } from "@/components/shared/identity-avatar"
 import { cn } from "@/lib/utils"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 
 const ROLE_ARTICLE: Record<WorkspaceSummary["role"], string> = {
   admin: "an admin",
@@ -67,7 +68,7 @@ export function WorkspaceSwitcher({
           if (!ws.devMode) throw new Error("Unknown workspace")
           const res = await setDevOrg({ mode: ws.devMode })
           if (!res.ok) throw new Error(res.error ?? "Could not open workspace")
-          router.replace("/calendar")
+          router.replace(DEFAULT_APP_ROUTE)
         } else {
           const { next } = await activateWorkspaceClient({ organizationId: ws.id })
           router.replace(next)

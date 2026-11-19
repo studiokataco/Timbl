@@ -15,6 +15,7 @@ export const userSchema = audit.extend({
   preferences: z
     .object({
       onboarded: z.boolean().optional(),
+      connectorsStripHidden: z.boolean().optional(),
       presence: z
         .object({
           reduceMotion: z.boolean(),

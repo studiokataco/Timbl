@@ -1,41 +1,31 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { MotionConfig, useReducedMotion } from "framer-motion"
-import { toast } from "sonner"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { OverviewRail } from "@/components/agentic/interface/overview-rail"
 import type { WithId } from "@/lib/firebase/serialize"
 import type { Post } from "@/lib/schemas"
 import { deriveChip, deriveRail } from "@/components/agentic/engine/reducer"
-import { EngineProvider, useEngine } from "@/components/agentic/engine/engine-context"
-import { asPrototypePost, EngineBridge } from "@/components/agentic/engine/use-engine-bridge"
-import { usePersist } from "@/components/agentic/engine/persist"
+import { useEngine } from "@/components/agentic/engine/engine-context"
+import { asPrototypePost } from "@/components/agentic/engine/use-engine-bridge"
 import { fetchPostAction } from "@/lib/actions/posts"
-import { HandoffProvider, useHandoff } from "@/components/agentic/handoff/handoff-context"
+import { useHandoff } from "@/components/agentic/handoff/handoff-context"
 import { usePrototypeShortcuts } from "@/components/agentic/use-shortcuts"
 import { Flyout } from "@/components/agentic/interface/flyout"
 import { OrbDock } from "@/components/agentic/interface/orb-dock"
 import { useOrbDrag } from "@/components/agentic/interface/use-orb-drag"
-import { REDUCED_POPUP, TOAST_UNDO_MS, tw } from "@/components/agentic/lib"
-import { LiveAnnouncerProvider, LiveRegions, useAnnounce } from "@/components/agentic/live-announcer"
+import { tw } from "@/components/agentic/lib"
+import { LiveRegions } from "@/components/agentic/live-announcer"
 import { Composer } from "@/components/agentic/primitives/composer"
 import type { MicEvent } from "@/components/agentic/primitives/mic-machine"
 import { deriveOrbState } from "@/components/agentic/primitives/orb-machine"
 import { AssistantAvatar } from "@/components/agentic/primitives/presence-orb"
-import { PrototypeProvider, useAgenticMotion, usePrototype } from "@/components/agentic/prototype-context"
-import type { CalendarFilter, EngineEffect, EngineEvent, MicState, PresencePrefs, TeamMember, ViewState } from "@/components/agentic/types"
-import { ActivitySurface } from "@/components/agentic/overlays/activity-surface"
-import { usePendingApprovals, useSavePersona } from "@/components/agentic/overlays/pending-approvals"
-import { PersonaPresenceSheet } from "@/components/agentic/overlays/persona-presence-sheet"
-import { ContributorApproval } from "@/components/agentic/collab/contributor-approval"
-import { NoteThread } from "@/components/agentic/collab/note-thread"
+import { usePrototype } from "@/components/agentic/prototype-context"
+import type { CalendarFilter, MicState, PresencePrefs, TeamMember, ViewState } from "@/components/agentic/types"
 import { TimblModeView } from "@/components/agentic/views/timbl-mode-view"
 import { MobileView } from "@/components/agentic/views/mobile-view"
-import { TalkSheet } from "@/components/agentic/mobile/talk-sheet"
-import { HandoffTransition } from "@/components/agentic/handoff/handoff-transition"
-import { applySpokenTool, useLiveSession } from "@/components/agentic/voice/use-live-session"
-import { useScriptedUtterance } from "@/components/agentic/voice/scripted"
+import { useLiveSession } from "@/components/agentic/voice/use-live-session"
+import { AgenticProviders, AgenticRuntime, useReducedMotionAttr, type NavigateEffect } from "@/components/agentic/agentic-runtime"
 
 function useRail(weekStart: string) {
   const { viewer } = usePrototype()
@@ -381,10 +371,8 @@ function OrbRuntime({
   onWeek,
   surfaceContext = "Calendar",
 }: RuntimeProps) {
-  const { view, update, prefs, copy } = usePrototype()
-  const osReduced = useReducedMotion()
-  const announce = useAnnounce()
-  const persist = usePersist(useCallback((message: string) => toast.error(message), []))
+  const { view, update, copy } = usePrototype()
+  const reducedAttr = useReducedMotionAttr()
   useEffect(() => {
     if (surfaceContext === "Calendar" && (view.filter !== filter || view.week !== weekStart)) update({ week: weekStart, filter })
   }, [filter, surfaceContext, update, view.filter, view.week, weekStart])
@@ -397,188 +385,50 @@ function OrbRuntime({
     const post = posts.find((item) => item.id === id)
     if (post) onOpenPost(post)
   }
-  const onEffect = useCallback(
-    (effect: EngineEffect, dispatch: (event: EngineEvent) => void) => {
-      if (effect.type === "persist") void persist(effect.op, dispatch)
-      else if (effect.type === "toast") {
-        const undo = effect.undo
-        toast(effect.message, {
-          id: effect.id,
-          duration: undo ? TOAST_UNDO_MS : 4000,
-          ...(effect.position ? { position: effect.position } : {}),
-          action: undo ? { label: copy.approval.undoInline, onClick: () => dispatch(undo) } : undefined,
-        })
-      } else if (effect.type === "announce") announce(effect.message, effect.assertive ? "assertive" : "polite")
-      else if (effect.type === "navigate") {
-        update({ view: effect.view, ...(effect.week ? { week: effect.week } : {}), ...(effect.post ? { post: effect.post } : {}), sheet: null }, "push")
-        if (effect.week) onWeek?.(effect.week)
-        if (effect.view === "interface" && effect.post) {
-          window.setTimeout(() => document.querySelector<HTMLElement>(`[data-post-id="${effect.post}"]`)?.focus(), 80)
-        }
-      } else if (effect.type === "open_sheet") update({ sheet: effect.sheet, ...(effect.post ? { post: effect.post } : {}) }, "push")
-      else if (effect.type === "canvas_shown") update({ canvas: "shown" })
-      else if (effect.type === "scroll_to") {
-        document.querySelector<HTMLElement>("[data-slot=agentic-approval-card]")?.scrollIntoView({ block: "nearest" })
-      } else if (effect.type === "focus_composer") {
-        window.setTimeout(() => document.querySelector<HTMLTextAreaElement>("#timbl-composer, [data-slot=agentic-flyout-panel] textarea")?.focus(), 40)
+  const onNavigate = useCallback(
+    (effect: NavigateEffect) => {
+      update({ view: effect.view, ...(effect.week ? { week: effect.week } : {}), ...(effect.post ? { post: effect.post } : {}), sheet: null }, "push")
+      if (effect.week) onWeek?.(effect.week)
+      if (effect.view === "interface" && effect.post) {
+        window.setTimeout(() => document.querySelector<HTMLElement>(`[data-post-id="${effect.post}"]`)?.focus(), 80)
       }
     },
-    [announce, copy.approval.undoInline, onWeek, persist, update],
+    [onWeek, update],
   )
   const rail = (collapse?: () => void, touch = false) => (
     <ProductRail period={period} weekStart={weekStart} categoryFilter={categoryFilter} categorySummary={categorySummary} onOpenPost={openPost} onCollapse={collapse} density={touch ? "touch" : "pointer"} onClose={touch ? () => onSheetOpenChange(false) : undefined} />
   )
   return (
-    <MotionConfig reducedMotion={prefs.reduceMotion ? "always" : "user"}>
-      <EngineProvider cadence={cadencePerWeek} campaigns={campaignCount} onEffect={onEffect}>
-        <EngineBridge posts={posts} events={events} surfaceContext={surfaceContext} />
-        <HandoffProvider>
-          <ShortcutOwner />
-          <HandoffTransition />
-          <div
-            data-slot="agentic-root"
-            data-reduced-motion={prefs.reduceMotion || osReduced ? "" : undefined}
-            className="relative flex min-h-0 flex-1 overflow-hidden"
-          >
-            <LiveRegions />
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col" aria-hidden={overlay || undefined} inert={overlay || undefined}>
-              {children}
-            </div>
-            {!overlay && !overviewCollapsed ? <div className="hidden min-h-0 w-80 shrink-0 @7xl/iface:flex">{rail(onCollapseOverview)}</div> : null}
-            <OrbLayer onOpenOverview={onOpenOverview} weekStart={weekStart} surfaceContext={surfaceContext} />
-          </div>
-          <Sheet open={sheetOpen && !overlay} onOpenChange={onSheetOpenChange}>
-            <SheetContent side="right" className="max-w-full p-0" style={{ width: "min(20rem, 100vw)" }} showCloseButton={false}>
-              <SheetHeader className="sr-only">
-                <SheetTitle>{copy.iface.rail.title}</SheetTitle>
-              </SheetHeader>
-              {rail(undefined, true)}
-            </SheetContent>
-          </Sheet>
-          <OrbSheets />
-        </HandoffProvider>
-      </EngineProvider>
-    </MotionConfig>
+    <AgenticRuntime
+      cadencePerWeek={cadencePerWeek}
+      campaignCount={campaignCount}
+      posts={posts}
+      events={events}
+      surfaceContext={surfaceContext}
+      onNavigate={onNavigate}
+    >
+      <ShortcutOwner />
+      <div data-slot="agentic-root" data-reduced-motion={reducedAttr} className="relative flex min-h-0 flex-1 overflow-hidden">
+        <LiveRegions />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col" aria-hidden={overlay || undefined} inert={overlay || undefined}>
+          {children}
+        </div>
+        {!overlay && !overviewCollapsed ? <div className="hidden min-h-0 w-80 shrink-0 @7xl/iface:flex">{rail(onCollapseOverview)}</div> : null}
+        <OrbLayer onOpenOverview={onOpenOverview} weekStart={weekStart} surfaceContext={surfaceContext} />
+      </div>
+      <Sheet open={sheetOpen && !overlay} onOpenChange={onSheetOpenChange}>
+        <SheetContent side="right" className="max-w-full p-0" style={{ width: "min(20rem, 100vw)" }} showCloseButton={false}>
+          <SheetHeader className="sr-only">
+            <SheetTitle>{copy.iface.rail.title}</SheetTitle>
+          </SheetHeader>
+          {rail(undefined, true)}
+        </SheetContent>
+      </Sheet>
+    </AgenticRuntime>
   )
 }
 
-function OrbSheets() {
-  const { view, dismiss, prefs, assistantName, role, copy, team, viewer } = usePrototype()
-  const { state, dispatch } = useEngine()
-  const { reduced } = useAgenticMotion()
-  const [tab, setTab] = useState<"needs" | "log">("needs")
-  const voice = useLiveSession({
-    onTool: (tool) => applySpokenTool(tool, dispatch, state.deck.order[state.deck.index] ?? null),
-    instruction: copy.prompts.liveSystem,
-  })
-  useScriptedUtterance(dispatch, state.deck.order[state.deck.index] ?? null)
-  const savePersona = useSavePersona(() => dismiss({ sheet: null }))
-  const needs = usePendingApprovals()
-  const notesPost = view.post ? state.posts[view.post] : undefined
-  const notesSubmission = notesPost ? state.submissions.find((item) => item.postId === notesPost.id) ?? null : null
-  const notesList = notesPost ? state.notes.filter((note) => note.postId === notesPost.id) : []
-  const notesLastRead = notesPost ? state.reads.find((read) => read.postId === notesPost.id && read.userId === viewer.id)?.lastReadAt : undefined
-  const sendHeard = () => {
-    const text = voice.consume()
-    void voice.close()
-    if (text) dispatch({ type: "user_sent", text, source: "voice" })
-  }
-  return (
-    <>
-      <ActivitySurface
-        open={view.sheet === "activity"}
-        onOpenChange={(open) => !open && dismiss({ sheet: null })}
-        layout="side"
-        finalFocus={() => document.querySelector<HTMLElement>("[data-slot=agentic-state-chip], [data-figma='OrbDock/label'], [data-slot=agentic-orb-dock] button")}
-        reduced={reduced}
-        tab={tab}
-        onTab={setTab}
-        needs={needs}
-        log={state.activity}
-        runs={state.runs}
-        team={team}
-        posts={state.posts}
-        assistantAvatar={<AssistantAvatar />}
-      />
-      <PersonaPresenceSheet
-        open={view.sheet === "persona"}
-        onOpenChange={(open) => !open && dismiss({ sheet: null })}
-        layout="side"
-        finalFocus={() => document.querySelector<HTMLElement>("[aria-label='" + copy.iface.rail.settings + "'], h1")}
-        reduced={reduced}
-        role={role}
-        assistantName={assistantName}
-        prefs={prefs}
-        inFrame={false}
-        onSave={savePersona}
-        onCancel={() => dismiss({ sheet: null })}
-      />
-      <TalkSheet
-        open={view.sheet === "talk" && view.view !== "mobile"}
-        state={voice.talkState}
-        tokens={voice.tokens}
-        chips={voice.chips}
-        level={voice.level}
-        workspace={copy.iface.sidebar.workspace}
-        framed={false}
-        onOrb={() => (voice.talkState === "listening" ? sendHeard() : void voice.startTalk())}
-        onHoldStart={() => void voice.startTalk()}
-        onHoldEnd={sendHeard}
-        onPermission={(granted) => (granted ? void voice.startTalk() : void voice.close())}
-        onClose={() => {
-          void voice.close()
-          dismiss({ sheet: null })
-        }}
-        onTypeInstead={() => {
-          void voice.close()
-          dismiss({ sheet: null })
-        }}
-        onRetry={() => void voice.startTalk()}
-      />
-      <Sheet open={view.sheet === "notes" && Boolean(notesPost)} onOpenChange={(open) => !open && dismiss({ sheet: null })}>
-        <SheetContent
-          side="right"
-          initialFocus={() => document.querySelector<HTMLElement>("[data-slot=agentic-note-thread] textarea")}
-          finalFocus={() => document.querySelector<HTMLElement>(`[data-post-id="${view.post ?? ""}"]`) ?? document.querySelector<HTMLElement>("h1")}
-          className={tw("flex flex-col gap-4 overflow-y-auto p-5", reduced && REDUCED_POPUP)}
-        >
-          <SheetHeader className="p-0">
-            <SheetTitle>
-              <span className="text-title-md text-foreground">{copy.iface.calendar.notesTitle(notesPost?.brief ?? "")}</span>
-            </SheetTitle>
-          </SheetHeader>
-          {notesPost && notesSubmission ? (
-            <ContributorApproval
-              post={notesPost}
-              submission={notesSubmission}
-              viewer={viewer}
-              team={team}
-              onApprove={() => dispatch({ type: "submission_decided", postId: notesPost.id, outcome: "approved" })}
-              onSendBack={(reason, note) => dispatch({ type: "submission_decided", postId: notesPost.id, outcome: "sent_back", reason, note })}
-              onWithdraw={() => dispatch({ type: "submission_withdrawn", postId: notesPost.id })}
-            />
-          ) : null}
-          {notesPost ? (
-            <NoteThread
-              post={notesPost}
-              notes={notesList}
-              team={team}
-              viewerId={viewer.id}
-              lastReadAt={notesLastRead}
-              density="panel"
-              assistantAvatar={<AssistantAvatar />}
-              onAdd={(body) => dispatch({ type: "note_added", postId: notesPost.id, body })}
-              onEdit={(noteId, body) => dispatch({ type: "note_edited", noteId, body })}
-              onDelete={(noteId) => dispatch({ type: "note_deleted", noteId })}
-              onReact={(noteId, emoji) => dispatch({ type: "note_reacted", noteId, emoji })}
-              onRead={() => dispatch({ type: "thread_read", postId: notesPost.id })}
-            />
-          ) : null}
-        </SheetContent>
-      </Sheet>
-    </>
-  )
-}
+const NO_DAYS: { name: string; date: string }[] = []
 
 export function CalendarOrb({
   children,
@@ -586,7 +436,7 @@ export function CalendarOrb({
   workspaceName,
   assistantName,
   prefs,
-  awarenessDays = [],
+  awarenessDays = NO_DAYS,
   viewerId,
   initialView,
   surfaceContext = "Calendar",
@@ -601,21 +451,18 @@ export function CalendarOrb({
   initialView: ViewState
   surfaceContext?: string
 }) {
-  const viewer = team.find((member) => member.id === viewerId) ?? team[0]
   return (
-    <PrototypeProvider
-      initialView={surfaceContext === "Calendar" ? { ...initialView, week: runtime.weekStart, filter: runtime.filter } : initialView}
-      viewer={viewer}
+    <AgenticProviders
       team={team}
+      viewerId={viewerId}
       workspaceName={workspaceName}
       assistantName={assistantName}
       prefs={prefs}
+      initialView={surfaceContext === "Calendar" ? { ...initialView, week: runtime.weekStart, filter: runtime.filter } : initialView}
     >
-      <LiveAnnouncerProvider>
-        <OrbRuntime {...runtime} events={awarenessDays} surfaceContext={surfaceContext}>
-          {children}
-        </OrbRuntime>
-      </LiveAnnouncerProvider>
-    </PrototypeProvider>
+      <OrbRuntime {...runtime} events={awarenessDays} surfaceContext={surfaceContext}>
+        {children}
+      </OrbRuntime>
+    </AgenticProviders>
   )
 }

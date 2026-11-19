@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { TopBar } from "@/components/shared/top-bar"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 import type { WorkspaceSwitcherData } from "@/lib/queries/workspaces.server"
 import type { BrandSwitcherData } from "@/lib/queries/brands.server"
 
@@ -12,6 +13,6 @@ export function AppTopBar(props: {
   brands: BrandSwitcherData
 }) {
   const pathname = usePathname()
-  if (pathname === "/calendar") return null
+  if (pathname === "/calendar" || pathname === DEFAULT_APP_ROUTE || pathname.startsWith(`${DEFAULT_APP_ROUTE}/`)) return null
   return <TopBar {...props} />
 }

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { CalendarOrb } from "@/components/agentic/calendar-orb"
 import { DEFAULT_VIEW } from "@/components/agentic/view-state"
+import { DEFAULT_APP_ROUTE } from "@/lib/constants/timbl"
 import { useDialogs } from "@/components/shared/dialogs-provider"
 import { useWorkspaceOrgId } from "@/components/shared/workspace-provider"
 import { fetchPostsInRangeAction } from "@/lib/actions/posts"
@@ -33,7 +34,7 @@ export function AppWideAssistant({
   cadencePerWeek: number
 }) {
   const pathname = usePathname()
-  if (pathname === "/calendar") return null
+  if (pathname === "/calendar" || pathname === DEFAULT_APP_ROUTE || pathname.startsWith(`${DEFAULT_APP_ROUTE}/`)) return null
   return (
     <AssistantRuntime
       pathname={pathname}

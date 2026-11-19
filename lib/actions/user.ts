@@ -9,6 +9,7 @@ import type { User, ServerActionResult } from "@/lib/schemas"
 const preferencesPatchSchema = z
   .object({
     onboarded: z.boolean().optional(),
+    connectorsStripHidden: z.boolean().optional(),
   })
   .partial()
 
@@ -18,13 +19,14 @@ const preferencesPatchSchema = z
  */
 export async function fetchCurrentUserPreferences(): Promise<{
   onboarded: boolean
+  connectorsStripHidden: boolean
 }> {
   const orgId = await getCurrentOrgId()
   const user = await getCurrentUser()
   const snap = await getDb().doc(`${orgUsersPath(orgId)}/${user.id}`).get()
-  if (!snap.exists) return { onboarded: false }
+  if (!snap.exists) return { onboarded: false, connectorsStripHidden: false }
   const u = snapToData<User>(snap)
-  return { onboarded: !!u.preferences?.onboarded }
+  return { onboarded: !!u.preferences?.onboarded, connectorsStripHidden: !!u.preferences?.connectorsStripHidden }
 }
 
 export async function updateCurrentUserPreferences(

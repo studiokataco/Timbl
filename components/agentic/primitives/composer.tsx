@@ -11,6 +11,7 @@ import { DUR, EASE_OUT, REDUCED_POPUP, TOUCH, tw } from "../lib"
 import type { MicState, VoiceToken } from "../types"
 import type { MicEvent } from "./mic-machine"
 import { PresenceOrb } from "./presence-orb"
+import { VOICE_NUDGE } from "../ambient/motion"
 
 type ComposerProps = {
   id: string
@@ -240,45 +241,70 @@ export function Composer({
   const describedBy = [helper || disabled ? helperId : null, !mini ? hintId : null, note ? noteId : null].filter(Boolean).join(" ") || undefined
   const visibleSuggestions = mini ? [] : suggestions.slice(0, 4)
 
+  const showMic = mini || !onTalk
   const actions = (
     <>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <InputGroupButton
-              variant="ghost"
-              size="icon-sm"
-              aria-label={micView.name}
-              disabled={micDisabled}
-              onPointerDown={micPointerDown}
-              onPointerUp={micPointerUp}
-              onPointerLeave={micPointerCancel}
-              onPointerCancel={micPointerCancel}
-              onClick={micClick}
-              data-figma="Composer/mic"
-              className={tw(mini ? "rounded-lg" : "rounded-full", iconButton)}
+      {showMic ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <InputGroupButton
+                variant="ghost"
+                size="icon-sm"
+                aria-label={micView.name}
+                disabled={micDisabled}
+                onPointerDown={micPointerDown}
+                onPointerUp={micPointerUp}
+                onPointerLeave={micPointerCancel}
+                onPointerCancel={micPointerCancel}
+                onClick={micClick}
+                data-figma="Composer/mic"
+                className={tw(mini ? "rounded-lg" : "rounded-full", iconButton)}
+              />
+            }
+          >
+            <MicIcon
+              aria-hidden="true"
+              className={tw(MicIcon === Square ? "size-3.5 fill-current" : "size-4", micView.spin && !reduced && "animate-spin")}
             />
-          }
-        >
-          <MicIcon
-            aria-hidden="true"
-            className={tw(MicIcon === Square ? "size-3.5 fill-current" : "size-4", micView.spin && !reduced && "animate-spin")}
-          />
-        </TooltipTrigger>
-        <TooltipContent className={reduced ? REDUCED_POPUP : undefined}>{micView.name}</TooltipContent>
-      </Tooltip>
+          </TooltipTrigger>
+          <TooltipContent className={reduced ? REDUCED_POPUP : undefined}>{micView.name}</TooltipContent>
+        </Tooltip>
+      ) : null}
       {face === "talk" ? (
-        <button
-          type="button"
-          aria-label={primaryName}
-          disabled={primaryDisabled}
-          onClick={primaryClick}
-          data-figma="Composer/primary"
-          data-face={face}
-          className="rounded-full focus-ring"
-        >
-          <PresenceOrb state="idle" size="sm" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={primaryName}
+                disabled={primaryDisabled}
+                onClick={primaryClick}
+                data-figma="Composer/primary"
+                data-face={face}
+                className="relative rounded-full focus-ring"
+              />
+            }
+          >
+            {reduced ? null : (
+              <motion.span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-foreground/40"
+                initial={{ opacity: 0, scale: 1 }}
+                animate={{ opacity: [...VOICE_NUDGE.opacity], scale: [...VOICE_NUDGE.scale] }}
+                transition={{ duration: VOICE_NUDGE.duration, ease: EASE_OUT, repeat: Infinity, repeatDelay: VOICE_NUDGE.repeatDelay }}
+              />
+            )}
+            <PresenceOrb state="idle" size="sm" />
+            <span
+              aria-hidden="true"
+              className="absolute -right-0.5 -bottom-0.5 grid size-4 place-items-center rounded-full bg-background text-foreground ring-1 ring-border"
+            >
+              <Mic className="size-2.5" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className={reduced ? REDUCED_POPUP : undefined}>{primaryName}</TooltipContent>
+        </Tooltip>
       ) : (
         <Button
           type="button"
