@@ -99,6 +99,7 @@ export const KanbanCard = memo(function KanbanCard({
       {...(dragEnabled ? { ...attributes, ...listeners } : {})}
       role="button"
       tabIndex={0}
+      data-post-id={post.id}
       aria-label={`${post.brief ?? "Untitled post"}, ${due.full}`}
       onKeyDown={onKeyDown}
       onClick={onClick}

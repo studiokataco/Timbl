@@ -172,7 +172,6 @@ export type CardAction =
 export type EngineEvent =
   | { type: "user_sent"; text: string; source: "typed" | "voice" | "chip" }
   | { type: "queue_removed"; index: number }
-  | { type: "mini_sent"; text: string }
   | { type: "new_mini_chat" }
   | { type: "card_action"; action: CardAction }
   | { type: "run_start" } | { type: "run_revise" } | { type: "run_stop" } | { type: "retry" }

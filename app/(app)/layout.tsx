@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { after } from "next/server"
 
+import { AppWideAssistant } from "@/components/agentic/app-wide-assistant"
+import { asTeamMember, DEFAULT_PREFS } from "@/components/agentic/defaults"
 import { AppHotkeys } from "@/components/shared/app-hotkeys"
 import { AppTopBar } from "@/components/shared/app-top-bar"
 import { CommandPalette } from "@/components/shared/command-palette"
@@ -19,6 +21,7 @@ import { WorkspaceReminders } from "@/components/shared/workspace-reminders"
 import { ImpersonationBanner } from "@/components/control/impersonation-banner"
 import { RealtimeDegradedProvider } from "@/lib/realtime/degraded-state"
 import { fetchReferenceData } from "@/lib/queries/reference-data.server"
+import { fetchPersona } from "@/lib/actions/persona"
 import { resolveImpersonation } from "@/lib/auth/impersonation"
 import {
   getCurrentOrgId,
@@ -87,7 +90,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     hashtagSuggestions: [],
     orgChannels: [],
   }
-  const [referenceData, user, org, planFeatures, impersonation, workspaces, brands] = await Promise.all([
+  const [referenceData, user, org, planFeatures, impersonation, workspaces, brands, persona] = await Promise.all([
     orDown(fetchReferenceData(), emptyReference),
     orDown(getCurrentUserProfile(), {
       id: sessionUser.id,
@@ -105,7 +108,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       isDevShim: IS_DEV_SHIM,
     }),
     orDown(getBrandSwitcherData(), { current: emptyBrand, brands: [emptyBrand], atCap: false }),
+    orDown(fetchPersona(), {
+      assistantName: "Timbl",
+      prefs: DEFAULT_PREFS,
+      role: sessionUser.role,
+      userId: sessionUser.id,
+    }),
   ])
+  const assistantTeam = (referenceData.users.length ? referenceData.users : [{
+    id: user.id,
+    organizationId: orgId,
+    email: user.email ?? sessionUser.email,
+    name: user.name || sessionUser.name,
+    role: user.role,
+    active: true,
+    defaultCategories: [],
+  }]).map(asTeamMember)
+  const assistantViewerId = assistantTeam.some((member) => member.id === persona.userId)
+    ? persona.userId
+    : assistantTeam[0]?.id ?? persona.userId
   if (!impersonation) after(() => touchWorkspaceActivity(orgId, user.id))
   return (
     <QueryProvider>
@@ -117,12 +138,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <DunningBanner />
             <MobileNav workspaces={workspaces} brands={brands} />
             <div className="@container/iface flex flex-1 min-h-0">
-              <Sidebar
-                workspaces={workspaces}
-                brands={brands}
-                user={{ name: user.name, email: user.email, role: user.role, avatarUrl: user.avatarUrl }}
-              />
-              <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
+              <div id="app-shell-navigation" className="contents">
+                <Sidebar
+                  workspaces={workspaces}
+                  brands={brands}
+                  user={{ name: user.name, email: user.email, role: user.role, avatarUrl: user.avatarUrl }}
+                />
+              </div>
+              <div id="app-shell-page" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-[var(--ask-ai-clearance)]">
                 <AppTopBar user={user} workspaceName={org.name} workspaces={workspaces} brands={brands} />
                 {children}
               </div>
@@ -140,6 +163,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               orgId={orgId}
               orgName={org.name}
               impersonating={Boolean(impersonation)}
+            />
+            <AppWideAssistant
+              team={assistantTeam}
+              viewerId={assistantViewerId}
+              workspaceName={org.name}
+              assistantName={persona.assistantName}
+              prefs={persona.prefs}
+              brandId={brands.current.id}
+              campaignCount={referenceData.campaigns.filter((campaign) => campaign.status === "active").length}
+              cadencePerWeek={brands.current.perWeek}
             />
           </DialogsProvider>
         </PlanFeaturesProvider>

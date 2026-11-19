@@ -1,5 +1,5 @@
 import { REJECT_REASON_LABELS } from "@/lib/schemas/_shared"
-import { addDays, daysUntil, formatDay, formatDayShort, formatWhen, localKey, mondayOf, monthStartLabel, todayIso } from "../clock"
+import { addDays, daysUntil, formatDayShort, formatWhen, localKey, mondayOf, monthStartLabel, todayIso } from "../clock"
 import { makeCopy, type Copy } from "../copy"
 import { DEFAULT_BRIEF, RUN_AGENTS } from "../defaults"
 import { extractMentions, primaryChannel, unreadFor } from "../lib"
@@ -1131,16 +1131,6 @@ function handoffIn(s: EngineState, ctx: Ctx, carry: "chat" | "chat_and_item" | "
   return effect(next, { type: "focus_composer" })
 }
 
-function miniSent(s: EngineState, ctx: Ctx, text: string): EngineState {
-  const postId = s.context.kind === "post" ? s.context.postId : null
-  const reply = postId
-    ? ctx.copy.flyout.replyPost(postTitle(s, postId))
-    : ctx.copy.flyout.replyContext(s.context.kind === "calendar" ? ctx.copy.flyout.contextCalendar(formatDay(s.context.week)) : ctx.copy.flyout.contextLabel)
-  const user: TranscriptEntry = { id: nextId(ctx, "m"), role: "user", text, source: "flyout", createdAt: ctx.now }
-  const assistant: TranscriptEntry = { id: nextId(ctx, "m"), role: "assistant", text: reply, createdAt: ctx.now }
-  return { ...s, lastEventKind: "user", miniChat: [...s.miniChat, user, assistant] }
-}
-
 function showCardEvent(s: EngineState, card: CanvasCard): EngineState {
   const current = s.canvas.card
   if (current && current.kind === card.kind) return effect({ ...s, canvas: { ...s.canvas, visibility: "shown" } }, { type: "canvas_shown" })
@@ -1229,8 +1219,6 @@ export function reduce(state: EngineState, event: EngineInput): EngineState {
       })
       return { ...s, queue: s.queue.filter((_, index) => index !== event.index), transcript }
     }
-    case "mini_sent":
-      return miniSent(s, ctx, event.text)
     case "new_mini_chat":
       return { ...s, miniChat: [initialMini(ctx.copy, now), { id: nextId(ctx, "m"), role: "assistant", text: ctx.copy.flyout.newChat, createdAt: now }] }
     case "card_action":

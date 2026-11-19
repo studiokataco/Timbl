@@ -59,7 +59,7 @@ export function FlyoutPanel({
       data-slot="agentic-flyout-panel"
       data-state={handoffDisabled ? "no-item" : "ready"}
       data-figma="Flyout/panel"
-      className="flex w-full min-w-0 max-w-90 flex-col gap-4 overflow-hidden p-4 text-foreground"
+      className="flex max-h-[calc(100dvh-1rem)] w-full min-w-0 max-w-90 flex-col gap-4 overflow-hidden p-4 text-foreground"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-title-sm text-foreground">{f.title}</span>
@@ -105,7 +105,7 @@ export function FlyoutPanel({
         <p className="text-caption text-muted-foreground">{context.value}</p>
       ) : null}
 
-      <div className="rounded-xl border border-border bg-background p-2">
+      <div className="max-h-[30dvh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-background p-2">
         <Transcript
           entries={entries}
           assistantName={assistantName}
@@ -207,7 +207,7 @@ export function Flyout({
           align="end"
           sideOffset={12}
           initialFocus={composerFocus}
-          className={tw("w-90 max-w-90 min-w-0 overflow-hidden p-0", reduced && REDUCED_POPUP)}
+          className={tw("max-h-[calc(100dvh-1rem)] w-90 max-w-90 min-w-0 overflow-hidden p-0", reduced && REDUCED_POPUP)}
         >
           <FlyoutPanel {...panelProps} />
         </PopoverContent>

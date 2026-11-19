@@ -88,7 +88,7 @@ function idOf(response: Record<string, unknown> | undefined, key: "postId" | "it
   return typeof nested === "string" ? nested : null
 }
 
-export function EngineBridge({ posts, events = [] }: { posts: WithId<Post>[]; events?: { name: string; date: string }[] }) {
+export function EngineBridge({ posts, events = [], surfaceContext = "Calendar" }: { posts: WithId<Post>[]; events?: { name: string; date: string }[]; surfaceContext?: string }) {
   const orgId = useWorkspaceOrgId()
   const { state, dispatch, env } = useEngine()
   const { defaultAgent } = useRosterAgents()
@@ -220,13 +220,13 @@ export function EngineBridge({ posts, events = [] }: { posts: WithId<Post>[]; ev
       if (run.status !== "running" || streams.current.has(run.id) || run.serverRunId) continue
       const controller = new AbortController()
       streams.current.set(run.id, controller)
-      void stream(run, controller, defaultAgent, sessionRef, dispatch).then(() => {
+      void stream(run, controller, defaultAgent, sessionRef, dispatch, surfaceContext).then(() => {
         void qc.invalidateQueries({ queryKey: ["posts"] })
         if (run.kind === "ideas" || run.kind === "plan") void qc.invalidateQueries({ queryKey: ["ideation-feed", orgId] })
         void qc.invalidateQueries({ queryKey: ["usage-overview", orgId] })
       })
     }
-  }, [defaultAgent, dispatch, orgId, qc, state.runs])
+  }, [defaultAgent, dispatch, orgId, qc, state.runs, surfaceContext])
 
   useEffect(() => {
     for (const request of state.requests) {
@@ -296,6 +296,7 @@ async function stream(
   defaultAgent: string,
   sessionRef: React.RefObject<string | null>,
   dispatch: (event: EngineEvent) => void,
+  surfaceContext: string,
 ) {
   const agents = run.kind === "plan" ? run.steps.map((step) => step.id) : [run.kind === "chat" ? defaultAgent || run.agent : run.agent]
   try {
@@ -306,7 +307,7 @@ async function stream(
       let drafted = ""
       const result = await readSse(
         `/api/agents/${agent}/run`,
-        { input: run.input, ...(sessionRef.current && run.kind === "chat" ? { sessionId: sessionRef.current } : {}) },
+        { input: run.kind === "chat" ? `Current app area: ${surfaceContext}. User request: ${run.input}` : run.input, ...(sessionRef.current && run.kind === "chat" ? { sessionId: sessionRef.current } : {}) },
         controller.signal,
         (event) => {
           if (event.type === "error") throw new Error(event.error?.message ?? "agent_error")

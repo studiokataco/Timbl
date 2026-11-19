@@ -13,6 +13,7 @@ export function usePrototypeShortcuts(): void {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.repeat || !prefs.shortcuts) return
+      if (e.target instanceof Element && e.target.closest("[data-slot='command']")) return
       const mod = e.metaKey || e.ctrlKey
       if (mod && (e.key === "j" || e.key === "J")) {
         e.preventDefault()
@@ -37,6 +38,7 @@ export function usePrototypeShortcuts(): void {
 
       if (e.key === "Escape") {
         if (e.defaultPrevented) return
+        if (document.querySelector("[data-slot='command']")) return
         if (view.sheet) {
           e.preventDefault()
           dismiss({ sheet: null })

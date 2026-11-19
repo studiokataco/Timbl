@@ -40,6 +40,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ["⌘", ","], label: "Settings" },
       { keys: ["⌘", "N"], label: "Create post" },
       { keys: ["⌘", "J"], label: "Ask Timbl" },
+      { keys: ["⌘", "⇧", "J"], label: "Open Timbl Mode" },
       { keys: ["?"], label: "This cheatsheet" },
     ],
   },

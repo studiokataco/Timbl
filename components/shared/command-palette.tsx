@@ -102,13 +102,6 @@ export function CommandPalette() {
         setOpen((prev) => !prev)
         return
       }
-      const cmdJ = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j"
-      if (cmdJ) {
-        e.preventDefault()
-        setOpen(false)
-        router.push("/calendar?view=timbl")
-        return
-      }
       const target = e.target as HTMLElement | null
       const isTyping =
         target instanceof HTMLInputElement ||
@@ -161,6 +154,11 @@ export function CommandPalette() {
     },
     [close, router],
   )
+  const askTimbl = useCallback(() => {
+    close()
+    window.dispatchEvent(new Event("timbl:open"))
+    window.setTimeout(() => setOpen(false), 0)
+  }, [close])
 
   const recentPosts = useMemo(() => {
     if (!data) return []
@@ -177,7 +175,7 @@ export function CommandPalette() {
         <CommandEmpty>No matches.</CommandEmpty>
 
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => go("/calendar?view=timbl")} value="ask timbl assistant">
+          <CommandItem onSelect={askTimbl} value="ask timbl assistant">
             <Sparkles />
             <span>Ask Timbl</span>
             <CommandShortcut>⌘J</CommandShortcut>

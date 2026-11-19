@@ -135,7 +135,7 @@ export function AwarenessResearchDialog({
 
   function openTimblMode() {
     handleOpenChange(false)
-    router.push("/calendar?view=timbl")
+    window.dispatchEvent(new Event("timbl:open"))
   }
 
   /* Closing mid-run tears down the request the agent is streaming into, so
@@ -289,7 +289,7 @@ export function AwarenessResearchDialog({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Button type="button" variant="outline" size="sm" onClick={openTimblMode}>
-                    Open Timbl mode
+                    Ask Timbl
                   </Button>
                   <Button
                     type="button"

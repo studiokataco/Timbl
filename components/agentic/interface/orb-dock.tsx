@@ -19,12 +19,10 @@ export const OrbDock = forwardRef<HTMLButtonElement, OrbDockProps>(function OrbD
   { state, label, largeTarget, expanded, onPress, onOpenActivity, anchorRef, ...rest },
   ref,
 ) {
-  const { copy } = usePrototype()
+  const { copy, assistantName } = usePrototype()
   const pillLabel =
     label ??
-    (state !== "idle"
-      ? copy.orb.label[state as Exclude<PresenceOrbState, "idle">]
-      : undefined)
+    (state === "idle" ? `Ask ${assistantName}` : copy.orb.label[state as Exclude<PresenceOrbState, "idle">])
 
   return (
     <div
@@ -34,10 +32,10 @@ export const OrbDock = forwardRef<HTMLButtonElement, OrbDockProps>(function OrbD
       data-figma="OrbDock/root"
       className="z-30 inline-flex items-center gap-2"
     >
-      {state !== "idle" && pillLabel ? (
+      {pillLabel ? (
         <button
           type="button"
-          onClick={onOpenActivity}
+          onClick={state === "idle" ? onPress : onOpenActivity}
           data-figma="OrbDock/label"
           className="h-8 rounded-full border border-border bg-background px-3 shadow-sm focus-ring"
         >

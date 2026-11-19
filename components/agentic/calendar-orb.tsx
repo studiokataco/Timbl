@@ -9,8 +9,9 @@ import type { WithId } from "@/lib/firebase/serialize"
 import type { Post } from "@/lib/schemas"
 import { deriveChip, deriveRail } from "@/components/agentic/engine/reducer"
 import { EngineProvider, useEngine } from "@/components/agentic/engine/engine-context"
-import { EngineBridge } from "@/components/agentic/engine/use-engine-bridge"
+import { asPrototypePost, EngineBridge } from "@/components/agentic/engine/use-engine-bridge"
 import { usePersist } from "@/components/agentic/engine/persist"
+import { fetchPostAction } from "@/lib/actions/posts"
 import { HandoffProvider, useHandoff } from "@/components/agentic/handoff/handoff-context"
 import { usePrototypeShortcuts } from "@/components/agentic/use-shortcuts"
 import { Flyout } from "@/components/agentic/interface/flyout"
@@ -19,7 +20,7 @@ import { useOrbDrag } from "@/components/agentic/interface/use-orb-drag"
 import { REDUCED_POPUP, TOAST_UNDO_MS, tw } from "@/components/agentic/lib"
 import { LiveAnnouncerProvider, LiveRegions, useAnnounce } from "@/components/agentic/live-announcer"
 import { Composer } from "@/components/agentic/primitives/composer"
-import { micReducer } from "@/components/agentic/primitives/mic-machine"
+import type { MicEvent } from "@/components/agentic/primitives/mic-machine"
 import { deriveOrbState } from "@/components/agentic/primitives/orb-machine"
 import { AssistantAvatar } from "@/components/agentic/primitives/presence-orb"
 import { PrototypeProvider, useAgenticMotion, usePrototype } from "@/components/agentic/prototype-context"
@@ -42,28 +43,46 @@ function useRail(weekStart: string) {
   return deriveRail(state, viewer, weekStart, env)
 }
 
-function OrbLayer({ onOpenOverview, weekStart }: { onOpenOverview?: () => void; weekStart: string }) {
+function OrbLayer({ onOpenOverview, weekStart, surfaceContext }: { onOpenOverview?: () => void; weekStart: string; surfaceContext: string }) {
   const { copy, view, update, dismiss, prefs } = usePrototype()
   const { state, dispatch } = useEngine()
+  const voice = useLiveSession({ instruction: copy.prompts.liveSystem })
   const { orbRef, triggerIn } = useHandoff()
   const rail = useRail(weekStart)
   const boundsRef = useRef<HTMLDivElement | null>(null)
   const dockRef = useRef<HTMLDivElement | null>(null)
   const drag = useOrbDrag("calendar", boundsRef, dockRef)
   const [miniText, setMiniText] = useState("")
-  const [miniMic, setMiniMic] = useState<MicState>("idle")
+  const [miniSource, setMiniSource] = useState<"typed" | "voice">("typed")
   const [narrow, setNarrow] = useState(false)
-  const onMiniMic = (event: Parameters<typeof micReducer>[1]) =>
-    setMiniMic((current) => {
-      const next = micReducer(current, event, false)
-      return next === "transcribing" ? "idle" : next
-    })
-
-  useEffect(() => {
-    if (miniMic !== "listening" && miniMic !== "requesting") return
-    const id = window.setTimeout(() => setMiniMic("idle"), 20_000)
-    return () => window.clearTimeout(id)
-  }, [miniMic])
+  const lastSurface = useRef(surfaceContext)
+  const miniMic: MicState =
+    voice.talkState === "requesting" ? "requesting" :
+    voice.talkState === "listening" ? "listening" :
+    voice.talkState === "denied" ? "denied" :
+    voice.error ? "error" : "idle"
+  const finishDictation = async () => {
+    await voice.close()
+    const text = voice.consume()
+    if (text) {
+      setMiniText((current) => `${current}${current ? " " : ""}${text}`)
+      setMiniSource("voice")
+    }
+  }
+  const onMiniMic = (event: MicEvent) => {
+    if (event.type === "press") {
+      if (voice.talkState === "listening") void finishDictation()
+      else void voice.startDictate()
+    } else if (event.type === "hold_start") {
+      void voice.startDictate()
+    } else if (event.type === "hold_end" || event.type === "endpoint") {
+      void finishDictation()
+    } else if (event.type === "cancel" || (event.type === "permission" && !event.granted)) {
+      void voice.close()
+    } else if (event.type === "permission" && event.granted) {
+      void voice.startDictate()
+    }
+  }
 
   useEffect(() => {
     const el = boundsRef.current
@@ -74,7 +93,7 @@ function OrbLayer({ onOpenOverview, weekStart }: { onOpenOverview?: () => void; 
       if (width) apply(width)
     }) : null
     if (el && ro) ro.observe(el)
-    const open = () => update({ view: "timbl", sheet: null }, "push")
+    const open = () => update({ sheet: "flyout" }, "push")
     const ask = (event: Event) => {
       const detail = (event as CustomEvent<{ id: string }>).detail
       if (!detail?.id) return
@@ -83,16 +102,58 @@ function OrbLayer({ onOpenOverview, weekStart }: { onOpenOverview?: () => void; 
     }
     window.addEventListener("timbl:open", open)
     window.addEventListener("timbl:ask", ask)
+    const setContextFromPost = (event: Event) => {
+      const target = event.target
+      if (!(target instanceof Element) || target.closest("[data-slot^='agentic-']")) return
+      const postId = target.closest<HTMLElement>("[data-post-id]")?.dataset.postId
+      if (!postId) return
+      if (state.posts[postId]) {
+        dispatch({ type: "context_set", context: { kind: "post", postId } })
+        return
+      }
+      void fetchPostAction(postId).then((post) => {
+        if (!post) return
+        dispatch({ type: "hydrate_posts", posts: { [post.id]: asPrototypePost(post) } })
+        dispatch({ type: "context_set", context: { kind: "post", postId } })
+      })
+    }
+    document.addEventListener("click", setContextFromPost, true)
     return () => {
       ro?.disconnect()
       window.removeEventListener("timbl:open", open)
       window.removeEventListener("timbl:ask", ask)
+      document.removeEventListener("click", setContextFromPost, true)
     }
-  }, [dispatch, update])
+  }, [dispatch, state.posts, update])
 
   useEffect(() => {
-    if (state.context.kind === "none" && weekStart) dispatch({ type: "context_set", context: { kind: "calendar", week: weekStart } })
-  }, [dispatch, state.context.kind, weekStart])
+    if (surfaceContext === "Calendar" && state.context.kind === "none" && weekStart) dispatch({ type: "context_set", context: { kind: "calendar", week: weekStart } })
+  }, [dispatch, state.context.kind, surfaceContext, weekStart])
+
+  useEffect(() => {
+    if (lastSurface.current === surfaceContext) return
+    lastSurface.current = surfaceContext
+    dispatch({ type: "context_set", context: { kind: "none" } })
+  }, [dispatch, surfaceContext])
+
+  useEffect(() => {
+    if (surfaceContext === "Calendar") return
+    const targets = ["app-shell-navigation", "app-shell-page"]
+      .map((id) => document.getElementById(id))
+      .filter((element): element is HTMLElement => element instanceof HTMLElement)
+    for (const target of targets) {
+      const hidden = view.view === "timbl" || view.view === "mobile"
+      target.inert = hidden
+      if (hidden) target.setAttribute("aria-hidden", "true")
+      else target.removeAttribute("aria-hidden")
+    }
+    return () => {
+      for (const target of targets) {
+        target.inert = false
+        target.removeAttribute("aria-hidden")
+      }
+    }
+  }, [surfaceContext, view.view])
 
   const chip = deriveChip(state, copy)
   const pendingCount = state.requests.filter((request) => request.status === "pending").length
@@ -187,10 +248,15 @@ function OrbLayer({ onOpenOverview, weekStart }: { onOpenOverview?: () => void; 
                 id="flyout-composer"
                 variant="mini"
                 value={miniText}
-                onChange={setMiniText}
+                onChange={(value) => {
+                  setMiniText(value)
+                  setMiniSource("typed")
+                }}
                 onSend={(value) => {
-                  dispatch({ type: "mini_sent", text: value })
+                  dispatch({ type: "user_sent", text: value, source: miniSource })
                   setMiniText("")
+                  setMiniSource("typed")
+                  update({ view: "timbl", sheet: null }, "push")
                 }}
                 suggestions={[]}
                 placeholder={copy.flyout.placeholder}
@@ -221,13 +287,19 @@ function ProductRail({
   weekStart,
   onOpenPost,
   onCollapse,
-  extras,
+  onClose,
+  density,
+  categoryFilter,
+  categorySummary,
 }: {
   period: string
   weekStart: string
   onOpenPost: (id: string) => void
   onCollapse?: () => void
-  extras?: React.ReactNode
+  onClose?: () => void
+  density?: "touch" | "pointer"
+  categoryFilter?: React.ReactNode
+  categorySummary?: string | null
 }) {
   const { copy, update } = usePrototype()
   const { dispatch } = useEngine()
@@ -240,6 +312,9 @@ function ProductRail({
       stats={rail.stats}
       attention={rail.attention.map((row) => ({ postId: row.postId, title: row.title, line: line[row.source], unread: row.unread }))}
       comingUp={rail.comingUp}
+      categoryFilter={categoryFilter}
+      categorySummary={categorySummary === undefined ? copy.iface.rail.categorySummary : categorySummary}
+      density={density}
       onOpenTimbl={() =>
         triggerIn({
           carryText: null,
@@ -250,11 +325,11 @@ function ProductRail({
         })
       }
       onOpenPost={onOpenPost}
+      onOpenActivity={() => update({ sheet: "activity" }, "push")}
       onSettings={() => update({ sheet: "persona" }, "push")}
+      onClose={onClose}
       onCollapse={onCollapse}
-    >
-      {extras}
-    </OverviewRail>
+    />
   )
 }
 
@@ -271,7 +346,8 @@ type RuntimeProps = {
   posts: WithId<Post>[]
   campaignCount: number
   cadencePerWeek: number
-  extras?: React.ReactNode
+  categoryFilter?: React.ReactNode
+  categorySummary?: string | null
   onOpenPost: (post: WithId<Post>) => void
   overviewCollapsed: boolean
   onCollapseOverview: () => void
@@ -281,6 +357,7 @@ type RuntimeProps = {
   filter: CalendarFilter
   events: { name: string; date: string }[]
   onWeek?: (week: string) => void
+  surfaceContext?: string
 }
 
 function OrbRuntime({
@@ -291,7 +368,8 @@ function OrbRuntime({
   posts,
   campaignCount,
   cadencePerWeek,
-  extras,
+  categoryFilter,
+  categorySummary,
   onOpenPost,
   overviewCollapsed,
   onCollapseOverview,
@@ -301,14 +379,15 @@ function OrbRuntime({
   filter,
   events,
   onWeek,
+  surfaceContext = "Calendar",
 }: RuntimeProps) {
   const { view, update, prefs, copy } = usePrototype()
   const osReduced = useReducedMotion()
   const announce = useAnnounce()
   const persist = usePersist(useCallback((message: string) => toast.error(message), []))
   useEffect(() => {
-    if (view.filter !== filter || view.week !== weekStart) update({ week: weekStart, filter })
-  }, [filter, update, view.filter, view.week, weekStart])
+    if (surfaceContext === "Calendar" && (view.filter !== filter || view.week !== weekStart)) update({ week: weekStart, filter })
+  }, [filter, surfaceContext, update, view.filter, view.week, weekStart])
   const overlay = view.view === "timbl" || view.view === "mobile"
   useEffect(() => {
     onMode?.(view.view === "timbl")
@@ -346,13 +425,13 @@ function OrbRuntime({
     },
     [announce, copy.approval.undoInline, onWeek, persist, update],
   )
-  const rail = (collapse?: () => void) => (
-    <ProductRail period={period} weekStart={weekStart} extras={extras} onOpenPost={openPost} onCollapse={collapse} />
+  const rail = (collapse?: () => void, touch = false) => (
+    <ProductRail period={period} weekStart={weekStart} categoryFilter={categoryFilter} categorySummary={categorySummary} onOpenPost={openPost} onCollapse={collapse} density={touch ? "touch" : "pointer"} onClose={touch ? () => onSheetOpenChange(false) : undefined} />
   )
   return (
     <MotionConfig reducedMotion={prefs.reduceMotion ? "always" : "user"}>
       <EngineProvider cadence={cadencePerWeek} campaigns={campaignCount} onEffect={onEffect}>
-        <EngineBridge posts={posts} events={events} />
+        <EngineBridge posts={posts} events={events} surfaceContext={surfaceContext} />
         <HandoffProvider>
           <ShortcutOwner />
           <HandoffTransition />
@@ -365,15 +444,15 @@ function OrbRuntime({
             <div className="flex min-h-0 min-w-0 flex-1 flex-col" aria-hidden={overlay || undefined} inert={overlay || undefined}>
               {children}
             </div>
-            {!overlay && !overviewCollapsed ? <div className="hidden min-h-0 @7xl/iface:flex">{rail(onCollapseOverview)}</div> : null}
-            <OrbLayer onOpenOverview={onOpenOverview} weekStart={weekStart} />
+            {!overlay && !overviewCollapsed ? <div className="hidden min-h-0 w-80 shrink-0 @7xl/iface:flex">{rail(onCollapseOverview)}</div> : null}
+            <OrbLayer onOpenOverview={onOpenOverview} weekStart={weekStart} surfaceContext={surfaceContext} />
           </div>
           <Sheet open={sheetOpen && !overlay} onOpenChange={onSheetOpenChange}>
-            <SheetContent side="right" className="w-80 max-w-full p-0 @7xl/iface:hidden">
+            <SheetContent side="right" className="max-w-full p-0" style={{ width: "min(20rem, 100vw)" }} showCloseButton={false}>
               <SheetHeader className="sr-only">
                 <SheetTitle>{copy.iface.rail.title}</SheetTitle>
               </SheetHeader>
-              {rail()}
+              {rail(undefined, true)}
             </SheetContent>
           </Sheet>
           <OrbSheets />
@@ -510,6 +589,7 @@ export function CalendarOrb({
   awarenessDays = [],
   viewerId,
   initialView,
+  surfaceContext = "Calendar",
   ...runtime
 }: Omit<RuntimeProps, "events"> & {
   team: TeamMember[]
@@ -519,11 +599,12 @@ export function CalendarOrb({
   awarenessDays?: { name: string; date: string }[]
   viewerId: string
   initialView: ViewState
+  surfaceContext?: string
 }) {
   const viewer = team.find((member) => member.id === viewerId) ?? team[0]
   return (
     <PrototypeProvider
-      initialView={{ ...initialView, week: runtime.weekStart, filter: runtime.filter }}
+      initialView={surfaceContext === "Calendar" ? { ...initialView, week: runtime.weekStart, filter: runtime.filter } : initialView}
       viewer={viewer}
       team={team}
       workspaceName={workspaceName}
@@ -531,7 +612,7 @@ export function CalendarOrb({
       prefs={prefs}
     >
       <LiveAnnouncerProvider>
-        <OrbRuntime {...runtime} events={awarenessDays}>
+        <OrbRuntime {...runtime} events={awarenessDays} surfaceContext={surfaceContext}>
           {children}
         </OrbRuntime>
       </LiveAnnouncerProvider>
