@@ -18,6 +18,8 @@ export type LiveCursor = {
 }
 
 const IDLE_MS = 15_000
+// Server actions share the router's queue; fast polling starves client navigation.
+const PRESENCE_POLL_MS = 2_000
 
 export type PeerElsewhere = { userId: string; weekStart: string }
 
@@ -85,11 +87,15 @@ export function LivePresence({
           .map((row) => ({ userId: row.userId, weekStart: row.weekStart })),
       )
     }
-    void tick()
-    const poll = window.setInterval(() => void tick(), 300)
+    let timer = 0
+    const loop = async () => {
+      if (document.visibilityState === "visible") await tick().catch(() => {})
+      if (alive) timer = window.setTimeout(() => void loop(), PRESENCE_POLL_MS)
+    }
+    void loop()
     return () => {
       alive = false
-      window.clearInterval(poll)
+      window.clearTimeout(timer)
     }
   }, [hidden, names, weekStart])
 
