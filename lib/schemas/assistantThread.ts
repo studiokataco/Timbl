@@ -38,14 +38,51 @@ export const shellRunSchema = z.object({
 })
 export type AssistantThreadEntry = z.infer<typeof assistantThreadEntrySchema>
 
+export const assistantThreadVisibility = z.enum(["private", "workspace"])
+export type AssistantThreadVisibility = z.infer<typeof assistantThreadVisibility>
+
 export const assistantThreadSchema = audit.extend({
   id: z.string(),
   organizationId: z.string(),
   title: z.string().optional(),
+  titleSource: z.enum(["auto", "user"]).optional(),
+  autoTitle: z.string().optional(),
   sessionId: z.string().optional(),
   transcript: z.array(assistantThreadEntrySchema).default([]),
   skippedPostIds: z.array(z.string()).default([]),
   run: shellRunSchema.nullable().optional(),
   idbMigratedAt: isoTimestamp.optional(),
+  ownerId: z.string().optional(),
+  visibility: assistantThreadVisibility.optional(),
+  pinnedBy: z.array(z.string()).default([]),
+  archivedAt: isoTimestamp.optional(),
+  readAt: z.record(z.string(), z.number()).default({}),
+  lastMessageAt: z.number().int().optional(),
+  lastAssistantAt: z.number().int().optional(),
 })
 export type AssistantThread = z.infer<typeof assistantThreadSchema>
+
+export const assistantThreadListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  lastAt: z.number(),
+  mine: z.boolean(),
+  visibility: assistantThreadVisibility,
+  pinned: z.boolean(),
+  archived: z.boolean(),
+  unread: z.boolean(),
+  needsYou: z.boolean(),
+  running: z.boolean(),
+})
+export type AssistantThreadListItem = z.infer<typeof assistantThreadListItemSchema>
+
+export const assistantThreadPatchSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120).optional(),
+    pinned: z.boolean().optional(),
+    archived: z.boolean().optional(),
+    visibility: assistantThreadVisibility.optional(),
+    read: z.literal(true).optional(),
+  })
+  .refine((patch) => Object.values(patch).some((value) => value !== undefined), { message: "Nothing to update" })
+export type AssistantThreadPatch = z.infer<typeof assistantThreadPatchSchema>

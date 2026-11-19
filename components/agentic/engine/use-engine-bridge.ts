@@ -88,7 +88,21 @@ function idOf(response: Record<string, unknown> | undefined, key: "postId" | "it
   return typeof nested === "string" ? nested : null
 }
 
-export function EngineBridge({ posts, events = [], surfaceContext = "Calendar" }: { posts: WithId<Post>[]; events?: { name: string; date: string }[]; surfaceContext?: string }) {
+const NO_EVENTS: { name: string; date: string }[] = []
+
+export function EngineBridge({
+  posts,
+  events = NO_EVENTS,
+  surfaceContext = "Calendar",
+  threadId = SHELL_THREAD_ID,
+  onSaved,
+}: {
+  posts: WithId<Post>[]
+  events?: { name: string; date: string }[]
+  surfaceContext?: string
+  threadId?: string
+  onSaved?: () => void
+}) {
   const orgId = useWorkspaceOrgId()
   const { state, dispatch, env } = useEngine()
   const { defaultAgent } = useRosterAgents()
@@ -98,8 +112,12 @@ export function EngineBridge({ posts, events = [], surfaceContext = "Calendar" }
   const persistTimer = useRef<number>(0)
   const streams = useRef(new Map<string, AbortController>())
   const gates = useRef(new Set<string>())
+  const onSavedRef = useRef(onSaved)
+  useEffect(() => {
+    onSavedRef.current = onSaved
+  }, [onSaved])
 
-  const threadQuery = useQuery({ queryKey: ["assistant-thread", orgId, SHELL_THREAD_ID], queryFn: () => fetchAssistantThread(SHELL_THREAD_ID) })
+  const threadQuery = useQuery({ queryKey: ["assistant-thread", orgId, threadId], queryFn: () => fetchAssistantThread(threadId) })
   const ideasQuery = useQuery({ queryKey: ["ideation-feed", orgId], queryFn: () => listIdeationFeed({ limit: 12 }) })
   const accountsQuery = useQuery({ queryKey: ["social-accounts", orgId], queryFn: () => listSocialAccounts() })
   const usageQuery = useQuery({ queryKey: ["usage-overview", orgId], queryFn: () => getUsageOverview(), staleTime: 60_000 })
@@ -165,7 +183,7 @@ export function EngineBridge({ posts, events = [], surfaceContext = "Calendar" }
     let cancelled = false
     void (async () => {
       let transcript = thread.transcript
-      if (!thread.idbMigratedAt) {
+      if (threadId === SHELL_THREAD_ID && !thread.idbMigratedAt) {
         const local = await listThreads(orgId)
         const seen = new Set(transcript.map((entry) => entry.id))
         transcript = [...transcript, ...local.flatMap((item) => item.transcript).filter((entry) => !seen.has(entry.id) && !UNSAVED.has(entry.id))]
@@ -183,7 +201,7 @@ export function EngineBridge({ posts, events = [], surfaceContext = "Calendar" }
     return () => {
       cancelled = true
     }
-  }, [dispatch, orgId, threadQuery.data])
+  }, [dispatch, orgId, threadId, threadQuery.data])
 
   useEffect(() => {
     if (!hydrated.current || !state.transcript.some((entry) => entry.role === "user")) return
@@ -203,10 +221,12 @@ export function EngineBridge({ posts, events = [], surfaceContext = "Calendar" }
           }
         })
         .sort((a, b) => a.createdAt - b.createdAt)
-      void saveAssistantThread({ id: SHELL_THREAD_ID, transcript, run: state.run })
+      void saveAssistantThread({ id: threadId, transcript, run: state.run }).then((result) => {
+        if (result.ok) onSavedRef.current?.()
+      })
     }, 600)
     return () => window.clearTimeout(persistTimer.current)
-  }, [state.miniChat, state.run, state.transcript])
+  }, [state.miniChat, state.run, state.transcript, threadId])
 
   useEffect(() => {
     const live = new Set(state.runs.filter((run) => run.status === "running" || run.status === "needs_you").map((run) => run.id))

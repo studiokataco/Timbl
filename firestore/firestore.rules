@@ -51,10 +51,15 @@ service cloud.firestore {
       // --- Org-scoped subcollections ---------------------------------
       // Default: any member can read; admin/editor can write; contributors
       // are restricted further on `posts` (only update own assignments).
+      // Rules grant access if any matching rule allows it, so collections with
+      // tighter rules of their own are excluded here or the default overrides them.
+      function hasOwnRules(collection) {
+        return collection in ['assistantThreads', 'socialAccounts', 'publishRuns', 'oauthApps'];
+      }
       match /{collection}/{docId} {
-        allow read: if inOrg(orgId);
-        allow create, delete: if inOrg(orgId) && isAdminOrEditor();
-        allow update: if inOrg(orgId) && isAdminOrEditor();
+        allow read: if inOrg(orgId) && !hasOwnRules(collection);
+        allow create, delete: if inOrg(orgId) && isAdminOrEditor() && !hasOwnRules(collection);
+        allow update: if inOrg(orgId) && isAdminOrEditor() && !hasOwnRules(collection);
       }
 
       // Tighter rules for posts: contributors can only update posts
@@ -104,7 +109,28 @@ service cloud.firestore {
       }
 
       match /assistantThreads/{threadId} {
-        allow read, write: if inOrg(orgId);
+        function threadOwner(data) {
+          return data.get('ownerId', null);
+        }
+        function canSeeThread(data) {
+          return threadOwner(data) == null
+            || threadOwner(data) == token().userId
+            || data.get('visibility', 'private') == 'workspace';
+        }
+        function ownsThread(data) {
+          return threadOwner(data) == token().userId
+            || (threadOwner(data) == null && isAdminOrEditor());
+        }
+        allow read: if inOrg(orgId) && canSeeThread(resource.data);
+        allow create: if inOrg(orgId) && request.resource.data.ownerId == token().userId;
+        allow update: if inOrg(orgId)
+          && canSeeThread(resource.data)
+          && threadOwner(request.resource.data) == threadOwner(resource.data)
+          && (
+            ownsThread(resource.data)
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinnedBy', 'readAt'])
+          );
+        allow delete: if inOrg(orgId) && ownsThread(resource.data);
       }
 
       match /teamPresence/{sessionId} {
