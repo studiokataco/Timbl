@@ -1,5 +1,5 @@
 import { LlmAgent } from "@google/adk"
-import type { LlmAgentConfig } from "@google/adk"
+import type { LlmAgentConfig, SingleBeforeModelCallback } from "@google/adk"
 
 import type { AgentConfig } from "@/lib/schemas/agentConfig"
 
@@ -8,6 +8,7 @@ import { makePermissionsCallback } from "./permissions"
 import { makeBudgetCallbacks } from "./budget"
 import { makeContextCompactors } from "./compaction"
 import { makeFinisherCallback } from "./finisher"
+import { CACHE_SESSION_LABEL } from "./openai-compatible-llm"
 import { recallIntentTool } from "../tools/memory"
 import {
   AMBIGUITY_RULE,
@@ -42,6 +43,17 @@ export interface BuildLlmAgentInput
   /** Set when `tools` includes provider-native server tools. Forwarded to
    * resolveLlm to suppress cross-provider failover. */
   nativeTools?: boolean
+}
+
+/* Pins every call in a session to one prompt-cache route. */
+const pinCacheSession: SingleBeforeModelCallback = ({ context, request }) => {
+  const sessionId = context.invocationContext.session.id
+  if (!sessionId) return undefined
+  request.config = {
+    ...request.config,
+    labels: { ...request.config?.labels, [CACHE_SESSION_LABEL]: sessionId },
+  }
+  return undefined
 }
 
 export function buildLlmAgentFromConfig(
@@ -82,7 +94,7 @@ export function buildLlmAgentFromConfig(
     }),
     instruction,
     contextCompactors: makeContextCompactors(config),
-    beforeModelCallback: [budget.beforeModel],
+    beforeModelCallback: [budget.beforeModel, pinCacheSession],
     afterModelCallback: [budget.afterModel],
     beforeToolCallback: [
       budget.beforeTool,

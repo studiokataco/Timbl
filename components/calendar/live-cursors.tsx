@@ -19,7 +19,7 @@ export type LiveCursor = {
 
 const IDLE_MS = 15_000
 // Server actions share the router's queue; fast polling starves client navigation.
-const PRESENCE_POLL_MS = 2_000
+const PRESENCE_SYNC_MS = 2_000
 
 export type PeerElsewhere = { userId: string; weekStart: string }
 
@@ -90,7 +90,7 @@ export function LivePresence({
     let timer = 0
     const loop = async () => {
       if (document.visibilityState === "visible") await tick().catch(() => {})
-      if (alive) timer = window.setTimeout(() => void loop(), PRESENCE_POLL_MS)
+      if (alive) timer = window.setTimeout(() => void loop(), PRESENCE_SYNC_MS)
     }
     void loop()
     return () => {
@@ -99,20 +99,37 @@ export function LivePresence({
     }
   }, [hidden, names, weekStart])
 
+  const latest = useRef<LiveCursor & { weekStart: string }>(null)
+  const sendTimer = useRef(0)
+  useEffect(
+    () => () => {
+      window.clearTimeout(sendTimer.current)
+      sendTimer.current = 0
+    },
+    [hidden],
+  )
+
   const send = (cursor: LiveCursor & { weekStart: string }) => {
     if (hidden) return
-    const day = Math.min(6, Math.max(0, Math.floor(cursor.x * 7)))
-    const hour = Math.min(24, Math.max(0, cursor.y * 24))
-    void publishPresence({
-      sessionId: cursor.id,
-      surface: "calendar",
-      weekStart: cursor.weekStart,
-      day,
-      hour,
-      fx: cursor.x * 7 - day,
-      fy: hour - Math.floor(hour),
-      activity: cursor.activity === "editing_caption" ? "editing_caption" : "idle",
-    })
+    latest.current = cursor
+    if (sendTimer.current) return
+    sendTimer.current = window.setTimeout(() => {
+      sendTimer.current = 0
+      const last = latest.current
+      if (!last) return
+      const day = Math.min(6, Math.max(0, Math.floor(last.x * 7)))
+      const hour = Math.min(24, Math.max(0, last.y * 24))
+      void publishPresence({
+        sessionId: last.id,
+        surface: "calendar",
+        weekStart: last.weekStart,
+        day,
+        hour,
+        fx: last.x * 7 - day,
+        fy: hour - Math.floor(hour),
+        activity: last.activity === "editing_caption" ? "editing_caption" : "idle",
+      })
+    }, PRESENCE_SYNC_MS)
   }
 
   return (
@@ -134,7 +151,6 @@ export function CursorFrame({
   children: React.ReactNode
 }) {
   const frame = useRef<HTMLDivElement>(null)
-  const lastSent = useRef(0)
   const { peers, send } = useContext(PresenceContext)
 
   useEffect(() => {
@@ -146,16 +162,13 @@ export function CursorFrame({
     const box = frame.current?.getBoundingClientRect()
     const id = window.sessionStorage.getItem("timbl-cursor-session")
     if (!box || !id || hidden) return
-    const now = Date.now()
-    if (now - lastSent.current < 100) return
-    lastSent.current = now
     send({
       id,
       name,
       slot: 2,
       x: (event.clientX - box.left) / box.width,
       y: (event.clientY - box.top) / box.height,
-      at: now,
+      at: Date.now(),
       weekStart,
     })
   }

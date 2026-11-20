@@ -69,6 +69,12 @@ const MODEL_OUTPUT_LIMITS: Record<string, number> = {
 
 const DEFAULT_MAX_TOKENS = 8_192
 
+/* Request label carrying the agent session id. On OpenRouter it becomes
+ * `session_id` (sticky provider routing from the first call, so every turn
+ * lands on the same warm prompt cache) and `prompt_cache_key` (OpenAI's own
+ * cache key). Set by build-agent.ts. */
+export const CACHE_SESSION_LABEL = "timbl_cache_session"
+
 export function resolveMaxTokens(model: string, override?: number): number {
   return override ?? MODEL_OUTPUT_LIMITS[model] ?? DEFAULT_MAX_TOKENS
 }
@@ -190,8 +196,12 @@ export class OpenAiCompatibleLlm extends BaseLlm {
     const sendTemperature =
       this.temperature !== undefined &&
       (await acceptsTemperature(modelName, this.baseUrl))
+    const cacheSession = this.baseUrl?.includes("openrouter.ai")
+      ? (llmRequest.config?.labels as Record<string, string> | undefined)?.[CACHE_SESSION_LABEL]
+      : undefined
     const params = {
       model: modelName,
+      ...(cacheSession ? { session_id: cacheSession, prompt_cache_key: cacheSession } : {}),
       max_tokens: resolveMaxTokens(modelName, this.maxTokensOverride),
       messages,
       /* Streamed responses omit token usage unless explicitly requested; without
